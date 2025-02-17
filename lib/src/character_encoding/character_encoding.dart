@@ -1,7 +1,7 @@
-import 'dart:collection';
 import 'dart:convert';
 
 import 'package:characters/characters.dart';
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 //import 'package:characters/characters.dart';

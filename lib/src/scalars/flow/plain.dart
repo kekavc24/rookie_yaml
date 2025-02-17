@@ -1,7 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/comment_parser.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
-import 'package:rookie_yaml/src/yaml_parser.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
@@ -21,14 +21,6 @@ final _delimiters = <ReadableChar>{
   Indicator.comment,
 };
 
-final _flowDelimiters = <Indicator>{
-  Indicator.mappingStart,
-  Indicator.mappingEnd,
-  Indicator.flowSequenceStart,
-  Indicator.flowSequenceEnd,
-  Indicator.flowEntryEnd,
-};
-
 const _style = ScalarStyle.plain;
 
 // TODO: Implicit
@@ -39,7 +31,7 @@ PlainStyleInfo parsePlain(
   required bool isInFlowContext,
 }) {
   bool isFlowDelimiter(ReadableChar char) {
-    return isInFlowContext && _flowDelimiters.contains(char);
+    return isInFlowContext && flowDelimiters.contains(char);
   }
 
   var greedyChars = charsOnGreedy;

@@ -29,10 +29,10 @@ enum Indicator implements ReadableChar {
   /// Comment start `#`
   comment(0x23),
 
-  /// Node's anchor property
+  /// Node's anchor property `&`
   anchor(0x26),
 
-  /// Alias node
+  /// Alias node `*`
   alias(0x2A),
 
   /// Specifies node tags `!`. Specifically:
@@ -47,19 +47,19 @@ enum Indicator implements ReadableChar {
   /// Folded block scalar start `>`
   folded(0x3E),
 
-  /// Single quoted flow scalar start
+  /// Single quoted flow scalar start and end `'`
   singleQuote(0x27),
 
-  /// Double quoted flow scalar start
+  /// Double quoted flow scalar start and end `"`
   doubleQuote(0x22),
 
-  /// Directive line start
+  /// Directive line start `%`
   directive(0x25),
 
-  /// Reserved by YAML for future use
+  /// Reserved by YAML for future use `@`
   reservedAtSign(0x40),
 
-  /// Reserved by YAML for future use
+  /// Reserved by YAML for future use [`]
   reservedGrave(0x60);
 
   const Indicator(this.unicode);
