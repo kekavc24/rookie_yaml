@@ -8,10 +8,13 @@ const _lowerA = 0x61;
 const _lowerF = 0x66;
 const _lowerZ = 0x7A;
 
+const asciiZero = 0x30;
+const _asciiNine = 0x39;
+
 /// Checks if digit. `0x30 - 0x39`
 bool isDigit(ReadableChar char) {
   final unicode = char.unicode;
-  return unicode >= 0x30 && unicode <= 0x39;
+  return unicode >= asciiZero && unicode <= _asciiNine;
 }
 
 /// Checks if hex digit.
@@ -63,4 +66,65 @@ bool isPrintable(ReadableChar char) {
       (unicode >= _lowerAdditionalSet && unicode <= _upperAdditionalSet) ||
       (unicode >= _lowerSupplementalPlane &&
           unicode <= _upperSupplementalPlane);
+}
+
+/// Delimiters denoting a flow context. `{`  `}`  `[`  `]`  `,`
+final flowDelimiters = <Indicator>{
+  Indicator.mappingStart,
+  Indicator.mappingEnd,
+  Indicator.flowSequenceStart,
+  Indicator.flowSequenceEnd,
+  Indicator.flowEntryEnd,
+};
+
+/// Characters allowed in a `URI` not included in [isAlphaNumeric] or
+/// [flowDelimiters] or [isHexDigit]
+final _miscUriChars = <int>{
+  Indicator.comment.unicode, // #
+  0x3B, // ;
+  SpecialEscaped.slash.unicode, // /
+  Indicator.mappingKey.unicode, // ?
+  Indicator.mappingValue.unicode, // :
+  Indicator.reservedAtSign.unicode, // @
+  Indicator.anchor.unicode, // &
+  0x3D, // =
+  0x2B, // +
+  0x24, // $
+  0x5F, // _
+  0x2E, // .
+  Indicator.tag.unicode, // !
+  0xFE, // ~
+  Indicator.alias.unicode, // *
+  Indicator.singleQuote.unicode, // '
+};
+
+/// Checks with bias if [uriChar] is a valid character.
+///
+/// The bias comes in when non-escaped characters, that is, characters not
+/// in `hex` form (`.%[0-9A-Fa-f]{2}`), must pass in a single character in
+/// [uriChar].
+///
+/// Escaped `hex` characters must pass in `List<ReadableChar>`.
+bool isUriChar<T>(T uriChar) {
+  if (T == ReadableChar) {
+    return _isValidSingleUriChar(uriChar as ReadableChar);
+  }
+
+  assert(uriChar is List<ReadableChar>, 'Expected list of "ReadableChar"');
+  return _isValidHexInUri(uriChar as List<ReadableChar>);
+}
+
+/// Checks if a single [ReadableChar] is a valid [Uri] character
+bool _isValidSingleUriChar(ReadableChar char) {
+  return flowDelimiters.contains(char) ||
+      isAlphaNumeric(char) ||
+      _miscUriChars.contains(char.unicode);
+}
+
+/// Checks if a sequence of escaped `hex` characters are valid
+bool _isValidHexInUri(List<ReadableChar> chars) {
+  return chars.length == 3 &&
+      chars
+          .whereNot((char) => char == Indicator.directive || isHexDigit(char))
+          .isEmpty;
 }
