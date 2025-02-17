@@ -1,4 +1,4 @@
-part of 'yaml_parser.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 
 const _pattern = '# ';
 
@@ -9,10 +9,7 @@ const _pattern = '# ';
   final buffer = StringBuffer(prepend ?? '');
 
   /// A comment forces us to read the entire line till the end.
-  final chunkInfo = scanner.bufferChunk(
-    buffer,
-    exitIf: (_, current) => false,
-  );
+  final chunkInfo = scanner.bufferChunk(buffer, exitIf: (_, current) => false);
 
   var comment = buffer.toString().trim();
 
@@ -20,6 +17,6 @@ const _pattern = '# ';
     comment = comment.replaceFirst(_pattern, '');
   }
 
-  /// TODO: Maybe perform a greedy lookahead instead of delegating to next node
+  // TODO: Maybe perform a greedy lookahead instead of delegating to next node
   return (onExit: chunkInfo, comment: comment);
 }
