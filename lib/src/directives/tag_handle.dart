@@ -1,7 +1,6 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+part of 'directives.dart';
 
-const _indicator = Indicator.tag;
+const _tagIndicator = Indicator.tag;
 
 enum TagHandleVariant {
   primary('!'),
@@ -27,7 +26,7 @@ final class TagHandle {
     assert(name.isNotEmpty, 'Name cannot be empty!');
 
     var modded = name;
-    final pattern = _indicator.string;
+    final pattern = _tagIndicator.string;
 
     if (!name.startsWith(pattern)) modded = '$pattern$modded';
     if (!name.endsWith(pattern)) modded = '$modded$pattern';
@@ -52,15 +51,12 @@ final class TagHandle {
 }
 
 TagHandle parseTagHandle(ChunkScanner scanner) {
-  scanner.skipWhitespace(skipTabs: true); // Tabs are separation spaces
-  scanner.skipCharAtCursor(); // Move to handle
-
   var char = scanner.charAtCursor;
 
-  final indicatorStr = _indicator.string;
+  final indicatorStr = _tagIndicator.string;
 
   // All tag handles must start with the indicator
-  if (char == null || char != _indicator) {
+  if (char == null || char != _tagIndicator) {
     throw FormatException(
       'Expected a $indicatorStr but found '
       '${char?.string ?? 'nothing'}',
@@ -79,7 +75,7 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
     ///
     /// "Success" -> whitespace
     /// "Mess" -> throw if not whitespace
-    case _indicator:
+    case _tagIndicator:
       scanner.skipCharAtCursor(); // Present in tag handle object
       tagHandle = TagHandle.secondary();
 
@@ -91,10 +87,10 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
 
         final ChunkInfo(:charOnExit) = scanner.bufferChunk(
           namedBuffer,
-          exitIf: (_, curr) => !isAlphaNumeric(char),
+          exitIf: (_, curr) => !isAlphaNumeric(curr),
         );
 
-        if (charOnExit != _indicator) {
+        if (charOnExit != _tagIndicator) {
           final bufferVal = namedBuffer.toString();
 
           throw FormatException(
