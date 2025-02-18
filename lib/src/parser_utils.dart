@@ -45,8 +45,5 @@ enum NextParseTarget {
 /// [ScalarStyle.folded] are `plain` styles that use explicit indicators to
 /// differentiate them for [ScalarStyle.plain] and qualify them as `block
 /// scalar` styles.
-typedef PlainStyleInfo = ({
-  NextParseTarget parseTarget,
-  Scalar? scalar,
-  int? indentOnExit,
-});
+typedef PlainStyleInfo =
+    ({NextParseTarget parseTarget, Scalar? scalar, int? indentOnExit});

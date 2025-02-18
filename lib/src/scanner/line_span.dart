@@ -13,19 +13,20 @@ final class LineSpan {
     required bool hasLineBreak,
     required int startOffset,
     required Characters characters,
-  })  : _shouldEmitEndToken = hasLineBreak,
-        _startOffset = startOffset,
-        _endOffset = startOffset,
-        source = characters.string {
+  }) : _shouldEmitEndToken = hasLineBreak,
+       _startOffset = startOffset,
+       _endOffset = startOffset,
+       source = characters.string {
     if (source.isEmpty) {
       _hasNextChar = false;
       _charQueue = _emptyIterable.iterator;
       return;
     }
 
-    _charQueue = characters
-        .mapIndexed((index, char) => LineSpanChar.wrap(char, index))
-        .iterator;
+    _charQueue =
+        characters
+            .mapIndexed((index, char) => LineSpanChar.wrap(char, index))
+            .iterator;
     _hasNextChar = _charQueue.moveNext();
   }
 
@@ -62,9 +63,10 @@ final class LineSpan {
   bool get _canEmitEOL => _shouldEmitEndToken && !_emittedEndToken;
 
   /// Peeks next char without moving the iterator forward.
-  LineSpanChar? get peekNextChar => _hasNextChar
-      ? _charQueue.current
-      : _canEmitEOL
+  LineSpanChar? get peekNextChar =>
+      _hasNextChar
+          ? _charQueue.current
+          : _canEmitEOL
           ? LineSpanChar.terminal(_currentIndex + 1)
           : null;
 

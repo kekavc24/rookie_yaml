@@ -67,12 +67,13 @@ PlainStyleInfo parseBlockStyle(
             scanner,
             contentBuffer: contentBuffer,
             scannedIndent: scannedIndent,
-            callBeforeTabWrite: () => _foldLfIfPossible(
-              contentBuffer,
-              isLiteral: isLiteral,
-              lastNonEmptyWasIndented: false, // Not possible with no indent
-              lineBreaks: lineBreaks,
-            ),
+            callBeforeTabWrite:
+                () => _foldLfIfPossible(
+                  contentBuffer,
+                  isLiteral: isLiteral,
+                  lastNonEmptyWasIndented: false, // Not possible with no indent
+                  lineBreaks: lineBreaks,
+                ),
           );
 
           trueIndent = inferredIndent;
@@ -109,10 +110,7 @@ PlainStyleInfo parseBlockStyle(
     safeWriteChar(contentBuffer, char!);
 
     // Write the remaining line to the end without including line break
-    scanner.bufferChunk(
-      contentBuffer,
-      exitIf: (_, curr) => curr is LineBreak,
-    );
+    scanner.bufferChunk(contentBuffer, exitIf: (_, curr) => curr is LineBreak);
   }
 
   _chompLineBreaks(

@@ -19,10 +19,8 @@ final class Mapping extends Node {
 }
 
 final class Scalar extends Node {
-  Scalar({
-    required this.scalarStyle,
-    required this.content,
-  }) : super(nodeStyle: scalarStyle.nodeStyle);
+  Scalar({required this.scalarStyle, required this.content})
+    : super(nodeStyle: scalarStyle.nodeStyle);
 
   final ScalarStyle scalarStyle;
 

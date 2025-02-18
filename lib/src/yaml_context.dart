@@ -16,5 +16,5 @@ enum YamlContext {
   flowOUT,
 
   /// Within a flow key context
-  flowKEY;
+  flowKEY,
 }

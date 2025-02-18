@@ -8,11 +8,12 @@ FormatException indentException(int expectedIndent, int? foundIndent) {
   );
 }
 
-typedef FoldInfo = ({
-  bool matchedDelimiter,
-  ({bool ignoredNext, bool foldedLineBreak}) ignoreInfo,
-  ({bool indentChanged, int? indentFound}) indentInfo,
-});
+typedef FoldInfo =
+    ({
+      bool matchedDelimiter,
+      ({bool ignoredNext, bool foldedLineBreak}) ignoreInfo,
+      ({bool indentChanged, int? indentFound}) indentInfo,
+    });
 
 FoldInfo _infoOnFold({
   bool matchedDelimiter = false,
@@ -20,15 +21,11 @@ FoldInfo _infoOnFold({
   bool foldedLineBreak = false,
   bool indentChanged = false,
   int? indentFound,
-}) =>
-    (
-      ignoreInfo: (
-        ignoredNext: ignoredNextChar,
-        foldedLineBreak: foldedLineBreak,
-      ),
-      matchedDelimiter: matchedDelimiter,
-      indentInfo: (indentChanged: indentChanged, indentFound: indentFound),
-    );
+}) => (
+  ignoreInfo: (ignoredNext: ignoredNextChar, foldedLineBreak: foldedLineBreak),
+  matchedDelimiter: matchedDelimiter,
+  indentInfo: (indentChanged: indentChanged, indentFound: indentFound),
+);
 
 final _defaultExitInfo = _infoOnFold();
 

@@ -27,15 +27,13 @@ abstract interface class ReadableChar {
 final class GraphemeChar implements ReadableChar {
   const GraphemeChar._(this.unicode, this.string);
 
-  GraphemeChar.wrap(
-    String string,
-  ) : this._(_GraphemeWrapper(string).unicode, string);
+  GraphemeChar.wrap(String string)
+    : this._(_GraphemeWrapper(string).unicode, string);
 
   const GraphemeChar.raw(String string, int unicode) : this._(unicode, string);
 
-  GraphemeChar.fromUnicode(
-    int unicode,
-  ) : this._(unicode, String.fromCharCode(unicode));
+  GraphemeChar.fromUnicode(int unicode)
+    : this._(unicode, String.fromCharCode(unicode));
 
   /// Byte order mark
   GraphemeChar.unicodeBOM() : this.fromUnicode(unicodeBomCharacterRune);

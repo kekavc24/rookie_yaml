@@ -9,27 +9,21 @@ part 'line_span.dart';
 /// `start` to `end` index in string. Exclusive of the `end`.
 typedef Offset = ({int start, int end});
 
-///
-typedef Predicate = bool Function(
-  ReadableChar? previous,
-  ReadableChar current,
-);
-
-typedef ChunkInfo = ({
-  Offset offset,
-  bool sourceEnded,
-  bool lineEnded,
-  ReadableChar? charOnExit,
-});
+typedef ChunkInfo =
+    ({
+      Offset offset,
+      bool sourceEnded,
+      bool lineEnded,
+      ReadableChar? charOnExit,
+    });
 
 void safeWriteChar(StringBuffer buffer, ReadableChar char) {
   buffer.write(isPrintable(char) ? char.string : char.raw);
 }
 
 final class ChunkScanner {
-  ChunkScanner({
-    required this.source,
-  }) : _iterator = Characters(source).split(Characters(LineBreak.lf)).iterator {
+  ChunkScanner({required this.source})
+    : _iterator = Characters(source).split(Characters(LineBreak.lf)).iterator {
     // We don't want chunks from empty lines
     if (source.isEmpty) return;
     _hasMoreLines = _iterator.moveNext();
@@ -44,8 +38,10 @@ final class ChunkScanner {
 
   bool get canChunkMore => _hasMoreLines || _currentLine != null;
 
-  Offset _getOffset(StringBuffer buffer) =>
-      (start: max(0, _currentOffset - buffer.length), end: _currentOffset + 1);
+  Offset _getOffset(StringBuffer buffer) => (
+    start: max(0, _currentOffset - buffer.length),
+    end: _currentOffset + 1,
+  );
 
   int _lineIndex = -1;
   LineSpan? _currentLine;
@@ -66,15 +62,18 @@ final class ChunkScanner {
 
   ReadableChar? get charAtCursor => _charOnLastExit;
 
-  /// Peeks the next char after the character that triggered the last
-  /// [bufferChunk] call to exit
+  /// Peeks the next char after the character present at [charAtCursor]
   ReadableChar? peekCharAfterCursor() {
+    ReadableChar? next() => _currentLine?.peekNextChar?.character;
+
+    var char = next();
+
     // We prefetch next line if null
-    if (_currentLine == null) {
+    if (char == null && canChunkMore) {
       _fetchNextLine();
     }
 
-    return _currentLine?.peekNextChar?.character;
+    return next();
   }
 
   /// Skips the current character that has not been read by this [ChunkScanner]
@@ -138,13 +137,44 @@ final class ChunkScanner {
     return buffer;
   }
 
+  /// Returns a list of characters from the scanner that fail the [stopIf]
+  /// test, that is, evaluate to `false`.
+  ///
+  /// [includeCharAtCursor] adds the current character present when
+  /// [charAtCursor] is called on the cursor only if it is not `null`
+  ///
+  /// [mapper] transforms the [ReadableChar] to [T]
+  List<T> takeUntil<T>({
+    required bool includeCharAtCursor,
+    required T Function(ReadableChar char) mapper,
+    required bool Function(int count, ReadableChar possibleNext) stopIf,
+  }) {
+    final taken = <T>[];
+
+    if (includeCharAtCursor && _charOnLastExit != null) {
+      taken.add(mapper(_charOnLastExit!));
+    }
+
+    while (canChunkMore) {
+      final charAfter = peekCharAfterCursor()!;
+      if (stopIf(taken.length, charAfter)) break;
+      taken.add(mapper(charAfter));
+      skipCharAtCursor();
+    }
+
+    return taken;
+  }
+
   /// Reads and buffers all characters that fail the [exitIf] predicate or
   /// until the end of the current line, that is, until the line's
   /// [LineBreak.lineFeed] is emitted and no more characters are present in the
   /// line. Whichever condition comes first.
   ///
   /// See [ChunkInfo].
-  ChunkInfo bufferChunk(StringBuffer buffer, {required Predicate exitIf}) {
+  ChunkInfo bufferChunk(
+    StringBuffer buffer, {
+    required bool Function(ReadableChar? previous, ReadableChar current) exitIf,
+  }) {
     // Fetch next line if not present
     if (_currentLine == null) {
       // We exit and emit current offset

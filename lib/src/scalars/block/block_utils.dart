@@ -1,10 +1,7 @@
 part of 'block_scalar.dart';
 
-typedef _BlockHeaderInfo = ({
-  bool isLiteral,
-  ChompingIndicator chomping,
-  int? indentIndicator,
-});
+typedef _BlockHeaderInfo =
+    ({bool isLiteral, ChompingIndicator chomping, int? indentIndicator});
 
 typedef _IndicatorInfo = (ChompingIndicator chomping, int? indentIndicator);
 
@@ -12,7 +9,7 @@ bool? _isLiteralIndicator(ReadableChar? char) {
   return switch (char) {
     Indicator.folded => false,
     Indicator.literal => true,
-    _ => null
+    _ => null,
   };
 }
 
@@ -24,9 +21,8 @@ ChompingIndicator? _resolveChompingIndicator(ReadableChar char) {
   };
 }
 
-FormatException _charNotAllowedException(String char) => FormatException(
-      '"$char" character is not allowed in block scalar header',
-    );
+FormatException _charNotAllowedException(String char) =>
+    FormatException('"$char" character is not allowed in block scalar header');
 
 void _chompLineBreaks(
   ChompingIndicator indicator, {
@@ -90,9 +86,10 @@ void _foldLfIfPossible(
     ///
     /// However, if followed by a `\n`, `YAML` implies it should be folded from
     /// the docs.
-    toWrite = lineBreaks.length == 1
-        ? [if (contentBuffer.isNotEmpty) WhiteSpace.space]
-        : lineBreaks.skip(1);
+    toWrite =
+        lineBreaks.length == 1
+            ? [if (contentBuffer.isNotEmpty) WhiteSpace.space]
+            : lineBreaks.skip(1);
   }
 
   contentBuffer.writeAll(toWrite.map((rc) => rc.string));
@@ -155,12 +152,13 @@ Iterable<ReadableChar> _preserveEmptyIndented({
   /// See: https://yaml.org/spec/1.2.2/#813-folded-style:~:text=Lines%20starting%20with%20white%20space%20characters%20(more%2Dindented%20lines)%20are%20not%20folded.
   return isLiteral || !lastWasIndented
       ? lineBreaks
-      : lineBreaks.take(_takeOrSkip).cast<ReadableChar>().followedBy(
-            lineBreaks.skip(_takeOrSkip).expand(
-              (value) sync* {
-                yield _whitespace;
-                yield value;
-              },
-            ),
+      : lineBreaks
+          .take(_takeOrSkip)
+          .cast<ReadableChar>()
+          .followedBy(
+            lineBreaks.skip(_takeOrSkip).expand((value) sync* {
+              yield _whitespace;
+              yield value;
+            }),
           );
 }

@@ -32,15 +32,11 @@ Scalar parseDoubleQuoted(ChunkScanner scanner, {required int indent}) {
   // TODO: Save offsets etc.
 
   while (scanner.canChunkMore && !foundClosingQuote) {
-    final (
-      :offset,
-      :sourceEnded,
-      :lineEnded,
-      :charOnExit,
-    ) = scanner.bufferChunk(
-      doubleQuoteBuffer,
-      exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
-    );
+    final (:offset, :sourceEnded, :lineEnded, :charOnExit) = scanner
+        .bufferChunk(
+          doubleQuoteBuffer,
+          exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
+        );
 
     if (charOnExit == null) {
       throw _doubleQuoteException;
@@ -77,9 +73,10 @@ Scalar parseDoubleQuoted(ChunkScanner scanner, {required int indent}) {
               delimiter: _doubleQuoteIndicator.string,
               description: 'double quote',
             ),
-            ignoreGreedyNonBreakWrite: (char) =>
-                char == _doubleQuoteIndicator ||
-                char == SpecialEscaped.backSlash,
+            ignoreGreedyNonBreakWrite:
+                (char) =>
+                    char == _doubleQuoteIndicator ||
+                    char == SpecialEscaped.backSlash,
             matchesDelimiter: (char) => char == _doubleQuoteIndicator,
           );
 

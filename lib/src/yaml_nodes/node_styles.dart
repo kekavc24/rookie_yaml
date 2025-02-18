@@ -4,7 +4,7 @@ enum NodeStyle {
   block,
 
   /// A style that uses explicit indicators to present its structure
-  flow;
+  flow,
 }
 
 /// An alias for a [NodeStyle] specific to any [YamlNode] that is a collection
