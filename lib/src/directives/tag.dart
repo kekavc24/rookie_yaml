@@ -1,7 +1,7 @@
 part of 'directives.dart';
 
 abstract interface class _Tag {
-  TagHandle? get tagHandle;
+  TagHandle get tagHandle;
 
   String get prefix;
 }
