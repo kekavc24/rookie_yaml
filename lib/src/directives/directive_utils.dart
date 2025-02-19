@@ -23,6 +23,7 @@ String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
 String _parseTagUri(
   ChunkScanner scanner, {
   required bool allowRestrictedIndicators,
+  bool isVerbatim = false,
 }) {
   final buffer = StringBuffer();
 
@@ -59,6 +60,10 @@ String _parseTagUri(
       // Parse as escaped hex %
       case _directiveIndicator:
         parseHex();
+
+      // A verbatim tag ends immediately a ">" is seen
+      case _ when string == _verbatimEnd.string && isVerbatim:
+        break tagParser;
 
       /// YAML insists that these characters must be escaped.
       ///
