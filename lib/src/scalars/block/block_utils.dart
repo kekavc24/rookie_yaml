@@ -1,10 +1,18 @@
 part of 'block_scalar.dart';
 
+/// A block scalar's header information.
+///
+///   * `isLiteral` - indicates if `literal` or `folded`.
+///   * `chomping` - indicates how trailing lines are handled.
+///   * `indentIndicator` - additional indent to include to the node's indent
 typedef _BlockHeaderInfo =
     ({bool isLiteral, ChompingIndicator chomping, int? indentIndicator});
 
+/// Block scalar's indicators that convey how the scalar should be `chomped`
+/// or additional indent to apply
 typedef _IndicatorInfo = (ChompingIndicator chomping, int? indentIndicator);
 
+/// Checks the block's scalar style.
 bool? _isLiteralIndicator(ReadableChar? char) {
   return switch (char) {
     Indicator.folded => false,
@@ -13,6 +21,8 @@ bool? _isLiteralIndicator(ReadableChar? char) {
   };
 }
 
+/// Checks the block scalar's chomping indicator. Intentionally returns `null`
+/// if the [ReadableChar] is not a [ChompingIndicator].
 ChompingIndicator? _resolveChompingIndicator(ReadableChar char) {
   return switch (char.string) {
     '+' => ChompingIndicator.keep,
@@ -24,6 +34,15 @@ ChompingIndicator? _resolveChompingIndicator(ReadableChar char) {
 FormatException _charNotAllowedException(String char) =>
     FormatException('"$char" character is not allowed in block scalar header');
 
+/// Chomps the trailing line breaks of a parsed block scalar.
+///
+/// [ChompingIndicator.strip] - trims all trailing line breaks.
+///
+/// [ChompingIndicator.clip] - excludes the final line break and trims all the
+/// trailing line breaks after it. It degenerates to [ChompingIndicator.strip]
+/// if the scalar is empty or contains only line breaks.
+///
+/// [ChompingIndicator.keep] - no trailing line break is trimmed.
 void _chompLineBreaks(
   ChompingIndicator indicator, {
   required StringBuffer contentBuffer,
@@ -53,6 +72,8 @@ void _chompLineBreaks(
   contentBuffer.writeAll(lineBreaks.take(countToWrite).map((rc) => rc.string));
 }
 
+/// Skips the carriage return `\r` in a `\r\n` combination and returns the
+/// line feed `\n`.
 LineBreak skipCrIfPossible(LineBreak char, {required ChunkScanner scanner}) {
   var maybeCR = char;
 
@@ -65,6 +86,8 @@ LineBreak skipCrIfPossible(LineBreak char, {required ChunkScanner scanner}) {
   return maybeCR;
 }
 
+/// Folds line breaks only if [isLiteral] and [lastNonEmptyWasIndented] are `
+/// false`. Line breaks between indented lines are never folded.
 void _foldLfIfPossible(
   StringBuffer contentBuffer, {
   required bool isLiteral,
@@ -96,6 +119,9 @@ void _foldLfIfPossible(
   lineBreaks.clear();
 }
 
+/// Infers the indent of the block scalar being parsed. `inferredIndent` may
+/// be null if the line was empty, that is, no characters or all characters
+/// are just white space characters.
 ({int? inferredIndent, bool startsWithTab}) _determineIndent(
   ChunkScanner scanner, {
   required StringBuffer contentBuffer,
@@ -119,16 +145,21 @@ void _foldLfIfPossible(
   ///
   /// See: https://yaml.org/spec/1.2.2/#62-separation-spaces
   if (charAfter == WhiteSpace.tab) {
-    startsWithTab = true;
     callBeforeTabWrite();
     contentBuffer.writeAll(
-      scanner.skipWhitespace(skipTabs: true).map((t) => t.string),
+      scanner.takeUntil(
+        includeCharAtCursor: false,
+        mapper: (rc) => rc.string,
+        stopIf: (_, possibleNext) => possibleNext is! WhiteSpace,
+      ),
     );
 
     // This line cannot be used to determine the
     if (scanner.peekCharAfterCursor() is LineBreak) {
-      return (inferredIndent: null, startsWithTab: startsWithTab);
+      return (inferredIndent: null, startsWithTab: true);
     }
+
+    startsWithTab = true;
   }
 
   return (inferredIndent: canBeIndent, startsWithTab: startsWithTab);
@@ -137,6 +168,14 @@ void _foldLfIfPossible(
 const _takeOrSkip = 1;
 const _whitespace = WhiteSpace.space;
 
+/// Preserves line breaks in two ways in `folded` scalar style (line breaks in
+/// `literal` style are always preserved):
+///
+/// 1. If the current line is indented, all buffered lines are never folded.
+/// 2. If the current line is indented but was preceded by a single/several
+/// empty line(s) before the last non-empty indented line, a space character is
+/// added to indicate that despite this line being empty it signifies content
+/// and was never `folded`.
 Iterable<ReadableChar> _preserveEmptyIndented({
   required bool isLiteral,
   required bool lastWasIndented,

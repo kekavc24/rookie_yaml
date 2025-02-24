@@ -1,5 +1,8 @@
 part of 'block_scalar.dart';
 
+/// Parses a block scalar's header info. `YAML` recommends that the first
+/// should only include the block and chomping indicators or a comment
+/// restricted to a single line.
 _BlockHeaderInfo _parseBlockHeader(ChunkScanner scanner) {
   var current = scanner.charAtCursor;
   final isLiteral = _isLiteralIndicator(current);
@@ -80,6 +83,7 @@ const _indentationException = FormatException(
   'Value must be between 1 - 9',
 );
 
+/// Parses block and chomping indicators
 _IndicatorInfo _extractIndicators(ChunkScanner scanner) {
   ChompingIndicator? chomping;
   int? indentIndicator;
@@ -107,6 +111,7 @@ _IndicatorInfo _extractIndicators(ChunkScanner scanner) {
       if (chomping == null) {
         final str = char.string;
 
+        // We can only allow a comment indicator
         if (str != Indicator.comment.string) {
           throw _charNotAllowedException(str);
         }

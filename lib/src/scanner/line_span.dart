@@ -1,5 +1,6 @@
 part of 'chunk_scanner.dart';
 
+/// See [Offset]
 typedef GraphemeSourceSpan = Offset;
 const _emptyIterable = Iterable<LineSpanChar>.empty();
 
@@ -8,6 +9,19 @@ const _emptyIterable = Iterable<LineSpanChar>.empty();
 ///
 /// This implementation assumes a new line starts after a `\n` character
 final class LineSpan {
+  /// Initializes a [LineSpan].
+  ///
+  /// [lineIndex] represent current index of the line.
+  ///
+  /// [hasLineBreak] indicates if a [LineBreak] should be emitted after all
+  /// characters of the line have been read. TYpically `true` for any line that
+  /// is not the last.
+  ///
+  /// [startOffset] index of the first character in the lin in the string
+  /// source.
+  ///
+  /// [characters] an iterable of `Grapheme` clusters in the string, that is,
+  /// a human readable UTF character.
   LineSpan({
     required this.lineIndex,
     required bool hasLineBreak,
@@ -147,6 +161,7 @@ final class LineSpanChar with _LineColumnIntrinsics {
     return LineSpanChar._(delimiterMap[wrapped.unicode] ?? wrapped, index);
   }
 
+  /// Last character of the line.
   LineSpanChar.terminal(int index) : this._(LineBreak.lineFeed, index);
 
   /// A single character within a line.

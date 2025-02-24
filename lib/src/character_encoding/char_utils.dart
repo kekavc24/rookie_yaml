@@ -8,6 +8,7 @@ const _lowerA = 0x61;
 const _lowerF = 0x66;
 const _lowerZ = 0x7A;
 
+/// Hex value of `0` in ASCII
 const asciiZero = 0x30;
 const _asciiNine = 0x39;
 

@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 
+/// Generates a generic indent exception
 FormatException indentException(int expectedIndent, int? foundIndent) {
   final trailing = foundIndent == null ? 'nothing' : '$foundIndent space(s)';
   return FormatException(
@@ -8,9 +9,14 @@ FormatException indentException(int expectedIndent, int? foundIndent) {
   );
 }
 
+/// Returns information after a `flow scalar` is folded, that is, a plain/
+/// single quote/double quote scalar.
 typedef FoldInfo =
     ({
+      // If a delimiter was encounter for double/single quote flow scalars
       bool matchedDelimiter,
+
+      //
       ({bool ignoredNext, bool foldedLineBreak}) ignoreInfo,
       ({bool indentChanged, int? indentFound}) indentInfo,
     });
@@ -29,6 +35,7 @@ FoldInfo _infoOnFold({
 
 final _defaultExitInfo = _infoOnFold();
 
+/// TODO: Simplify this function!
 FoldInfo foldScalar(
   StringBuffer foldingBuffer, {
   required ChunkScanner scanner,

@@ -12,12 +12,8 @@ const _printableException = FormatException(
 );
 
 // TODO: Implicit
+/// Parses a `single quoted` scalar
 Scalar parseSingleQuoted(ChunkScanner scanner, {required int indent}) {
-  // Advance then parse
-  if (scanner.charAtCursor != _singleQuote) {
-    scanner.skipCharAtCursor();
-  }
-
   final buffer = StringBuffer();
   var quoteCount = 0;
   var shouldEvaluateCurrentChar = false;
@@ -27,11 +23,6 @@ Scalar parseSingleQuoted(ChunkScanner scanner, {required int indent}) {
 
     if (possibleChar == null) {
       throw _exception;
-    }
-
-    // Single quoted style is restricted to printable characters
-    if (!isPrintable(possibleChar)) {
-      throw _printableException;
     }
 
     switch (possibleChar) {
@@ -72,8 +63,13 @@ Scalar parseSingleQuoted(ChunkScanner scanner, {required int indent}) {
             throw indentException(indent, indentInfo.indentFound);
           }
 
+          // Maybe it could be escaped!
           shouldEvaluateCurrentChar = matchedDelimiter;
         }
+
+      // Single quoted style is restricted to printable characters
+      case _ when !isPrintable(possibleChar):
+        throw _printableException;
 
       // Safe to write. Must be printable
       default:

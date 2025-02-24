@@ -8,6 +8,11 @@ import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 part 'block_header.dart';
 part 'block_utils.dart';
 
+/// Parses a block style scalar, that is `folded` or `literal`.
+///
+/// Returns a [PlainStyleInfo] record since a block style scalar is a plain
+/// scalar with explicit indicators qualifying it as a block scalar. A plain
+/// and block scalar both use indentation to convey content information.
 PlainStyleInfo parseBlockStyle(
   ChunkScanner scanner, {
   required int minimumIndent,

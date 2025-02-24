@@ -1,9 +1,10 @@
 part of 'directives.dart';
 
-String _dumpDirective(_Directive directive) {
+/// Returns a full `YAML` string representation of [YamlDirective]
+String _dumpDirective(Directive directive) {
   final space = WhiteSpace.space.string;
 
-  final _Directive(:name, :parameters) = directive;
+  final Directive(:name, :parameters) = directive;
 
   final buffer =
       StringBuffer(_directiveIndicator.string)
@@ -13,6 +14,9 @@ String _dumpDirective(_Directive directive) {
   return buffer.toString();
 }
 
+/// Validates a tag uri. Returns it if valid. Otherwise, an exception is thrown.
+///
+/// Internally calls [_parseTagUri].
 String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
   return _parseTagUri(
     ChunkScanner(source: uri)..skipCharAtCursor(),
@@ -20,6 +24,16 @@ String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
   );
 }
 
+/// Parses a `YAML` tag uri.
+///
+/// [allowRestrictedIndicators] - ignores YAML guidelines to have
+/// `!, [,  ], {, }` escaped in tag uri characters. This should only be set to
+/// `true` when parsing a [GlobalTag] which is not allowed in a top
+/// level/key/value scalar.
+///
+/// [isVerbatim] - indicates whether a tag uri for a [VerbatimTag] is being
+/// parsed. When `true`, the closing `>` is allowed and parsing terminates
+/// after it is encountered.
 String _parseTagUri(
   ChunkScanner scanner, {
   required bool allowRestrictedIndicators,

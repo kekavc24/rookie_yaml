@@ -1,33 +1,42 @@
 part of 'directives.dart';
 
-const _onNonEmptyVerbationUri =
+const _onNonEmptyVerbatimUri =
     'Verbatim tags are never resolved and should '
     'have a non-empty suffix';
 
+/// Start of verbatim tag declaration
 final _verbatimStart = GraphemeChar.wrap('<');
+
+/// End of verbatim tag declaration
 final _verbatimEnd = GraphemeChar.wrap('>');
 
+/// Wraps a valid tag uri in verbatim
 String _wrapAsVerbatim(String uri) =>
     '${_tagIndicator.string}$_verbatimStart$uri$_verbatimEnd';
 
-final class VerbatimTag implements _ResolvedTag {
-  VerbatimTag._(this.verbatim);
+/// Represents a tag explicitly declared in its raw form. Never resolved to
+/// [GlobalTag]
+@immutable
+final class VerbatimTag implements ResolvedTag {
+  const VerbatimTag._(this.verbatim);
 
+  /// Creates a verbatim tag from a valid tag uri
   factory VerbatimTag.fromTagUri(String uri) {
     return VerbatimTag._(
-      _ensureIsTagUri(uri, allowRestrictedIndicators: false),
+      _wrapAsVerbatim(_ensureIsTagUri(uri, allowRestrictedIndicators: false)),
     );
   }
 
+  /// Creates a verbatim tag from a local tag
   factory VerbatimTag.fromLocalTag(LocalTag tag) {
     final uri = tag.toString().trim();
 
     if (tag.tagHandle.handleVariant != TagHandleVariant.primary) {
-      throw FormatException(
+      throw const FormatException(
         'Verbatim tags with a local tag must have a single "!" prefix',
       );
     } else if (uri.isEmpty) {
-      throw FormatException(_onNonEmptyVerbationUri);
+      throw const FormatException(_onNonEmptyVerbatimUri);
     }
 
     return VerbatimTag._(_wrapAsVerbatim(uri));
@@ -53,6 +62,7 @@ final class VerbatimTag implements _ResolvedTag {
   int get hashCode => verbatim.hashCode;
 }
 
+/// Parses a [VerbatimTag]
 VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
   var charAtCursor = scanner.charAtCursor;
 
@@ -103,7 +113,7 @@ VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
   );
 
   if (uri.isEmpty) {
-    throw FormatException(_onNonEmptyVerbationUri);
+    throw const FormatException(_onNonEmptyVerbatimUri);
   }
 
   charAtCursor = scanner.charAtCursor;

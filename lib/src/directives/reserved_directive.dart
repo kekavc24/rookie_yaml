@@ -1,6 +1,8 @@
 part of 'directives.dart';
 
-sealed class ReservedDirective implements _Directive {
+/// Represents any unknown directive which `YAML`, by default, reserves for
+/// future use. Typically any that is not a [YamlDirective] or a [GlobalTag].
+sealed class ReservedDirective implements Directive {
   ReservedDirective({required this.name, required Iterable<String> parameters})
     : parameters = List.from(parameters, growable: false);
 
@@ -18,6 +20,7 @@ final class _ReservedImpl extends ReservedDirective {
   _ReservedImpl({required super.name, required super.parameters});
 }
 
+/// Parses a [ReservedDirective]
 ReservedDirective _parseReservedDirective(
   String name, {
   required ChunkScanner scanner,
@@ -48,7 +51,7 @@ ReservedDirective _parseReservedDirective(
         {
           // Parameters only allow alpha-numeric characters. Cannot be null here
           if (!isPrintable(current)) {
-            throw FormatException(
+            throw const FormatException(
               'Only printable characters are allowed in a parameter',
             );
           }

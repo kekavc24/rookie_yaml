@@ -1,5 +1,6 @@
 part of 'character_encoding.dart';
 
+/// Characters that should be escaped in YAML
 enum SpecialEscaped implements ReadableChar {
   /// `\0`
   unicodeNull(0x00),

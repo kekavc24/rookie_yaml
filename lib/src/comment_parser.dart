@@ -2,6 +2,7 @@ import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 
 const _pattern = '# ';
 
+/// Parses a `YAML` comment
 ({ChunkInfo onExit, String comment}) parseComment(
   ChunkScanner scanner, {
   String? prepend,

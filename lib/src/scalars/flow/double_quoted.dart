@@ -18,6 +18,7 @@ const _doubleQuoteException = FormatException(
 );
 
 // TODO: Implicit
+/// Parses a `double quoted` scalar
 Scalar parseDoubleQuoted(ChunkScanner scanner, {required int indent}) {
   /// Nested function to check if we can exit the parsing. Usually after we
   /// find the first un-escaped closing `doubleQuote`.
@@ -111,6 +112,8 @@ Scalar parseDoubleQuoted(ChunkScanner scanner, {required int indent}) {
   );
 }
 
+/// Parses an escaped character in a double quoted scalar and returns `true`
+/// only if it is a line break.
 bool _parseEscaped(
   StringBuffer buffer, {
   required SpecialEscaped char,
@@ -150,7 +153,7 @@ bool _parseEscaped(
       throw const FormatException('Invalid escaped character');
     }
 
-    // TODO: Should hex characters be converted
+    // TODO: Should hex characters be converted?
     final hexBuffer = StringBuffer(charAfter.string);
 
     /// Move cursor forward to point the next character i.e `charAfter`

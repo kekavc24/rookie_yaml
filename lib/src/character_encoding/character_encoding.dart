@@ -27,11 +27,13 @@ abstract interface class ReadableChar {
 final class GraphemeChar implements ReadableChar {
   const GraphemeChar._(this.unicode, this.string);
 
+  /// Wraps a single `UTF-16` character.
+  ///
+  /// `NOTE:` May be prone to errors if length of string is greater than 1.
   GraphemeChar.wrap(String string)
     : this._(_GraphemeWrapper(string).unicode, string);
 
-  const GraphemeChar.raw(String string, int unicode) : this._(unicode, string);
-
+  /// Wraps a unicode value
   GraphemeChar.fromUnicode(int unicode)
     : this._(unicode, String.fromCharCode(unicode));
 
@@ -69,6 +71,7 @@ extension type _GraphemeWrapper(String char) {
   int get unicode => char.isEmpty ? 0 : char.runes.first;
 }
 
+/// A raw representation for any [ReadableChar]
 extension RawString on ReadableChar {
   /// Returns a raw representation of string as a `32-bit` unicode value
   String get raw {

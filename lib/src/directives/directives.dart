@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
@@ -15,24 +16,33 @@ part 'verbatim_tag.dart';
 part 'yaml_directive.dart';
 part 'directive_utils.dart';
 
+/// Denotes all YAML directives declared before a yaml document is parsed.
+///
+/// See: https://yaml.org/spec/1.2.2/#68-directives
 typedef Directives =
     ({
       YamlDirective directive,
       List<ReservedDirective> reservedDirectives,
-      Map<TagHandle, GlobalTag> globalTags,
+      Map<TagHandle, GlobalTag<dynamic>> globalTags,
     });
 
+/// `%` character
 const _directiveIndicator = Indicator.directive;
 
-abstract interface class _Directive {
+/// A valid `YAML` directive
+sealed class Directive {
+  /// Name of the directive
   String get name;
 
+  /// Parameters that describe the directive
   List<String> get parameters;
 }
 
+/// Parses all [Directive](s) present before the start of a node in a
+/// `YAML` document.
 Directives parseDirectives(
   ChunkScanner scanner, {
-  Map<TagHandle, GlobalTag>? existingGlobalDirectives,
+  Map<TagHandle, GlobalTag<dynamic>>? existingGlobalDirectives,
 }) {
   YamlDirective? directive;
   final globalDirectives = existingGlobalDirectives ?? {};
@@ -99,7 +109,7 @@ Directives parseDirectives(
             );
 
             if (directiveBuffer.isEmpty) {
-              throw FormatException(
+              throw const FormatException(
                 'Expected at least a printable non-space'
                 ' character as the directive name',
               );
@@ -109,7 +119,7 @@ Directives parseDirectives(
 
             if (name == _yamlDirective) {
               if (directive != null) {
-                throw FormatException(
+                throw const FormatException(
                   'A YAML directive can only be declared once per document',
                 );
               }
@@ -144,7 +154,7 @@ Directives parseDirectives(
             break dirParser;
           }
 
-          throw FormatException('Expected a "%" indicator or line break');
+          throw const FormatException('Expected a "%" indicator or line break');
       }
     }
   }

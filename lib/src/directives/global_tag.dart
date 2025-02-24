@@ -2,11 +2,19 @@ part of 'directives.dart';
 
 const _globalTagDirective = 'TAG';
 
-final class GlobalTag<T> extends SpecificTag<T> implements _Directive {
+/// Describes a tag shorthand notation for specifying node tags. It must begin
+/// with the `%TAG` directive.
+///
+/// Example: `%TAG !yaml! tag:yaml.org,2002:`
+@immutable
+final class GlobalTag<T> extends SpecificTag<T> implements Directive {
   GlobalTag._(super.tagHandle, super.suffix) : super.fromString();
+
+  /// Creates a global tag whose prefix is a [LocalTag].
   GlobalTag.fromLocalTag(super.tagHandle, super.tag) : super.fromLocalTag();
 
-  factory GlobalTag.raw(TagHandle handle, String uri) => GlobalTag._(
+  /// Creates a global tag whose prefix is a valid tag uri
+  factory GlobalTag.fromTagUri(TagHandle handle, String uri) => GlobalTag._(
     handle,
     _ensureIsTagUri(uri, allowRestrictedIndicators: true),
   );
@@ -19,7 +27,7 @@ final class GlobalTag<T> extends SpecificTag<T> implements _Directive {
       UnmodifiableListView([tagHandle.handle, prefix]);
 
   @override
-  String get prefix => content.toString();
+  String get prefix => _content.toString();
 
   @override
   String toString() => _dumpDirective(this);
@@ -31,10 +39,11 @@ final class GlobalTag<T> extends SpecificTag<T> implements _Directive {
       other.prefix == prefix;
 
   @override
-  int get hashCode => Object.hashAll([tagHandle, content]);
+  int get hashCode => Object.hashAll([tagHandle, _content]);
 }
 
-GlobalTag _parseGlobalTag(
+/// Parses a [GlobalTag].
+GlobalTag<dynamic> _parseGlobalTag(
   ChunkScanner scanner, {
   required bool Function(TagHandle handle) isDuplicate,
 }) {
@@ -50,15 +59,16 @@ GlobalTag _parseGlobalTag(
   }
 
   if (scanner.charAtCursor is! WhiteSpace) {
-    throw FormatException(
+    throw const FormatException(
       'A global tag must have a separation space '
       'after its handle',
     );
   }
 
   // Skip whitespace, move cursor to next character
-  scanner.skipWhitespace(skipTabs: true);
-  scanner.skipCharAtCursor();
+  scanner
+    ..skipWhitespace(skipTabs: true)
+    ..skipCharAtCursor();
 
   switch (scanner.charAtCursor) {
     // A prefix represented by a local tag
@@ -79,7 +89,7 @@ GlobalTag _parseGlobalTag(
       }
 
     // A normal non-empty/null uri character
-    case ReadableChar char when isUriChar(char):
+    case final ReadableChar char when isUriChar(char):
       {
         return GlobalTag._(
           tagHandle,
@@ -89,7 +99,7 @@ GlobalTag _parseGlobalTag(
 
     default:
       // TODO: Shabby exception
-      throw FormatException(
+      throw const FormatException(
         'A global tag only accepts valid uri characters as a tag prefix',
       );
   }

@@ -1,9 +1,12 @@
 part of 'directives.dart';
 
+/// A tag shorthand for a node that may (not) be resolved to a [GlobalTag]
+@immutable
 final class LocalTag extends SpecificTag<String> {
   LocalTag._(super.tagHandle, super.suffix) : super.fromString();
 
-  factory LocalTag.raw(TagHandle tagHandle, String suffix) => LocalTag._(
+  /// Creates a local tag from a valid tag uri without the leading `!`.
+  factory LocalTag.fromTagUri(TagHandle tagHandle, String suffix) => LocalTag._(
     tagHandle,
     _ensureIsTagUri(suffix, allowRestrictedIndicators: false),
   );
@@ -12,7 +15,7 @@ final class LocalTag extends SpecificTag<String> {
   String get prefix => tagHandle.handle;
 
   @override
-  String toString() => '$prefix$content';
+  String toString() => '$prefix$_content';
 
   @override
   bool operator ==(Object other) =>
@@ -22,6 +25,7 @@ final class LocalTag extends SpecificTag<String> {
   int get hashCode => toString().hashCode;
 }
 
+/// Parses a [LocalTag]
 LocalTag parseLocalTag(ChunkScanner scanner) {
   var handle = TagHandle.primary();
   scanner.skipCharAtCursor(); // Ignore leading "!"
@@ -55,7 +59,7 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
         {
           // A named handle must have at least a character
           if (buffer.isEmpty) {
-            throw FormatException(
+            throw const FormatException(
               'A named tag must not be empty. Expected at least a single '
               'alphanumeric character.',
             );
@@ -65,7 +69,7 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
             //     'Any additional "!" must be escaped',
             //   );
           } else if (hasNonAlphaNumChar) {
-            throw FormatException(
+            throw const FormatException(
               'A named tag can only have alphanumeric characters',
             );
           }

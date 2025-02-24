@@ -9,6 +9,19 @@ part 'line_span.dart';
 /// `start` to `end` index in string. Exclusive of the `end`.
 typedef Offset = ({int start, int end});
 
+/// Represents information returned after a call to `bufferChunk` method
+/// of the [ChunkScanner]
+///
+/// `offset` - start to end of index in string source.
+///
+/// `sourceEnded` - indicates if the entire string source was scanned.
+///
+/// `lineEnded` - indicates if an entire line was scanned, that is, until a
+/// line feed was encountered.
+///
+/// `charOnExit` - indicates the character that triggered the `bufferChunk`
+/// exit. Typically, the current character when `ChunkScanner.charAtCursor`
+/// is called.
 typedef ChunkInfo =
     ({
       Offset offset,
@@ -17,11 +30,17 @@ typedef ChunkInfo =
       ReadableChar? charOnExit,
     });
 
+/// Checks if [char] is printable and writes it to the [buffer]. If not
+/// printable, a sequence of raw representation of the character as UTF-16
+/// escaped code units is written
 void safeWriteChar(StringBuffer buffer, ReadableChar char) {
   buffer.write(isPrintable(char) ? char.string : char.raw);
 }
 
+/// Represents a scanner that iterates over a source only when a chunk or a
+/// single character is requested
 final class ChunkScanner {
+  /// Initializes a [ChunkScanner] from a String [source].
   ChunkScanner({required this.source})
     : _iterator = Characters(source).split(Characters(LineBreak.lf)).iterator {
     // We don't want chunks from empty lines
@@ -29,37 +48,48 @@ final class ChunkScanner {
     _hasMoreLines = _iterator.moveNext();
   }
 
+  /// Current index of the scanner on the [source]
   int _currentOffset = -1;
 
+  /// Source being iterated by this scanner.
   final String source;
+
+  /// Represents a line iterator of the [source]
   final Iterator<Characters> _iterator;
 
   bool _hasMoreLines = false;
 
+  /// Checks if this scanner produce more characters based on the iteration
+  /// state
   bool get canChunkMore => _hasMoreLines || _currentLine != null;
 
+  /// An iffy offset getter that uses the string buffer.
+  /// TODO: May be prone to errors
   Offset _getOffset(StringBuffer buffer) => (
     start: max(0, _currentOffset - buffer.length),
     end: _currentOffset + 1,
   );
 
+  /// Index of current line being iterated
   int _lineIndex = -1;
+
+  /// Current line whose characters are being iterated
   LineSpan? _currentLine;
 
+  /// Character before the cursor
   ReadableChar? _charBeforeExit;
 
+  /// Character at the cursor
   ReadableChar? _charOnLastExit;
 
   /// Peeks the last char preceding the character that triggered the last
   /// [bufferChunk] call to exit.
   ///
-  /// Usually this character, if not null, is already written to the buffer
-  /// provided when calling [bufferChunk].
-  ///
   /// If called after [skipCharAtCursor], then this is the last character
   /// the cursor pointed to before skipping.
   ReadableChar? get charBeforeCursor => _charBeforeExit;
 
+  /// Returns the current character at the cursor
   ReadableChar? get charAtCursor => _charOnLastExit;
 
   /// Peeks the next char after the character present at [charAtCursor]
@@ -71,9 +101,10 @@ final class ChunkScanner {
     // We prefetch next line if null
     if (char == null && canChunkMore) {
       _fetchNextLine();
+      char = next();
     }
 
-    return next();
+    return char;
   }
 
   /// Skips the current character that has not been read by this [ChunkScanner]
@@ -91,7 +122,9 @@ final class ChunkScanner {
       _charOnLastExit = maybeNext;
       ++_currentOffset;
 
-      if (_currentLine!.nextChar().isLastChar) {
+      final defLine = _currentLine!;
+
+      if (defLine.nextChar().isLastChar || !defLine.hasMoreChars) {
         // Allows the next call to this scanner to fetch the next line
         // if available.
         _currentLine = null;
@@ -233,6 +266,7 @@ final class ChunkScanner {
     );
   }
 
+  /// Fetches the next line in the line [_iterator] if any is present.
   void _fetchNextLine() {
     if (_hasMoreLines) {
       // Fetch next full non-iterated line

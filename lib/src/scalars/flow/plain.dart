@@ -6,14 +6,18 @@ import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
+/// Usually denotes end of a plain scalar if followed by a [WhiteSpace]
 const _kvColon = Indicator.mappingValue;
 
+/// Characters that must not be parsed as the first character in a plain scalar
 final _mustNotBeFirst = <ReadableChar>{
   Indicator.mappingKey,
   _kvColon,
   Indicator.blockSequenceEntry,
 };
 
+/// Characters that disrupt normal buffering of characters that have no
+/// meaning in/affect a plain scalar.
 final _delimiters = <ReadableChar>{
   ...LineBreak.values,
   ...WhiteSpace.values,
@@ -24,6 +28,7 @@ final _delimiters = <ReadableChar>{
 const _style = ScalarStyle.plain;
 
 // TODO: Implicit
+/// Parses a `plain` scalar
 PlainStyleInfo parsePlain(
   ChunkScanner scanner, {
   required int indent,

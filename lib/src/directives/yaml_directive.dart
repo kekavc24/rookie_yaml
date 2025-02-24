@@ -11,13 +11,17 @@ final _parserVersion = YamlDirective._(
   formatted: _version,
 );
 
+/// `YAML` version directive
 const _yamlDirective = 'YAML';
 
+/// Specifies the version a `YAML` document conforms to.
 final class YamlDirective extends ReservedDirective {
   YamlDirective._({required String version, required List<int> formatted})
     : _formatted = formatted,
       super(name: _yamlDirective, parameters: [version]);
 
+  /// Creates a directive from a version. [version] should be 2 integers
+  /// separated by a `.`
   YamlDirective.ofVersion(String version)
     : this._(version: version, formatted: _formatVersionParameter(version));
 
@@ -35,7 +39,7 @@ final class YamlDirective extends ReservedDirective {
   );
 }
 
-/// Formats a version to
+/// Formats a version to individual integers denoting the version
 List<int> _formatVersionParameter(String version) {
   void throwException(String violator) {
     final message = violator.isEmpty ? 'nothing' : violator;
@@ -45,7 +49,7 @@ List<int> _formatVersionParameter(String version) {
   final formatted = version.split(_versionSeparator);
 
   if (formatted.length != 2) {
-    throw FormatException(
+    throw const FormatException(
       'Invalid YAML version format. '
       'The version must have only 2 integers separated by a '
       '"$_versionSeparator"',
@@ -63,6 +67,7 @@ List<int> _formatVersionParameter(String version) {
   }).toList();
 }
 
+/// Parses a [YamlDirective]
 YamlDirective _parseYamlDirective(ChunkScanner scanner) {
   final versionBuffer = StringBuffer();
 
@@ -92,12 +97,12 @@ YamlDirective _parseYamlDirective(ChunkScanner scanner) {
         {
           // We must not see the separator if we have no integers
           if (lastChar.isEmpty) {
-            throw FormatException(
+            throw const FormatException(
               '$prefix'
               'Version cannot start with a "$_versionSeparator"',
             );
           } else if (lastChar == _versionSeparator) {
-            throw FormatException(
+            throw const FormatException(
               '$prefix'
               'Version cannot have consecutive "$_versionSeparator" characters',
             );
@@ -125,7 +130,7 @@ YamlDirective _parseYamlDirective(ChunkScanner scanner) {
   }
 
   if (formattedVersion.length != 2 || lastChar == _versionSeparator) {
-    throw FormatException(
+    throw const FormatException(
       '$prefix'
       'A YAML version must have only 2 integers separated by '
       '$_versionSeparator',

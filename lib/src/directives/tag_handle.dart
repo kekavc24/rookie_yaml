@@ -2,11 +2,17 @@ part of 'directives.dart';
 
 const _tagIndicator = Indicator.tag;
 
+/// Types of a [TagHandle]
 enum TagHandleVariant {
+  /// Normally used as a prefix for most [LocalTag]s
   primary('!'),
 
+  /// Prefix for tags that resolve to `tag:yaml.org,2002:` unless overriden
+  /// by the `%TAG` directive globally.
   secondary('!!'),
 
+  /// Prefix which supports a custom name. Must provide trailing `!` to
+  /// indicate the end of the name.
   named('');
 
   const TagHandleVariant(this._handle);
@@ -14,14 +20,20 @@ enum TagHandleVariant {
   final String _handle;
 }
 
+/// Represents a prefix for any [Tag] declared in `YAML`
+@immutable
 final class TagHandle {
   TagHandle._(this.handleVariant, String? handle)
     : handle = handle ?? handleVariant._handle;
 
+  /// `!`
   TagHandle.primary() : this._(TagHandleVariant.primary, null);
 
+  /// `!!`
   TagHandle.secondary() : this._(TagHandleVariant.secondary, null);
 
+  /// [name] is a valid non-empty tag uri surrounded by a single `!`. Any other
+  /// `!` must be encoded as 2 hex characters preceded by the `%`.
   factory TagHandle.named(String name) {
     assert(name.isNotEmpty, 'Name cannot be empty!');
 
@@ -33,8 +45,10 @@ final class TagHandle {
     return TagHandle._(TagHandleVariant.named, modded);
   }
 
+  /// Type of tag handle
   final TagHandleVariant handleVariant;
 
+  /// Prefix denoting the tag handle
   final String handle;
 
   @override
@@ -50,8 +64,9 @@ final class TagHandle {
   int get hashCode => Object.hashAll([handleVariant, handle]);
 }
 
+/// Parses a [TagHandle]
 TagHandle parseTagHandle(ChunkScanner scanner) {
-  var char = scanner.charAtCursor;
+  final char = scanner.charAtCursor;
 
   final indicatorStr = _tagIndicator.string;
 

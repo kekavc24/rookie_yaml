@@ -16,8 +16,10 @@ enum LineBreak implements ReadableChar {
   @override
   String get string => String.fromCharCode(unicode);
 
+  /// `\r\n`
   static String get crlf => '${LineBreak.carriageReturn.string}$lf';
 
+  /// `\n`
   static String get lf => LineBreak.lineFeed.string;
 }
 
