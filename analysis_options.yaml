@@ -11,16 +11,16 @@
 # (the recommended set includes the core lints).
 # The core lints are also what is used by pub.dev for scoring packages.
 
-include: package:very_good_analysis/analysis_options.yaml
+include: package:lints/recommended.yaml
 
 formatter:
   page_width: 80
 
 # Uncomment the following section to specify additional rules.
 
-# linter:
-#   rules:
-#     - camel_case_types
+linter:
+  rules:
+    - always_use_package_imports
 
 # analyzer:
 #   exclude:

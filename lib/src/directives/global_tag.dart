@@ -59,7 +59,7 @@ GlobalTag<dynamic> _parseGlobalTag(
   }
 
   if (scanner.charAtCursor is! WhiteSpace) {
-    throw const FormatException(
+    throw FormatException(
       'A global tag must have a separation space '
       'after its handle',
     );
@@ -99,7 +99,7 @@ GlobalTag<dynamic> _parseGlobalTag(
 
     default:
       // TODO: Shabby exception
-      throw const FormatException(
+      throw FormatException(
         'A global tag only accepts valid uri characters as a tag prefix',
       );
   }
