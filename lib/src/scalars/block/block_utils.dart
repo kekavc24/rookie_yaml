@@ -165,7 +165,6 @@ void _foldLfIfPossible(
   return (inferredIndent: canBeIndent, startsWithTab: startsWithTab);
 }
 
-const _takeOrSkip = 1;
 const _whitespace = WhiteSpace.space;
 
 /// Preserves line breaks in two ways in `folded` scalar style (line breaks in
@@ -189,15 +188,12 @@ Iterable<ReadableChar> _preserveEmptyIndented({
   /// before each line break after the first one.
   ///
   /// See: https://yaml.org/spec/1.2.2/#813-folded-style:~:text=Lines%20starting%20with%20white%20space%20characters%20(more%2Dindented%20lines)%20are%20not%20folded.
-  return isLiteral || !lastWasIndented
+  return isLiteral || !lastWasIndented || lineBreaks.isEmpty
       ? lineBreaks
-      : lineBreaks
-          .take(_takeOrSkip)
-          .cast<ReadableChar>()
-          .followedBy(
-            lineBreaks.skip(_takeOrSkip).expand((value) sync* {
-              yield _whitespace;
-              yield value;
-            }),
-          );
+      : <ReadableChar>[lineBreaks.first].followedBy(
+        lineBreaks.skip(1).expand((value) sync* {
+          yield _whitespace;
+          yield value;
+        }),
+      );
 }
