@@ -32,13 +32,10 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
 final class ParsedTag<T> implements ResolvedTag {
   /// Default initialization
   ParsedTag(this._resolvedTag, String suffix)
-    : _verbatim = _formatAsVerbatim(_resolvedTag, suffix);
+    : verbatim = _formatAsVerbatim(_resolvedTag, suffix);
 
   /// A [LocalTag] shorthand resolved to a [GlobalTag] or the tag itself.
   final SpecificTag<T> _resolvedTag;
-
-  ///
-  final String _verbatim;
 
   @override
   String get prefix => _resolvedTag.prefix;
@@ -47,15 +44,15 @@ final class ParsedTag<T> implements ResolvedTag {
   TagHandle get tagHandle => _resolvedTag.tagHandle;
 
   @override
-  String get verbatim => _verbatim;
+  final String verbatim;
 
   @override
   bool operator ==(Object other) =>
-      other is ParsedTag && other._verbatim == _verbatim;
+      other is ParsedTag && other.verbatim == verbatim;
 
   @override
-  int get hashCode => _verbatim.hashCode;
+  int get hashCode => verbatim.hashCode;
 
   @override
-  String toString() => _verbatim;
+  String toString() => verbatim;
 }
