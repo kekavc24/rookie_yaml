@@ -131,9 +131,11 @@ Directives parseDirectives(
               final tag = _parseGlobalTag(scanner, isDuplicate: isDuplicate);
               globalDirectives[tag.tagHandle] = tag;
             } else {
+              // Reserved directives can have empty parameters
               if (charOnExit is! LineBreak) {
                 throwIfNotSeparation(charOnExit);
               }
+
               reserved.add(_parseReservedDirective(name, scanner: scanner));
             }
 
