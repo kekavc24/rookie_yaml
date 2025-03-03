@@ -8,19 +8,22 @@ sealed class Tag {
   /// Actual prefix of the tag. This should not be confused with the
   /// [tagHandle] which describes a compact way of representing the prefix.
   ///
-  /// That is, for [GlobalTag]s, this presents the full prefix aliased by the
-  /// [tagHandle]. [LocalTag]s, on the other hand, are normally (not) resolved
-  /// to [GlobalTag]s and thus their [prefix] is just a [tagHandle].
+  /// For a [GlobalTag] or a [LocalTag] resolved to a [GlobalTag], this is the
+  /// full prefix aliased by the [tagHandle]. For an unresolved [LocalTag],
+  /// this defaults to its [tagHandle].
   String get prefix;
 }
 
 /// Represents any [Tag] resolved to a [GlobalTag] or declared in verbatim as
 /// a [VerbatimTag]
 sealed class ResolvedTag extends Tag {
-  /// Full representation of a tag.
+  /// Full representation of a tag. Any [SpecificTag] can be represented this
+  /// way even if it is unresolved.
   ///
-  /// Example: `!<tag:yaml.org,2002:str>` for a string's [GlobalTag].
-  /// `!<!foo>` for any (un)resolved [LocalTag].
+  /// ```yaml
+  /// !<tag:yaml.org,2002:str>` # Global Tag for strings
+  /// !<!foo> # Local Tag
+  /// ```
   String get verbatim;
 }
 
