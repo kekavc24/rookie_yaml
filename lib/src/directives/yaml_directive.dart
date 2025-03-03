@@ -6,7 +6,7 @@ const _versionSeparator = '.';
 ///
 /// Must support this and all lower versions.
 const _version = [1, 2];
-final _parserVersion = YamlDirective._(
+final parserVersion = YamlDirective._(
   version: _version.join(_versionSeparator),
   formatted: _version,
 );
@@ -30,7 +30,7 @@ final class YamlDirective extends ReservedDirective {
 
 /// Checks if the current version is supported by our parser.
 ({bool isSupported, bool shouldWarn}) checkVersion(YamlDirective directive) {
-  final [currentMajor, currentMin] = _parserVersion._formatted;
+  final [currentMajor, currentMin] = parserVersion._formatted;
   final [parsedMajor, parsedMin] = directive._formatted;
 
   return (

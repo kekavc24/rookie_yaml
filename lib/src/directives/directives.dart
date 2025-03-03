@@ -21,7 +21,7 @@ part 'directive_utils.dart';
 /// See: https://yaml.org/spec/1.2.2/#68-directives
 typedef Directives =
     ({
-      YamlDirective directive,
+      YamlDirective? directive,
       List<ReservedDirective> reservedDirectives,
       Map<TagHandle, GlobalTag<dynamic>> globalTags,
     });
@@ -162,7 +162,7 @@ Directives parseDirectives(
   }
 
   return (
-    directive: directive ?? _parserVersion,
+    directive: directive,
     globalTags: globalDirectives,
     reservedDirectives: reserved,
   );
