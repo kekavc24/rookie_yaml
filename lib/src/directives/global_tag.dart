@@ -5,7 +5,13 @@ const _globalTagDirective = 'TAG';
 /// Describes a tag shorthand notation for specifying node tags. It must begin
 /// with the `%TAG` directive.
 ///
-/// Example: `%TAG !yaml! tag:yaml.org,2002:`
+/// ```yaml
+/// `%TAG !yaml! tag:yaml.org,2002:`
+///
+/// # %TAG = directive
+/// # !yaml! = shorthand
+/// # tag:yaml.org,2002: = prefix
+/// ```
 @immutable
 final class GlobalTag<T> extends SpecificTag<T> implements Directive {
   GlobalTag._(super.tagHandle, super.suffix) : super.fromString();

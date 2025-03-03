@@ -27,7 +27,7 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
 }
 
 /// Represents a [LocalTag] shorthand that has (not) been resolved to a
-/// [GlobalTag] after its has been parsed.
+/// [GlobalTag] after it has been parsed.
 @immutable
 final class ParsedTag<T> implements ResolvedTag {
   /// Default initialization
