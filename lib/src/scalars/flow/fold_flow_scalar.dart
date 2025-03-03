@@ -1,4 +1,5 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 
 /// Generates a generic indent exception
@@ -80,23 +81,14 @@ FoldInfo foldScalar(
       /// as line breaks in YAML
       case final LineBreak canBeCrLf:
         {
-          var skippedCr = false;
           var skippedWhiteSpace = false;
-
-          /// If this is a carriage return, check if we can quickly fast
-          /// forward to the next character that may be a line feed or just
-          /// treat it as a line break itself
-          if (charAfter == LineBreak.lineFeed &&
-              canBeCrLf == LineBreak.carriageReturn) {
-            skippedCr = true;
-            scanner.skipCharAtCursor();
-            charAfter = scanner.peekCharAfterCursor();
-          }
+          skipCrIfPossible(canBeCrLf, scanner: scanner);
+          charAfter = scanner.peekCharAfterCursor();
 
           if (!lineBreakStreak) {
             whitespaceBuffer.clear();
           } else if (!lineBreakIgnoreSpace) {
-            foldingBuffer.write(skippedCr ? LineBreak.crlf : LineBreak.lf);
+            foldingBuffer.write(LineBreak.lf);
           }
 
           if (charAfter is WhiteSpace) {
