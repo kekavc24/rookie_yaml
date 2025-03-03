@@ -44,22 +44,24 @@ String _parseTagUri(
   const hexCount = 2;
 
   void parseHex() {
-    final hex =
-        scanner
-            .takeUntil(
-              includeCharAtCursor: false,
-              mapper: (char) => char.string,
-              stopIf: (count, next) {
-                return !isHexDigit(next) || count == hexCount;
-              },
-            )
-            .join(); // Weird dart formatting
+    final hexBuff = StringBuffer('0x');
 
-    if (hex.length != hexCount) {
+    final numHex = scanner.takeUntil(
+      includeCharAtCursor: false,
+      mapper: (char) => char.string,
+      onMapped: (mapped) => hexBuff.write(mapped),
+      stopIf: (count, next) {
+        return !isHexDigit(next) || count == hexCount;
+      },
+    );
+
+    final hex = hexBuff.toString();
+
+    if (numHex != hexCount) {
       throw FormatException('Invalid escaped hex found in tag URI => "$hex"');
     }
 
-    buffer.write(String.fromCharCode(int.parse('0x$hex')));
+    buffer.write(String.fromCharCode(int.parse(hex)));
   }
 
   tagParser:

@@ -170,28 +170,34 @@ final class ChunkScanner {
     return buffer;
   }
 
-  /// Returns a list of characters from the scanner that fail the [stopIf]
-  /// test, that is, evaluate to `false`.
+  /// Returns the number of characters taken until a character failed the
+  /// [stopIf] test, that is, evaluated to `false`.
   ///
   /// [includeCharAtCursor] adds the current character present when
-  /// [charAtCursor] is called on the cursor only if it is not `null`
-  ///
-  /// [mapper] transforms the [ReadableChar] to [T]
-  List<T> takeUntil<T>({
+  /// [charAtCursor] is called on the cursor only if it is not `null`. The
+  /// [mapper] function is applied and value made available using [onMapped].
+  int takeUntil<T>({
     required bool includeCharAtCursor,
     required T Function(ReadableChar char) mapper,
+    required void Function(T mapped) onMapped,
     required bool Function(int count, ReadableChar possibleNext) stopIf,
   }) {
-    final taken = <T>[];
+    var taken = 0;
+
+    void incrementCount() => ++taken;
 
     if (includeCharAtCursor && _charOnLastExit != null) {
-      taken.add(mapper(_charOnLastExit!));
+      onMapped(mapper(_charOnLastExit!));
+      incrementCount();
     }
 
     while (canChunkMore) {
       final charAfter = peekCharAfterCursor()!;
-      if (stopIf(taken.length, charAfter)) break;
-      taken.add(mapper(charAfter));
+      if (stopIf(taken, charAfter)) {
+        break;
+      }
+
+      onMapped(mapper(charAfter));
       skipCharAtCursor();
     }
 

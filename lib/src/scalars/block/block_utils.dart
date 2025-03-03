@@ -146,12 +146,11 @@ void _foldLfIfPossible(
   /// See: https://yaml.org/spec/1.2.2/#62-separation-spaces
   if (charAfter == WhiteSpace.tab) {
     callBeforeTabWrite();
-    contentBuffer.writeAll(
-      scanner.takeUntil(
-        includeCharAtCursor: false,
-        mapper: (rc) => rc.string,
-        stopIf: (_, possibleNext) => possibleNext is! WhiteSpace,
-      ),
+    scanner.takeUntil(
+      includeCharAtCursor: false,
+      mapper: (rc) => rc.string,
+      onMapped: (mapped) => contentBuffer.write(mapped),
+      stopIf: (_, possibleNext) => possibleNext is! WhiteSpace,
     );
 
     // This line cannot be used to determine the
