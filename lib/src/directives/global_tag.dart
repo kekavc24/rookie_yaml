@@ -40,12 +40,12 @@ final class GlobalTag<T> extends SpecificTag<T> implements Directive {
 
   @override
   bool operator ==(Object other) =>
-      other is GlobalTag<T> &&
+      other is GlobalTag &&
       other.tagHandle == tagHandle &&
       other.prefix == prefix;
 
   @override
-  int get hashCode => Object.hashAll([tagHandle, _content]);
+  int get hashCode => Object.hashAll([tagHandle, prefix]);
 }
 
 /// Parses a [GlobalTag].
