@@ -1,5 +1,4 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/comment_parser.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
@@ -54,11 +53,9 @@ PlainStyleInfo parsePlain(
   ///
   /// See:
   /// https://yaml.org/spec/1.2.2/#733-plain-style:~:text=Plain%20scalars%20must%20not%20begin%20with%20most%20indicators%2C%20as%20this%20would%20cause%20ambiguity%20with%20other%20YAML%20constructs.%20However%2C%20the%20%E2%80%9C%3A%E2%80%9D%2C%20%E2%80%9C%3F%E2%80%9D%20and%20%E2%80%9C%2D%E2%80%9D%20indicators%20may%20be%20used%20as%20the%20first%20character%20if%20followed%20by%20a%20non%2Dspace%20%E2%80%9Csafe%E2%80%9D%20character%2C%20as%20this%20causes%20no%20ambiguity.
-  final firstChar = scanner.peekCharAfterCursor();
+  final firstChar = scanner.charAtCursor;
 
   if (greedyChars.isEmpty && _mustNotBeFirst.contains(firstChar)) {
-    scanner.skipCharAtCursor(); // Move forward
-
     if (scanner.peekCharAfterCursor() is WhiteSpace) {
       // Intentionally expressive with if statement! We eval once.
       if (firstChar == Indicator.mappingValue) {
@@ -83,14 +80,6 @@ PlainStyleInfo parsePlain(
 
   final buffer = StringBuffer(greedyChars);
 
-  /// Unlike `double quoted` & `single quoted` styles, YAML `plain` style has
-  /// no explicit indicators. We can (in)finitely chunk.
-  ///
-  /// Thus, we skip the current cursor character and evaluate
-  scanner.skipCharAtCursor();
-
-  var extractedComment = false;
-
   chunker:
   while (scanner.canChunkMore) {
     final char = scanner.charAtCursor;
@@ -108,68 +97,20 @@ PlainStyleInfo parsePlain(
       case _kvColon when charAfter == WhiteSpace.space:
         break chunker;
 
-      /// Straight up parse a comment if:
-      ///   - Preceding character was whitespace
-      ///   - We just folded a line break and we encounter a comment
-      ///
-      /// After we extract a comment, we exit once the cursor points to a
-      /// `LineBreak` only if this is the last comment. This ensures we
-      /// perform an error free line-folding operation.
-      ///
-      /// Alternatively, this can be easily achieved by excluding it in the
-      /// first comment and including for all other comment after. We are
-      /// essentially trying to treat all comments as single line break!
+      /// A look behind condition if encountered while folding the scalar
       case Indicator.comment when charBefore is WhiteSpace:
-        {
-          parseComment(scanner);
-          extractedComment = true;
-          continue chunker;
-        }
+        break chunker;
 
-      /// Skip so that the next iteration executes condition above. Comments
-      /// aren't governed by indentation
+      /// A lookahead condition of the rule above before folding the scalar
       case WhiteSpace _ when charAfter == Indicator.comment:
-        {
-          scanner.skipCharAtCursor();
-          continue chunker;
-        }
+        break chunker;
 
       /// Restricted to a single line when in flow context. Instead of throwing
       /// exit and allow parser to determine next course of action
       case LineBreak _ when isInFlowContext:
         break chunker;
 
-      /// We have to determine if we are exiting in case of an indent change.
-      /// Plain scalars use indent to convey info.
-      ///
-      /// Additionally, this treats all line breaks after a comment as part
-      /// of the comment itself rather than the scalar
-      ///
-      case LineBreak _ when extractedComment:
-        {
-          // No effect. Since whitespace is trimmed as part of line folding
-          final spaceCount = scanner.skipWhitespace(max: indent).length;
-
-          charAfter = scanner.peekCharAfterCursor();
-
-          // Immediately exit once indent is less. Anything else is folded
-          if (spaceCount < indent && charAfter is! LineBreak) {
-            indentOnExit = spaceCount;
-            break chunker;
-          }
-
-          // Truncate any whitespace
-          if (charAfter is WhiteSpace) {
-            scanner.skipWhitespace(skipTabs: true);
-            charAfter = scanner.peekCharAfterCursor();
-          }
-
-          /// TODO: Feeling iff-y here! Works for now.
-          /// See code commented out in default statement!
-          extractedComment = false;
-        }
-
-      /// Attempt to fold all scalars by default
+      /// Attempt to fold by default anytime we see a line break or white space
       case WhiteSpace _ || LineBreak _:
         {
           final (:ignoreInfo, :indentInfo, matchedDelimiter: _) = foldScalar(
