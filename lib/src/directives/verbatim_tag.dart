@@ -123,7 +123,7 @@ VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
 
   isNotNullOrMatches(
     matcher: (char) => char.unicode == veCode,
-    errorOnMismatch: 'Expected to find a "$vEnd" after "!"',
+    errorOnMismatch: 'Expected to find a "$vEnd" after parsing a verbatim tag',
   );
   skipAndMove();
 
