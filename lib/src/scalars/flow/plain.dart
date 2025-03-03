@@ -97,8 +97,9 @@ PlainStyleInfo parsePlain(
       case _kvColon when charAfter == WhiteSpace.space:
         break chunker;
 
-      /// A look behind condition if encountered while folding the scalar
-      case Indicator.comment when charBefore is WhiteSpace:
+      /// A look behind condition if encountered while folding the scalar.
+      case Indicator.comment
+          when charBefore is WhiteSpace || charBefore is LineBreak:
         break chunker;
 
       /// A lookahead condition of the rule above before folding the scalar
