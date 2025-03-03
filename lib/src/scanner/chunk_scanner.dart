@@ -41,11 +41,18 @@ void safeWriteChar(StringBuffer buffer, ReadableChar char) {
 /// single character is requested
 final class ChunkScanner {
   /// Initializes a [ChunkScanner] from a String [source].
-  ChunkScanner({required this.source})
+  ChunkScanner._(this.source)
     : _iterator = Characters(source).split(Characters(LineBreak.lf)).iterator {
     // We don't want chunks from empty lines
     if (source.isEmpty) return;
     _hasMoreLines = _iterator.moveNext();
+  }
+
+  /// Initializes a [ChunkScanner] and moves character to first character
+  factory ChunkScanner.of(String source) {
+    final scanner = ChunkScanner._(source);
+    scanner.skipCharAtCursor(); // Trigger a line fetch
+    return scanner;
   }
 
   /// Current index of the scanner on the [source]

@@ -19,7 +19,7 @@ String _dumpDirective(Directive directive) {
 /// Internally calls [_parseTagUri].
 String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
   return _parseTagUri(
-    ChunkScanner(source: uri)..skipCharAtCursor(),
+    ChunkScanner.of(uri),
     allowRestrictedIndicators: allowRestrictedIndicators,
   );
 }
