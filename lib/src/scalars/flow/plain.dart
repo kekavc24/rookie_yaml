@@ -32,12 +32,8 @@ PlainStyleInfo parsePlain(
   ChunkScanner scanner, {
   required int indent,
   required String charsOnGreedy,
-  required bool isInFlowContext,
+  required bool isImplicit,
 }) {
-  bool isFlowDelimiter(ReadableChar char) {
-    return isInFlowContext && flowDelimiters.contains(char);
-  }
-
   var greedyChars = charsOnGreedy;
   var indentOnExit = 0;
 
@@ -106,9 +102,9 @@ PlainStyleInfo parsePlain(
       case WhiteSpace _ when charAfter == Indicator.comment:
         break chunker;
 
-      /// Restricted to a single line when in flow context. Instead of throwing
+      /// Restricted to a single line when implicit. Instead of throwing,
       /// exit and allow parser to determine next course of action
-      case LineBreak _ when isInFlowContext:
+      case LineBreak _ when isImplicit:
         break chunker;
 
       /// Attempt to fold by default anytime we see a line break or white space
@@ -126,7 +122,7 @@ PlainStyleInfo parsePlain(
               return iChar is WhiteSpace ||
                   iChar == Indicator.comment ||
                   iChar == _kvColon ||
-                  isFlowDelimiter(iChar);
+                  flowDelimiters.contains(char);
             },
             matchesDelimiter: (_) => false,
           );
@@ -147,8 +143,7 @@ PlainStyleInfo parsePlain(
           }
         }
 
-      // TODO: Implicit
-      case _ when isFlowDelimiter(char):
+      case _ when flowDelimiters.contains(char):
         break chunker;
 
       default:
@@ -168,7 +163,8 @@ PlainStyleInfo parsePlain(
           final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
             buffer,
             exitIf: (_, curr) {
-              return _delimiters.contains(curr) || isFlowDelimiter(curr);
+              return _delimiters.contains(curr) ||
+                  flowDelimiters.contains(curr);
             },
           );
 

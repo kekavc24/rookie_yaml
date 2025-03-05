@@ -11,9 +11,12 @@ const _printableException = FormatException(
   'Single-quoted scalars are restricted to printable characters only',
 );
 
-// TODO: Implicit
 /// Parses a `single quoted` scalar
-Scalar parseSingleQuoted(ChunkScanner scanner, {required int indent}) {
+Scalar parseSingleQuoted(
+  ChunkScanner scanner, {
+  required int indent,
+  required bool isImplicit,
+}) {
   final buffer = StringBuffer();
   var quoteCount = 0;
   var shouldEvaluateCurrentChar = false;
@@ -25,6 +28,7 @@ Scalar parseSingleQuoted(ChunkScanner scanner, {required int indent}) {
       throw _exception;
     }
 
+    sQuotedLoop:
     switch (possibleChar) {
       case _singleQuote:
         {
@@ -40,6 +44,9 @@ Scalar parseSingleQuoted(ChunkScanner scanner, {required int indent}) {
 
           shouldEvaluateCurrentChar = false;
         }
+
+      case LineBreak _ when isImplicit:
+        break sQuotedLoop;
 
       // Fold without any restrictions by default
       case WhiteSpace _ || LineBreak _:

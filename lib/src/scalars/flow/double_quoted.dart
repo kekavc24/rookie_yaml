@@ -19,19 +19,33 @@ const _doubleQuoteException = FormatException(
 
 // TODO: Implicit
 /// Parses a `double quoted` scalar
-Scalar parseDoubleQuoted(ChunkScanner scanner, {required int indent}) {
+Scalar parseDoubleQuoted(
+  ChunkScanner scanner, {
+  required int indent,
+  required bool isImplicit,
+}) {
+  final leadingChar = scanner.charAtCursor;
+
+  if (leadingChar != _doubleQuoteIndicator) {
+    throw FormatException(
+      'Expected an opening double quote (") but found'
+      ' ${leadingChar?.string}',
+    );
+  }
+
+  var quoteCount = 1;
+  scanner.skipCharAtCursor();
+
   /// Nested function to check if we can exit the parsing. Usually after we
   /// find the first un-escaped closing `doubleQuote`.
   bool canExit(int quoteCount) => quoteCount == 2;
 
   var foundClosingQuote = false;
-  var quoteCount = 0;
   final doubleQuoteBuffer = StringBuffer();
-
   var lineBreakIgnoreSpace = false;
 
   // TODO: Save offsets etc.
-
+  dQuotedLoop:
   while (scanner.canChunkMore && !foundClosingQuote) {
     final (:offset, :sourceEnded, :lineEnded, :charOnExit) = scanner
         .bufferChunk(
@@ -59,6 +73,10 @@ Scalar parseDoubleQuoted(ChunkScanner scanner, {required int indent}) {
       /// Tracks number of times we saw an unescaped `double quote`
       case _doubleQuoteIndicator:
         ++quoteCount;
+
+      /// Implicit keys are restricted to a single line
+      case LineBreak _ when isImplicit:
+        break dQuotedLoop;
 
       // Always fold by default if not escaped
       default:
