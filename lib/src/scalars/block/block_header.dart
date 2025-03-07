@@ -102,9 +102,13 @@ _IndicatorInfo _extractIndicators(ChunkScanner scanner) {
 
       indentIndicator = int.parse(char.string);
 
-      if (indentIndicator < 1 || indentIndicator > 9) {
-        throw _indentationException;
-      }
+      RangeError.checkValueInInterval(
+        indentIndicator,
+        1,
+        9,
+        null,
+        _indentationException.message,
+      );
     } else {
       chomping = _resolveChompingIndicator(char);
 
