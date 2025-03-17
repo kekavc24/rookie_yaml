@@ -1,4 +1,6 @@
-/// Indicates how each [YamlNode] is presented in the serialized yaml string.
+part of 'node.dart';
+
+/// Indicates how each [Node] is presented in the serialized yaml string.
 enum NodeStyle {
   /// A style that depends on indentation to indicate its structure
   block,
@@ -7,11 +9,7 @@ enum NodeStyle {
   flow,
 }
 
-/// An alias for a [NodeStyle] specific to any [YamlNode] that is a collection
-/// such as a sequence (list) or mapping (map).
-typedef CollectionStyle = NodeStyle;
-
-/// Indicates how each [YamlScalar] is presented in a serialized yaml string.
+/// Indicates how each [Scalar] is presented in a serialized yaml string.
 enum ScalarStyle {
   /// A `block` style that starts with an explicit `|`.
   literal(NodeStyle.block),
@@ -20,7 +18,7 @@ enum ScalarStyle {
   folded(NodeStyle.block),
 
   /// A `flow` style that is unquoted with no explicit `start` and `end`
-  /// indicators
+  /// indicators.
   plain(NodeStyle.flow),
 
   /// A quoted `flow` style that uses `'`.
@@ -29,16 +27,13 @@ enum ScalarStyle {
   /// A quoted `flow` style that uses `"`.
   doubleQuoted(NodeStyle.flow);
 
-  const ScalarStyle(this.nodeStyle);
+  const ScalarStyle(this._nodeStyle);
 
   /// A basic [NodeStyle] used by the [YamlScalar]
-  final NodeStyle nodeStyle;
+  final NodeStyle _nodeStyle;
 
-  /// Returns `true` if [NodeStyle.block]. Otherwise, `false`.
-  bool get isBlockStyle => nodeStyle == NodeStyle.block;
-
-  /// Returns `true` if [NodeStyle.flow]. Otherwise, `false`.
-  bool get isFlowStyle => !isBlockStyle;
+  /// Returns `true` if the scalar is serialized as [NodeStyle.block]
+  bool get isBlockStyle => _nodeStyle == NodeStyle.block;
 }
 
 /// Controls how final line breaks and trailing empty lines are interpreted.
@@ -50,17 +45,14 @@ enum ChompingIndicator {
   /// Default if no explicit [ChompingIndicator] is provided. Indicates the
   /// final line break should be preserved in the scalar's content. Any
   /// trailing empty lines should be excluded.
-  clip(null),
+  clip(''),
 
   /// Indicates the final line break and any trailing empty lines should be
   /// included as part of the scalar's content.
   keep('+');
 
-  const ChompingIndicator(this._char);
+  const ChompingIndicator(this.indicator);
 
-  /// Represents its indicator
-  final String? _char;
-
-  /// Returns the character indicating how it should be presented
-  String get indicator => _char ?? '';
+  /// [NodeStyle.block] indicator for a [Scalar]
+  final String indicator;
 }
