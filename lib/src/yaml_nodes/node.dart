@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/directives/directives.dart';
 part 'node_styles.dart';
 
 /// A node parsed from a `YAML` source string
-sealed class Node {
+abstract interface class Node {
   Node({required this.nodeStyle, required Set<ResolvedTag> tags})
     : _tags = tags;
 
@@ -26,7 +26,7 @@ extension CustomResolved on Node {
       _tags.whereType<NativeResolverTag>().map((tag) => tag.resolver(this));
 }
 
-final _equality = DeepCollectionEquality.unordered();
+const _equality = DeepCollectionEquality.unordered();
 
 /// A read-only `YAML` [List]
 final class Sequence extends UnmodifiableListView<Node> implements Node {
@@ -52,8 +52,10 @@ final class Sequence extends UnmodifiableListView<Node> implements Node {
   int get hashCode => _equality.hash([_tags, this]);
 }
 
-/// A read-only `YAML` [Map]
-final class Mapping extends UnmodifiableMapView<Node, Node> implements Node {
+/// A read-only `YAML` [Map].
+///
+/// A mapping may allow a `null` key.
+final class Mapping extends UnmodifiableMapView<Node?, Node?> implements Node {
   Mapping(
     super.source, {
     required this.nodeStyle,
