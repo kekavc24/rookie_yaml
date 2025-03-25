@@ -1,9 +1,10 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
+import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
 const _singleQuote = Indicator.singleQuote;
 
@@ -17,6 +18,8 @@ Scalar parseSingleQuoted(
   ChunkScanner scanner, {
   required int indent,
   required bool isImplicit,
+  required Set<ResolvedTag> tags,
+  required Tag Function(LocalTag tag) resolver,
 }) {
   final buffer = ScalarBuffer(ensureIsSafe: false);
   var quoteCount = 0;
@@ -96,8 +99,10 @@ Scalar parseSingleQuoted(
     throw _exception;
   }
 
-  return Scalar(
+  return formatScalar(
+    buffer,
     scalarStyle: ScalarStyle.singleQuoted,
-    content: buffer.toString(),
+    tags: tags,
+    resolver: resolver,
   );
 }

@@ -1,10 +1,11 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
+import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
 /// Usually denotes end of a plain scalar if followed by a [WhiteSpace]
 const _kvColon = Indicator.mappingValue;
@@ -34,6 +35,8 @@ PlainStyleInfo parsePlain(
   required int indent,
   required String charsOnGreedy,
   required bool isImplicit,
+  required Set<ResolvedTag> tags,
+  required Tag Function(LocalTag tag) resolver,
 }) {
   var greedyChars = charsOnGreedy;
   var indentOnExit = 0;
@@ -59,7 +62,12 @@ PlainStyleInfo parsePlain(
         // TODO: Pass in null when refactoring scalar
         return (
           parseTarget: NextParseTarget.startFlowValue,
-          scalar: Scalar(scalarStyle: _style, content: ''),
+          scalar: formatScalar(
+            ScalarBuffer(ensureIsSafe: false),
+            scalarStyle: _style,
+            tags: tags,
+            resolver: resolver,
+          ),
           indentOnExit: indent + 1, // Parsed null key
         );
       }

@@ -1,9 +1,10 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
+import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
 const _doubleQuoteIndicator = Indicator.doubleQuote;
 
@@ -24,6 +25,8 @@ Scalar parseDoubleQuoted(
   ChunkScanner scanner, {
   required int indent,
   required bool isImplicit,
+  required Set<ResolvedTag> tags,
+  required Tag Function(LocalTag tag) resolver,
 }) {
   final leadingChar = scanner.charAtCursor;
 
@@ -50,8 +53,8 @@ Scalar parseDoubleQuoted(
   while (scanner.canChunkMore && !foundClosingQuote) {
     final (:sourceEnded, :lineEnded, :charOnExit) = scanner.bufferChunk(
       buffer.writeChar,
-          exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
-        );
+      exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
+    );
 
     if (charOnExit == null) {
       throw _doubleQuoteException;
@@ -124,9 +127,11 @@ Scalar parseDoubleQuoted(
     throw _doubleQuoteException;
   }
 
-  return Scalar(
+  return formatScalar(
+    buffer,
     scalarStyle: ScalarStyle.doubleQuoted,
-    content: doubleQuoteBuffer.toString(),
+    tags: tags,
+    resolver: resolver,
   );
 }
 

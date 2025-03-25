@@ -1,10 +1,11 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/comment_parser.dart';
+import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
+import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
 part 'block_header.dart';
 part 'block_utils.dart';
@@ -17,6 +18,8 @@ part 'block_utils.dart';
 PlainStyleInfo parseBlockStyle(
   ChunkScanner scanner, {
   required int minimumIndent,
+  required Set<ResolvedTag> tags,
+  required Tag Function(LocalTag tag) resolver,
 }) {
   var indentOnExit = 0;
   final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(scanner);
@@ -126,7 +129,12 @@ PlainStyleInfo parseBlockStyle(
 
   return (
     indentOnExit: indentOnExit,
-    scalar: Scalar(scalarStyle: style, content: contentBuffer.toString()),
+    scalar: formatScalar(
+      buffer,
+      scalarStyle: style,
+      tags: tags,
+      resolver: resolver,
+    ),
     parseTarget: NextParseTarget.checkTarget(scanner.charAtCursor),
   );
 }
