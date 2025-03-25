@@ -2,6 +2,7 @@ import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/comment_parser.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
@@ -37,7 +38,7 @@ PlainStyleInfo parseBlockStyle(
       skipCrIfPossible(char, scanner: scanner),
   ];
 
-  final contentBuffer = StringBuffer();
+  final buffer = ScalarBuffer(ensureIsSafe: false);
 
   var lastWasIndented = false;
   var didRun = false;
@@ -70,11 +71,11 @@ PlainStyleInfo parseBlockStyle(
         if (trueIndent == null) {
           final (:inferredIndent, :startsWithTab) = _determineIndent(
             scanner,
-            contentBuffer: contentBuffer,
+            contentBuffer: buffer,
             scannedIndent: scannedIndent,
             callBeforeTabWrite:
                 () => _foldLfIfPossible(
-                  contentBuffer,
+                  buffer,
                   isLiteral: isLiteral,
                   lastNonEmptyWasIndented: false, // Not possible with no indent
                   lineBreaks: lineBreaks,
@@ -92,19 +93,19 @@ PlainStyleInfo parseBlockStyle(
     }
 
     if (char is WhiteSpace) {
-      contentBuffer.writeAll(
+      buffer.writeAll(
         _preserveEmptyIndented(
           isLiteral: isLiteral,
           lineBreaks: lineBreaks,
           lastWasIndented: lastWasIndented,
-        ).map((v) => v.string),
+        ),
       );
 
       lastWasIndented = true;
       lineBreaks.clear();
     } else {
       _foldLfIfPossible(
-        contentBuffer,
+        buffer,
         isLiteral: isLiteral,
         lastNonEmptyWasIndented: lastWasIndented,
         lineBreaks: lineBreaks,
@@ -112,17 +113,16 @@ PlainStyleInfo parseBlockStyle(
       lastWasIndented = false;
     }
 
-    safeWriteChar(contentBuffer, char!);
+    buffer.writeChar(char!);
 
     // Write the remaining line to the end without including line break
-    scanner.bufferChunk(contentBuffer, exitIf: (_, curr) => curr is LineBreak);
+    scanner.bufferChunk(
+      buffer.writeChar,
+      exitIf: (_, curr) => curr is LineBreak,
+    );
   }
 
-  _chompLineBreaks(
-    chomping,
-    contentBuffer: contentBuffer,
-    lineBreaks: lineBreaks,
-  );
+  _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
 
   return (
     indentOnExit: indentOnExit,

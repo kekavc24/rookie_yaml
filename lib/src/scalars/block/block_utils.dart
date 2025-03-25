@@ -45,7 +45,7 @@ FormatException _charNotAllowedException(String char) =>
 /// [ChompingIndicator.keep] - no trailing line break is trimmed.
 void _chompLineBreaks(
   ChompingIndicator indicator, {
-  required StringBuffer contentBuffer,
+  required ScalarBuffer contentBuffer,
   required List<LineBreak> lineBreaks,
 }) {
   // Exclude line breaks from content by default
@@ -69,7 +69,7 @@ void _chompLineBreaks(
   }
 
   /// Keep all trailing empty lines after for `keep` indicator
-  contentBuffer.writeAll(lineBreaks.take(countToWrite).map((rc) => rc.string));
+  contentBuffer.writeAll(lineBreaks.take(countToWrite));
 }
 
 /// Skips the carriage return `\r` in a `\r\n` combination and returns the
@@ -89,7 +89,7 @@ LineBreak skipCrIfPossible(LineBreak char, {required ChunkScanner scanner}) {
 /// Folds line breaks only if [isLiteral] and [lastNonEmptyWasIndented] are `
 /// false`. Line breaks between indented lines are never folded.
 void _foldLfIfPossible(
-  StringBuffer contentBuffer, {
+  ScalarBuffer contentBuffer, {
   required bool isLiteral,
   required bool lastNonEmptyWasIndented,
   required List<LineBreak> lineBreaks,
@@ -115,7 +115,7 @@ void _foldLfIfPossible(
             : lineBreaks.skip(1);
   }
 
-  contentBuffer.writeAll(toWrite.map((rc) => rc.string));
+  contentBuffer.writeAll(toWrite);
   lineBreaks.clear();
 }
 
@@ -124,7 +124,7 @@ void _foldLfIfPossible(
 /// are just white space characters.
 ({int? inferredIndent, bool startsWithTab}) _determineIndent(
   ChunkScanner scanner, {
-  required StringBuffer contentBuffer,
+  required ScalarBuffer contentBuffer,
   required int scannedIndent,
   required void Function() callBeforeTabWrite,
 }) {
@@ -148,8 +148,8 @@ void _foldLfIfPossible(
     callBeforeTabWrite();
     scanner.takeUntil(
       includeCharAtCursor: false,
-      mapper: (rc) => rc.string,
-      onMapped: (mapped) => contentBuffer.write(mapped),
+      mapper: (rc) => rc,
+      onMapped: contentBuffer.writeChar,
       stopIf: (_, possibleNext) => possibleNext is! WhiteSpace,
     );
 
@@ -166,6 +166,7 @@ void _foldLfIfPossible(
 
 const _whitespace = WhiteSpace.space;
 
+// TODO: Use join function here on list. Return string?
 /// Preserves line breaks in two ways in `folded` scalar style (line breaks in
 /// `literal` style are always preserved):
 ///

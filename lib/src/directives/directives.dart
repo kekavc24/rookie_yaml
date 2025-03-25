@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 
 part 'global_tag.dart';
 part 'reserved_directive.dart';
@@ -15,6 +16,7 @@ part 'tag_handle.dart';
 part 'verbatim_tag.dart';
 part 'yaml_directive.dart';
 part 'directive_utils.dart';
+part 'resolver_tag.dart';
 
 /// Denotes all YAML directives declared before a yaml document is parsed.
 ///
@@ -100,7 +102,7 @@ Directives parseDirectives(
           {
             // Buffer
             final ChunkInfo(:charOnExit) = scanner.bufferChunk(
-              directiveBuffer,
+              (c) => directiveBuffer.write(c.string),
               exitIf:
                   (_, curr) =>
                       curr is WhiteSpace ||

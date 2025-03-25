@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
@@ -17,7 +18,7 @@ Scalar parseSingleQuoted(
   required int indent,
   required bool isImplicit,
 }) {
-  final buffer = StringBuffer();
+  final buffer = ScalarBuffer(ensureIsSafe: false);
   var quoteCount = 0;
   var shouldEvaluateCurrentChar = false;
 
@@ -36,7 +37,7 @@ Scalar parseSingleQuoted(
           /// sure we already saw the opening quotes.
           if (scanner.peekCharAfterCursor() == _singleQuote &&
               quoteCount != 0) {
-            buffer.write(_singleQuote.string);
+            buffer.writeChar(_singleQuote);
             scanner.skipCharAtCursor();
           } else {
             ++quoteCount;
@@ -80,7 +81,7 @@ Scalar parseSingleQuoted(
 
       // Safe to write. Must be printable
       default:
-        buffer.write(possibleChar.string);
+        buffer.writeChar(possibleChar);
         shouldEvaluateCurrentChar = false;
     }
 

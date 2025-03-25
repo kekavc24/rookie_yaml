@@ -101,7 +101,7 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
         final namedBuffer = StringBuffer(indicatorStr);
 
         final ChunkInfo(:charOnExit) = scanner.bufferChunk(
-          namedBuffer,
+          (c) => namedBuffer.write(c.string),
           exitIf: (_, curr) => !isAlphaNumeric(curr),
         );
 

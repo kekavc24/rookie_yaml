@@ -5,9 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 
 part 'line_span.dart';
-
-/// `start` to `end` index in string. Exclusive of the `end`.
-typedef Offset = ({int start, int end});
+part 'offset_tracker.dart';
 
 /// Represents information returned after a call to `bufferChunk` method
 /// of the [ChunkScanner]
@@ -24,7 +22,7 @@ typedef Offset = ({int start, int end});
 /// is called.
 typedef ChunkInfo =
     ({
-      Offset offset,
+      //Offset offset,
       bool sourceEnded,
       bool lineEnded,
       ReadableChar? charOnExit,
@@ -218,7 +216,7 @@ final class ChunkScanner {
   ///
   /// See [ChunkInfo].
   ChunkInfo bufferChunk(
-    StringBuffer buffer, {
+    void Function(ReadableChar char) buffer, {
     required bool Function(ReadableChar? previous, ReadableChar current) exitIf,
   }) {
     // Fetch next line if not present
@@ -226,7 +224,7 @@ final class ChunkScanner {
       // We exit and emit current offset
       if (!_hasMoreLines) {
         return (
-          offset: _getOffset(buffer),
+          //offset: _getOffset(buffer),
           sourceEnded: true,
           lineEnded: true,
           charOnExit: null,
@@ -258,7 +256,7 @@ final class ChunkScanner {
         break;
       }
 
-      safeWriteChar(buffer, current);
+      buffer(current);
     }
 
     /// Revert to null if we created chunks till the end of the line. Helps
@@ -270,10 +268,10 @@ final class ChunkScanner {
     // Possible if we never iterated the loop!
     _charOnLastExit = maybeCharOnExit ?? _charOnLastExit;
 
-    final offset = _getOffset(buffer);
+    //final offset = _getOffset(buffer);
     return (
-      offset: offset,
-      sourceEnded: !_hasMoreLines && offset.end >= source.length,
+      //offset: offset,
+      sourceEnded: !_hasMoreLines && _currentOffset >= source.length,
       lineEnded: _currentLine == null,
       charOnExit: maybeCharOnExit,
     );

@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
@@ -41,15 +42,14 @@ Scalar parseDoubleQuoted(
   bool canExit(int quoteCount) => quoteCount == 2;
 
   var foundClosingQuote = false;
-  final doubleQuoteBuffer = StringBuffer();
+  final buffer = ScalarBuffer(ensureIsSafe: false);
   var lineBreakIgnoreSpace = false;
 
   // TODO: Save offsets etc.
   dQuotedLoop:
   while (scanner.canChunkMore && !foundClosingQuote) {
-    final (:offset, :sourceEnded, :lineEnded, :charOnExit) = scanner
-        .bufferChunk(
-          doubleQuoteBuffer,
+    final (:sourceEnded, :lineEnded, :charOnExit) = scanner.bufferChunk(
+      buffer.writeChar,
           exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
         );
 
@@ -65,7 +65,7 @@ Scalar parseDoubleQuoted(
     switch (charOnExit) {
       case final SpecialEscaped escaped:
         lineBreakIgnoreSpace = _parseEscaped(
-          doubleQuoteBuffer,
+          buffer,
           char: escaped,
           scanner: scanner,
         );
@@ -82,7 +82,7 @@ Scalar parseDoubleQuoted(
       default:
         {
           final (:ignoreInfo, :indentInfo, :matchedDelimiter) = foldScalar(
-            doubleQuoteBuffer,
+            buffer,
             scanner: scanner,
             curr: charOnExit,
             indent: indent,
@@ -106,7 +106,7 @@ Scalar parseDoubleQuoted(
             /// quotes while maintaning the `fold` function's versatility
             if (scanner.charAtCursor == SpecialEscaped.backSlash) {
               lineBreakIgnoreSpace = _parseEscaped(
-                doubleQuoteBuffer,
+                buffer,
                 char: SpecialEscaped.backSlash,
                 scanner: scanner,
               );
@@ -133,12 +133,12 @@ Scalar parseDoubleQuoted(
 /// Parses an escaped character in a double quoted scalar and returns `true`
 /// only if it is a line break.
 bool _parseEscaped(
-  StringBuffer buffer, {
+  ScalarBuffer buffer, {
   required SpecialEscaped char,
   required ChunkScanner scanner,
 }) {
   if (char != SpecialEscaped.backSlash) {
-    safeWriteChar(buffer, char);
+    buffer.writeChar(char);
     return false;
   }
 
@@ -161,7 +161,7 @@ bool _parseEscaped(
   } else if (charAfter
       case WhiteSpace _ || SpecialEscaped _ || _doubleQuoteIndicator) {
     // Write it greedily to buffer and skip to it.
-    safeWriteChar(buffer, charAfter);
+    buffer.writeChar(charAfter);
     scanner.skipCharAtCursor();
   } else {
     // Unicode at this point. Anything else is an error.
@@ -172,7 +172,9 @@ bool _parseEscaped(
     }
 
     // TODO: Should hex characters be converted?
-    final hexBuffer = StringBuffer(charAfter.string);
+    buffer
+      ..writeChar(SpecialEscaped.backSlash)
+      ..writeChar(charAfter);
 
     /// Move cursor forward to point the next character i.e `charAfter`
     scanner.skipCharAtCursor();
@@ -193,19 +195,14 @@ bool _parseEscaped(
         throw const FormatException('Invalid hex digit found!');
       }
 
-      hexBuffer.write(hexChar.string);
+      buffer.writeChar(hexChar);
       --countToRead;
       scanner.skipCharAtCursor();
     }
 
     if (countToRead > 0) {
-      throw FormatException(
-        '$countToRead hex digit(s) are missing.'
-        ' Only found $hexBuffer',
-      );
+      throw FormatException('$countToRead hex digit(s) are missing.');
     }
-
-    buffer.writeAll([SpecialEscaped.backSlash.string, hexBuffer]);
   }
 
   return false;

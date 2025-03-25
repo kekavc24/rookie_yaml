@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 
 /// Generates a generic indent exception
 FormatException indentException(int expectedIndent, int? foundIndent) {
@@ -38,7 +39,7 @@ final _defaultExitInfo = _infoOnFold();
 
 /// TODO: Simplify this function!
 FoldInfo foldScalar(
-  StringBuffer foldingBuffer, {
+  ScalarBuffer foldingBuffer, {
   required ChunkScanner scanner,
   required ReadableChar curr,
   required int indent,
@@ -48,7 +49,7 @@ FoldInfo foldScalar(
   required bool Function(ReadableChar char)? ignoreGreedyNonBreakWrite,
   required bool Function(ReadableChar char) matchesDelimiter,
 }) {
-  final whitespaceBuffer = <String>[];
+  final whitespaceBuffer = <ReadableChar>[];
   var lineBreakIgnoreSpace = lineBreakWasEscaped;
   var lineBreakStreak = false;
 
@@ -88,7 +89,7 @@ FoldInfo foldScalar(
           if (!lineBreakStreak) {
             whitespaceBuffer.clear();
           } else if (!lineBreakIgnoreSpace) {
-            foldingBuffer.write(LineBreak.lf);
+            foldingBuffer.writeChar(LineBreak.lineFeed);
           }
 
           if (charAfter is WhiteSpace) {
@@ -139,7 +140,7 @@ FoldInfo foldScalar(
                 ///
                 /// See https://yaml.org/spec/1.2.2/#65-line-folding
                 if (!lineBreakIgnoreSpace && !lineBreakStreak) {
-                  foldingBuffer.write(WhiteSpace.space.string);
+                  foldingBuffer.writeChar(WhiteSpace.space);
                 }
 
                 // For plain styles
@@ -169,7 +170,7 @@ FoldInfo foldScalar(
 
       // Buffer whitespaces normally
       case final WhiteSpace whiteSpace:
-        whitespaceBuffer.add(whiteSpace.string);
+        whitespaceBuffer.add(whiteSpace);
 
       default:
         {
@@ -190,7 +191,7 @@ FoldInfo foldScalar(
               canCheckGreedyNonBreak && ignoreGreedyNonBreakWrite(foldTarget);
 
           if (!isDelimiter && !shouldIgnore) {
-            safeWriteChar(foldingBuffer, foldTarget);
+            foldingBuffer.writeChar(foldTarget);
           }
 
           return _infoOnFold(

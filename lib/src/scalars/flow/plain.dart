@@ -2,6 +2,7 @@ import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node_styles.dart';
 
@@ -74,7 +75,10 @@ PlainStyleInfo parsePlain(
     greedyChars += firstChar?.string ?? '';
   }
 
-  final buffer = StringBuffer(greedyChars);
+  final buffer = ScalarBuffer(
+    ensureIsSafe: true,
+    buffer: StringBuffer(greedyChars),
+  );
 
   chunker:
   while (scanner.canChunkMore) {
@@ -158,10 +162,10 @@ PlainStyleInfo parsePlain(
           //   extractedComment = false;
           // }
 
-          safeWriteChar(buffer, char);
+          buffer.writeChar(char);
 
           final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
-            buffer,
+            buffer.writeChar,
             exitIf: (_, curr) {
               return _delimiters.contains(curr) ||
                   flowDelimiters.contains(curr);
@@ -182,9 +186,13 @@ PlainStyleInfo parsePlain(
 
   return (
     parseTarget: NextParseTarget.checkTarget(scanner.charAtCursor),
-
-    // Plain scalars have no leading/trailing spaces!
-    scalar: Scalar(scalarStyle: _style, content: buffer.toString().trim()),
+    scalar: formatScalar(
+      buffer,
+      scalarStyle: _style,
+      tags: tags,
+      resolver: resolver,
+      trim: true, // Plain scalars have no leading/trailing spaces!
+    ),
     indentOnExit: indentOnExit,
   );
 }
