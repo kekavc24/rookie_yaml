@@ -15,7 +15,7 @@ final class LocalTag extends SpecificTag<String> {
   String get prefix => tagHandle.handle;
 
   @override
-  String toString() => '$prefix$_content';
+  String toString() => '$prefix$content';
 
   @override
   bool operator ==(Object other) =>

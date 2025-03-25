@@ -31,7 +31,7 @@ sealed class ResolvedTag extends Tag {
 /// `YAML` requires that after parsing a node must either be resolved to a
 /// [SpecificTag] or be represented as is as a [VerbatimTag].
 sealed class SpecificTag<T> implements Tag {
-  SpecificTag._(this.tagHandle, this._content);
+  SpecificTag._(this.tagHandle, this.content);
 
   SpecificTag.fromLocalTag(TagHandle tagHandle, LocalTag tag)
     : this._(tagHandle, tag as T);
@@ -42,7 +42,7 @@ sealed class SpecificTag<T> implements Tag {
   @override
   final TagHandle tagHandle;
 
-  final T _content;
+  final T content;
 }
 
 /// Indicates a node has no native data structure preference and allows `YAML`

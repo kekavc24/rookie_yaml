@@ -33,7 +33,7 @@ final class GlobalTag<T> extends SpecificTag<T> implements Directive {
       UnmodifiableListView([tagHandle.handle, prefix]);
 
   @override
-  String get prefix => _content.toString();
+  String get prefix => content.toString();
 
   @override
   String toString() => _dumpDirective(this);
