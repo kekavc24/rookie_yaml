@@ -55,7 +55,7 @@ final class Sequence extends UnmodifiableListView<Node> implements Node {
 /// A read-only `YAML` [Map].
 ///
 /// A mapping may allow a `null` key.
-final class Mapping extends UnmodifiableMapView<Node?, Node?> implements Node {
+final class Mapping extends UnmodifiableMapView<Node, Node> implements Node {
   Mapping(
     super.source, {
     required this.nodeStyle,
@@ -80,7 +80,7 @@ final class Mapping extends UnmodifiableMapView<Node?, Node?> implements Node {
 
 /// Any value that is not a collection in `YAML`, that is, not a [Sequence] or
 /// [Mapping]
-final class Scalar<T> extends Node {
+base class Scalar<T> extends Node {
   Scalar(
     this.value, {
     required String content,
@@ -97,7 +97,7 @@ final class Scalar<T> extends Node {
   final String _content;
 
   /// A native value represented by the parsed scalar.
-  final T value;
+  final T? value;
 
   @override
   bool operator ==(Object other) =>
@@ -110,4 +110,17 @@ final class Scalar<T> extends Node {
 
   @override
   String toString() => _content;
+}
+
+final class IntScalar extends Scalar<int> {
+  IntScalar(
+    int super.value, {
+    required this.radix,
+    required super.content,
+    required super.scalarStyle,
+    required super.tags,
+  });
+
+  /// Base in number system this scalar belongs to.
+  final int radix;
 }
