@@ -25,4 +25,7 @@ final class NativeResolverTag<O> implements ResolvedTag {
 
   @override
   int get hashCode => _resolvedTag.hashCode;
+
+  @override
+  String toString() => verbatim;
 }
