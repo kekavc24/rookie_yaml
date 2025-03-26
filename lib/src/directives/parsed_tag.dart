@@ -48,10 +48,10 @@ final class ParsedTag<T> implements ResolvedTag {
 
   @override
   bool operator ==(Object other) =>
-      other is ParsedTag && other.verbatim == verbatim;
+      other is ParsedTag && other._resolvedTag == _resolvedTag;
 
   @override
-  int get hashCode => verbatim.hashCode;
+  int get hashCode => _resolvedTag.hashCode;
 
   @override
   String toString() => verbatim;
