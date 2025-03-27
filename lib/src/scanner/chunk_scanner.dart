@@ -203,6 +203,7 @@ final class ChunkScanner {
       }
 
       onMapped(mapper(charAfter));
+      incrementCount();
       skipCharAtCursor();
     }
 
