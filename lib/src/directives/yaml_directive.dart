@@ -20,8 +20,9 @@ final class YamlDirective extends ReservedDirective {
     : _formatted = formatted,
       super(name: _yamlDirective, parameters: [version]);
 
-  /// Creates a directive from a version. [version] should be 2 integers
-  /// separated by a `.`
+  /// Creates a directive from a version.
+  ///
+  /// [version] should be 2 integers separated by a `.`
   YamlDirective.ofVersion(String version)
     : this._(version: version, formatted: _formatVersionParameter(version));
 

@@ -119,29 +119,39 @@ Directives parseDirectives(
 
             final name = directiveBuffer.toString();
 
-            if (name == _yamlDirective) {
-              if (directive != null) {
-                throw const FormatException(
-                  'A YAML directive can only be declared once per document',
-                );
-              }
+            switch (name) {
+              case _yamlDirective:
+                {
+                  if (directive != null) {
+                    throw const FormatException(
+                      'A YAML directive can only be declared once per document',
+                    );
+                  }
 
-              throwIfNotSeparation(charOnExit);
-              directive = _parseYamlDirective(scanner);
-            } else if (name == _globalTagDirective) {
-              throwIfNotSeparation(charOnExit);
-              final tag = _parseGlobalTag(scanner, isDuplicate: isDuplicate);
-              globalDirectives[tag.tagHandle] = tag;
-            } else {
-              // Reserved directives can have empty parameters
-              if (charOnExit is! LineBreak) {
-                throwIfNotSeparation(charOnExit);
-              }
+                  throwIfNotSeparation(charOnExit);
+                  directive = _parseYamlDirective(scanner);
+                }
 
-              reserved.add(_parseReservedDirective(name, scanner: scanner));
+              case _globalTagDirective:
+                {
+                  throwIfNotSeparation(charOnExit);
+                  final tag = _parseGlobalTag(
+                    scanner,
+                    isDuplicate: isDuplicate,
+                  );
+                  globalDirectives[tag.tagHandle] = tag;
+                }
+
+              default:
+                {
+                  // Reserved directives can have empty parameters
+                  if (charOnExit is! LineBreak?) {
+                    throwIfNotSeparation(charOnExit);
+                  }
+
+                  reserved.add(_parseReservedDirective(name, scanner: scanner));
+                }
             }
-
-            char = scanner.charAtCursor;
 
             // Expect either a line break or whitespace or null
             if (char is! LineBreak?) {
@@ -151,14 +161,9 @@ Directives parseDirectives(
             directiveBuffer.clear();
           }
 
-        /// Either the current character is whitespace or a character that
-        /// indicates start of the root of the document
+        /// Exit immediately we fail to see any more directives
         default:
-          if (scanner.charBeforeCursor is LineBreak) {
-            break dirParser;
-          }
-
-          throw const FormatException('Expected a "%" indicator or line break');
+          break dirParser;
       }
     }
   }
