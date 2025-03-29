@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser_utils.dart';
+import 'package:rookie_yaml/src/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
@@ -69,6 +70,7 @@ PlainStyleInfo parsePlain(
             resolver: resolver,
           ),
           indentOnExit: indent + 1, // Parsed null key
+          docEndChars: [],
         );
       }
 
@@ -76,6 +78,7 @@ PlainStyleInfo parsePlain(
       return (
         parseTarget: NextParseTarget.checkTarget(firstChar),
         scalar: null,
+        docEndChars: [],
         indentOnExit: indent, // No parsing occured. Indent is "as-is (was)".
       );
     }
@@ -87,6 +90,8 @@ PlainStyleInfo parsePlain(
     ensureIsSafe: true,
     buffer: StringBuffer(greedyChars),
   );
+
+  final docEndMarkers = <ReadableChar>[];
 
   chunker:
   while (scanner.canChunkMore) {
@@ -100,6 +105,20 @@ PlainStyleInfo parsePlain(
     var charAfter = scanner.peekCharAfterCursor();
 
     switch (char) {
+      /// Check for the document end markers first always
+      case Indicator.blockSequenceEntry || Indicator.period:
+        {
+          if (indent == 0 && hasDocEndMarkers(scanner, buffer: docEndMarkers)) {
+            break chunker;
+          }
+
+          // Cursor was moved
+          if (docEndMarkers.isNotEmpty) {
+            docEndMarkers.clear();
+            continue chunker;
+          }
+        }
+
       /// A mapping key can never be followed by a whitespace. Exit regardless
       /// of whether we folded this scalar before.
       case _kvColon when charAfter == WhiteSpace.space:
@@ -202,5 +221,6 @@ PlainStyleInfo parsePlain(
       trim: true, // Plain scalars have no leading/trailing spaces!
     ),
     indentOnExit: indentOnExit,
+    docEndChars: docEndMarkers,
   );
 }

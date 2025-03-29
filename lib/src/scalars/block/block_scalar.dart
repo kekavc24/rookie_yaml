@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/comment_parser.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
@@ -46,6 +47,9 @@ PlainStyleInfo parseBlockStyle(
   var lastWasIndented = false;
   var didRun = false;
 
+  final previousIndents = <int>{};
+  final docEndMarkers = <ReadableChar>[];
+
   blockLoop:
   while (scanner.canChunkMore) {
     final indent = trueIndent ?? minimumIndent;
@@ -65,7 +69,14 @@ PlainStyleInfo parseBlockStyle(
         /// While `YAML` suggested we parse the comment thereafter, it is
         /// better to exit and allow the `root` parser to determine how to
         /// parse it.
-        if (scannedIndent < indent || charAfter == null) {
+        ///
+        /// Also check if we need to exit incase a document/directives
+        /// end marker is found in a top level scalar
+        final isDocEnd =
+            scannedIndent == 0 &&
+            hasDocEndMarkers(scanner, buffer: docEndMarkers);
+
+        if (charAfter == null || isDocEnd || scannedIndent < indent) {
           indentOnExit = scannedIndent;
           break blockLoop;
         }
@@ -95,7 +106,7 @@ PlainStyleInfo parseBlockStyle(
               );
             }
 
-          trueIndent = inferredIndent;
+            trueIndent = inferredIndent;
           }
 
           lastWasIndented = startsWithTab || lastWasIndented;
@@ -103,6 +114,8 @@ PlainStyleInfo parseBlockStyle(
       }
 
       scanner.skipCharAtCursor();
+
+      docEndMarkers.clear();
       didRun = true;
       continue;
     }
@@ -119,7 +132,7 @@ PlainStyleInfo parseBlockStyle(
       lastWasIndented = true;
       lineBreaks.clear();
     } else {
-      _foldLfIfPossible(
+      _maybeFoldLF(
         buffer,
         isLiteral: isLiteral,
         lastNonEmptyWasIndented: lastWasIndented,
@@ -148,5 +161,6 @@ PlainStyleInfo parseBlockStyle(
       resolver: resolver,
     ),
     parseTarget: NextParseTarget.checkTarget(scanner.charAtCursor),
+    docEndChars: docEndMarkers,
   );
 }
