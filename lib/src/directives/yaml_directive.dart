@@ -1,6 +1,6 @@
 part of 'directives.dart';
 
-const _versionSeparator = '.';
+final _versionSeparator = Indicator.period.string;
 
 /// `YAML` version that is used to implement the current `YamlParser` version.
 ///
@@ -50,7 +50,7 @@ List<int> _formatVersionParameter(String version) {
   final formatted = version.split(_versionSeparator);
 
   if (formatted.length != 2) {
-    throw const FormatException(
+    throw FormatException(
       'Invalid YAML version format. '
       'The version must have only 2 integers separated by a '
       '"$_versionSeparator"',
@@ -98,12 +98,12 @@ YamlDirective _parseYamlDirective(ChunkScanner scanner) {
         {
           // We must not see the separator if we have no integers
           if (lastChar.isEmpty) {
-            throw const FormatException(
+            throw FormatException(
               '$prefix'
               'Version cannot start with a "$_versionSeparator"',
             );
           } else if (lastChar == _versionSeparator) {
-            throw const FormatException(
+            throw FormatException(
               '$prefix'
               'Version cannot have consecutive "$_versionSeparator" characters',
             );
@@ -131,7 +131,7 @@ YamlDirective _parseYamlDirective(ChunkScanner scanner) {
   }
 
   if (formattedVersion.length != 2 || lastChar == _versionSeparator) {
-    throw const FormatException(
+    throw FormatException(
       '$prefix'
       'A YAML version must have only 2 integers separated by '
       '$_versionSeparator',

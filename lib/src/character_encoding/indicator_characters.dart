@@ -2,6 +2,9 @@ part of 'character_encoding.dart';
 
 /// Characters that have special meaning in YAML, usually a structural change.
 enum Indicator implements ReadableChar {
+  /// Period `.`
+  period(0x2E),
+
   /// Block sequence entry start `-`.
   blockSequenceEntry(0x2D),
 
