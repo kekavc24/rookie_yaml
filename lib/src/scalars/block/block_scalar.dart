@@ -72,12 +72,12 @@ PlainStyleInfo parseBlockStyle(
 
         // Attempt to infer indent if null
         if (trueIndent == null) {
-          final (:inferredIndent, :startsWithTab) = _determineIndent(
+          final (:inferredIndent, :isEmptyLine, :startsWithTab) = _inferIndent(
             scanner,
             contentBuffer: buffer,
             scannedIndent: scannedIndent,
             callBeforeTabWrite:
-                () => _foldLfIfPossible(
+                () => _maybeFoldLF(
                   buffer,
                   isLiteral: isLiteral,
                   lastNonEmptyWasIndented: false, // Not possible with no indent
@@ -85,7 +85,19 @@ PlainStyleInfo parseBlockStyle(
                 ),
           );
 
+          if (isEmptyLine) {
+            previousIndents.add(inferredIndent); // Only whitespace
+          } else {
+            if (previousIndents.isNotEmpty &&
+                previousIndents.max > inferredIndent) {
+              throw FormatException(
+                'A previous empty line was more indented than the current line',
+              );
+            }
+
           trueIndent = inferredIndent;
+          }
+
           lastWasIndented = startsWithTab || lastWasIndented;
         }
       }
