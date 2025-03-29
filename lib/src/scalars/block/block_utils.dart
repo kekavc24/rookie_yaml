@@ -122,7 +122,7 @@ void _foldLfIfPossible(
 /// Infers the indent of the block scalar being parsed. `inferredIndent` may
 /// be null if the line was empty, that is, no characters or all characters
 /// are just white space characters.
-({int? inferredIndent, bool startsWithTab}) _determineIndent(
+({int inferredIndent, bool isEmptyLine, bool startsWithTab}) _inferIndent(
   ChunkScanner scanner, {
   required ScalarBuffer contentBuffer,
   required int scannedIndent,
@@ -137,7 +137,11 @@ void _foldLfIfPossible(
   ///
   /// See: https://yaml.org/spec/1.2.2/#empty-lines
   if (charAfter is LineBreak) {
-    return (inferredIndent: null, startsWithTab: false);
+    return (
+      inferredIndent: canBeIndent,
+      isEmptyLine: true,
+      startsWithTab: false,
+    );
   }
 
   /// It's still empty if just tabs which qualifies them as separation in a
@@ -155,13 +159,21 @@ void _foldLfIfPossible(
 
     // This line cannot be used to determine the
     if (scanner.peekCharAfterCursor() is LineBreak) {
-      return (inferredIndent: null, startsWithTab: true);
+      return (
+        inferredIndent: canBeIndent,
+        isEmptyLine: true,
+        startsWithTab: true,
+      );
     }
 
     startsWithTab = true;
   }
 
-  return (inferredIndent: canBeIndent, startsWithTab: startsWithTab);
+  return (
+    inferredIndent: canBeIndent,
+    isEmptyLine: false,
+    startsWithTab: startsWithTab,
+  );
 }
 
 const _whitespace = WhiteSpace.space;
