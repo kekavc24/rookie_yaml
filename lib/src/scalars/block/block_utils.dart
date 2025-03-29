@@ -88,7 +88,7 @@ LineBreak skipCrIfPossible(LineBreak char, {required ChunkScanner scanner}) {
 
 /// Folds line breaks only if [isLiteral] and [lastNonEmptyWasIndented] are `
 /// false`. Line breaks between indented lines are never folded.
-void _foldLfIfPossible(
+void _maybeFoldLF(
   ScalarBuffer contentBuffer, {
   required bool isLiteral,
   required bool lastNonEmptyWasIndented,
@@ -208,4 +208,96 @@ Iterable<ReadableChar> _preserveEmptyIndented({
           yield value;
         }),
       );
+}
+
+const docEndCharSingle = '.';
+final docEndGraphemeSingle = GraphemeChar.wrap(docEndCharSingle);
+
+/// Returns true if directive end marker `...` or document end marker `---` is
+/// encountered with the characters added to the [buffer] if provided.
+///
+/// [isTopLevelCheck] must be `true` for this function to at least evaluate if
+/// their is an explicit marker. May evaluate if [isTopLevelCheck] is
+/// `null`.
+///
+/// `NOTE:` This function needs to be restricted to `block` or `block-like`
+/// styles such `plain` scalars. While `YAML` has a test which indicates that
+/// the markers should not be in other scalar styles, it beats the purpose
+/// of having the markers in the first place.
+///
+/// ```yaml
+/// # Here is fine. Plain and block styles have no markers.
+/// ---scalar
+/// ---
+///
+/// # Why here? If double-quoted and single-quoted styles have their own
+/// # markers which tell us when to stop parsing them?
+/// #
+/// # Parsing should continue unless
+/// --- "
+/// my multi-line scalar with markers
+///
+/// ...
+/// ---
+/// "
+/// ```
+bool hasDocEndMarkers(
+  ChunkScanner scanner, {
+  bool? isTopLevelCheck,
+  List<ReadableChar>? buffer,
+}) {
+  var charAtCursor = scanner.charAtCursor;
+  final markers = buffer ?? [];
+
+  void verbose() {
+    scanner.skipCharAtCursor();
+    charAtCursor = scanner.charAtCursor;
+  }
+
+  // Checks if the current char is the beginning of a doc marker
+  bool isMarker(ReadableChar? char) {
+    if (char == null) return false;
+    return char == Indicator.blockSequenceEntry ||
+        char.string == docEndCharSingle;
+  }
+
+  /// Document markers, that `...` and `---` have no indent. They must be
+  /// top level. Check before falling back to checking if it is a top level
+  /// scalar.
+  ///
+  /// We insist on it being top level because the markers have no indent
+  /// before. They have a -1 indent at this point or zero depending on how
+  /// far along the parsing this is called.
+  if (isMarker(charAtCursor) || (isTopLevelCheck ?? true)) {
+    switch (charAtCursor) {
+      // First "-" or "." of markers
+      case ReadableChar char when isMarker(char):
+        {
+          const expectedCount = 3;
+          final str = char.string;
+
+          final skipped = scanner.takeUntil(
+            includeCharAtCursor: true,
+            mapper: (v) => v,
+            onMapped: (v) => markers.add(v),
+            stopIf: (count, possibleNext) {
+              return count == expectedCount || possibleNext.string != str;
+            },
+          );
+
+          verbose();
+          return skipped == expectedCount;
+        }
+
+      default:
+        if (charAtCursor != null) {
+          markers.add(charAtCursor!);
+        }
+
+        verbose();
+        return false;
+    }
+  }
+
+  return false;
 }
