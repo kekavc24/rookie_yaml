@@ -60,6 +60,12 @@ _BlockHeaderInfo _parseBlockHeader(ChunkScanner scanner) {
 
   // Extract any comments
   if (current == Indicator.comment) {
+    if (scanner.charBeforeCursor is! WhiteSpace) {
+      throw FormatException(
+        'Expected a whitespace character before the start of the comment',
+      );
+    }
+
     functionDelegate(parseComment); // TODO: Save this somewhere?
   } else if (current == LineBreak.carriageReturn &&
       scanner.peekCharAfterCursor() == LineBreak.lineFeed) {
