@@ -34,14 +34,27 @@ String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
 /// [isVerbatim] - indicates whether a tag uri for a [VerbatimTag] is being
 /// parsed. When `true`, the closing `>` is allowed and parsing terminates
 /// after it is encountered.
+///
+/// [isAnchorOrAlias] - treats the uri characters being parsed as characters
+/// of an `alias` or `anchor` to/for a [Node] respectively. Defaults
+/// [isVerbatim] and [allowRestrictedIndicators] to `false`.
 String _parseTagUri(
   ChunkScanner scanner, {
   required bool allowRestrictedIndicators,
+  bool includeScheme = false,
   bool isVerbatim = false,
+  bool isAnchorOrAlias = false,
 }) {
+  final allowFlowIndicators = !isAnchorOrAlias && allowRestrictedIndicators;
+  final isVerbatimUri = !isAnchorOrAlias && isVerbatim;
+
   final buffer = StringBuffer();
 
   const hexCount = 2;
+
+  if (includeScheme) {
+    _parseScheme(buffer, scanner);
+  }
 
   void parseHex() {
     final hexBuff = StringBuffer('0x');
@@ -74,30 +87,35 @@ String _parseTagUri(
         break tagParser;
 
       // Parse as escaped hex %
-      case _directiveIndicator:
+      case _directiveIndicator when !isAnchorOrAlias:
         parseHex();
 
       // A verbatim tag ends immediately a ">" is seen
-      case _ when string == _verbatimEnd.string && isVerbatim:
+      case _ when string == _verbatimEnd.string && isVerbatimUri:
         break tagParser;
 
-      /// YAML insists that these characters must be escaped.
+      /// Flow indicators must be escaped with `%` if parsing a tag uri.
       ///
-      /// However, a global tag uri can have them unescaped as long as it
-      /// doesn't begin with `!`. This degenerates it to a local tag prefix
-      /// that may treat the uri as a named tag handle prefix.
-      ///
-      /// While our parsing strategy may prevent this, it is imperative to
-      /// have predictable behaviour that matches the schema!
-      ///
-      /// TODO: Move to isUriChar case?
-      case _
-          when !allowRestrictedIndicators &&
-              (flowDelimiters.contains(char) || char == _tagIndicator):
+      /// Alias/anchor names does not allow them.
+      case _ when !allowFlowIndicators && flowDelimiters.contains(char):
+        {
+          if (isAnchorOrAlias) {
+            throw FormatException(
+              'Anchor/alias names must not contain flow indicators',
+            );
+          }
+
+          throw FormatException(
+            'Expected "${char.string}" to be escaped. '
+            'Flow collection characters must be escaped.',
+          );
+        }
+
+      /// Tag indicators must be escaped when parsing tags
+      case _ when !isAnchorOrAlias && char == _tagIndicator:
         throw FormatException(
           'Expected "${char.string}" to be escaped. '
-          'Flow collection characters and the "${_tagIndicator.string}" '
-          'character must be escaped.',
+          'The "${_tagIndicator.string}" character must be escaped.',
         );
 
       case _ when isUriChar(char):
@@ -112,3 +130,41 @@ String _parseTagUri(
 
   return buffer.toString();
 }
+
+void _parseScheme(StringBuffer buffer, ChunkScanner scanner) {
+  var lastChar = '';
+  const schemeEnd = Indicator.mappingValue; // ":" char
+
+  scanner.takeUntil(
+    includeCharAtCursor: true,
+    mapper: (c) => c.string,
+    onMapped: (s) {
+      lastChar = s;
+      buffer.write(s);
+    },
+    stopIf: (_, c) {
+      return !isUriChar(c) || scanner.charAtCursor == schemeEnd;
+    },
+  );
+
+  // We must have a ":" as the last char
+  if (lastChar != schemeEnd.string) {
+    throw FormatException('Invalid URI scheme in tag uri');
+  }
+
+  /// Ensure we return in a state where a tag uri can be parsed further
+  if (scanner.peekCharAfterCursor() case ReadableChar? char
+      when char == null || !isUriChar(char)) {
+    throw FormatException('Expected at least a uri character after the scheme');
+  }
+
+  scanner.skipCharAtCursor(); // Parsing can continue
+}
+
+/// Parses an alias or anchor name.
+String parseAnchorOrAlias(ChunkScanner scanner) => _parseTagUri(
+  scanner,
+  allowRestrictedIndicators: false,
+  isVerbatim: false,
+  isAnchorOrAlias: true,
+);

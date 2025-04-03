@@ -99,7 +99,11 @@ GlobalTag<dynamic> _parseGlobalTag(
       {
         return GlobalTag._(
           tagHandle,
-          _parseTagUri(scanner, allowRestrictedIndicators: true),
+          _parseTagUri(
+            scanner,
+            allowRestrictedIndicators: true,
+            includeScheme: true,
+          ),
         );
       }
 
