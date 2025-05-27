@@ -1,7 +1,7 @@
 import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/parser/yaml_parser.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
 /// A non-existent indent level if a scalar was parsed correctly.
 ///

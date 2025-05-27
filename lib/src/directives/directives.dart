@@ -4,8 +4,8 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node.dart';
+import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
 part 'global_tag.dart';
 part 'reserved_directive.dart';

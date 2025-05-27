@@ -129,3 +129,23 @@ bool _isValidHexInUri(List<ReadableChar> chars) {
           .whereNot((char) => char == Indicator.directive || isHexDigit(char))
           .isEmpty;
 }
+
+enum YamlContext {
+  /// Within a block style context
+  blockIN,
+
+  /// Outside a block style context
+  blockOUT,
+
+  /// Within a block key context.
+  blockKEY,
+
+  /// Within a flow style context
+  flowIN,
+
+  /// Outside a flow style context
+  flowOUT,
+
+  /// Within a flow key context
+  flowKEY,
+}

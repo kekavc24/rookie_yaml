@@ -1,4 +1,4 @@
-part of 'yaml_parser.dart';
+part of '../parser/yaml_parser.dart';
 
 /// Default `YAML` uri prefix
 const _yamlPrefix = 'tag:yaml.org,2002:';
@@ -13,7 +13,7 @@ final _defaultYamlHandle = TagHandle.secondary();
 /// ```text
 /// %TAG !! tag:yaml.org,2002:
 /// ```
-final _yamlGlobalTag = GlobalTag.fromTagUri(_defaultYamlHandle, _yamlPrefix);
+final yamlGlobalTag = GlobalTag.fromTagUri(_defaultYamlHandle, _yamlPrefix);
 
 /// Generic mapping
 final mappingTag = LocalTag.fromTagUri(_defaultYamlHandle, 'map');
@@ -40,3 +40,6 @@ final integerTag = LocalTag.fromTagUri(_defaultYamlHandle, 'int');
 
 /// `JSON` floating point
 final floatTag = LocalTag.fromTagUri(_defaultYamlHandle, 'float');
+
+/// YAML scalar tags
+final yamlScalarTags = [stringTag, nullTag, booleanTag, integerTag, floatTag];

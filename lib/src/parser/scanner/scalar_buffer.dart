@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 
 /// A mixin abstraction that mimics the [StringBuffer] class but writes
 /// [ReadableChar].

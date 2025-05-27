@@ -1,7 +1,7 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
+import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
 
 /// Generates a generic indent exception
 FormatException indentException(int expectedIndent, int? foundIndent) {

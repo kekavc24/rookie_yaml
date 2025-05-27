@@ -2,11 +2,11 @@ import 'dart:collection';
 
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/comment_parser.dart';
-import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
-import 'package:rookie_yaml/src/yaml_nodes/node.dart';
+import 'package:rookie_yaml/src/parser/comment_parser.dart';
+import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
+import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
 part 'block_header.dart';
 part 'block_utils.dart';
