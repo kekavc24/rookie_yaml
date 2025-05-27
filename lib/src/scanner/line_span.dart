@@ -1,5 +1,8 @@
 part of 'chunk_scanner.dart';
 
+/// `start` to `end` index in string. Exclusive of the `end`.
+typedef Offset = ({int start, int end});
+
 /// See [Offset]
 typedef GraphemeSourceSpan = Offset;
 const _emptyIterable = Iterable<LineSpanChar>.empty();
@@ -37,10 +40,9 @@ final class LineSpan {
       return;
     }
 
-    _charQueue =
-        characters
-            .mapIndexed((index, char) => LineSpanChar.wrap(char, index))
-            .iterator;
+    _charQueue = characters
+        .mapIndexed((index, char) => LineSpanChar.wrap(char, index))
+        .iterator;
     _hasNextChar = _charQueue.moveNext();
   }
 
@@ -77,12 +79,11 @@ final class LineSpan {
   bool get _canEmitEOL => _shouldEmitEndToken && !_emittedEndToken;
 
   /// Peeks next char without moving the iterator forward.
-  LineSpanChar? get peekNextChar =>
-      _hasNextChar
-          ? _charQueue.current
-          : _canEmitEOL
-          ? LineSpanChar.terminal(_currentIndex + 1)
-          : null;
+  LineSpanChar? get peekNextChar => _hasNextChar
+      ? _charQueue.current
+      : _canEmitEOL
+      ? LineSpanChar.terminal(_currentIndex + 1)
+      : null;
 
   /// Number of characters iterated in this line span
   int get charsIterated => _currentIndex + 1;

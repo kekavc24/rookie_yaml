@@ -1,11 +1,8 @@
-import 'dart:math';
-
 import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 
 part 'line_span.dart';
-part 'offset_tracker.dart';
 
 /// Represents information returned after a call to `bufferChunk` method
 /// of the [ChunkScanner]
@@ -20,13 +17,12 @@ part 'offset_tracker.dart';
 /// `charOnExit` - indicates the character that triggered the `bufferChunk`
 /// exit. Typically, the current character when `ChunkScanner.charAtCursor`
 /// is called.
-typedef ChunkInfo =
-    ({
-      //Offset offset,
-      bool sourceEnded,
-      bool lineEnded,
-      ReadableChar? charOnExit,
-    });
+typedef ChunkInfo = ({
+  //Offset offset,
+  bool sourceEnded,
+  bool lineEnded,
+  ReadableChar? charOnExit,
+});
 
 /// Checks if [char] is printable and writes it to the [buffer]. If not
 /// printable, a sequence of raw representation of the character as UTF-16
@@ -68,13 +64,6 @@ final class ChunkScanner {
   /// state
   bool get canChunkMore => _hasMoreLines || _currentLine != null;
 
-  /// An iffy offset getter that uses the string buffer.
-  /// TODO: May be prone to errors
-  Offset _getOffset(StringBuffer buffer) => (
-    start: max(0, _currentOffset - buffer.length),
-    end: _currentOffset + 1,
-  );
-
   /// Index of current line being iterated
   int _lineIndex = -1;
 
@@ -86,6 +75,10 @@ final class ChunkScanner {
 
   /// Character at the cursor
   ReadableChar? _charOnLastExit;
+
+  /// Current offset in source string with `0` being the start and
+  /// `source.length - 1` being the end.
+  int get currentOffset => _currentOffset;
 
   /// Peeks the last char preceding the character that triggered the last
   /// [bufferChunk] call to exit.
@@ -145,18 +138,16 @@ final class ChunkScanner {
     return (didSkip, _charBeforeExit);
   }
 
-  /// Skips any whitespace and returns the [WhiteSpace] characters skipped.
+  /// Skips any whitespace and returns the [WhiteSpace] characters skipped. If
+  /// [skipTabs] is `true`, then tabs `\t` will also be skipped.
   ///
-  /// If [skipTabs] is `true`, then `\t` will also be skipped.
-  ///
-  /// `YAML` advises `\t` is only used for separation but not indentation
-  /// which exclusively depends on white space.
-  List<WhiteSpace> skipWhitespace({
+  /// [previouslyRead] must be mutable.
+  List<ReadableChar> skipWhitespace({
     bool skipTabs = false,
     int? max,
-    List<WhiteSpace> previouslyRead = const [],
+    List<ReadableChar> previouslyRead = const [],
   }) {
-    final buffer = <WhiteSpace>[...previouslyRead];
+    final buffer = previouslyRead;
     final hasMax = max != null;
 
     ReadableChar? char;
