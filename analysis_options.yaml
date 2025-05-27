@@ -21,6 +21,8 @@ formatter:
 linter:
   rules:
     - always_use_package_imports
+    - lines_longer_than_80_chars
+    - directives_ordering
 
 # analyzer:
 #   exclude:
