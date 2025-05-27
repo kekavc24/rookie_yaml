@@ -6,11 +6,10 @@ String _dumpDirective(Directive directive) {
 
   final Directive(:name, :parameters) = directive;
 
-  final buffer =
-      StringBuffer(_directiveIndicator.string)
-        ..write(name)
-        ..write(space)
-        ..write(parameters.join(space));
+  final buffer = StringBuffer(_directiveIndicator.string)
+    ..write(name)
+    ..write(space)
+    ..write(parameters.join(space));
   return buffer.toString();
 }
 

@@ -21,12 +21,11 @@ part 'resolver_tag.dart';
 /// Denotes all YAML directives declared before a yaml document is parsed.
 ///
 /// See: https://yaml.org/spec/1.2.2/#68-directives
-typedef Directives =
-    ({
-      YamlDirective? directive,
-      List<ReservedDirective> reservedDirectives,
-      Map<TagHandle, GlobalTag<dynamic>> globalTags,
-    });
+typedef Directives = ({
+  YamlDirective? yamlDirective,
+  List<ReservedDirective> reservedDirectives,
+  Map<TagHandle, GlobalTag<dynamic>> globalTags,
+});
 
 /// `%` character
 const _directiveIndicator = Indicator.directive;
@@ -98,16 +97,15 @@ Directives parseDirectives(
           }
 
         // Extract directive
-        case _directiveIndicator:
+        case _directiveIndicator when scanner.charBeforeCursor is LineBreak?:
           {
             // Buffer
             final ChunkInfo(:charOnExit) = scanner.bufferChunk(
               (c) => directiveBuffer.write(c.string),
-              exitIf:
-                  (_, curr) =>
-                      curr is WhiteSpace ||
-                      curr is LineBreak ||
-                      !isPrintable(char!),
+              exitIf: (_, curr) =>
+                  curr is WhiteSpace ||
+                  curr is LineBreak ||
+                  !isPrintable(char!),
             );
 
             if (directiveBuffer.isEmpty) {
@@ -169,7 +167,7 @@ Directives parseDirectives(
   }
 
   return (
-    directive: directive,
+    yamlDirective: directive,
     globalTags: globalDirectives,
     reservedDirectives: reserved,
   );
