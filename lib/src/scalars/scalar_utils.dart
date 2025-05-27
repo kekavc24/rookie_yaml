@@ -3,15 +3,139 @@ import 'package:rookie_yaml/src/parser/yaml_parser.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/yaml_nodes/node.dart';
 
-const _octalPrefix = '0o';
+/// A non-existent indent level if a scalar was parsed correctly.
+///
+/// Acts as an indicator on if the end of parsing to a scalar with block(-like)
+/// syles, that is, `plain`, `literal` and `folded`, was not as a result of an
+/// indent change.
+const seamlessIndentMarker = -2;
 
-Scalar<dynamic> formatScalar(
+/// An intermediate [Scalar] wrapper obtained after a [Scalar] is parsed.
+final class PreScalar {
+  PreScalar._({
+    required this.inferredYamlTag,
+    required this.scalarStyle,
+    required this.parsedContent,
+    required this.hasDocEndMarkers,
+    required this.hasLineBreak,
+    required this.inferredValue,
+    required this.indent,
+    this.radix,
+  }) : indentDidChange = indent != seamlessIndentMarker;
+
+  /// Implicit `YAML` tag inferred based on the generic schema. May need
+  /// resolution from the parser if no recognized schema tag was specified.
+  LocalTag inferredYamlTag;
+
+  /// [Scalar]'s scalarstyle
+  final ScalarStyle scalarStyle;
+
+  /// Actual scalar content.
+  final String parsedContent;
+
+  /// Returns `true` if any `---` or `...` was encountered
+  final bool hasDocEndMarkers;
+
+  /// Indicates whether the [parsedContent] has a line break.
+  ///
+  /// `NOTE`: This is a helper to prevent a redundant scan on the
+  /// [parsedContent] as the line break may have already been seen while parsing
+  /// the content.
+  final bool hasLineBreak;
+
+  /// Returns `true` for block(-like) styles, that is, `plain`, `literal` and
+  /// `folded` if an indent change triggered the end of its parsing
+  final bool indentDidChange;
+
+  /// Indent after complete parsing of the scalar. This will usually
+  /// default to `-2` for quoted styles.
+  ///
+  /// Block(-like) styles, that is, `plain`, `literal` and `folded`, that rely
+  /// on indentation to convey content may provide a different value when
+  /// [indentDidChange] is `true`.
+  final int indent;
+
+  /// Value inferred based on its kind as specified in the YAML generic
+  /// schema
+  dynamic inferredValue;
+
+  /// Radix if [inferredValue] is an integer
+  int? radix;
+
+  set reformatWith(LocalTag tag) {
+    if (tag == inferredYamlTag) return;
+
+    dynamic value;
+    int? radix;
+
+    var canReformat = false;
+
+    // Ensure we can reformat
+    if (tag == integerTag) {
+      if (_parseInt(parsedContent) case _ParsedInt(
+        radix: final pRadix,
+        value: final pValue,
+      )) {
+        value = pValue;
+        radix = pRadix;
+        canReformat = true;
+      }
+    } else if (tag == floatTag) {
+      final float = double.tryParse(parsedContent);
+
+      canReformat = float != null;
+      value = float;
+    } else if (tag == booleanTag) {
+      final boolean = bool.tryParse(parsedContent, caseSensitive: false);
+
+      canReformat = boolean != null;
+      value = boolean;
+    } else if (tag == nullTag && _isNull(parsedContent.toLowerCase())) {
+      value = null;
+      canReformat = true;
+    }
+
+    if (!canReformat) {
+      value = parsedContent;
+    }
+
+    /// No need to overwrite the existing tag. That tag was inferred by
+    /// default based on the schema
+    this
+      ..inferredValue = value
+      ..radix = radix;
+  }
+
+  Scalar parsedScalar(Set<ResolvedTag> tags, Set<String> anchors) {
+    return inferredValue is int
+        ? IntScalar(
+            inferredValue,
+            radix: radix!,
+            anchors: anchors,
+            content: parsedContent,
+            scalarStyle: scalarStyle,
+            tags: tags,
+          )
+        : Scalar(
+            inferredValue,
+            content: parsedContent,
+            scalarStyle: scalarStyle,
+            anchors: anchors,
+            tags: tags,
+          );
+  }
+}
+
+/// Infers native type for the value parsed for the [Scalar] and provides a
+/// default schema tag.
+PreScalar preformatScalar(
   ScalarBuffer buffer, {
   required ScalarStyle scalarStyle,
-  required Set<ResolvedTag> tags,
-  required Tag Function(LocalTag tag) resolver,
   bool trim = false,
+  int indentOnExit = seamlessIndentMarker,
+  bool hasDocEndMarkers = false,
 }) {
+  final hasLineBreak = buffer.hasLineBreaks;
   var content = buffer.bufferedString();
 
   if (trim) {
@@ -21,22 +145,22 @@ Scalar<dynamic> formatScalar(
   var normalized = content.toLowerCase();
 
   dynamic value;
+  int? radix;
   LocalTag? tag;
 
   // Just write as string if a line break was stored
-  if (!buffer.hasLineBreaks) {
-    if (_parseInt(
-          normalized,
-          content: content,
-          scalarStyle: scalarStyle,
-          tags: tags,
-          resolver: resolver,
-        )
-        case IntScalar parsedInt) {
-      return parsedInt;
-    }
-
-    if (_isNull(normalized)) {
+  if (hasLineBreak) {
+    tag = stringTag;
+    value = content;
+  } else {
+    if (_parseInt(normalized) case _ParsedInt(
+      radix: final pRadix,
+      value: final pValue,
+    )) {
+      radix = pRadix;
+      value = pValue;
+      tag = integerTag;
+    } else if (_isNull(normalized)) {
       value = null;
       tag = nullTag;
     } else if (bool.tryParse(normalized) case bool boolean) {
@@ -48,44 +172,28 @@ Scalar<dynamic> formatScalar(
     }
   }
 
-  tag ??= stringTag;
-  _resolveAndPushTag(tag, resolver: resolver, tags: tags);
-
-  return Scalar(
-    value ?? content,
-    content: content,
+  return PreScalar._(
+    inferredYamlTag: tag!,
     scalarStyle: scalarStyle,
-    tags: tags,
+    parsedContent: content,
+    hasDocEndMarkers: hasDocEndMarkers,
+    hasLineBreak: hasLineBreak,
+    inferredValue: value,
+    indent: indentOnExit,
+    radix: radix,
   );
-}
-
-void _resolveAndPushTag(
-  LocalTag localTag, {
-  required Tag Function(LocalTag tag) resolver,
-  required Set<ResolvedTag> tags,
-}) {
-  var tagToPush = resolver(localTag);
-
-  tagToPush = switch (tagToPush) {
-    GlobalTag globalTag => ParsedTag(globalTag, localTag.content),
-    LocalTag localTag => ParsedTag(localTag, ''),
-    _ => tagToPush as ResolvedTag,
-  };
-
-  tags.add(tagToPush);
 }
 
 bool _isNull(String value) {
   return value.isEmpty || value == '~' || value == 'null';
 }
 
-IntScalar? _parseInt(
-  String normalized, {
-  required String content,
-  required ScalarStyle scalarStyle,
-  required Set<ResolvedTag> tags,
-  required Tag Function(LocalTag tag) resolver,
-}) {
+const _octalPrefix = '0o';
+
+typedef _ParsedInt = ({int value, int radix});
+
+/// Parses an [int] and returns its value and radix.
+_ParsedInt? _parseInt(String normalized) {
   int? radix;
 
   if (normalized.startsWith(_octalPrefix)) {
@@ -97,14 +205,8 @@ IntScalar? _parseInt(
   radix ??= normalized.startsWith('0x') ? 16 : 10;
 
   if (int.tryParse(normalized, radix: radix) case int parsedInt) {
-    _resolveAndPushTag(integerTag, resolver: resolver, tags: tags);
-    return IntScalar(
-      parsedInt,
-      radix: radix,
-      content: content,
-      scalarStyle: scalarStyle,
-      tags: tags,
-    );
+    return (value: parsedInt, radix: radix);
   }
+
   return null;
 }
