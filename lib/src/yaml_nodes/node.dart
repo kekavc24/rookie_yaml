@@ -5,8 +5,12 @@ part 'node_styles.dart';
 
 /// A node parsed from a `YAML` source string
 abstract interface class Node {
-  Node({required this.nodeStyle, required Set<ResolvedTag> tags})
-    : _tags = tags;
+  Node({
+    required this.nodeStyle,
+    required Set<ResolvedTag> tags,
+    required Set<String> anchors,
+  }) : _tags = tags,
+       _anchors = anchors;
 
   /// Style used to serialize the node within the `YAML` source string
   final NodeStyle nodeStyle;
@@ -16,6 +20,9 @@ abstract interface class Node {
   /// If a custom [NativeResolverTag] tag was parsed, the [Node] may
   /// be viewed in a resolved format by calling [alternate] getter on the node.
   final Set<ResolvedTag> _tags;
+
+  /// Anchor names that allow other nodes to reference this node.
+  final Set<String> _anchors;
 }
 
 /// Utility method for mapping any [Node] that has a [NativeResolverTag]
@@ -26,6 +33,26 @@ extension CustomResolved on Node {
       _tags.whereType<NativeResolverTag>().map((tag) => tag.resolver(this));
 }
 
+/// A node that is a pointer to another node.
+final class AliasNode extends Node {
+  AliasNode(String alias, this.aliased)
+    : assert(alias.isNotEmpty, 'An alias name cannot be empty'),
+      _alias = alias,
+      super(nodeStyle: aliased.nodeStyle, tags: aliased._tags, anchors: {});
+
+  /// Anchor name to [aliased]
+  final String _alias;
+
+  /// `YAML` node's reference
+  final Node aliased;
+
+  @override
+  bool operator ==(Object other) => aliased == other;
+
+  @override
+  int get hashCode => aliased.hashCode;
+}
+
 const _equality = DeepCollectionEquality.unordered();
 
 /// A read-only `YAML` [List]
@@ -34,13 +61,18 @@ final class Sequence extends UnmodifiableListView<Node> implements Node {
     super.source, {
     required this.nodeStyle,
     required Set<ResolvedTag> tags,
-  }) : _tags = tags;
+    required Set<String> anchors,
+  }) : _tags = tags,
+       _anchors = anchors;
 
   @override
   final Set<ResolvedTag> _tags;
 
   @override
   final NodeStyle nodeStyle;
+
+  @override
+  final Set<String> _anchors;
 
   @override
   bool operator ==(Object other) =>
@@ -60,13 +92,18 @@ final class Mapping extends UnmodifiableMapView<Node, Node> implements Node {
     super.source, {
     required this.nodeStyle,
     required Set<ResolvedTag> tags,
-  }) : _tags = tags;
+    required Set<String> anchors,
+  }) : _tags = tags,
+       _anchors = anchors;
 
   @override
   final Set<ResolvedTag> _tags;
 
   @override
   final NodeStyle nodeStyle;
+
+  @override
+  final Set<String> _anchors;
 
   @override
   bool operator ==(Object other) =>
@@ -85,6 +122,7 @@ base class Scalar<T> extends Node {
     this.value, {
     required String content,
     required this.scalarStyle,
+    required super.anchors,
     required super.tags,
   }) : _content = content,
        super(nodeStyle: scalarStyle._nodeStyle);
@@ -116,6 +154,7 @@ final class IntScalar extends Scalar<int> {
   IntScalar(
     int super.value, {
     required this.radix,
+    required super.anchors,
     required super.content,
     required super.scalarStyle,
     required super.tags,
