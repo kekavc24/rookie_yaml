@@ -1,5 +1,4 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
@@ -21,12 +20,10 @@ const _doubleQuoteException = FormatException(
 
 // TODO: Implicit
 /// Parses a `double quoted` scalar
-Scalar parseDoubleQuoted(
+PreScalar parseDoubleQuoted(
   ChunkScanner scanner, {
   required int indent,
   required bool isImplicit,
-  required Set<ResolvedTag> tags,
-  required Tag Function(LocalTag tag) resolver,
 }) {
   final leadingChar = scanner.charAtCursor;
 
@@ -95,10 +92,9 @@ Scalar parseDoubleQuoted(
               delimiter: _doubleQuoteIndicator.string,
               description: 'double quote',
             ),
-            ignoreGreedyNonBreakWrite:
-                (char) =>
-                    char == _doubleQuoteIndicator ||
-                    char == SpecialEscaped.backSlash,
+            ignoreGreedyNonBreakWrite: (char) =>
+                char == _doubleQuoteIndicator ||
+                char == SpecialEscaped.backSlash,
             matchesDelimiter: (char) => char == _doubleQuoteIndicator,
           );
 
@@ -127,12 +123,7 @@ Scalar parseDoubleQuoted(
     throw _doubleQuoteException;
   }
 
-  return formatScalar(
-    buffer,
-    scalarStyle: ScalarStyle.doubleQuoted,
-    tags: tags,
-    resolver: resolver,
-  );
+  return preformatScalar(buffer, scalarStyle: ScalarStyle.doubleQuoted);
 }
 
 /// Parses an escaped character in a double quoted scalar and returns `true`

@@ -1,5 +1,4 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
@@ -14,12 +13,10 @@ const _printableException = FormatException(
 );
 
 /// Parses a `single quoted` scalar
-Scalar parseSingleQuoted(
+PreScalar parseSingleQuoted(
   ChunkScanner scanner, {
   required int indent,
   required bool isImplicit,
-  required Set<ResolvedTag> tags,
-  required Tag Function(LocalTag tag) resolver,
 }) {
   final buffer = ScalarBuffer(ensureIsSafe: false);
   var quoteCount = 0;
@@ -99,10 +96,5 @@ Scalar parseSingleQuoted(
     throw _exception;
   }
 
-  return formatScalar(
-    buffer,
-    scalarStyle: ScalarStyle.singleQuoted,
-    tags: tags,
-    resolver: resolver,
-  );
+  return preformatScalar(buffer, scalarStyle: ScalarStyle.singleQuoted);
 }

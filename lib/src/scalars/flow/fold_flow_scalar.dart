@@ -13,15 +13,14 @@ FormatException indentException(int expectedIndent, int? foundIndent) {
 
 /// Returns information after a `flow scalar` is folded, that is, a plain/
 /// single quote/double quote scalar.
-typedef FoldInfo =
-    ({
-      // If a delimiter was encounter for double/single quote flow scalars
-      bool matchedDelimiter,
+typedef FoldInfo = ({
+  // If a delimiter was encounter for double/single quote flow scalars
+  bool matchedDelimiter,
 
-      //
-      ({bool ignoredNext, bool foldedLineBreak}) ignoreInfo,
-      ({bool indentChanged, int? indentFound}) indentInfo,
-    });
+  //
+  ({bool ignoredNext, bool foldedLineBreak}) ignoreInfo,
+  ({bool indentChanged, int? indentFound}) indentInfo,
+});
 
 FoldInfo _infoOnFold({
   bool matchedDelimiter = false,

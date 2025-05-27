@@ -1,6 +1,4 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
-import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
@@ -31,16 +29,14 @@ const _style = ScalarStyle.plain;
 
 // TODO: Implicit
 /// Parses a `plain` scalar
-PlainStyleInfo parsePlain(
+PreScalar? parsePlain(
   ChunkScanner scanner, {
   required int indent,
   required String charsOnGreedy,
   required bool isImplicit,
-  required Set<ResolvedTag> tags,
-  required Tag Function(LocalTag tag) resolver,
 }) {
   var greedyChars = charsOnGreedy;
-  var indentOnExit = 0;
+  var indentOnExit = seamlessIndentMarker;
 
   /// We need to ensure our chunking is definite to prevent unnecessary cycles
   /// wasted on checking if a plain scalar was a:
@@ -61,26 +57,14 @@ PlainStyleInfo parsePlain(
       // Intentionally expressive with if statement! We eval once.
       if (firstChar == Indicator.mappingValue) {
         // TODO: Pass in null when refactoring scalar
-        return (
-          parseTarget: NextParseTarget.startFlowValue,
-          scalar: formatScalar(
-            ScalarBuffer(ensureIsSafe: false),
-            scalarStyle: _style,
-            tags: tags,
-            resolver: resolver,
-          ),
-          indentOnExit: indent + 1, // Parsed null key
-          docEndChars: [],
+        return preformatScalar(
+          ScalarBuffer(ensureIsSafe: false),
+          scalarStyle: _style,
         );
       }
 
       // Return null for the other two indicators
-      return (
-        parseTarget: NextParseTarget.checkTarget(firstChar),
-        scalar: null,
-        docEndChars: [],
-        indentOnExit: indent, // No parsing occured. Indent is "as-is (was)".
-      );
+      return null;
     }
 
     greedyChars += firstChar?.string ?? '';
@@ -91,7 +75,7 @@ PlainStyleInfo parsePlain(
     buffer: StringBuffer(greedyChars),
   );
 
-  final docEndMarkers = <ReadableChar>[];
+  var hasDocMarkers = false;
 
   chunker:
   while (scanner.canChunkMore) {
@@ -108,15 +92,16 @@ PlainStyleInfo parsePlain(
       /// Check for the document end markers first always
       case Indicator.blockSequenceEntry || Indicator.period:
         {
-          if (indent == 0 && hasDocEndMarkers(scanner, buffer: docEndMarkers)) {
+          if (indent == 0 &&
+              hasDocumentMarkers(
+                scanner,
+                onMissing: (greedy) => buffer.writeAll(greedy),
+              )) {
+            hasDocMarkers = true;
             break chunker;
           }
 
-          // Cursor was moved
-          if (docEndMarkers.isNotEmpty) {
-            docEndMarkers.clear();
-            continue chunker;
-          }
+          continue chunker;
         }
 
       /// A mapping key can never be followed by a whitespace. Exit regardless
@@ -211,16 +196,11 @@ PlainStyleInfo parsePlain(
     scanner.skipCharAtCursor();
   }
 
-  return (
-    parseTarget: NextParseTarget.checkTarget(scanner.charAtCursor),
-    scalar: formatScalar(
-      buffer,
-      scalarStyle: _style,
-      tags: tags,
-      resolver: resolver,
-      trim: true, // Plain scalars have no leading/trailing spaces!
-    ),
+  return preformatScalar(
+    buffer,
+    scalarStyle: _style,
+    trim: true, // Plain scalars have no leading/trailing spaces!
     indentOnExit: indentOnExit,
-    docEndChars: docEndMarkers,
+    hasDocEndMarkers: hasDocMarkers,
   );
 }
