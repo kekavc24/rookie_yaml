@@ -5,8 +5,11 @@ part of 'block_scalar.dart';
 ///   * `isLiteral` - indicates if `literal` or `folded`.
 ///   * `chomping` - indicates how trailing lines are handled.
 ///   * `indentIndicator` - additional indent to include to the node's indent
-typedef _BlockHeaderInfo =
-    ({bool isLiteral, ChompingIndicator chomping, int? indentIndicator});
+typedef _BlockHeaderInfo = ({
+  bool isLiteral,
+  ChompingIndicator chomping,
+  int? indentIndicator,
+});
 
 /// Block scalar's indicators that convey how the scalar should be `chomped`
 /// or additional indent to apply
@@ -109,10 +112,9 @@ void _maybeFoldLF(
     ///
     /// However, if followed by a `\n`, `YAML` implies it should be folded from
     /// the docs.
-    toWrite =
-        lineBreaks.length == 1
-            ? [if (contentBuffer.isNotEmpty) WhiteSpace.space]
-            : lineBreaks.skip(1);
+    toWrite = lineBreaks.length == 1
+        ? [if (contentBuffer.isNotEmpty) WhiteSpace.space]
+        : lineBreaks.skip(1);
   }
 
   contentBuffer.writeAll(toWrite);
@@ -203,15 +205,18 @@ Iterable<ReadableChar> _preserveEmptyIndented({
   return isLiteral || !lastWasIndented || lineBreaks.isEmpty
       ? lineBreaks
       : <ReadableChar>[lineBreaks.first].followedBy(
-        lineBreaks.skip(1).expand((value) sync* {
-          yield _whitespace;
-          yield value;
-        }),
-      );
+          lineBreaks.skip(1).expand((value) sync* {
+            yield _whitespace;
+            yield value;
+          }),
+        );
 }
 
-const docEndCharSingle = '.';
-final docEndGraphemeSingle = GraphemeChar.wrap(docEndCharSingle);
+/// Single char for document end marker, `...`
+final docEndSingle = Indicator.period;
+
+/// Single char for directives end marker, `---`
+final directiveEndSingle = Indicator.blockSequenceEntry;
 
 /// Returns true if directive end marker `...` or document end marker `---` is
 /// encountered with the characters added to the [buffer] if provided.
@@ -241,24 +246,16 @@ final docEndGraphemeSingle = GraphemeChar.wrap(docEndCharSingle);
 /// ---
 /// "
 /// ```
-bool hasDocEndMarkers(
+bool hasDocumentMarkers(
   ChunkScanner scanner, {
-  bool? isTopLevelCheck,
-  List<ReadableChar>? buffer,
+  required void Function(List<ReadableChar> buffered) onMissing,
 }) {
   var charAtCursor = scanner.charAtCursor;
-  final markers = buffer ?? [];
+  final markers = <ReadableChar>[];
 
-  void verbose() {
+  void pointToNext() {
     scanner.skipCharAtCursor();
     charAtCursor = scanner.charAtCursor;
-  }
-
-  // Checks if the current char is the beginning of a doc marker
-  bool isMarker(ReadableChar? char) {
-    if (char == null) return false;
-    return char == Indicator.blockSequenceEntry ||
-        char.string == docEndCharSingle;
   }
 
   /// Document markers, that `...` and `---` have no indent. They must be
@@ -268,36 +265,52 @@ bool hasDocEndMarkers(
   /// We insist on it being top level because the markers have no indent
   /// before. They have a -1 indent at this point or zero depending on how
   /// far along the parsing this is called.
-  if (isMarker(charAtCursor) || (isTopLevelCheck ?? true)) {
-    switch (charAtCursor) {
-      // First "-" or "." of markers
-      case ReadableChar char when isMarker(char):
-        {
-          const expectedCount = 3;
-          final str = char.string;
+  switch (charAtCursor) {
+    case ReadableChar char
+        when char == docEndSingle || char == directiveEndSingle:
+      {
+        const expectedCount = 3;
+        final str = char.string;
 
-          final skipped = scanner.takeUntil(
-            includeCharAtCursor: true,
-            mapper: (v) => v,
-            onMapped: (v) => markers.add(v),
-            stopIf: (count, possibleNext) {
-              return count == expectedCount || possibleNext.string != str;
-            },
-          );
+        final skipped = scanner.takeUntil(
+          includeCharAtCursor: true,
+          mapper: (v) => v,
+          onMapped: (v) => markers.add(v),
+          stopIf: (count, possibleNext) {
+            return count == expectedCount || possibleNext.string != str;
+          },
+        );
 
-          verbose();
-          return skipped == expectedCount;
+        pointToNext();
+
+        if (skipped == expectedCount) {
+          /// YAML insists document markers should not have any characters
+          /// after unless its just whitespace.
+          if (charAtCursor is WhiteSpace && str == docEndSingle.string) {
+            scanner.skipWhitespace(skipTabs: true);
+            pointToNext();
+
+            if (charAtCursor is! LineBreak?) {
+              throw FormatException(
+                'Document end markers "..." can only have whitespace after but '
+                'found: ${charAtCursor ?? ''}',
+              );
+            }
+
+            return true;
+          }
+
+          // Directives end markers can have either
+          if (charAtCursor case LineBreak? _ || WhiteSpace? _) {
+            return true;
+          }
         }
 
-      default:
-        if (charAtCursor != null) {
-          markers.add(charAtCursor!);
-        }
-
-        verbose();
+        onMissing(markers);
         return false;
-    }
-  }
+      }
 
-  return false;
+    default:
+      return false;
+  }
 }

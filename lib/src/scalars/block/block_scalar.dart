@@ -1,8 +1,8 @@
+import 'dart:collection';
+
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/comment_parser.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
-import 'package:rookie_yaml/src/parser_utils.dart';
 import 'package:rookie_yaml/src/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
@@ -16,12 +16,7 @@ part 'block_utils.dart';
 /// Returns a [PlainStyleInfo] record since a block style scalar is a plain
 /// scalar with explicit indicators qualifying it as a block scalar. A plain
 /// and block scalar both use indentation to convey content information.
-PlainStyleInfo parseBlockStyle(
-  ChunkScanner scanner, {
-  required int minimumIndent,
-  required Set<ResolvedTag> tags,
-  required Tag Function(LocalTag tag) resolver,
-}) {
+PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
   var indentOnExit = 0;
   final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(scanner);
 
@@ -47,8 +42,8 @@ PlainStyleInfo parseBlockStyle(
   var lastWasIndented = false;
   var didRun = false;
 
-  final previousIndents = <int>{};
-  final docEndMarkers = <ReadableChar>[];
+  final previousIndents = SplayTreeSet<int>();
+  var hasDocMarkers = false;
 
   blockLoop:
   while (scanner.canChunkMore) {
@@ -74,9 +69,13 @@ PlainStyleInfo parseBlockStyle(
         /// end marker is found in a top level scalar
         final isDocEnd =
             scannedIndent == 0 &&
-            hasDocEndMarkers(scanner, buffer: docEndMarkers);
+            hasDocumentMarkers(
+              scanner,
+              onMissing: (greedy) => buffer.writeAll(greedy),
+            );
 
         if (charAfter == null || isDocEnd || scannedIndent < indent) {
+          hasDocMarkers = isDocEnd;
           indentOnExit = scannedIndent;
           break blockLoop;
         }
@@ -87,13 +86,12 @@ PlainStyleInfo parseBlockStyle(
             scanner,
             contentBuffer: buffer,
             scannedIndent: scannedIndent,
-            callBeforeTabWrite:
-                () => _maybeFoldLF(
-                  buffer,
-                  isLiteral: isLiteral,
-                  lastNonEmptyWasIndented: false, // Not possible with no indent
-                  lineBreaks: lineBreaks,
-                ),
+            callBeforeTabWrite: () => _maybeFoldLF(
+              buffer,
+              isLiteral: isLiteral,
+              lastNonEmptyWasIndented: false, // Not possible with no indent
+              lineBreaks: lineBreaks,
+            ),
           );
 
           if (isEmptyLine) {
@@ -115,7 +113,6 @@ PlainStyleInfo parseBlockStyle(
 
       scanner.skipCharAtCursor();
 
-      docEndMarkers.clear();
       didRun = true;
       continue;
     }
@@ -152,15 +149,10 @@ PlainStyleInfo parseBlockStyle(
 
   _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
 
-  return (
+  return preformatScalar(
+    buffer,
+    scalarStyle: style,
     indentOnExit: indentOnExit,
-    scalar: formatScalar(
-      buffer,
-      scalarStyle: style,
-      tags: tags,
-      resolver: resolver,
-    ),
-    parseTarget: NextParseTarget.checkTarget(scanner.charAtCursor),
-    docEndChars: docEndMarkers,
+    hasDocEndMarkers: hasDocMarkers,
   );
 }
