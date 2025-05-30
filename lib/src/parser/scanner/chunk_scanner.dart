@@ -263,7 +263,7 @@ final class ChunkScanner {
     //final offset = _getOffset(buffer);
     return (
       //offset: offset,
-      sourceEnded: !_hasMoreLines && _currentOffset >= source.length,
+      sourceEnded: !_hasMoreLines && _currentOffset >= (source.length - 1),
       lineEnded: _currentLine == null,
       charOnExit: maybeCharOnExit,
     );
