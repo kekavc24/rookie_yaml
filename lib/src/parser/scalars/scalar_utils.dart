@@ -1,7 +1,7 @@
 import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
-import 'package:rookie_yaml/src/parser/yaml_parser.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 /// A non-existent indent level if a scalar was parsed correctly.
 ///
@@ -144,15 +144,12 @@ PreScalar preformatScalar(
 
   var normalized = content.toLowerCase();
 
-  dynamic value;
+  dynamic value = content;
   int? radix;
-  LocalTag? tag;
+  LocalTag tag = stringTag;
 
-  // Just write as string if a line break was stored
-  if (hasLineBreak) {
-    tag = stringTag;
-    value = content;
-  } else {
+  // Attempt to infer a default value
+  if (!hasLineBreak) {
     if (_parseInt(normalized) case _ParsedInt(
       radix: final pRadix,
       value: final pValue,
@@ -173,7 +170,7 @@ PreScalar preformatScalar(
   }
 
   return PreScalar._(
-    inferredYamlTag: tag!,
+    inferredYamlTag: tag,
     scalarStyle: scalarStyle,
     parsedContent: content,
     hasDocEndMarkers: hasDocEndMarkers,
