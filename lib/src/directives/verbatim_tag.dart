@@ -5,14 +5,14 @@ const _onNonEmptyVerbatimUri =
     'have a non-empty suffix';
 
 /// Start of verbatim tag declaration
-final _verbatimStart = GraphemeChar.wrap('<');
+final verbatimStart = GraphemeChar.wrap('<');
 
 /// End of verbatim tag declaration
 final _verbatimEnd = GraphemeChar.wrap('>');
 
 /// Wraps a valid tag uri in verbatim
 String _wrapAsVerbatim(String uri) =>
-    '${_tagIndicator.string}$_verbatimStart$uri$_verbatimEnd';
+    '${_tagIndicator.string}$verbatimStart$uri$_verbatimEnd';
 
 /// Represents a tag explicitly declared in its raw form. Never resolved to
 /// [GlobalTag]
@@ -91,7 +91,7 @@ VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
   );
   skipAndMove();
 
-  final GraphemeChar(string: vStart, unicode: vsCode) = _verbatimStart;
+  final GraphemeChar(string: vStart, unicode: vsCode) = verbatimStart;
 
   // Must be followed by an opening bracket "<"
   isNotNullOrMatches(

@@ -151,6 +151,8 @@ Directives parseDirectives(
                 }
             }
 
+            char = scanner.charAtCursor;
+
             // Expect either a line break or whitespace or null
             if (char is! LineBreak?) {
               throwIfNotSeparation(char);
