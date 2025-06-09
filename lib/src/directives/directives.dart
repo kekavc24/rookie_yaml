@@ -41,16 +41,10 @@ sealed class Directive {
 
 /// Parses all [Directive](s) present before the start of a node in a
 /// `YAML` document.
-Directives parseDirectives(
-  ChunkScanner scanner, {
-  Map<TagHandle, GlobalTag<dynamic>>? existingGlobalDirectives,
-}) {
+Directives parseDirectives(ChunkScanner scanner) {
   YamlDirective? directive;
-  final globalDirectives = existingGlobalDirectives ?? {};
+  final globalDirectives = <TagHandle, GlobalTag>{};
   final reserved = <ReservedDirective>[];
-
-  /// Closure to validate global tag handles
-  bool isDuplicate(TagHandle handle) => globalDirectives.containsKey(handle);
 
   /// Skips line breaks. Returns `true` if we continue parsing directives
   bool skipLineBreaks() {
@@ -135,7 +129,7 @@ Directives parseDirectives(
                   throwIfNotSeparation(charOnExit);
                   final tag = _parseGlobalTag(
                     scanner,
-                    isDuplicate: isDuplicate,
+                    isDuplicate: globalDirectives.containsKey,
                   );
                   globalDirectives[tag.tagHandle] = tag;
                 }
