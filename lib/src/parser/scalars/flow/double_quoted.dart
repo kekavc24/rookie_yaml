@@ -123,6 +123,9 @@ PreScalar parseDoubleQuoted(
     throw _doubleQuoteException;
   }
 
+  // Skip closing quote
+  scanner.skipCharAtCursor();
+
   return preformatScalar(buffer, scalarStyle: ScalarStyle.doubleQuoted);
 }
 
