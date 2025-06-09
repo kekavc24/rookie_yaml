@@ -32,7 +32,7 @@ base class Scalar<T> extends Node {
   int get hashCode => _equality.hash([_tags, _content]);
 
   @override
-  String toString() => _content;
+  String toString() => '${value?.toString()}';
 }
 
 final class IntScalar extends Scalar<int> {
