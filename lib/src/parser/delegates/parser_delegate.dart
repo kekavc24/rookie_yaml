@@ -25,7 +25,7 @@ abstract interface class ParserDelegate {
   final int indentLevel;
 
   /// Indent of the current node being parsed
-  final int indent;
+  int indent;
 
   /// Starting offset.
   final int startOffset;

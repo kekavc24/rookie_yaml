@@ -96,5 +96,9 @@ PreScalar parseSingleQuoted(
     throw _exception;
   }
 
-  return preformatScalar(buffer, scalarStyle: ScalarStyle.singleQuoted);
+  return preformatScalar(
+    buffer,
+    scalarStyle: ScalarStyle.singleQuoted,
+    actualIdent: indent,
+  );
 }

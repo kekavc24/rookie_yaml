@@ -19,9 +19,10 @@ final class PreScalar {
     required this.hasDocEndMarkers,
     required this.hasLineBreak,
     required this.inferredValue,
-    required this.indent,
+    required this.scalarIndent,
+    required this.indentOnExit,
     this.radix,
-  }) : indentDidChange = indent != seamlessIndentMarker;
+  }) : indentDidChange = indentOnExit != seamlessIndentMarker;
 
   /// Implicit `YAML` tag inferred based on the generic schema. May need
   /// resolution from the parser if no recognized schema tag was specified.
@@ -32,6 +33,25 @@ final class PreScalar {
 
   /// Actual scalar content.
   final String parsedContent;
+
+  /// Fixed indent used to parse the scalar.
+  ///
+  /// It should be noted that the indent for a flow scalar
+  /// ([ScalarStyle.doubleQuoted], [ScalarStyle.singleQuoted]
+  /// and [ScalarStyle.plain]) may be an approximate indent since indent serves
+  /// no purpose in a flow scalar. Ergo, this [scalarIndent] may refer to the
+  /// minimum indent used to determine its structure if its parent flow
+  /// collection ([Sequence] or [Mapping]) is nested within a collection
+  ///
+  /// If the scalar is a direct child of a block key or block list then its
+  /// indent is fixed based on the parent. However, for [ScalarStyle.folded]
+  /// and [ScalarStyle.literal], this indent may be greater than that suggested
+  /// by the parent since YAML allows block scalars to define their own
+  /// indentation using the indentation indicator (`+`) in the block header.
+  /// Additionally, YAML recommends the parser to infer the indent based
+  /// on the first non-empty line's indentatio. This indent can be end up being
+  /// equal to or greater than the indent recommended by the parent.
+  final int scalarIndent;
 
   /// Returns `true` if any `---` or `...` was encountered
   final bool hasDocEndMarkers;
@@ -53,7 +73,7 @@ final class PreScalar {
   /// Block(-like) styles, that is, `plain`, `literal` and `folded`, that rely
   /// on indentation to convey content may provide a different value when
   /// [indentDidChange] is `true`.
-  final int indent;
+  final int indentOnExit;
 
   /// Value inferred based on its kind as specified in the YAML generic
   /// schema
@@ -131,6 +151,7 @@ final class PreScalar {
 PreScalar preformatScalar(
   ScalarBuffer buffer, {
   required ScalarStyle scalarStyle,
+  required int actualIdent,
   bool trim = false,
   int indentOnExit = seamlessIndentMarker,
   bool hasDocEndMarkers = false,
@@ -176,7 +197,8 @@ PreScalar preformatScalar(
     hasDocEndMarkers: hasDocEndMarkers,
     hasLineBreak: hasLineBreak,
     inferredValue: value,
-    indent: indentOnExit,
+    scalarIndent: actualIdent,
+    indentOnExit: indentOnExit,
     radix: radix,
   );
 }

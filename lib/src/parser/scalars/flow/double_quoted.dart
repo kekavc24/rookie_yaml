@@ -126,7 +126,11 @@ PreScalar parseDoubleQuoted(
   // Skip closing quote
   scanner.skipCharAtCursor();
 
-  return preformatScalar(buffer, scalarStyle: ScalarStyle.doubleQuoted);
+  return preformatScalar(
+    buffer,
+    scalarStyle: ScalarStyle.doubleQuoted,
+    actualIdent: indent,
+  );
 }
 
 /// Parses an escaped character in a double quoted scalar and returns `true`

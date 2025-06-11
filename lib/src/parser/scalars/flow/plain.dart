@@ -60,6 +60,7 @@ PreScalar? parsePlain(
         return preformatScalar(
           ScalarBuffer(ensureIsSafe: false),
           scalarStyle: _style,
+          actualIdent: indent,
         );
       }
 
@@ -200,6 +201,7 @@ PreScalar? parsePlain(
     buffer,
     scalarStyle: _style,
     trim: true, // Plain scalars have no leading/trailing spaces!
+    actualIdent: indent,
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
   );
