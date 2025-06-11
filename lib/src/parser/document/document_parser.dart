@@ -659,12 +659,6 @@ final class DocumentParser {
 
       final charAfter = _scanner.peekCharAfterCursor();
 
-      // Fast track an exit
-      if (charAfter == null) {
-        _scanner.skipCharAtCursor();
-        break;
-      }
-
       // We will always have a char here
       switch (_scanner.charAtCursor) {
         case Indicator.flowEntryEnd:
