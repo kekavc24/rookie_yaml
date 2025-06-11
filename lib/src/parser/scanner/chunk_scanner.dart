@@ -62,7 +62,9 @@ final class ChunkScanner {
 
   /// Checks if this scanner produce more characters based on the iteration
   /// state
-  bool get canChunkMore => _hasMoreLines || _currentLine != null;
+  bool get canChunkMore => _linesHaveChars || _charOnLastExit != null;
+
+  bool get _linesHaveChars => _hasMoreLines || _currentLine != null;
 
   /// Index of current line being iterated
   int _lineIndex = -1;
@@ -97,7 +99,7 @@ final class ChunkScanner {
     var char = next();
 
     // We prefetch next line if null
-    if (char == null && canChunkMore) {
+    if (char == null && _linesHaveChars) {
       _fetchNextLine();
       char = next();
     }
