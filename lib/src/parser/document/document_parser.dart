@@ -654,10 +654,8 @@ final class DocumentParser {
 
     listParser:
     while (_scanner.canChunkMore) {
-      // Skip leading space for first element if present
-      if (delegate.isEmpty) {
+      // Always ensure we are at a parsable char. Safely.
         if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
-      }
 
       final charAfter = _scanner.peekCharAfterCursor();
 
