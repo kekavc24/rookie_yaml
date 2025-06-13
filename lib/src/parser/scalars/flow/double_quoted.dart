@@ -25,7 +25,7 @@ PreScalar parseDoubleQuoted(
   required int indent,
   required bool isImplicit,
 }) {
-  final leadingChar = scanner.charAtCursor;
+  final leadingChar = scanner.charAtCursor; // TODO: Use single variable?
 
   if (leadingChar != _doubleQuoteIndicator) {
     throw FormatException(
@@ -37,39 +37,39 @@ PreScalar parseDoubleQuoted(
   var quoteCount = 1;
   scanner.skipCharAtCursor();
 
-  /// Nested function to check if we can exit the parsing. Usually after we
-  /// find the first un-escaped closing `doubleQuote`.
-  bool canExit(int quoteCount) => quoteCount == 2;
-
-  var foundClosingQuote = false;
   final buffer = ScalarBuffer(ensureIsSafe: false);
-  var lineBreakIgnoreSpace = false;
+  var lineBreakEverEscaped = false;
+
+  /// Code reusability in loop
+  void foldDoubleQuoted() {
+    final (:indentDidChange, :foldIndent, :wasEscapedOnFold) = foldFlowScalar(
+      scanner,
+      scalarBuffer: buffer,
+      minIndent: indent,
+      isImplicit: isImplicit,
+
+      // Can only escape line breaks
+      onExitResumeIf: (curr, next) {
+        return curr == SpecialEscaped.backSlash && next is LineBreak;
+      },
+    );
+
+    // Must see closing quote first
+    if (indentDidChange) {
+      throw indentException(indent, foldIndent);
+    }
+
+    lineBreakEverEscaped = lineBreakEverEscaped || wasEscapedOnFold;
+  }
 
   // TODO: Save offsets etc.
   dQuotedLoop:
-  while (scanner.canChunkMore && !foundClosingQuote) {
-    final (:sourceEnded, :lineEnded, :charOnExit) = scanner.bufferChunk(
-      buffer.writeChar,
-      exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
-    );
+  while (scanner.canChunkMore && quoteCount != 2) {
+    final current = scanner.charAtCursor;
 
-    if (charOnExit == null) {
-      throw _doubleQuoteException;
-    }
+    if (current == null) break;
 
-    if (sourceEnded) {
-      foundClosingQuote = canExit(quoteCount);
-      break;
-    }
-
-    switch (charOnExit) {
-      case final SpecialEscaped escaped:
-        lineBreakIgnoreSpace = _parseEscaped(
-          buffer,
-          char: escaped,
-          scanner: scanner,
-        );
-
+    switch (current) {
       /// Tracks number of times we saw an unescaped `double quote`
       case _doubleQuoteIndicator:
         ++quoteCount;
@@ -78,48 +78,38 @@ PreScalar parseDoubleQuoted(
       case LineBreak _ when isImplicit:
         break dQuotedLoop;
 
+      // Attempt to fold or parsed escaped
+      case SpecialEscaped.backSlash:
+        {
+          if (scanner.peekCharAfterCursor() is LineBreak) {
+            foldDoubleQuoted();
+            break;
+          }
+
+          _parseEscaped(scanner, buffer: buffer);
+        }
+
       // Always fold by default if not escaped
+      case WhiteSpace _ || LineBreak _:
+        foldDoubleQuoted();
+
       default:
         {
-          final (:ignoreInfo, :indentInfo, :matchedDelimiter) = foldScalar(
-            buffer,
-            scanner: scanner,
-            curr: charOnExit,
-            indent: indent,
-            canExitOnNull: false,
-            lineBreakWasEscaped: lineBreakIgnoreSpace,
-            exitOnNullInfo: (
-              delimiter: _doubleQuoteIndicator.string,
-              description: 'double quote',
-            ),
-            ignoreGreedyNonBreakWrite: (char) =>
-                char == _doubleQuoteIndicator ||
-                char == SpecialEscaped.backSlash,
-            matchesDelimiter: (char) => char == _doubleQuoteIndicator,
+          buffer.writeChar(current);
+
+          final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
+            buffer.writeChar,
+            exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
           );
 
-          if (indentInfo.indentChanged) {
-            throw indentException(indent, indentInfo.indentFound);
-          } else if (ignoreInfo.ignoredNext || matchedDelimiter) {
-            /// We need to handle the `escape` in a specific way in double
-            /// quotes while maintaning the `fold` function's versatility
-            if (scanner.charAtCursor == SpecialEscaped.backSlash) {
-              lineBreakIgnoreSpace = _parseEscaped(
-                buffer,
-                char: SpecialEscaped.backSlash,
-                scanner: scanner,
-              );
-            } else {
-              ++quoteCount; // Otherwise, always the closing quote
-            }
+          if (sourceEnded) {
+            break dQuotedLoop;
           }
         }
     }
-
-    foundClosingQuote = canExit(quoteCount);
   }
 
-  if (!foundClosingQuote) {
+  if (quoteCount != 2) {
     throw _doubleQuoteException;
   }
 
@@ -135,58 +125,33 @@ PreScalar parseDoubleQuoted(
 
 /// Parses an escaped character in a double quoted scalar and returns `true`
 /// only if it is a line break.
-bool _parseEscaped(
-  ScalarBuffer buffer, {
-  required SpecialEscaped char,
-  required ChunkScanner scanner,
+void _parseEscaped(
+  ChunkScanner scanner, {
+  required ScalarBuffer buffer,
 }) {
-  if (char != SpecialEscaped.backSlash) {
-    buffer.writeChar(char);
-    return false;
-  }
+  scanner.skipCharAtCursor();
 
-  var charAfter = scanner.peekCharAfterCursor();
+  var charAfterEscape = scanner.charAtCursor;
 
-  if (charAfter == null) {
+  if (charAfterEscape == null) {
     throw _doubleQuoteException;
   }
 
-  /// Resolve raw representations of characters in double quotes. This also
-  /// helps resolves ASCII characters not represented correctly in Dart.
-  ///
-  /// The downside/upside (subjective), we implicitly replace any escaped
-  /// characters with their expected `unicode` representations.
-  charAfter = SpecialEscaped.resolveUnrecognized(charAfter) ?? charAfter;
-
-  /// Concatenate without adding space when folding in the next call
-  if (charAfter is LineBreak) {
-    return true;
-  } else if (charAfter
-      case WhiteSpace _ || SpecialEscaped _ || _doubleQuoteIndicator) {
-    // Write it greedily to buffer and skip to it.
-    buffer.writeChar(charAfter);
-    scanner.skipCharAtCursor();
-  } else {
-    // Unicode at this point. Anything else is an error.
-    var countToRead = SpecialEscaped.checkHexWidth(charAfter);
-
-    if (countToRead == 0) {
-      throw const FormatException('Invalid escaped character');
-    }
-
+  // Attempt to resolve as an hex
+  if (SpecialEscaped.checkHexWidth(charAfterEscape) case var hexToRead
+      when hexToRead != 0) {
     // TODO: Should hex characters be converted?
     buffer
       ..writeChar(SpecialEscaped.backSlash)
-      ..writeChar(charAfter);
+      ..writeChar(charAfterEscape);
 
-    /// Move cursor forward to point the next character i.e `charAfter`
-    scanner.skipCharAtCursor();
+    scanner.skipCharAtCursor(); // Point the hex character
 
     /// Further reads are safe peeks to prevent us from pointing
     /// the cursor too far ahead. Intentionally expressive rather than using
     /// `scanner.chunkWhile(...)`
-    while (countToRead > 0 && scanner.canChunkMore) {
-      final hexChar = scanner.peekCharAfterCursor();
+    while (hexToRead > 0 && scanner.canChunkMore) {
+      final hexChar = scanner.charAtCursor;
 
       if (hexChar == null) {
         throw const FormatException(
@@ -199,14 +164,26 @@ bool _parseEscaped(
       }
 
       buffer.writeChar(hexChar);
-      --countToRead;
+      --hexToRead;
       scanner.skipCharAtCursor();
     }
 
-    if (countToRead > 0) {
-      throw FormatException('$countToRead hex digit(s) are missing.');
+    if (hexToRead > 0) {
+      throw FormatException('$hexToRead hex digit(s) are missing.');
     }
+
+    return;
   }
 
-  return false;
+  /// Resolve raw representations of characters in double quotes. This also
+  /// helps resolves ASCII characters not represented correctly in Dart.
+  ///
+  /// The downside/upside (subjective), we implicitly replace any escaped
+  /// characters with their expected `unicode` representations. Additionally,
+  /// the next char is just written by default without caring
+  buffer.writeChar(
+    SpecialEscaped.resolveUnrecognized(charAfterEscape) ?? charAfterEscape,
+  );
+
+  scanner.skipCharAtCursor();
 }

@@ -18,9 +18,14 @@ PreScalar parseSingleQuoted(
   required int indent,
   required bool isImplicit,
 }) {
+  if (scanner.charAtCursor != _singleQuote) {
+    throw _exception;
+  }
+
+  scanner.skipCharAtCursor();
+
   final buffer = ScalarBuffer(ensureIsSafe: false);
-  var quoteCount = 0;
-  var shouldEvaluateCurrentChar = false;
+  var quoteCount = 1;
 
   while (scanner.canChunkMore && quoteCount != 2) {
     final possibleChar = scanner.charAtCursor;
@@ -33,17 +38,17 @@ PreScalar parseSingleQuoted(
     switch (possibleChar) {
       case _singleQuote:
         {
-          /// Single quotes can also be a form of escaping. We need to be
-          /// sure we already saw the opening quotes.
-          if (scanner.peekCharAfterCursor() == _singleQuote &&
-              quoteCount != 0) {
+          // Single quotes can also be a form of escaping.
+          if (scanner.peekCharAfterCursor() == _singleQuote) {
             buffer.writeChar(_singleQuote);
-            scanner.skipCharAtCursor();
+
+            // Skip both.
+            scanner
+              ..skipCharAtCursor()
+              ..skipCharAtCursor();
           } else {
             ++quoteCount;
           }
-
-          shouldEvaluateCurrentChar = false;
         }
 
       case LineBreak _ when isImplicit:
@@ -52,44 +57,31 @@ PreScalar parseSingleQuoted(
       // Fold without any restrictions by default
       case WhiteSpace _ || LineBreak _:
         {
-          final (:matchedDelimiter, :indentInfo, ignoreInfo: _) = foldScalar(
-            buffer,
-            scanner: scanner,
-            curr: possibleChar,
-            indent: indent,
-            canExitOnNull: false,
-            lineBreakWasEscaped: false,
-            exitOnNullInfo: (
-              delimiter: _singleQuote.string,
-              description: 'single quote',
-            ),
-            ignoreGreedyNonBreakWrite: null,
-            matchesDelimiter: (char) => char == _singleQuote,
+          final FoldFlowInfo(:indentDidChange, :foldIndent) = foldFlowScalar(
+            scanner,
+            scalarBuffer: buffer,
+            minIndent: indent,
+            isImplicit: isImplicit,
+            onExitResumeIf: (_, _) => false,
           );
 
-          if (indentInfo.indentChanged) {
-            throw indentException(indent, indentInfo.indentFound);
+          // We must see closing quote before anything else
+          if (indentDidChange) {
+            throw indentException(indent, foldIndent);
           }
-
-          // Maybe it could be escaped!
-          shouldEvaluateCurrentChar = matchedDelimiter;
         }
 
-      // Single quoted style is restricted to printable characters
-      case _ when !isPrintable(possibleChar):
-        throw _printableException;
-
-      // Safe to write. Must be printable
+      // Single quoted style is restricted to printable characters.
       default:
-        buffer.writeChar(possibleChar);
-        shouldEvaluateCurrentChar = false;
-    }
+        {
+          if (!isPrintable(possibleChar)) {
+            throw _printableException;
+          }
 
-    if (shouldEvaluateCurrentChar) {
-      continue;
+          buffer.writeChar(possibleChar);
+          scanner.skipCharAtCursor();
+        }
     }
-
-    scanner.skipCharAtCursor();
   }
 
   if (quoteCount != 2) {

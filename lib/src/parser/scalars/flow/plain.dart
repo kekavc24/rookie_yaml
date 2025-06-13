@@ -127,36 +127,17 @@ PreScalar? parsePlain(
       /// Attempt to fold by default anytime we see a line break or white space
       case WhiteSpace _ || LineBreak _:
         {
-          final (:ignoreInfo, :indentInfo, matchedDelimiter: _) = foldScalar(
-            buffer,
-            scanner: scanner,
-            curr: char,
-            indent: indent,
-            canExitOnNull: true,
-            lineBreakWasEscaped: false,
-            exitOnNullInfo: null,
-            ignoreGreedyNonBreakWrite: (iChar) {
-              return iChar is WhiteSpace ||
-                  iChar == Indicator.comment ||
-                  iChar == _kvColon ||
-                  flowDelimiters.contains(char);
-            },
-            matchesDelimiter: (_) => false,
+          final FoldFlowInfo(:indentDidChange, :foldIndent) = foldFlowScalar(
+            scanner,
+            scalarBuffer: buffer,
+            minIndent: indent,
+            isImplicit: isImplicit,
+            onExitResumeIf: (_, _) => false,
           );
 
-          if (indentInfo.indentChanged) {
-            indentOnExit = indentInfo.indentFound ?? indentOnExit;
+          if (indentDidChange) {
+            indentOnExit = foldIndent;
             break chunker;
-          }
-
-          /// When a linebreak is folded, the character at cursor is not
-          /// skipped. This is okay.
-          ///
-          /// If not, this character at cursor passed our
-          /// `ignoreGreedyNonBreakWrite` predicate and needs to be
-          /// evaluated
-          if (ignoreInfo.ignoredNext && !ignoreInfo.foldedLineBreak) {
-            continue chunker;
           }
         }
 
@@ -189,12 +170,9 @@ PreScalar? parsePlain(
             break chunker;
           }
 
-          continue chunker;
+          continue chunker; // TODO: Yank this
         }
     }
-
-    // Only essential after folding and skipping whitespace.
-    scanner.skipCharAtCursor();
   }
 
   return preformatScalar(
