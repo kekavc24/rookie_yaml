@@ -1,7 +1,9 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
+import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
 /// Generates a generic indent exception
 FormatException indentException(int expectedIndent, int? foundIndent) {
@@ -11,196 +13,158 @@ FormatException indentException(int expectedIndent, int? foundIndent) {
   );
 }
 
-/// Returns information after a `flow scalar` is folded, that is, a plain/
-/// single quote/double quote scalar.
-typedef FoldInfo = ({
-  // If a delimiter was encounter for double/single quote flow scalars
-  bool matchedDelimiter,
+// TODO: Simplify line break etc. etc.
 
-  //
-  ({bool ignoredNext, bool foldedLineBreak}) ignoreInfo,
-  ({bool indentChanged, int? indentFound}) indentInfo,
+typedef FoldFlowInfo = ({
+  bool indentDidChange,
+  int foldIndent,
+  bool wasEscapedOnFold,
 });
 
-FoldInfo _infoOnFold({
-  bool matchedDelimiter = false,
-  bool ignoredNextChar = false,
-  bool foldedLineBreak = false,
-  bool indentChanged = false,
-  int? indentFound,
-}) => (
-  ignoreInfo: (ignoredNext: ignoredNextChar, foldedLineBreak: foldedLineBreak),
-  matchedDelimiter: matchedDelimiter,
-  indentInfo: (indentChanged: indentChanged, indentFound: indentFound),
-);
-
-final _defaultExitInfo = _infoOnFold();
-
-/// TODO: Simplify this function!
-FoldInfo foldScalar(
-  ScalarBuffer foldingBuffer, {
-  required ChunkScanner scanner,
-  required ReadableChar curr,
-  required int indent,
-  required bool canExitOnNull,
-  required bool lineBreakWasEscaped,
-  required ({String delimiter, String description})? exitOnNullInfo,
-  required bool Function(ReadableChar char)? ignoreGreedyNonBreakWrite,
-  required bool Function(ReadableChar char) matchesDelimiter,
+/// Folds a flow scalar(`plain`, `double quoted` and `single quoted`) that
+/// spans more than 1 line.
+///
+/// [onExitResumeIf] should only be provided when parsing a [Scalar] with
+/// [ScalarStyle.doubleQuoted] which allows `\n` to be escaped. See
+/// [parseDoubleQuoted]
+FoldFlowInfo foldFlowScalar(
+  ChunkScanner scanner, {
+  required ScalarBuffer scalarBuffer,
+  required int minIndent,
+  required bool isImplicit,
+  required bool Function(ReadableChar current, ReadableChar? next)
+  onExitResumeIf,
 }) {
-  final whitespaceBuffer = <ReadableChar>[];
-  var lineBreakIgnoreSpace = lineBreakWasEscaped;
-  var lineBreakStreak = false;
+  final bufferedWhitespace = <WhiteSpace>[];
+  var didEscapeMaybe = false; // Tracks whether we escaped at least once
 
-  final canCheckGreedyNonBreak = ignoreGreedyNonBreakWrite != null;
+  var linebreakWasEscaped = false; // Whether we escaped in the current run
 
-  ReadableChar? foldTarget = curr;
+  folding:
+  while (scanner.canChunkMore) {
+    var current = scanner.charAtCursor;
 
-  final (:delimiter, :description) =
-      exitOnNullInfo ?? (delimiter: '', description: 'any character');
-
-  final unexpectedEndException = FormatException(
-    'Expected '
-    '${delimiter.isEmpty ? description : "a $description ($delimiter)"}'
-    ' but found nothing',
-  );
-
-  // We move the scanner forward and fold as many lines as we can
-  while (true) {
-    var charAfter = scanner.peekCharAfterCursor();
-
-    if (foldTarget == null) {
-      // Caller doesn't need to evaluate further
-      if (canExitOnNull) return _defaultExitInfo;
-
-      throw unexpectedEndException;
-    }
-
-    switch (foldTarget) {
-      /// Fold if a line break is found. `\r\n` or `\n` or `\r`. Recognized
-      /// as line breaks in YAML
-      case final LineBreak canBeCrLf:
+    switch (current) {
+      case LineBreak _ when !isImplicit:
         {
-          var skippedWhiteSpace = false;
-          skipCrIfPossible(canBeCrLf, scanner: scanner);
-          charAfter = scanner.peekCharAfterCursor();
+          const space = WhiteSpace.space;
+          const lf = LineBreak.lineFeed;
 
-          if (!lineBreakStreak) {
-            whitespaceBuffer.clear();
-          } else if (!lineBreakIgnoreSpace) {
-            foldingBuffer.writeChar(LineBreak.lineFeed);
+          var lastWasLineBreak = false;
+
+          void foldCurrent(LineBreak? current) {
+            scalarBuffer.writeChar(
+              lastWasLineBreak || current != null ? lf : space,
+            );
+
+            bufferedWhitespace.clear(); // Just to be safe!
           }
 
-          if (charAfter is WhiteSpace) {
-            final spaceCount = scanner.skipWhitespace(max: indent).length;
+          void cleanUpFolding() {
+            // The linebreak is excluded from folding if it was escaped.
+            if (!linebreakWasEscaped && !lastWasLineBreak) {
+              foldCurrent(null);
+            } else {
+              /// Never apply dangling whitespace if the new line was
+              /// escaped. Safe fallback
+              bufferedWhitespace.clear();
+            }
+          }
 
-            if (spaceCount < indent) {
-              return _infoOnFold(indentChanged: true, indentFound: spaceCount);
-            } else if (scanner.peekCharAfterCursor() is WhiteSpace) {
-              /// Whitespace in double/single quotes serves no purpose,
-              /// implicitly trim it. Simple skip.
-              scanner.skipWhitespace(skipTabs: true);
+          /// Fold continuously until we encounter a char that is not a
+          /// linebreak or whitespace.
+          while (current is LineBreak) {
+            current = skipCrIfPossible(current, scanner: scanner);
+
+            // Ensure we fold cautiously. Skip indent first
+            final indent = scanner.skipWhitespace(max: minIndent).length;
+            scanner.skipCharAtCursor();
+
+            current = scanner.charAtCursor;
+
+            final isDifferentScalar = indent < minIndent;
+
+            /// We don't want to impede on the next scalar by consuming its
+            /// content
+            if (current is WhiteSpace && !isDifferentScalar) {
+              bufferedWhitespace.add(current);
+
+              scanner
+                ..skipWhitespace(
+                  skipTabs: true,
+                  previouslyRead: bufferedWhitespace,
+                )
+                ..skipCharAtCursor();
+
+              current = scanner.charAtCursor;
             }
 
-            charAfter = scanner.peekCharAfterCursor();
-
-            if (charAfter == null && !canExitOnNull) {
-              throw unexpectedEndException;
+            /// It could be consecutive line breaks with no indent that made us
+            /// think this is a different scalar. It was just an empty line.
+            ///
+            /// It doesn't matter if the line break was escaped. Resume the
+            /// folding.
+            if (current is LineBreak) {
+              foldCurrent(current);
+              linebreakWasEscaped = false;
+              lastWasLineBreak = true;
+              continue;
             }
 
-            skippedWhiteSpace = true;
-          } else {
-            skippedWhiteSpace = indent == 0;
+            /// Plain scalars can be used in block styles. This indent change
+            /// indicates we need to alert any block styles on the indent that
+            /// triggered this exit.
+            ///
+            /// This can also be used to restrict double/single quoted styles
+            /// nested in a block style.
+            if (isDifferentScalar) {
+              cleanUpFolding();
+              return (
+                foldIndent: indent,
+                indentDidChange: true,
+                wasEscapedOnFold: didEscapeMaybe,
+              );
+            }
+
+            break; // Always exit after finding a non space/line break char.
           }
 
-          /// We must have a character here as long as we are `folding` in
-          /// any flow style that is not `Plain`, that is, `double/single`
-          /// quoted styles.
-          ///
-          /// Those two styles have a closing delimiter.
-          if (charAfter == null && !canExitOnNull) {
-            throw unexpectedEndException;
-          }
-
-          switch (charAfter) {
-            // Line breaks don't require whitespace to be skipped.
-            case final LineBreak _:
-              lineBreakStreak = true;
-              lineBreakIgnoreSpace = false;
-
-            /// Any other character as long as we skipped whitespace in
-            /// `double/single` or if `plain` style and we can exit on null
-            case _ when skippedWhiteSpace:
-              {
-                /// Write `space` if we never folded consecutive line-breaks
-                /// such that:
-                ///   - `foo\nbar` becomes `foo bar`
-                ///   - `foo\n\nbar` becomes `foo\nbar`
-                ///
-                /// See https://yaml.org/spec/1.2.2/#65-line-folding
-                if (!lineBreakIgnoreSpace && !lineBreakStreak) {
-                  foldingBuffer.writeChar(WhiteSpace.space);
-                }
-
-                // For plain styles
-                if (charAfter == null) {
-                  return _defaultExitInfo;
-                }
-
-                if (canCheckGreedyNonBreak &&
-                    ignoreGreedyNonBreakWrite(charAfter)) {
-                  return _infoOnFold(
-                    ignoredNextChar: true,
-                    foldedLineBreak: true,
-                  );
-                }
-
-                // We must exit. Evaluate to test for the delimiter
-                return _infoOnFold(
-                  matchedDelimiter: matchesDelimiter(charAfter),
-                );
-              }
-
-            // Throw exception that the indent doesn't match!
-            default:
-              return _infoOnFold(indentChanged: true);
-          }
+          cleanUpFolding();
         }
 
-      // Buffer whitespaces normally
-      case final WhiteSpace whiteSpace:
-        whitespaceBuffer.add(whiteSpace);
+      case WhiteSpace whiteSpace:
+        bufferedWhitespace.add(whiteSpace);
+        scanner.skipCharAtCursor();
 
       default:
         {
-          /// Any buffer characters are written by default.
-          ///
-          /// We write by default based on `YAML` spec if a `line break` was
-          /// escaped. See for double quotes:
-          /// https://yaml.org/spec/1.2.2/#75:~:text=In%20a%20multi,at%20arbitrary%20positions.
-          ///
-          /// Also, since the next character may be `hex` string or an escaped
-          /// `whitespace`, `double quote` or  any `character` that should be
-          /// escaped.
-          foldingBuffer.writeAll(whitespaceBuffer);
-          whitespaceBuffer.clear();
+          /// Reserved for double quoted scalar where the linebreak can be
+          /// escaped. All other flow styles should return false!
+          if (current != null &&
+              onExitResumeIf(current, scanner.peekCharAfterCursor())) {
+            didEscapeMaybe = true;
+            linebreakWasEscaped = true;
 
-          final isDelimiter = matchesDelimiter(foldTarget);
-          final shouldIgnore =
-              canCheckGreedyNonBreak && ignoreGreedyNonBreakWrite(foldTarget);
+            scalarBuffer.writeAll(bufferedWhitespace);
+            bufferedWhitespace.clear();
 
-          if (!isDelimiter && !shouldIgnore) {
-            foldingBuffer.writeChar(foldTarget);
+            scanner.skipCharAtCursor();
+
+            // Continue folding only if not implicit
+            if (!isImplicit) {
+              break;
+            }
           }
 
-          return _infoOnFold(
-            matchedDelimiter: isDelimiter,
-            ignoredNextChar: shouldIgnore,
-          );
+          scalarBuffer.writeAll(bufferedWhitespace);
+          break folding;
         }
     }
-
-    foldTarget = scanner.peekCharAfterCursor();
-    scanner.skipCharAtCursor();
   }
+
+  return (
+    indentDidChange: false,
+    foldIndent: seamlessIndentMarker,
+    wasEscapedOnFold: didEscapeMaybe,
+  );
 }
