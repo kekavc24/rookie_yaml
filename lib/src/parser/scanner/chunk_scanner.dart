@@ -147,9 +147,9 @@ final class ChunkScanner {
   List<ReadableChar> skipWhitespace({
     bool skipTabs = false,
     int? max,
-    List<ReadableChar> previouslyRead = const [],
+    List<WhiteSpace>? previouslyRead,
   }) {
-    final buffer = previouslyRead;
+    final buffer = previouslyRead ?? [];
     final hasMax = max != null;
 
     ReadableChar? char;
