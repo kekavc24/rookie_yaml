@@ -15,11 +15,7 @@ FormatException indentException(int expectedIndent, int? foundIndent) {
 
 // TODO: Simplify line break etc. etc.
 
-typedef FoldFlowInfo = ({
-  bool indentDidChange,
-  int foldIndent,
-  bool wasEscapedOnFold,
-});
+typedef FoldFlowInfo = ({bool indentDidChange, int foldIndent});
 
 /// Folds a flow scalar(`plain`, `double quoted` and `single quoted`) that
 /// spans more than 1 line.
@@ -36,7 +32,6 @@ FoldFlowInfo foldFlowScalar(
   onExitResumeIf,
 }) {
   final bufferedWhitespace = <WhiteSpace>[];
-  var didEscapeMaybe = false; // Tracks whether we escaped at least once
 
   var linebreakWasEscaped = false; // Whether we escaped in the current run
 
@@ -119,11 +114,7 @@ FoldFlowInfo foldFlowScalar(
             /// nested in a block style.
             if (isDifferentScalar) {
               cleanUpFolding();
-              return (
-                foldIndent: indent,
-                indentDidChange: true,
-                wasEscapedOnFold: didEscapeMaybe,
-              );
+              return (foldIndent: indent, indentDidChange: true);
             }
 
             break; // Always exit after finding a non space/line break char.
@@ -142,9 +133,6 @@ FoldFlowInfo foldFlowScalar(
           /// escaped. All other flow styles should return false!
           if (current != null &&
               onExitResumeIf(current, scanner.peekCharAfterCursor())) {
-            didEscapeMaybe = true;
-            linebreakWasEscaped = true;
-
             scalarBuffer.writeAll(bufferedWhitespace);
             bufferedWhitespace.clear();
 
@@ -152,6 +140,7 @@ FoldFlowInfo foldFlowScalar(
 
             // Continue folding only if not implicit
             if (!isImplicit) {
+              linebreakWasEscaped = true;
               break;
             }
           }
@@ -162,9 +151,5 @@ FoldFlowInfo foldFlowScalar(
     }
   }
 
-  return (
-    indentDidChange: false,
-    foldIndent: seamlessIndentMarker,
-    wasEscapedOnFold: didEscapeMaybe,
-  );
+  return (indentDidChange: false, foldIndent: seamlessIndentMarker);
 }

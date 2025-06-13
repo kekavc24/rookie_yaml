@@ -38,11 +38,10 @@ PreScalar parseDoubleQuoted(
   scanner.skipCharAtCursor();
 
   final buffer = ScalarBuffer(ensureIsSafe: false);
-  var lineBreakEverEscaped = false;
 
   /// Code reusability in loop
   void foldDoubleQuoted() {
-    final (:indentDidChange, :foldIndent, :wasEscapedOnFold) = foldFlowScalar(
+    final (:indentDidChange, :foldIndent) = foldFlowScalar(
       scanner,
       scalarBuffer: buffer,
       minIndent: indent,
@@ -58,8 +57,6 @@ PreScalar parseDoubleQuoted(
     if (indentDidChange) {
       throw indentException(indent, foldIndent);
     }
-
-    lineBreakEverEscaped = lineBreakEverEscaped || wasEscapedOnFold;
   }
 
   // TODO: Save offsets etc.
