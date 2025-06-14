@@ -155,5 +155,6 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
     actualIdent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
+    foundLinebreak: true
   );
 }

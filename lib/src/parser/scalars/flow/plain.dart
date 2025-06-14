@@ -61,6 +61,7 @@ PreScalar? parsePlain(
           ScalarBuffer(ensureIsSafe: false),
           scalarStyle: _style,
           actualIdent: indent,
+          foundLinebreak: false,
         );
       }
 
@@ -77,6 +78,7 @@ PreScalar? parsePlain(
   );
 
   var hasDocMarkers = false;
+  var foundLineBreak = false;
 
   chunker:
   while (scanner.canChunkMore) {
@@ -127,7 +129,7 @@ PreScalar? parsePlain(
       /// Attempt to fold by default anytime we see a line break or white space
       case WhiteSpace _ || LineBreak _:
         {
-          final FoldFlowInfo(:indentDidChange, :foldIndent) = foldFlowScalar(
+          final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
             scanner,
             scalarBuffer: buffer,
             minIndent: indent,
@@ -139,6 +141,8 @@ PreScalar? parsePlain(
             indentOnExit = foldIndent;
             break chunker;
           }
+
+          foundLineBreak = foundLineBreak || hasLineBreak;
         }
 
       case _ when flowDelimiters.contains(char):
@@ -182,5 +186,6 @@ PreScalar? parsePlain(
     actualIdent: indent,
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
+    foundLinebreak: foundLineBreak,
   );
 }

@@ -152,11 +152,12 @@ PreScalar preformatScalar(
   ScalarBuffer buffer, {
   required ScalarStyle scalarStyle,
   required int actualIdent,
+  required bool foundLinebreak,
   bool trim = false,
   int indentOnExit = seamlessIndentMarker,
   bool hasDocEndMarkers = false,
 }) {
-  final hasLineBreak = buffer.hasLineBreaks;
+  final hasLineBreak = buffer.hasLineBreaks || foundLinebreak;
   var content = buffer.bufferedString();
 
   if (trim) {

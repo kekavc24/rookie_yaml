@@ -26,6 +26,7 @@ PreScalar parseSingleQuoted(
 
   final buffer = ScalarBuffer(ensureIsSafe: false);
   var quoteCount = 1;
+  var foundLineBreak = false;
 
   while (scanner.canChunkMore && quoteCount != 2) {
     final possibleChar = scanner.charAtCursor;
@@ -55,18 +56,14 @@ PreScalar parseSingleQuoted(
       // Fold without any restrictions by default
       case WhiteSpace _ || LineBreak _:
         {
-          final FoldFlowInfo(:indentDidChange, :foldIndent) = foldFlowScalar(
-            scanner,
-            scalarBuffer: buffer,
-            minIndent: indent,
-            isImplicit: isImplicit,
-            onExitResumeIf: (_, _) => false,
-          );
-
-          // We must see closing quote before anything else
-          if (indentDidChange) {
-            throw indentException(indent, foldIndent);
-          }
+          foundLineBreak =
+              foldQuotedFlowScalar(
+                scanner,
+                scalarBuffer: buffer,
+                minIndent: indent,
+                isImplicit: isImplicit,
+              ) ||
+              foundLineBreak;
         }
 
       // Single quoted style is restricted to printable characters.
@@ -90,5 +87,6 @@ PreScalar parseSingleQuoted(
     buffer,
     scalarStyle: ScalarStyle.singleQuoted,
     actualIdent: indent,
+    foundLinebreak: foundLineBreak
   );
 }
