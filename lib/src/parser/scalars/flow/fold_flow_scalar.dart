@@ -5,17 +5,41 @@ import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
-/// Generates a generic indent exception
-FormatException indentException(int expectedIndent, int? foundIndent) {
-  final trailing = foundIndent == null ? 'nothing' : '$foundIndent space(s)';
-  return FormatException(
-    'Invalid indent! Expected $expectedIndent space(s), found $trailing',
-  );
-}
-
 // TODO: Simplify line break etc. etc.
 
-typedef FoldFlowInfo = ({bool indentDidChange, int foldIndent});
+typedef FoldFlowInfo = ({
+  bool indentDidChange,
+  int foldIndent,
+  bool hasLineBreak,
+});
+
+bool foldQuotedFlowScalar(
+  ChunkScanner scanner, {
+  required ScalarBuffer scalarBuffer,
+  required int minIndent,
+  required bool isImplicit,
+  bool Function(ReadableChar current, ReadableChar? next)? onExitResumeIf,
+}) {
+  final shouldResume = onExitResumeIf ?? (_, _) => false;
+
+  final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
+    scanner,
+    scalarBuffer: scalarBuffer,
+    minIndent: minIndent,
+    isImplicit: isImplicit,
+    onExitResumeIf: shouldResume,
+  );
+
+  // Quoted scalar never allow an indent change before seeing closing quote
+  if (indentDidChange) {
+    throw FormatException(
+      'Invalid indent! Expected $minIndent space(s), found $foldIndent'
+      ' space(s)',
+    );
+  }
+
+  return hasLineBreak;
+}
 
 /// Folds a flow scalar(`plain`, `double quoted` and `single quoted`) that
 /// spans more than 1 line.
@@ -34,6 +58,7 @@ FoldFlowInfo foldFlowScalar(
   final bufferedWhitespace = <WhiteSpace>[];
 
   var linebreakWasEscaped = false; // Whether we escaped in the current run
+  var didFold = false;
 
   folding:
   while (scanner.canChunkMore) {
@@ -42,6 +67,7 @@ FoldFlowInfo foldFlowScalar(
     switch (current) {
       case LineBreak _ when !isImplicit:
         {
+          didFold = true;
           const space = WhiteSpace.space;
           const lf = LineBreak.lineFeed;
 
@@ -114,7 +140,11 @@ FoldFlowInfo foldFlowScalar(
             /// nested in a block style.
             if (isDifferentScalar) {
               cleanUpFolding();
-              return (foldIndent: indent, indentDidChange: true);
+              return (
+                foldIndent: indent,
+                indentDidChange: true,
+                hasLineBreak: true,
+              );
             }
 
             break; // Always exit after finding a non space/line break char.
@@ -151,5 +181,9 @@ FoldFlowInfo foldFlowScalar(
     }
   }
 
-  return (indentDidChange: false, foldIndent: seamlessIndentMarker);
+  return (
+    indentDidChange: false,
+    foldIndent: seamlessIndentMarker,
+    hasLineBreak: didFold,
+  );
 }
