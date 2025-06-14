@@ -67,11 +67,12 @@ PreScalar parseDoubleQuoted(
     if (current == null) break;
 
     switch (current) {
-      /// Tracks number of times we saw an unescaped `double quote`
+      // Tracks number of times we saw an unescaped `double quote`
       case _doubleQuoteIndicator:
         ++quoteCount;
+        scanner.skipCharAtCursor();
 
-      /// Implicit keys are restricted to a single line
+      // Implicit keys are restricted to a single line
       case LineBreak _ when isImplicit:
         break dQuotedLoop;
 
@@ -109,9 +110,6 @@ PreScalar parseDoubleQuoted(
   if (quoteCount != 2) {
     throw _doubleQuoteException;
   }
-
-  // Skip closing quote
-  scanner.skipCharAtCursor();
 
   return preformatScalar(
     buffer,

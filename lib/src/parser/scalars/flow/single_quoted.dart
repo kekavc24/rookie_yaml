@@ -41,14 +41,12 @@ PreScalar parseSingleQuoted(
           // Single quotes can also be a form of escaping.
           if (scanner.peekCharAfterCursor() == _singleQuote) {
             buffer.writeChar(_singleQuote);
-
-            // Skip both.
-            scanner
-              ..skipCharAtCursor()
-              ..skipCharAtCursor();
+            scanner.skipCharAtCursor(); // Skip the quote escaping it
           } else {
             ++quoteCount;
           }
+
+          scanner.skipCharAtCursor(); // Skip quote normally
         }
 
       case LineBreak _ when isImplicit:
