@@ -60,7 +60,12 @@ ParserEvent _inferNextEvent(
   bool isRootCheck = false,
 }) {
   final charAfter = scanner.peekCharAfterCursor();
-  final nextIsSpace = charAfter == WhiteSpace.space;
+
+  /// Can be allowed after map like indicator such as:
+  ///   - "?" -> an explicit key indicator
+  ///   - ":" -> indicates start of a value
+  final allowedInMapLike =
+      charAfter is LineBreak || charAfter == WhiteSpace.space;
 
   return switch (scanner.charAtCursor) {
     Indicator.doubleQuote => ScalarEvent.startFlowDoubleQuoted,
@@ -68,25 +73,25 @@ ParserEvent _inferNextEvent(
     Indicator.literal => ScalarEvent.startBlockLiteral,
     Indicator.folded => ScalarEvent.startBlockFolded,
 
-    Indicator.mappingValue when isBlockContext && nextIsSpace =>
+    Indicator.mappingValue when isBlockContext && allowedInMapLike =>
       BlockCollectionEvent.startEntryValue,
 
     // Flow node doesn't need the space when key is json-like (double quoted)
     Indicator.mappingValue
-        when !isBlockContext && (nextIsSpace || lastKeyWasJsonLike) =>
+        when !isBlockContext && (allowedInMapLike || lastKeyWasJsonLike) =>
       FlowCollectionEvent.startEntryValue,
 
-    Indicator.blockSequenceEntry when nextIsSpace && isBlockContext =>
+    Indicator.blockSequenceEntry when allowedInMapLike && isBlockContext =>
       BlockCollectionEvent.startBlockListEntry,
 
-    Indicator.mappingKey when isBlockContext && nextIsSpace =>
+    Indicator.mappingKey when isBlockContext && allowedInMapLike =>
       BlockCollectionEvent.startExplicitKey,
 
     /// In flow collections, it is allow to occur separately without any key
     /// beside a "," or "{" or "}" or "[" or "]"
     Indicator.mappingKey
         when !isBlockContext &&
-            (nextIsSpace || flowDelimiters.contains(charAfter)) =>
+            (allowedInMapLike || flowDelimiters.contains(charAfter)) =>
       FlowCollectionEvent.startExplicitKey,
 
     Indicator.flowSequenceStart => FlowCollectionEvent.startFlowSequence,
@@ -519,6 +524,7 @@ _NodeProperties _parseNodeProperties(
       // Parsing an alias. Can never have more than one alias.
       case Indicator.alias:
         {
+          // TODO: Alias nodes cannot have any node properties
           if (alias != null) {
             throw FormatException(
               'The current node already declared an alias: "$alias". '
