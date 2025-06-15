@@ -987,13 +987,7 @@ final class DocumentParser {
         {
           final (prescalar, delegate) = _parseScalar(
             event,
-
-            /// A plain scalar is always restricted to a single line unless it
-            /// is an explicit key. Last failsafe condition.
-            isImplicit:
-                forceInline ||
-                isImplicitKey ||
-                (!isExplicitKey && event == ScalarEvent.startFlowPlain),
+            isImplicit: forceInline || isImplicitKey,
             indentLevel: currentIndentLevel,
             minIndent: minIndent,
           );
@@ -1003,22 +997,22 @@ final class DocumentParser {
           /// changes since it has a block-like structure
           if (prescalar case PreScalar(
             scalarStyle: ScalarStyle.plain,
-            indent: final parsedIndent,
-            indentDidChange: final changedIndent,
-            hasDocEndMarkers: final docDidEnd,
-          )) {
+            :final indentOnExit,
+            :final indentDidChange,
+            :final hasDocEndMarkers,
+          ) when !isImplicitKey || !forceInline) {
             // Flow node only ends after parsing a flow delimiter
-            if (docDidEnd) {
+            if (hasDocEndMarkers) {
               throw FormatException(
                 "Premature document termination when parsing flow map entry.",
               );
             }
 
             // Must not detect an indent change less than flow indent
-            if (changedIndent && parsedIndent < minIndent) {
+            if (indentDidChange && indentOnExit < minIndent) {
               throw FormatException(
                 'Indent change detected when parsing plain scalar. Expected'
-                ' $minIndent spaced but found $parsedIndent spaces',
+                ' $minIndent spaced but found $indentOnExit spaces',
               );
             }
           }
