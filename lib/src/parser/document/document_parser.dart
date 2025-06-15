@@ -720,6 +720,7 @@ final class DocumentParser {
               forceInline: forceInline,
               isExplicitKey: false,
               keyIsJsonLike: false,
+              collectionDelimiter: seqEnd,
             );
 
             // Go to the next parsable char
@@ -824,6 +825,7 @@ final class DocumentParser {
       /// if `true` and act accordingly
       isExplicitKey: false,
       keyIsJsonLike: false,
+      collectionDelimiter: exitIndicator,
     );
 
     final keyIsJsonLike = _keyIsJsonLike(parsedKey);
@@ -838,7 +840,9 @@ final class DocumentParser {
     }
 
     bool ignoreValue(ReadableChar? char) {
-      return char == Indicator.flowEntryEnd || char == exitIndicator;
+      return char == null ||
+          char == Indicator.flowEntryEnd ||
+          char == exitIndicator;
     }
 
     switch (_scanner.charAtCursor) {
@@ -861,6 +865,7 @@ final class DocumentParser {
             forceInline: forceInline,
             isExplicitKey: false,
             keyIsJsonLike: keyIsJsonLike,
+            collectionDelimiter: exitIndicator,
           );
         }
 
@@ -881,6 +886,7 @@ final class DocumentParser {
     required bool forceInline,
     required bool isExplicitKey,
     required bool keyIsJsonLike,
+    required Indicator collectionDelimiter,
     ParserEvent? inferredEvent,
   }) {
     final event =
@@ -909,10 +915,20 @@ final class DocumentParser {
 
       case FlowCollectionEvent.startExplicitKey:
         {
+          _scanner.skipCharAtCursor();
+
           if (!_nextLineSafeInFlow(
             minIndent,
             forceInline: forceInline,
           )) {
+            throw FormatException(
+              'Invalid indent when parsing explicit flow key',
+            );
+          }
+
+          final char = _scanner.charAtCursor;
+
+          if (char == Indicator.flowEntryEnd || char == collectionDelimiter) {
             return nullScalarDelegate(
               indentLevel: currentIndentLevel,
               indent: minIndent,
@@ -926,6 +942,7 @@ final class DocumentParser {
             forceInline: forceInline,
             isExplicitKey: true,
             keyIsJsonLike: keyIsJsonLike,
+            collectionDelimiter: collectionDelimiter,
           );
         }
 
