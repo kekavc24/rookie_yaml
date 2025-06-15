@@ -597,6 +597,8 @@ final class DocumentParser {
         '${char?.string ?? ''} at ${_scanner.charAtCursor}',
       );
     }
+
+    _scanner.skipCharAtCursor(); // Skip it if valid
   }
 
   void _parseFlowMap(MappingDelegate delegate, {required bool forceInline}) {
