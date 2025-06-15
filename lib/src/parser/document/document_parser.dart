@@ -637,7 +637,10 @@ final class DocumentParser {
       if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
 
       // Only continues if current non-space character is a ","
-      if (_scanner.charAtCursor case Indicator.flowEntryEnd) continue;
+      if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
+        _scanner.skipCharAtCursor();
+        continue;
+      }
 
       break; // Always assume we are ending the parsing if not continuing!
     }
