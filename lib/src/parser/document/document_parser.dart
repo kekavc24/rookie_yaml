@@ -1074,11 +1074,21 @@ final class DocumentParser {
       ),
     };
 
+    /// This is a failsafe. Every map/list (flow or block) must look for
+    /// ways to ensure a `null` plain scalar is never returned. This ensures
+    /// the internal parsing logic for parsing the map/list is correct. Each
+    /// flow/block map/list handles missing values differently.
+    ///
+    /// TODO: Fix later
+    if (prescalar == null) {
+      throw FormatException('Null was returned when parsing a plain scalar!');
+    }
+
     return (
       prescalar,
       ScalarDelegate(
         indentLevel: indentLevel,
-        indent: prescalar.indent,
+        indent: minIndent,
         startOffset: startOffset,
         blockTags: {},
         inlineTags: {},
