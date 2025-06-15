@@ -68,8 +68,6 @@ PreScalar? parsePlain(
       // Return null for the other two indicators
       return null;
     }
-
-    greedyChars += firstChar?.string ?? '';
   }
 
   final buffer = ScalarBuffer(
