@@ -108,7 +108,8 @@ PreScalar? parsePlain(
 
       /// A mapping key can never be followed by a whitespace. Exit regardless
       /// of whether we folded this scalar before.
-      case _kvColon when charAfter == WhiteSpace.space:
+      case _kvColon
+          when charAfter == WhiteSpace.space || charAfter is LineBreak:
         break chunker;
 
       /// A look behind condition if encountered while folding the scalar.
