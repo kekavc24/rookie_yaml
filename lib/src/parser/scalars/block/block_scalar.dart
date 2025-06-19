@@ -77,6 +77,7 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
         if (charAfter == null || isDocEnd || scannedIndent < indent) {
           hasDocMarkers = isDocEnd;
           indentOnExit = scannedIndent;
+          scanner.skipCharAtCursor();
           break blockLoop;
         }
 
@@ -155,6 +156,6 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
     actualIdent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
-    foundLinebreak: true
+    foundLinebreak: true,
   );
 }
