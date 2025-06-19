@@ -6,6 +6,20 @@ typedef _RootNodeInfo = ({
   ParserDelegate rootDelegate,
 });
 
+typedef _BlockNodeInfo = ({int? exitIndent, bool hasDocEndMarkers});
+
+const _BlockNodeInfo _emptyScanner = (
+  exitIndent: null,
+  hasDocEndMarkers: false,
+);
+
+typedef _BlockNodeGeneric<T> = ({_BlockNodeInfo nodeInfo, T delegate});
+
+typedef _BlockNode = _BlockNodeGeneric<ParserDelegate>;
+
+typedef _BlockEntry =
+    _BlockNodeGeneric<({ParserDelegate? key, ParserDelegate? value})>;
+
 /// Throws an exception if the prospective [Node] has an [indent] of `0`
 /// (a child of the root node or the root node itself) and the document being
 /// parsed did not have an explicit directives end marker (`---`) or the
