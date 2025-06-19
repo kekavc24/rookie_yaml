@@ -132,8 +132,11 @@ final class DocumentParser {
 
     var hasDocMarker = false;
 
-    if (_scanner.charAtCursor
-        case Indicator.blockSequenceEntry || Indicator.period) {
+    final charAtCursor = _scanner.charAtCursor;
+
+    if (charAtCursor == Indicator.period ||
+        (charAtCursor == Indicator.blockSequenceEntry &&
+            _scanner.peekCharAfterCursor() == Indicator.blockSequenceEntry)) {
       hasDocMarker = hasDocumentMarkers(
         _scanner,
         onMissing: (greedy) => _greedyChars.addAll(greedy),
@@ -240,6 +243,7 @@ final class DocumentParser {
       hasDirectives: _hasDirectives,
       parserEvents: _parserEvents,
       comments: _comments,
+      greedyChars: _greedyChars.map((c) => c.string),
     );
 
     _isBlockDoc = isBlockDoc;

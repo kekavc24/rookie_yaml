@@ -225,6 +225,7 @@ _RootNodeInfo _parseNodeAtRoot(
   required bool hasDirectives,
   required List<ParserEvent> parserEvents,
   required SplayTreeSet<YamlComment> comments,
+  required Iterable<String> greedyChars
 }) {
   const indentLevel = 0;
   final indent = _skipToParsableChar(scanner, comments: comments) ?? 0;
@@ -386,7 +387,7 @@ _RootNodeInfo _parseNodeAtRoot(
       parsePlain(
         scanner,
         indent: indent,
-        charsOnGreedy: '',
+        charsOnGreedy: greedyChars.join(),
         isImplicit: false,
       )!,
     ),
