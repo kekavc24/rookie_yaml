@@ -1584,9 +1584,10 @@ final class DocumentParser {
 
       final (:hasDocEndMarkers, :exitIndent) = nodeInfo;
 
-      /// The exit indent *MUST* be null. This is a key that should *NEVER*
-      /// spill into the next line
-      if (exitIndent != null) {
+      /// The exit indent *MUST* be null or be seamless (parsed completely with
+      /// no indent change if quoted). This is a key that should *NEVER*
+      /// spill into the next line.
+      if (exitIndent != null && exitIndent != seamlessIndentMarker) {
         throw Exception(
           '[Parser Error]: Implicit keys cannot have an exit indent',
         );
@@ -1637,7 +1638,8 @@ final class DocumentParser {
     final childEvent = nextEvent();
 
     /// YAML recommends grace with block lists that start on a new line but
-    /// have the same indent as the implicit key.
+    /// have the same indent as the implicit key since the "-" is usually
+    /// perceived as indent.
     if (!isInlineChild &&
         (indentOrSeparation < indent ||
             (indentOrSeparation == indent &&
