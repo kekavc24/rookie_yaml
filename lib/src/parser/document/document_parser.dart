@@ -1813,11 +1813,24 @@ final class DocumentParser {
 
       if (!_scanner.canChunkMore) break;
 
-      if (indentOrSeparation != null && indentOrSeparation == indent) {
+      if (indentOrSeparation != null) {
+        final isLess = indentOrSeparation < indent;
+
+        // We moved to the next node irrespective of its indent.
+        if (isLess || indentOrSeparation == indent) {
         sequence.pushEntry(
-          nullScalarDelegate(indentLevel: indentLevel + 1, indent: indent + 1),
+            nullScalarDelegate(
+              indentLevel: childIndentLevel,
+              indent: indent + 1,
+            ),
         );
+
+          if (isLess) {
+            return (exitIndent: indentOrSeparation, hasDocEndMarkers: false);
+          }
+
         continue;
+        }
       }
 
       // Determine indentation
