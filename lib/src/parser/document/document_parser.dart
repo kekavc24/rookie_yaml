@@ -826,6 +826,7 @@ final class DocumentParser {
     required bool isExplicitKey,
     required bool keyIsJsonLike,
     required Indicator collectionDelimiter,
+    bool isBlockContext = false, // Block styles should override
     ParserEvent? inferredEvent,
   }) {
     final event =
@@ -960,7 +961,7 @@ final class DocumentParser {
         }
 
       case FlowCollectionEvent.nextFlowEntry
-          when !isParsingKey || isExplicitKey:
+          when !isBlockContext && (!isParsingKey || isExplicitKey):
         {
           return nullScalarDelegate(
             indentLevel: currentIndentLevel,
