@@ -1006,7 +1006,7 @@ final class DocumentParser {
         indent: minIndent,
         charsOnGreedy: '',
         isImplicit: isImplicit,
-      )!,
+      ),
 
       _ => throw FormatException(
         'Failed to parse block scalar as it can never be implicit!',
@@ -1018,7 +1018,9 @@ final class DocumentParser {
     /// the internal parsing logic for parsing the map/list is correct. Each
     /// flow/block map/list handles missing values differently.
     ///
-    /// TODO: Fix later
+    /// TODO: Fix later. Wrap while parsing plain scalar?
+    /// TODO(cont): If fixing, consider how this null is handled by each
+    /// TODO(cont): flow/block collection beforehand
     if (prescalar == null) {
       throw FormatException('Null was returned when parsing a plain scalar!');
     }
