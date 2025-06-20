@@ -92,7 +92,7 @@ PreScalar? parsePlain(
     switch (char) {
       /// Check for the document end markers first always
       case Indicator.blockSequenceEntry || Indicator.period
-          when charBefore is LineBreak:
+          when charBefore is LineBreak && charAfter == char:
         {
           if (indent == 0 &&
               hasDocumentMarkers(
