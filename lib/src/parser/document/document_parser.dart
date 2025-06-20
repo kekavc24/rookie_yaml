@@ -1651,7 +1651,10 @@ final class DocumentParser {
       startOffset: implicitKey.startOffset,
     );
 
-    final (:delegate, :nodeInfo) = _parseBlockNode(
+    final (
+      :delegate,
+      nodeInfo: _BlockNodeInfo(:hasDocEndMarkers, :exitIndent),
+    ) = _parseBlockNode(
       indentLevel: indentLevel + 1,
       laxIndent: indentOrSeparation ?? laxIndent,
       fixedInlineIndent: indentOrSeparation ?? inlineFixedIndent,
@@ -1661,7 +1664,23 @@ final class DocumentParser {
       degenerateToImplicitMap: !isInlineChild, // Only if not inline
     );
 
-    return (delegate: (key: implicitKey, value: delegate), nodeInfo: nodeInfo);
+    var indentOnExit = exitIndent;
+
+    /// Implicit values exit immediately a line break is seen but do not skip
+    /// it. However, the block parent (map) needs to have the correct indent
+    /// info to prevent any premature termination to the parsing of subsequenct
+    /// nodes.
+    if (_scanner.canChunkMore &&
+        !hasDocEndMarkers &&
+        exitIndent == seamlessIndentMarker &&
+        _scanner.charAtCursor is LineBreak) {
+      indentOnExit = _skipToParsableChar(_scanner, comments: _comments);
+    }
+
+    return (
+      delegate: (key: implicitKey, value: delegate),
+      nodeInfo: (exitIndent: indentOnExit, hasDocEndMarkers: hasDocEndMarkers),
+    );
   }
 
   void _throwIfDangling(int collectionIndent, int currentIndent) {
