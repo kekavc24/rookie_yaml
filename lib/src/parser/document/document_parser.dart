@@ -1786,21 +1786,40 @@ final class DocumentParser {
   }
 
   _BlockNodeInfo _parseBlockSequence(SequenceDelegate sequence) {
+    const indicator = Indicator.blockSequenceEntry;
     final SequenceDelegate(:indent, :indentLevel) = sequence;
 
-    void throwIfNotIndicator() {
-      if (_scanner.charAtCursor != Indicator.blockSequenceEntry) {
-        throw FormatException(
+    bool exitOrThrowIfNotBlock() {
+      final char = _scanner.charAtCursor;
+      final charAfter = _scanner.peekCharAfterCursor();
+
+      return switch (char) {
+        /// Be gracious. Maybe we have doc end chars here.
+        ///
+        /// TODO: Remove zero indent for doc end chars? Mulling 🤔
+        /// TODO: Should doc end chars hug left or just have any indent?
+        indicator || Indicator.period
+            when indent == 0 &&
+                charAfter == char &&
+                hasDocumentMarkers(_scanner, onMissing: (_) {}) =>
+          true,
+
+        // Normal "- " combination for block list
+        indicator when charAfter == WhiteSpace.space => false,
+
+        _ => throw FormatException(
           'Expected a "- " while parsing sequence but found '
           '${_scanner.charAtCursor?.string}',
-        );
-      }
+        ),
+      };
     }
 
     final childIndentLevel = indentLevel + 1;
 
     while (_scanner.canChunkMore) {
-      throwIfNotIndicator();
+      if (exitOrThrowIfNotBlock()) {
+        return (hasDocEndMarkers: true, exitIndent: null);
+      }
 
       final startOffset = _scanner.currentOffset;
 
