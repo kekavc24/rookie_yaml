@@ -1603,17 +1603,13 @@ final class DocumentParser {
       indent: indent,
     );
 
-    void throwValueException() {
+    // Must declare ":" on the same line
+    if (_skipToParsableChar(_scanner, comments: _comments) != null ||
+        nextEvent() != BlockCollectionEvent.startEntryValue) {
       throw FormatException(
         'Expected a ":" (after the key) but found '
         '${_scanner.charAtCursor?.string}',
       );
-    }
-
-    // Must declare ":" on the same line
-    if (_skipToParsableChar(_scanner, comments: _comments) != null ||
-        nextEvent() != BlockCollectionEvent.startEntryValue) {
-      throwValueException();
     }
 
     _scanner.skipCharAtCursor(); // Skip ":"
@@ -1634,7 +1630,7 @@ final class DocumentParser {
     final isInlineChild = indentOrSeparation == null;
     final childEvent = nextEvent();
 
-    /// YAML recommends grace with block lists that start on a new line but
+    /// YAML recommends grace for block lists that start on a new line but
     /// have the same indent as the implicit key since the "-" is usually
     /// perceived as indent.
     if (!isInlineChild &&
@@ -1715,7 +1711,7 @@ final class DocumentParser {
         );
 
         mapInfo = nodeInfo;
-        key = delegate.key;
+        key = parsedKey;
         value = delegate.value;
       } else {
         final event = _inferNextEvent(
@@ -1759,8 +1755,8 @@ final class DocumentParser {
         return mapInfo;
       }
 
-      /// If no doc end chars were never found, indent on exit *MUST* not be
-      /// null. Block collections rely only on indent as delimiters
+      /// If no doc end chars were found, indent on exit *MUST* not be null.
+      /// Block collections rely only on indent as delimiters
       if (exitIndent == null) {
         if (_scanner.canChunkMore) {
           throw FormatException(
@@ -1774,7 +1770,7 @@ final class DocumentParser {
         return mapInfo;
       }
 
-      // Must no have a dangling indent at this point
+      // Must not have a dangling indent at this point
       _throwIfDangling(indent, exitIndent);
       parsedKey = null;
     }
