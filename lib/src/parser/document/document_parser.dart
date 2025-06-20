@@ -1458,17 +1458,14 @@ final class DocumentParser {
       if (hasDocEndMarkers || (hasIndent && exitIndent < indent)) {
         return (
           delegate: (
-            key:
-                explicitKey ??
-                nullScalarDelegate(
-                  indentLevel: indentLevel,
-                  indent: indent,
-                ),
+            key: delegate,
             value: null,
           ),
           nodeInfo: nodeInfo,
         );
-      } else if ((!hasIndent && !_scanner.canChunkMore) ||
+      } else if ((!hasIndent &&
+              _scanner
+                  .canChunkMore) || // TODO: Revisit this condition. Explicit key must not declare value. Needs to be tested
           (hasIndent && exitIndent > indent)) {
         /// A ":" must be declared on a new line while being aligned with the
         /// "?" that triggered this key to be parsed. Thus, their indents
