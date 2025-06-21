@@ -213,10 +213,10 @@ Iterable<ReadableChar> _preserveEmptyIndented({
 }
 
 /// Single char for document end marker, `...`
-final docEndSingle = Indicator.period;
+const docEndSingle = Indicator.period;
 
 /// Single char for directives end marker, `---`
-final directiveEndSingle = Indicator.blockSequenceEntry;
+const directiveEndSingle = Indicator.blockSequenceEntry;
 
 /// Returns true if directive end marker `...` or document end marker `---` is
 /// encountered with the characters added to the [buffer] if provided.
@@ -246,6 +246,7 @@ final directiveEndSingle = Indicator.blockSequenceEntry;
 /// ---
 /// "
 /// ```
+/// // TODO: Add a preread count if any issue arises to compensate count to take. Ref plain scalar
 bool hasDocumentMarkers(
   ChunkScanner scanner, {
   required void Function(List<ReadableChar> buffered) onMissing,
@@ -265,52 +266,47 @@ bool hasDocumentMarkers(
   /// We insist on it being top level because the markers have no indent
   /// before. They have a -1 indent at this point or zero depending on how
   /// far along the parsing this is called.
-  switch (charAtCursor) {
-    case ReadableChar char
-        when char == docEndSingle || char == directiveEndSingle:
-      {
-        const expectedCount = 3;
-        final str = char.string;
+  if (charAtCursor case docEndSingle || directiveEndSingle) {
+    const expectedCount = 3;
+    final str = charAtCursor!.string;
 
-        final skipped = scanner.takeUntil(
-          includeCharAtCursor: true,
-          mapper: (v) => v,
-          onMapped: (v) => markers.add(v),
-          stopIf: (count, possibleNext) {
-            return count == expectedCount || possibleNext.string != str;
-          },
-        );
+    final skipped = scanner.takeUntil(
+      includeCharAtCursor: true,
+      mapper: (v) => v,
+      onMapped: (v) => markers.add(v),
+      stopIf: (count, possibleNext) {
+        return count == expectedCount || possibleNext.string != str;
+      },
+    );
 
-        pointToNext();
+    pointToNext();
 
-        if (skipped == expectedCount) {
-          /// YAML insists document markers should not have any characters
-          /// after unless its just whitespace.
-          if (charAtCursor is WhiteSpace && str == docEndSingle.string) {
-            scanner.skipWhitespace(skipTabs: true);
-            pointToNext();
-
-            if (charAtCursor is! LineBreak?) {
-              throw FormatException(
-                'Document end markers "..." can only have whitespace after but '
-                'found: ${charAtCursor ?? ''}',
-              );
-            }
-
-            return true;
-          }
-
-          // Directives end markers can have either
-          if (charAtCursor case LineBreak? _ || WhiteSpace? _) {
-            return true;
-          }
+    if (skipped == expectedCount) {
+      /// YAML insists document markers should not have any characters
+      /// after unless its just whitespace or comments.
+      if (str == docEndSingle.string) {
+        if (charAtCursor is WhiteSpace) {
+          scanner.skipWhitespace(skipTabs: true);
+          pointToNext();
         }
 
-        onMissing(markers);
-        return false;
+        if (charAtCursor case LineBreak? _ || Indicator.comment) {
+          return true;
+        }
+
+        throw FormatException(
+          'Document end markers "..." can only have whitespace/comments '
+          'after but found: ${charAtCursor?.string ?? ''}',
+        );
       }
 
-    default:
-      return false;
+      // Directives end markers can have either
+      if (charAtCursor case LineBreak? _ || WhiteSpace? _) {
+        return true;
+      }
+    }
   }
+
+  onMissing(markers);
+  return false;
 }
