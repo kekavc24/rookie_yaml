@@ -17,7 +17,7 @@ part 'block_utils.dart';
 /// scalar with explicit indicators qualifying it as a block scalar. A plain
 /// and block scalar both use indentation to convey content information.
 PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
-  var indentOnExit = 0;
+  var indentOnExit = seamlessIndentMarker;
   final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(scanner);
 
   final style = isLiteral ? ScalarStyle.literal : ScalarStyle.folded;
@@ -45,7 +45,6 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
   final previousIndents = SplayTreeSet<int>();
   var hasDocMarkers = false;
 
-  blockLoop:
   while (scanner.canChunkMore) {
     final indent = trueIndent ?? minimumIndent;
     char = scanner.charAtCursor;
@@ -78,7 +77,7 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
           hasDocMarkers = isDocEnd;
           indentOnExit = scannedIndent;
           scanner.skipCharAtCursor();
-          break blockLoop;
+          break;
         }
 
         // Attempt to infer indent if null
@@ -142,10 +141,12 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
     buffer.writeChar(char!);
 
     // Write the remaining line to the end without including line break
-    scanner.bufferChunk(
+    final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
       buffer.writeChar,
       exitIf: (_, curr) => curr is LineBreak,
     );
+
+    if (sourceEnded) break;
   }
 
   _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
@@ -156,6 +157,6 @@ PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
     actualIdent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
-    foundLinebreak: true,
+    foundLinebreak: indentOnExit != seamlessIndentMarker || !buffer.isEmpty,
   );
 }
