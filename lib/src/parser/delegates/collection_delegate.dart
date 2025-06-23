@@ -115,7 +115,7 @@ final class SequenceDelegate extends CollectionDelegate {
 
   void pushEntry(ParserDelegate entry) {
     _firstEntry ??= entry;
-    _hasLineBreak = entry._hasLineBreak;
+    _hasLineBreak = _hasLineBreak || entry._hasLineBreak;
 
     _nodes.add(entry.parsed());
   }
@@ -157,7 +157,8 @@ final class MappingDelegate extends CollectionDelegate {
     }
 
     _map[keyNode] = value?.parsed() ?? _bareScalar;
-    _hasLineBreak = key._hasLineBreak || (value?._hasLineBreak ?? false);
+    _hasLineBreak =
+        _hasLineBreak || key._hasLineBreak || (value?._hasLineBreak ?? false);
     return true;
   }
 
