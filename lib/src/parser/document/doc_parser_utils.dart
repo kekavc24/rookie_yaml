@@ -2,7 +2,7 @@ part of 'yaml_document.dart';
 
 typedef _RootNodeInfo = ({
   bool foundDocEndMarkers,
-  bool isBlockDoc,
+  ParserEvent rootEvent,
   ParserDelegate rootDelegate,
 });
 
@@ -65,62 +65,6 @@ String _inferDocEndChars(ChunkScanner scanner) {
   };
 
   return charToRepeat.padRight(3, charToRepeat);
-}
-
-ParserEvent _inferNextEvent(
-  ChunkScanner scanner, {
-  required bool isBlockContext,
-  required bool lastKeyWasJsonLike,
-  bool isRootCheck = false,
-}) {
-  final charAfter = scanner.peekCharAfterCursor();
-
-  /// Can be allowed after map like indicator such as:
-  ///   - "?" -> an explicit key indicator
-  ///   - ":" -> indicates start of a value
-  final allowedInMapLike =
-      charAfter is LineBreak || charAfter == WhiteSpace.space;
-
-  return switch (scanner.charAtCursor) {
-    Indicator.doubleQuote => ScalarEvent.startFlowDoubleQuoted,
-    Indicator.singleQuote => ScalarEvent.startFlowSingleQuoted,
-    Indicator.literal => ScalarEvent.startBlockLiteral,
-    Indicator.folded => ScalarEvent.startBlockFolded,
-
-    Indicator.mappingValue when isBlockContext && allowedInMapLike =>
-      BlockCollectionEvent.startEntryValue,
-
-    // Flow node doesn't need the space when key is json-like (double quoted)
-    Indicator.mappingValue
-        when !isBlockContext && (allowedInMapLike || lastKeyWasJsonLike) =>
-      FlowCollectionEvent.startEntryValue,
-
-    Indicator.blockSequenceEntry when allowedInMapLike && isBlockContext =>
-      BlockCollectionEvent.startBlockListEntry,
-
-    Indicator.mappingKey when isBlockContext && allowedInMapLike =>
-      BlockCollectionEvent.startExplicitKey,
-
-    /// In flow collections, it is allow to occur separately without any key
-    /// beside a "," or "{" or "}" or "[" or "]"
-    Indicator.mappingKey
-        when !isBlockContext &&
-            (allowedInMapLike || flowDelimiters.contains(charAfter)) =>
-      FlowCollectionEvent.startExplicitKey,
-
-    Indicator.flowSequenceStart => FlowCollectionEvent.startFlowSequence,
-    Indicator.flowSequenceEnd => FlowCollectionEvent.endFlowSequence,
-    Indicator.flowEntryEnd when !isRootCheck =>
-      FlowCollectionEvent.nextFlowEntry,
-    Indicator.mappingStart => FlowCollectionEvent.startFlowMap,
-    Indicator.mappingEnd => FlowCollectionEvent.endFlowMap,
-
-    Indicator.anchor => NodePropertyEvent.startAnchor,
-    Indicator.alias => NodePropertyEvent.startAlias,
-    Indicator.tag => NodePropertyEvent.startTag,
-
-    _ => ScalarEvent.startFlowPlain,
-  };
 }
 
 /// Returns `true` if the document starts on the same line as the directives
@@ -223,9 +167,8 @@ _RootNodeInfo _parseNodeAtRoot(
   required bool rootInMarkerLine,
   required bool isDocStartExplicit,
   required bool hasDirectives,
-  required List<ParserEvent> parserEvents,
   required SplayTreeSet<YamlComment> comments,
-  required Iterable<String> greedyChars
+  required Iterable<String> greedyChars,
 }) {
   const indentLevel = 0;
   final indent = _skipToParsableChar(scanner, comments: comments) ?? 0;
@@ -256,7 +199,6 @@ _RootNodeInfo _parseNodeAtRoot(
       );
     }
 
-    var isBlockDoc = true;
     ParserDelegate? collectionDelegate;
 
     // Intentionally verbose
@@ -280,12 +222,6 @@ _RootNodeInfo _parseNodeAtRoot(
             blockAnchors: {},
             inlineAnchors: {},
           );
-
-          parserEvents
-            ..add(NodeEvent(event, collectionDelegate))
-            ..add(FlowCollectionEvent.nextFlowEntry);
-
-          isBlockDoc = false;
         }
 
       case FlowCollectionEvent.startFlowSequence:
@@ -300,12 +236,6 @@ _RootNodeInfo _parseNodeAtRoot(
             blockAnchors: {},
             inlineAnchors: {},
           );
-
-          parserEvents
-            ..add(NodeEvent(event, collectionDelegate))
-            ..add(FlowCollectionEvent.nextFlowEntry);
-
-          isBlockDoc = false;
         }
 
       case BlockCollectionEvent.startBlockListEntry:
@@ -320,15 +250,6 @@ _RootNodeInfo _parseNodeAtRoot(
             blockAnchors: {},
             inlineAnchors: {},
           );
-
-          parserEvents
-            ..add(
-              NodeEvent(
-                BlockCollectionEvent.startBlockList,
-                collectionDelegate,
-              ),
-            )
-            ..add(event);
         }
 
       /// We treat all implicit block entries as part of a block map rather
@@ -345,52 +266,40 @@ _RootNodeInfo _parseNodeAtRoot(
             blockAnchors: {},
             inlineAnchors: {},
           );
-
-          parserEvents
-            ..add(
-              NodeEvent(
-                BlockCollectionEvent.startBlockMap,
-                collectionDelegate,
-              ),
-            )
-            ..add(event);
         }
     }
 
     return (
       foundDocEndMarkers: false,
-      isBlockDoc: isBlockDoc,
+      rootEvent: event,
       rootDelegate: collectionDelegate,
     );
   }
 
   // Nothing else should be present
-  final (isBlock, scalar) = switch (event) {
-    ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded => (
-      true,
+  final scalar = switch (event) {
+    ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded =>
       parseBlockStyle(scanner, minimumIndent: indent),
+
+    ScalarEvent.startFlowDoubleQuoted => parseDoubleQuoted(
+      scanner,
+      indent: indent,
+      isImplicit: false,
     ),
 
-    ScalarEvent.startFlowDoubleQuoted => (
-      false,
-      parseDoubleQuoted(scanner, indent: indent, isImplicit: false),
-    ),
-
-    ScalarEvent.startFlowSingleQuoted => (
-      false,
-      parseSingleQuoted(scanner, indent: indent, isImplicit: false),
+    ScalarEvent.startFlowSingleQuoted => parseSingleQuoted(
+      scanner,
+      indent: indent,
+      isImplicit: false,
     ),
 
     // We are aware of what character is at the start. Cannot be null
-    _ => (
-      true,
-      parsePlain(
-        scanner,
-        indent: indent,
-        charsOnGreedy: greedyChars.join(),
-        isImplicit: false,
-      )!,
-    ),
+    _ => parsePlain(
+      scanner,
+      indent: indent,
+      charsOnGreedy: greedyChars.join(),
+      isImplicit: false,
+    )!,
   };
 
   var foundDocEnd = scalar.hasDocEndMarkers;
@@ -419,13 +328,15 @@ _RootNodeInfo _parseNodeAtRoot(
         when hasDocumentMarkers(scanner, onMissing: (_) {})) {
       foundDocEnd = true;
     } else {
-      throw exception;
+      if (scanner.canChunkMore) {
+        throw exception;
+      }
     }
   }
 
   return (
     foundDocEndMarkers: foundDocEnd,
-    isBlockDoc: isBlock,
+    rootEvent: event,
     rootDelegate: ScalarDelegate(
       indentLevel: indentLevel,
       indent: indent,
@@ -573,24 +484,4 @@ _NodeProperties _parseNodeProperties(
     inlineAnchors: inlineAnchors,
     alias: alias,
   );
-}
-
-/// Backtracks a [delegate]'s undirected graph until [matcher] returns `true`
-/// or the current [ParserDelegate] is the root delegate (no parent). Returns
-/// `null` only if the [delegate] passed in is `null`.
-ParserDelegate? _backtrackDelegate(
-  ParserDelegate? delegate, {
-  required bool Function(ParserDelegate current) matcher,
-}) {
-  if (delegate == null) {
-    return null;
-  }
-
-  var current = delegate;
-
-  while (!matcher(current) || !current.isRootDelegate) {
-    current = current.parent!;
-  }
-
-  return current;
 }

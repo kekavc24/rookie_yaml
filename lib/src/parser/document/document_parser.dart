@@ -23,9 +23,6 @@ final class DocumentParser {
   /// Index of document being parsed
   int _currentIndex = -1;
 
-  /// Delegate for the current node being parsed
-  ParserDelegate? _currentDelegate;
-
   /// Char sequence that terminated the last document.
   ///
   /// If `...`, the parser looks for directives first before parsing can
@@ -54,22 +51,9 @@ final class DocumentParser {
   /// Tracks whether any directives were declared
   bool _hasDirectives = false;
 
-  /// Tracks whether the documentation is using indentantion to convey
-  /// content information.
-  ///
-  /// [NodeStyle.flow] has no use for indentation since it uses explicit
-  /// indicators. Thus, parsing will be lenient with the document structure but
-  /// will no allow nodes with [NodeStyle.block] to be used.
-  bool _isBlockDoc = true;
-
-  /// Tracks whether the parser should exit/prepare for an exit
-  bool _exitNodeParser = false;
-
   final _greedyChars = <ReadableChar>[];
 
   final _anchorNodes = <String, ParserDelegate>{};
-
-  final _parserEvents = <ParserEvent>[];
 
   SplayTreeSet<YamlComment> _comments = SplayTreeSet();
 
@@ -102,8 +86,6 @@ final class DocumentParser {
 
     if (_currentIndex == 0) return;
 
-    _currentDelegate = null;
-
     _hasDirectives = false;
     _docStartExplicit = false;
     _docEndExplicit = false;
@@ -122,6 +104,12 @@ final class DocumentParser {
   void _updateDocEndChars(String docEndChars) {
     _lastWasDocEndChars = docEndChars;
     _docEndExplicit = docEndChars == '...';
+
+    if (_scanner.charAtCursor
+        case LineBreak _ || WhiteSpace _ || Indicator.comment
+        when _docEndExplicit) {
+      _skipToParsableChar(_scanner, comments: _comments);
+    }
   }
 
   /// Parses directives and any its end marker if present
@@ -168,6 +156,7 @@ final class DocumentParser {
     );
   }
 
+  /// Resolves a local tag to a global tag uri if present.
   ResolvedTag _resolveTag(LocalTag localTag) {
     final LocalTag(:tagHandle, :content) = localTag;
 
@@ -191,8 +180,14 @@ final class DocumentParser {
     return ParsedTag(tag, suffix);
   }
 
+  /// Parses the next [YamlDocument] if present in the YAML string.
+  ///
+  /// `NOTE:` This advances the parsing forward and holds no reference to a
+  /// previously parsed [YamlDocument].
   YamlDocument? parseNext() {
     _restartParser();
+
+    if (!_scanner.canChunkMore) return null;
 
     YamlDirective? version;
     var tags = <TagHandle, GlobalTag>{};
@@ -213,7 +208,7 @@ final class DocumentParser {
           globalTags.values.toSet(),
           reservedDirectives,
           _comments,
-          _currentDelegate?.parsed(),
+          null,
           YamlDocType.inferType(
             hasDirectives: _hasDirectives,
             isDocStartExplicit: _docStartExplicit,
@@ -236,17 +231,18 @@ final class DocumentParser {
       isDocStartExplicit: _docStartExplicit,
     );
 
-    var (:foundDocEndMarkers, :isBlockDoc, :rootDelegate) = _parseNodeAtRoot(
+    final (:foundDocEndMarkers, :rootEvent, :rootDelegate) = _parseNodeAtRoot(
       _scanner,
       rootInMarkerLine: _rootInMarkerLine,
       isDocStartExplicit: _docStartExplicit,
       hasDirectives: _hasDirectives,
-      parserEvents: _parserEvents,
       comments: _comments,
       greedyChars: _greedyChars.map((c) => c.string),
     );
 
-    _isBlockDoc = isBlockDoc;
+    var event = rootEvent;
+    var root = rootDelegate;
+    ParserDelegate? keyIfMap;
 
     /// Further verify if the scalar parsed on a single line is a key or just
     /// a scalar on a single line
@@ -261,34 +257,29 @@ final class DocumentParser {
             break;
 
           // Convert to key delegate ready to parse a map
-          case null when _scanner.charAtCursor == Indicator.mappingValue:
+          case null
+              when _inferNextEvent(
+                    _scanner,
+                    isBlockContext: true,
+                    lastKeyWasJsonLike: false,
+                  ) ==
+                  BlockCollectionEvent.startEntryValue:
             {
               isInlineScalar = false;
               final ScalarDelegate(:startOffset, :indent) = rootDelegate;
 
-              _parserEvents
-                ..add(
-                  NodeEvent(
-                    BlockCollectionEvent.startBlockMap,
-                    MappingDelegate(
-                      collectionStyle: NodeStyle.block,
-                      indentLevel: 0,
-                      indent: indent,
-                      startOffset: startOffset,
-                      blockTags: {},
-                      inlineTags: {},
-                      blockAnchors: {},
-                      inlineAnchors: {},
-                    ),
-                  ),
-                )
-                ..add(
-                  NodeEvent(
-                    BlockCollectionEvent.startImplicitKey,
-                    rootDelegate,
-                  ),
-                )
-                ..add(BlockCollectionEvent.startEntryValue);
+              event = BlockCollectionEvent.startImplicitKey;
+              keyIfMap = rootDelegate;
+              root = MappingDelegate(
+                collectionStyle: NodeStyle.block,
+                indentLevel: 0,
+                indent: indent,
+                startOffset: startOffset,
+                blockTags: {},
+                inlineTags: {},
+                blockAnchors: {},
+                inlineAnchors: {},
+              );
             }
 
           default:
@@ -331,28 +322,51 @@ final class DocumentParser {
       }
     }
 
-    while (_scanner.canChunkMore && !_exitNodeParser) {
-      final event = _parserEvents.lastOrNull;
+    /// Why block info? YAML clearly has a favourite child and that is the
+    /// block styles. They are indeed a human readable format. Also, the
+    /// doc end chars "..." and "---" exist in this format.
+    _BlockNodeInfo? rootInfo;
 
-      if (event == null) {
-        throw FormatException('A root event must always be present!');
-      }
+    switch (event) {
+      // A root flow map can never be inlined and indent has no purpose
+      case FlowCollectionEvent.startFlowMap:
+        _parseFlowMap(root as MappingDelegate, forceInline: false);
 
-      // switch (event) {
-      //   case ScalarEvent scalar:
-      //     _parseScalar(scalar);
+      // A root flow sequence can never be inlined and indent has no purpose
+      case FlowCollectionEvent.startFlowSequence:
+        _parseFlowSequence(root as SequenceDelegate, forceInline: false);
 
-      //   case BlockCollectionEvent.startExplicitKey:
-      //     _parseBlockKey(isExplicit: true);
+      case BlockCollectionEvent.startBlockListEntry:
+        rootInfo = _parseBlockSequence(root as SequenceDelegate);
 
-      //   case BlockCollectionEvent.startImplicitKey:
-      //     _parseBlockKey(isExplicit: false);
-      // }
+      case BlockCollectionEvent.startExplicitKey ||
+          BlockCollectionEvent.startImplicitKey:
+        rootInfo = _parseBlockMap(root as MappingDelegate, keyIfMap);
+
+      // Should never be the case
+      default:
+        throw Exception('[Parser Error]: Unhandled parser event: "$event"');
     }
 
-    final root = _backtrackDelegate(_currentDelegate, matcher: (_) => false);
+    /// We must see document end chars and don't care how they are laid within
+    /// the document
+    if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
+      _skipToParsableChar(_scanner, comments: _comments);
 
-    assert(root != null, 'The root node should not be null here!!');
+      final fauxBuffer = <String>[];
+
+      if (!hasDocumentMarkers(
+        _scanner,
+        onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
+      )) {
+        throw FormatException(
+          'Expected to find document end chars "..." or directive end chars '
+          '"---" but found ${fauxBuffer.join()}',
+        );
+      }
+    }
+
+    _updateDocEndChars(_inferDocEndChars(_scanner));
 
     return YamlDocument._(
       _currentIndex,
@@ -360,7 +374,7 @@ final class DocumentParser {
       tags.values.toSet(),
       reserved,
       _comments,
-      root!.parsed(),
+      root.parsed(),
       YamlDocType.inferType(
         hasDirectives: _hasDirectives,
         isDocStartExplicit: _docStartExplicit,
@@ -370,143 +384,22 @@ final class DocumentParser {
     );
   }
 
-  /// Parses a flow continously.
+  /// Skips to the next parsable flow indicator/character.
   ///
-  /// Explicit indicators, simple layout structure and disregard for
-  /// indentation unless in within a block layout guarantee that we can block
-  /// and pass flow indicators in one pass.
-  void _parseFlowContinuous() {
-    // Must ensure we are parsing a flow event always.
-    final trigger = _parserEvents.lastOrNull;
-
-    if (trigger == null || !trigger.isFlowContext) {
-      throw FormatException(
-        '[_parseFlowContinuous] function called on non-flow event',
-      );
-    }
-
-    bool isDirtyFlowStart(ParserEvent event) {
-      return event != FlowCollectionEvent.startFlowMap ||
-          event != FlowCollectionEvent.startFlowSequence;
-    }
-
-    final dirtyException = FormatException(
-      'Expected an opening "{" or "[" but found a dangling'
-      ' "${_scanner.charAtCursor?.string}"',
-    );
-
-    void throwOnDirtyStart(ParserEvent event) {
-      if (isDirtyFlowStart(event)) {
-        throw dirtyException;
-      }
-    }
-
-    var isParsingMap = false;
-    var forceInline = false; // Parses in-line without any line break
-
-    CollectionDelegate delegate;
-
-    /// Determine the first possible event. This is a safeguard to ensure
-    /// we always a valid [NodeEvent].
-    switch (trigger) {
-      case FlowCollectionEvent.nextFlowEntry:
-        {
-          // Wildcard action for either sequence or map
-          _parserEvents.removeLast();
-
-          /// We expect a flow node event immediately before. Usually
-          /// indicates this is a top level map
-          if (_parserEvents.lastOrNull case NodeEvent(
-            event: final flowEvent,
-            delegate: final nDelegate,
-          ) when !isDirtyFlowStart(flowEvent)) {
-            isParsingMap = flowEvent == FlowCollectionEvent.startFlowMap;
-            delegate = nDelegate as CollectionDelegate;
-            break;
-          }
-
-          throw dirtyException;
-        }
-
-      case BlockToFlowEvent(
-        event: final parseEvent,
-        indentLevel: final indentLevel,
-        indent: final indent,
-        isInline: final isInline,
-      ):
-        {
-          // No inline event starts with flow entry or end flow delimiters
-          throwOnDirtyStart(parseEvent);
-
-          forceInline = isInline;
-
-          const nodeStyle = NodeStyle.flow;
-          final startOffset = _scanner.currentOffset;
-
-          isParsingMap = parseEvent == FlowCollectionEvent.startFlowMap;
-          delegate = parseEvent == FlowCollectionEvent.startFlowMap
-              ? MappingDelegate(
-                  collectionStyle: nodeStyle,
-                  indentLevel: indentLevel,
-                  indent: indent,
-                  startOffset: startOffset,
-                  blockTags: {},
-                  inlineTags: {},
-                  blockAnchors: {},
-                  inlineAnchors: {},
-                )
-              : SequenceDelegate(
-                  collectionStyle: nodeStyle,
-                  indentLevel: indentLevel,
-                  indent: indent,
-                  startOffset: startOffset,
-                  blockTags: {},
-                  inlineTags: {},
-                  blockAnchors: {},
-                  inlineAnchors: {},
-                );
-
-          /// We will always have a starting sequence/map event. Create a node
-          /// event and add it to the main event queue. Useful when
-          /// backtracking
-          _parserEvents.add(
-            NodeEvent(
-              parseEvent as FlowCollectionEvent,
-              delegate,
-            ),
-          );
-        }
-
-      case NodeEvent(event: final parserEvent)
-          when isDirtyFlowStart(parserEvent):
-        throw dirtyException;
-
-      default:
-        throw dirtyException;
-    }
-
-    isParsingMap
-        ? _parseFlowMap(
-            delegate as MappingDelegate,
-            forceInline: forceInline,
-          )
-        : _parseFlowSequence(
-            delegate as SequenceDelegate,
-            forceInline: forceInline,
-          );
-  }
-
-  void _throwNonInline({required bool isBlock}) => throw FormatException(
-    'Found a line break when parsing a ${isBlock ? 'block' : 'flow'} node '
-    'just before ${_scanner.currentOffset}',
-  );
-
+  /// If declared on a new line and [forceInline] is `false`, the flow
+  /// indicator/character must be indented at least [minIndent] spaces. Throws
+  /// otherwise.
   bool _nextLineSafeInFlow(int minIndent, {required bool forceInline}) {
     final indent = _skipToParsableChar(_scanner, comments: _comments);
 
     if (indent != null) {
       // Must not have line breaks
-      if (forceInline) _throwNonInline(isBlock: false);
+      if (forceInline) {
+        throw FormatException(
+          'Found a line break when parsing a flow node just before '
+          '${_scanner.currentOffset}',
+        );
+      }
 
       /// If line breaks are allowed, it must at least be the same or
       /// greater than the min indent. Indent serves no purpose in flow
@@ -525,6 +418,7 @@ final class DocumentParser {
     return true;
   }
 
+  /// Throws if the current char doesn't match the flow collection [delimiter]
   void _throwIfNotFlowDelimiter(Indicator delimiter) {
     _skipToParsableChar(_scanner, comments: _comments);
 
@@ -532,7 +426,7 @@ final class DocumentParser {
 
     if (char != delimiter) {
       throw FormatException(
-        'Expected the closing flow delimiter: ${delimiter.string} but found: '
+        'Expected the flow delimiter: ${delimiter.string} but found: '
         '${char?.string ?? ''} at ${_scanner.charAtCursor}',
       );
     }
@@ -540,11 +434,15 @@ final class DocumentParser {
     _scanner.skipCharAtCursor(); // Skip it if valid
   }
 
+  /// Parses a flow map.
+  ///
+  /// If [forceInline] is `true`, the map must be declared on the same line
+  /// with no line breaks and throws if otherwise.
   void _parseFlowMap(MappingDelegate delegate, {required bool forceInline}) {
+    _throwIfNotFlowDelimiter(Indicator.mappingStart);
+
     final MappingDelegate(:indent, :indentLevel) = delegate;
     const mapEnd = Indicator.mappingEnd;
-
-    _scanner.skipCharAtCursor(); // Skip opening delimiter
 
     while (_scanner.canChunkMore) {
       final (key, value) = _parseFlowMapEntry(
@@ -587,19 +485,23 @@ final class DocumentParser {
     _throwIfNotFlowDelimiter(mapEnd);
   }
 
+  /// Parse a flow sequence/list.
+  ///
+  /// If [forceInline] is `true`, the list must be declared on the same line
+  /// with no line breaks and throws if otherwise.
   void _parseFlowSequence(
     SequenceDelegate delegate, {
     required bool forceInline,
   }) {
+    _throwIfNotFlowDelimiter(Indicator.flowSequenceStart);
+    
     final SequenceDelegate(:indent, :indentLevel) = delegate;
     const seqEnd = Indicator.flowSequenceEnd;
-
-    _scanner.skipCharAtCursor(); // Skip leading "["
 
     listParser:
     while (_scanner.canChunkMore) {
       // Always ensure we are at a parsable char. Safely.
-        if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
+      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
 
       final charAfter = _scanner.peekCharAfterCursor();
 
@@ -728,6 +630,7 @@ final class DocumentParser {
     _throwIfNotFlowDelimiter(seqEnd);
   }
 
+  /// Parses a single flow map entry.
   (ParserDelegate? key, ParserDelegate? value) _parseFlowMapEntry(
     ParserDelegate? key, {
     required int indentLevel,
@@ -818,6 +721,7 @@ final class DocumentParser {
     return (parsedKey, value);
   }
 
+  /// Parses a flow node, that is, a map/sequence/scalar.
   ParserDelegate _parseFlowNode({
     required bool isParsingKey,
     required int currentIndentLevel,
@@ -976,6 +880,7 @@ final class DocumentParser {
     }
   }
 
+  /// Parses a [Scalar].
   (PreScalar scalar, ScalarDelegate delegate) _parseScalar(
     ScalarEvent event, {
     required bool isImplicit,
@@ -1040,6 +945,8 @@ final class DocumentParser {
     );
   }
 
+  /// Calculates the indent for a block node within a block collection
+  /// only if [inferred] indent is null.
   ({int laxIndent, int inlineFixedIndent}) _blockChildIndent(
     int? inferred, {
     required int blockParentIndent,
@@ -1049,7 +956,7 @@ final class DocumentParser {
       return (laxIndent: inferred, inlineFixedIndent: inferred);
     }
 
-    /// The calculation applies for both the "?" and ":" as the both have to
+    /// The calculation applies for the "?" and ":" as the both have to
     /// have the same indent since the ":" *MUST* be declared on a new line
     /// for block explicit keys.
     ///
@@ -1060,7 +967,7 @@ final class DocumentParser {
     ///     purpose other than respecting the current block parent's
     ///     indentation.
     ///   - Otherwise, we force a fixed indent/layout based on the character
-    ///     different upto the current parsable char. Forcing it to be aligned
+    ///     difference upto the current parsable char. Forcing it to be aligned
     ///     if the node spills over into the next line. This may be seen with
     ///     block sequences and maps nested in a block sequence entry
     ///
@@ -1086,7 +993,7 @@ final class DocumentParser {
     ///   - blah
     ///
     /// # With implicit or explict map
-    /// ? key: value
+    /// ? key:
     ///   ? keey
     ///   : value
     ///
@@ -1103,6 +1010,11 @@ final class DocumentParser {
     );
   }
 
+  /// Parses a block scalar.
+  ///
+  /// Block scalars can create in an implicit block map if declared on a new
+  /// line. If [degenerateToImplicitMap] is `true`, then this function attempts
+  /// to greedily parse a block map if possible.
   _BlockNode _parseBlockScalarWildcard(
     ScalarEvent event, {
     required int laxIndent,
@@ -1183,6 +1095,7 @@ final class DocumentParser {
     return (delegate: map, nodeInfo: _parseBlockMap(map, delegate));
   }
 
+  /// Parses a flow collection embedded within a block collection.
   ParserDelegate _parseEmbeddedFlowCollection(
     FlowCollectionEvent event, {
     required int indentLevel,
@@ -1205,7 +1118,7 @@ final class DocumentParser {
 
     isParsingKey: isParsingKey,
     isExplicitKey: isExplicitKey,
-    forceInline: false,
+    forceInline: isInlined,
     keyIsJsonLike: false,
 
     /// Faux value. Never used. Block explicit keys are intercepted by the
@@ -1213,6 +1126,7 @@ final class DocumentParser {
     collectionDelimiter: Indicator.reservedAtSign,
   );
 
+  /// Parses a block node within a block collection.
   _BlockNode _parseBlockNode({
     required int indentLevel,
     required int laxIndent,
@@ -1341,6 +1255,8 @@ final class DocumentParser {
     return (delegate: node, nodeInfo: info);
   }
 
+  /// Parses an explicit block map entry within a block collection declared
+  /// using the `?` character.
   _BlockEntry _parseExplicitBlockEntry({
     required int indentLevel,
     required int indent,
@@ -1540,6 +1456,7 @@ final class DocumentParser {
     return (delegate: (key: explicitKey, value: delegate), nodeInfo: nodeInfo);
   }
 
+  /// Parses an implicit block map entry within a block collection.
   _BlockEntry _parseImplicitBlockEntry(
     ParserDelegate? key, {
     required int indent,
@@ -1681,6 +1598,9 @@ final class DocumentParser {
     );
   }
 
+  /// Throws if a block node is declared with an indent that is greater than
+  /// the block parent's indent but less than the indent of the first child of
+  /// the block
   void _throwIfDangling(int collectionIndent, int currentIndent) {
     if (currentIndent > collectionIndent) {
       throw FormatException(
@@ -1690,6 +1610,8 @@ final class DocumentParser {
     }
   }
 
+  /// Parses a block map. If [firstImplicitKey] is present, the map parses
+  /// only the value of the first key.
   _BlockNodeInfo _parseBlockMap(
     MappingDelegate map,
     ParserDelegate? firstImplicitKey,
@@ -1778,6 +1700,7 @@ final class DocumentParser {
     return _emptyScanner;
   }
 
+  /// Parses a block sequence.
   _BlockNodeInfo _parseBlockSequence(SequenceDelegate sequence) {
     const indicator = Indicator.blockSequenceEntry;
     final SequenceDelegate(:indent, :indentLevel) = sequence;
@@ -1798,7 +1721,9 @@ final class DocumentParser {
           true,
 
         // Normal "- " combination for block list
-        indicator when charAfter == WhiteSpace.space => false,
+        indicator
+            when charAfter == WhiteSpace.space || charAfter is LineBreak =>
+          false,
 
         _ => throw FormatException(
           'Expected a "- " while parsing sequence but found '
@@ -1830,18 +1755,18 @@ final class DocumentParser {
 
         // We moved to the next node irrespective of its indent.
         if (isLess || indentOrSeparation == indent) {
-        sequence.pushEntry(
+          sequence.pushEntry(
             nullScalarDelegate(
               indentLevel: childIndentLevel,
               indent: indent + 1,
             ),
-        );
+          );
 
           if (isLess) {
             return (exitIndent: indentOrSeparation, hasDocEndMarkers: false);
           }
 
-        continue;
+          continue;
         }
       }
 
