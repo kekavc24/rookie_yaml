@@ -42,17 +42,19 @@ PreScalar parseDoubleQuoted(
 
   /// Code reusability in loop
   void foldDoubleQuoted() {
-    foundLineBreak = foldQuotedFlowScalar(
-      scanner,
-      scalarBuffer: buffer,
-      minIndent: indent,
-      isImplicit: isImplicit,
+    foundLineBreak =
+        foldQuotedFlowScalar(
+          scanner,
+          scalarBuffer: buffer,
+          minIndent: indent,
+          isImplicit: isImplicit,
 
-      // Can only escape line breaks
-      onExitResumeIf: (curr, next) {
-        return curr == SpecialEscaped.backSlash && next is LineBreak;
-      },
-    ) || foundLineBreak;
+          // Can only escape line breaks
+          onExitResumeIf: (curr, next) {
+            return curr == SpecialEscaped.backSlash && next is LineBreak;
+          },
+        ) ||
+        foundLineBreak;
   }
 
   // TODO: Save offsets etc.
@@ -111,7 +113,7 @@ PreScalar parseDoubleQuoted(
     buffer,
     scalarStyle: ScalarStyle.doubleQuoted,
     actualIdent: indent,
-    foundLinebreak: foundLineBreak
+    foundLinebreak: foundLineBreak,
   );
 }
 
