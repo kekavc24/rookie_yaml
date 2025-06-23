@@ -386,25 +386,27 @@ final class DocumentParser {
         throw Exception('[Parser Error]: Unhandled parser event: "$event"');
     }
 
-    /// We must see document end chars and don't care how they are laid within
-    /// the document
-    if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
-      _skipToParsableChar(_scanner, comments: _comments);
+    if (_scanner.canChunkMore) {
+      /// We must see document end chars and don't care how they are laid within
+      /// the document
+      if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
+        _skipToParsableChar(_scanner, comments: _comments);
 
-      final fauxBuffer = <String>[];
+        final fauxBuffer = <String>[];
 
-      if (!hasDocumentMarkers(
-        _scanner,
-        onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
-      )) {
-        throw FormatException(
-          'Expected to find document end chars "..." or directive end chars '
-          '"---" but found ${fauxBuffer.join()}',
-        );
+        if (!hasDocumentMarkers(
+          _scanner,
+          onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
+        )) {
+          throw FormatException(
+            'Expected to find document end chars "..." or directive end chars '
+            '"---" but found ${fauxBuffer.join()}',
+          );
+        }
       }
-    }
 
-    _updateDocEndChars(_inferDocEndChars(_scanner));
+      _updateDocEndChars(_inferDocEndChars(_scanner));
+    }
 
     return YamlDocument._(
       _currentIndex,
@@ -532,7 +534,7 @@ final class DocumentParser {
     required bool forceInline,
   }) {
     _throwIfNotFlowDelimiter(Indicator.flowSequenceStart);
-    
+
     final SequenceDelegate(:indent, :indentLevel) = delegate;
     const seqEnd = Indicator.flowSequenceEnd;
 
@@ -1640,7 +1642,7 @@ final class DocumentParser {
   /// the block parent's indent but less than the indent of the first child of
   /// the block
   void _throwIfDangling(int collectionIndent, int currentIndent) {
-    if (currentIndent > collectionIndent) {
+    if (_scanner.canChunkMore && currentIndent > collectionIndent) {
       throw FormatException(
         'Dangling node found at ${_scanner.charAtCursor?.string} with indent'
         '$currentIndent space(s) while parsing',
