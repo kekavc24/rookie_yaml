@@ -323,22 +323,60 @@ final class DocumentParser {
     }
 
     /// Why block info? YAML clearly has a favourite child and that is the
-    /// block styles. They are indeed a human readable format. Also, the
+    /// block(-like) styles. They are indeed a human friendly format. Also, the
     /// doc end chars "..." and "---" exist in this format.
     _BlockNodeInfo? rootInfo;
 
     switch (event) {
-      // A root flow map can never be inlined and indent has no purpose
-      case FlowCollectionEvent.startFlowMap:
-        _parseFlowMap(root as MappingDelegate, forceInline: false);
+      // Start of flow map or sequence. Never inlined ahead of time.
+      case FlowCollectionEvent event:
+        {
+          event == FlowCollectionEvent.startFlowMap
+              ? _parseFlowMap(root as MappingDelegate, forceInline: false)
+              : _parseFlowSequence(
+                  root as SequenceDelegate,
+                  forceInline: false,
+                );
 
-      // A root flow sequence can never be inlined and indent has no purpose
-      case FlowCollectionEvent.startFlowSequence:
-        _parseFlowSequence(root as SequenceDelegate, forceInline: false);
+          final ParserDelegate(:indent, :startOffset, :encounteredLineBreak) =
+              root;
+
+          /// As indicated initially, YAML considerably favours block(-like)
+          /// styles. This flow collection may be an implicit key if only it
+          /// is inline and we see a ": " char combination ahead.
+          if (!encounteredLineBreak &&
+              _skipToParsableChar(
+                    _scanner,
+                    comments: _comments,
+                  ) ==
+                  null &&
+              _inferNextEvent(
+                    _scanner,
+                    isBlockContext: true,
+                    lastKeyWasJsonLike: false,
+                  ) ==
+                  BlockCollectionEvent.startEntryValue) {
+            keyIfMap = root;
+            root = MappingDelegate(
+              collectionStyle: NodeStyle.block,
+              indentLevel: 0,
+              indent: indent,
+              startOffset: startOffset,
+              blockTags: {},
+              inlineTags: {},
+              blockAnchors: {},
+              inlineAnchors: {},
+            );
+
+            continue blockMap; // Executes without eval. Sure bet!
+          }
+        }
 
       case BlockCollectionEvent.startBlockListEntry:
         rootInfo = _parseBlockSequence(root as SequenceDelegate);
 
+      // Versatile and unpredictable
+      blockMap:
       case BlockCollectionEvent.startExplicitKey ||
           BlockCollectionEvent.startImplicitKey:
         rootInfo = _parseBlockMap(root as MappingDelegate, keyIfMap);
