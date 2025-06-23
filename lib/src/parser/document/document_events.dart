@@ -110,8 +110,7 @@ ParserEvent _inferNextEvent(
   /// Can be allowed after map like indicator such as:
   ///   - "?" -> an explicit key indicator
   ///   - ":" -> indicates start of a value
-  final allowedInMapLike =
-      charAfter is LineBreak || charAfter == WhiteSpace.space;
+  final canBeSeparation = charAfter is LineBreak || charAfter is WhiteSpace;
 
   return switch (scanner.charAtCursor) {
     Indicator.doubleQuote => ScalarEvent.startFlowDoubleQuoted,
@@ -119,25 +118,25 @@ ParserEvent _inferNextEvent(
     Indicator.literal => ScalarEvent.startBlockLiteral,
     Indicator.folded => ScalarEvent.startBlockFolded,
 
-    Indicator.mappingValue when isBlockContext && allowedInMapLike =>
+    Indicator.mappingValue when isBlockContext && canBeSeparation =>
       BlockCollectionEvent.startEntryValue,
 
     // Flow node doesn't need the space when key is json-like (double quoted)
     Indicator.mappingValue
-        when !isBlockContext && (allowedInMapLike || lastKeyWasJsonLike) =>
+        when !isBlockContext && (canBeSeparation || lastKeyWasJsonLike) =>
       FlowCollectionEvent.startEntryValue,
 
-    Indicator.blockSequenceEntry when allowedInMapLike && isBlockContext =>
+    Indicator.blockSequenceEntry when canBeSeparation && isBlockContext =>
       BlockCollectionEvent.startBlockListEntry,
 
-    Indicator.mappingKey when isBlockContext && allowedInMapLike =>
+    Indicator.mappingKey when isBlockContext && canBeSeparation =>
       BlockCollectionEvent.startExplicitKey,
 
     /// In flow collections, it is allow to occur separately without any key
     /// beside a "," or "{" or "}" or "[" or "]"
     Indicator.mappingKey
         when !isBlockContext &&
-            (allowedInMapLike || flowDelimiters.contains(charAfter)) =>
+            (canBeSeparation || flowDelimiters.contains(charAfter)) =>
       FlowCollectionEvent.startExplicitKey,
 
     Indicator.flowSequenceStart => FlowCollectionEvent.startFlowSequence,

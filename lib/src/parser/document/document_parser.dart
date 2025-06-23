@@ -1761,8 +1761,7 @@ final class DocumentParser {
           true,
 
         // Normal "- " combination for block list
-        indicator
-            when charAfter == WhiteSpace.space || charAfter is LineBreak =>
+        indicator when charAfter is WhiteSpace || charAfter is LineBreak =>
           false,
 
         _ => throw FormatException(
