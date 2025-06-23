@@ -34,9 +34,11 @@ final class YamlDirective extends ReservedDirective {
   final [currentMajor, currentMin] = parserVersion._formatted;
   final [parsedMajor, parsedMin] = directive._formatted;
 
+  final isSupported = currentMajor >= parsedMajor;
+
   return (
-    isSupported: currentMajor >= parsedMajor,
-    shouldWarn: parsedMin > currentMin,
+    isSupported: isSupported,
+    shouldWarn: !isSupported || (isSupported && parsedMin > currentMin),
   );
 }
 
@@ -134,7 +136,7 @@ YamlDirective _parseYamlDirective(ChunkScanner scanner) {
     throw FormatException(
       '$prefix'
       'A YAML version must have only 2 integers separated by '
-      '$_versionSeparator',
+      '"$_versionSeparator"',
     );
   }
 
