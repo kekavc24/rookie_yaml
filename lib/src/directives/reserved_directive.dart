@@ -1,5 +1,7 @@
 part of 'directives.dart';
 
+const _equality = DeepCollectionEquality();
+
 /// Represents any unknown directive which `YAML`, by default, reserves for
 /// future use. Typically any that is not a [YamlDirective] or a [GlobalTag].
 sealed class ReservedDirective implements Directive {
@@ -11,6 +13,15 @@ sealed class ReservedDirective implements Directive {
 
   @override
   final List<String> parameters;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ReservedDirective &&
+      other.name == name &&
+      _equality.equals(other.parameters, parameters);
+
+  @override
+  int get hashCode => _equality.hash([name, parameters]);
 
   @override
   String toString() => _dumpDirective(this);
