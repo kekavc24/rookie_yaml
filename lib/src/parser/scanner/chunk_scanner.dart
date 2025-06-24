@@ -61,7 +61,12 @@ final class ChunkScanner {
   bool _hasMoreLines = false;
 
   /// Checks if this scanner produce more characters based on the iteration
-  /// state
+  /// state.
+  ///
+  /// `[NOTE]`: If [charAtCursor] is not `null`, then this will always return
+  /// `true` even if no more lines are present. This is intentional. Any
+  /// callers reading the [charAtCursor] must explicitly skip it if the code
+  /// heavily depends on the correctness of this condition!
   bool get canChunkMore => _linesHaveChars || _charOnLastExit != null;
 
   bool get _linesHaveChars => _hasMoreLines || _currentLine != null;
@@ -190,13 +195,19 @@ final class ChunkScanner {
     }
 
     while (canChunkMore) {
-      final charAfter = peekCharAfterCursor()!;
-      if (stopIf(taken, charAfter)) {
-        break;
+      final charAfter = peekCharAfterCursor();
+
+      /// May seem useless with the [canChunkMore] condition above but we need
+      /// to leave scanner in a safe state. We read the char at cursor already!
+      if (charAfter != null) {
+        if (stopIf(taken, charAfter)) {
+          break;
+        }
+
+        onMapped(mapper(charAfter));
+        incrementCount();
       }
 
-      onMapped(mapper(charAfter));
-      incrementCount();
       skipCharAtCursor();
     }
 
