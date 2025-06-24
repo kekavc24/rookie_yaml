@@ -50,31 +50,8 @@ String _parseTagUri(
 
   final buffer = existingBuffer ?? StringBuffer();
 
-  const hexCount = 2;
-
   if (includeScheme) {
     _parseScheme(buffer, scanner);
-  }
-
-  void parseHex() {
-    final hexBuff = StringBuffer('0x');
-
-    final numHex = scanner.takeUntil(
-      includeCharAtCursor: false,
-      mapper: (char) => char.string,
-      onMapped: (mapped) => hexBuff.write(mapped),
-      stopIf: (count, next) {
-        return !isHexDigit(next) || count == hexCount;
-      },
-    );
-
-    final hex = hexBuff.toString();
-
-    if (numHex != hexCount) {
-      throw FormatException('Invalid escaped hex found in tag URI => "$hex"');
-    }
-
-    buffer.write(String.fromCharCode(int.parse(hex)));
   }
 
   tagParser:
@@ -88,7 +65,7 @@ String _parseTagUri(
 
       // Parse as escaped hex %
       case _directiveIndicator when !isAnchorOrAlias:
-        parseHex();
+        _parseHexInUri(scanner, buffer);
 
       // A verbatim tag ends immediately a ">" is seen
       case _ when string == _verbatimEnd.string && isVerbatimUri:
@@ -159,6 +136,26 @@ void _parseScheme(StringBuffer buffer, ChunkScanner scanner) {
   }
 
   scanner.skipCharAtCursor(); // Parsing can continue
+}
+
+void _parseHexInUri(ChunkScanner scanner, StringBuffer uriBuffer) {
+  const hexCount = 2;
+
+  final hexBuff = StringBuffer('0x');
+
+  if (scanner.takeUntil(
+        includeCharAtCursor: false,
+        mapper: (char) => char.string,
+        onMapped: (mapped) => hexBuff.write(mapped),
+        stopIf: (count, next) {
+          return !isHexDigit(next) || count == hexCount;
+        },
+      ) !=
+      hexCount) {
+    throw FormatException('Invalid escaped hex found in tag URI => "$hexBuff"');
+  }
+
+  uriBuffer.write(String.fromCharCode(int.parse(hexBuff.toString())));
 }
 
 /// Parses an alias or anchor name.
