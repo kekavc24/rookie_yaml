@@ -4,7 +4,7 @@ const _tagIndicator = Indicator.tag;
 
 /// Types of a [TagHandle]
 enum TagHandleVariant {
-  /// Normally used as a prefix for most [LocalTag]s
+  /// Normally used as a prefix for most [LocalTag]s and [NonSpecificTag]s
   primary('!'),
 
   /// Prefix for tags that resolve to `tag:yaml.org,2002:` unless overriden
@@ -82,8 +82,8 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
   // All tag handles must start with the indicator
   if (char == null || char != _tagIndicator) {
     throw FormatException(
-      'Expected a $indicatorStr but found '
-      '${char?.string ?? 'nothing'}',
+      'Expected a "$indicatorStr" but found '
+      '"${char?.string ?? 'nothing'}"',
     );
   }
 
@@ -109,22 +109,30 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
         // Prefer setting the leading and trailing "!"
         final namedBuffer = StringBuffer(indicatorStr);
 
-        final ChunkInfo(:charOnExit) = scanner.bufferChunk(
+        final ChunkInfo(:charOnExit, :sourceEnded) = scanner.bufferChunk(
           (c) => namedBuffer.write(c.string),
           exitIf: (_, curr) => !isAlphaNumeric(curr),
         );
 
         if (charOnExit != _tagIndicator) {
+          var current = charOnExit;
+
+          if (sourceEnded) {
+            scanner.skipCharAtCursor();
+            current = scanner.charAtCursor;
+          }
+
           final bufferVal = namedBuffer.toString();
 
           throw FormatException(
             'Invalid named tag handle format. '
-            'Expected !$bufferVal! but found $bufferVal<${charOnExit?.string}>',
+            'Expected $bufferVal! but found'
+            ' $bufferVal<${current?.string}>',
           );
         }
 
         namedBuffer.write(indicatorStr); // Trailing "!"
-        tagHandle = TagHandle.named(namedBuffer.toString());
+        tagHandle = TagHandle._(TagHandleVariant.named, namedBuffer.toString());
       }
   }
 
