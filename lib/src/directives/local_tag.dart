@@ -83,6 +83,21 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
           );
         }
 
+      /// If escaped, quickly parse remaining as tag uri of a shorthand with
+      /// a primary tag handle. Cannot be named as named tag handles only
+      /// accept alphanumeric chars
+      ///   -> !tag%21
+      case Indicator.directive:
+        {
+          _parseTagUri(
+            scanner,
+            allowRestrictedIndicators: false,
+            existingBuffer: buffer,
+          );
+
+          break localTagChunker;
+        }
+
       // Normal alphanumeric
       case _ when isAlphaNumeric(char):
         buffer.write(string);

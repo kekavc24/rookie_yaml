@@ -43,11 +43,12 @@ String _parseTagUri(
   bool includeScheme = false,
   bool isVerbatim = false,
   bool isAnchorOrAlias = false,
+  StringBuffer? existingBuffer,
 }) {
   final allowFlowIndicators = !isAnchorOrAlias && allowRestrictedIndicators;
   final isVerbatimUri = !isAnchorOrAlias && isVerbatim;
 
-  final buffer = StringBuffer();
+  final buffer = existingBuffer ?? StringBuffer();
 
   const hexCount = 2;
 
