@@ -91,7 +91,7 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
 
   switch (scanner.peekCharAfterCursor()) {
     // Just a single `!`
-    case WhiteSpace _:
+    case WhiteSpace? _:
       tagHandle = TagHandle.primary();
 
     /// For secondary tags, parse as secondary. Let caller handle the "mess" or
