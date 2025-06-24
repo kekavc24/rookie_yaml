@@ -38,6 +38,15 @@ final class TagHandle {
     assert(name.isNotEmpty, 'Name cannot be empty!');
 
     var modded = name;
+
+    for (final (index, char) in name.split('').indexed) {
+      if (!isAlphaNumeric(GraphemeChar.wrap(char))) {
+        throw FormatException(
+          'Found a non-alphanumeric char "$char" at index "$index"',
+        );
+      }
+    }
+
     final pattern = _tagIndicator.string;
 
     if (!name.startsWith(pattern)) modded = '$pattern$modded';
