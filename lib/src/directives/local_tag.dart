@@ -31,7 +31,7 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
   scanner.skipCharAtCursor(); // Ignore leading "!"
 
   /// Quickly extract the remaining shorthand characters as valid uri chars
-  /// that must be escaped
+  /// that must be escaped since this is a secondary tag
   if (scanner.charAtCursor == _tagIndicator) {
     handle = TagHandle.secondary();
     scanner.skipCharAtCursor();

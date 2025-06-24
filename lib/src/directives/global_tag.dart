@@ -66,8 +66,7 @@ GlobalTag<dynamic> _parseGlobalTag(
 
   if (scanner.charAtCursor is! WhiteSpace) {
     throw FormatException(
-      'A global tag must have a separation space '
-      'after its handle',
+      'A global tag must have a separation space after its handle',
     );
   }
 
