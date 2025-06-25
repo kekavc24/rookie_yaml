@@ -36,7 +36,7 @@ final class VerbatimTag implements ResolvedTag {
         'Verbatim tags with a local tag must have a single "!" prefix',
       );
     } else if (uri.isEmpty) {
-      throw const FormatException(_onNonEmptyVerbatimUri);
+      throw FormatException(_onNonEmptyVerbatimUri);
     }
 
     return VerbatimTag._(_wrapAsVerbatim(uri));
@@ -103,6 +103,7 @@ VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
   // This may be a local tag instead of a global one
   if (charAtCursor == _tagIndicator) {
     skipAndMove();
+    buffer.write(_tagIndicator.string);
   }
 
   // We can safely extract the remaining as uri characters
