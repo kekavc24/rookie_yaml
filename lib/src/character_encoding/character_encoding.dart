@@ -85,26 +85,13 @@ extension RawString on ReadableChar {
 }
 
 /// Convenient map of all character encodings that are somewhat special
-final delimiterMap = UnmodifiableMapView(_generateSpecialMap());
-
-Map<int, ReadableChar> _generateSpecialMap() {
-  final special = <int, ReadableChar>{};
-
-  for (final indicator in Indicator.values) {
-    special[indicator.unicode] = indicator;
-  }
-
-  for (final escaped in SpecialEscaped.values) {
-    special[escaped.unicode] = escaped;
-  }
-
-  for (final linebreak in LineBreak.values) {
-    special[linebreak.unicode] = linebreak;
-  }
-
-  for (final space in WhiteSpace.values) {
-    special[space.unicode] = space;
-  }
-
-  return special;
-}
+final delimiterMap = UnmodifiableMapView(
+  Map.fromEntries(
+    <List<ReadableChar>>[
+      Indicator.values,
+      SpecialEscaped.values,
+      LineBreak.values,
+      WhiteSpace.values,
+    ].flattened.map((m) => MapEntry(m.unicode, m)),
+  ),
+);
