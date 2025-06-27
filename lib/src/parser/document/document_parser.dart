@@ -1623,7 +1623,7 @@ final class DocumentParser {
       indentLevel: indentLevel + 1,
       laxIndent: indentOrSeparation ?? laxIndent,
       fixedInlineIndent: indentOrSeparation ?? inlineFixedIndent,
-      forceInlined: isInlineChild,
+      forceInlined: false,
       isParsingKey: false,
       isExplicitKey: false,
       degenerateToImplicitMap: !isInlineChild, // Only if not inline
