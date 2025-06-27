@@ -1068,7 +1068,12 @@ final class DocumentParser {
     required bool degenerateToImplicitMap,
   }) {
     final (
-      PreScalar(:hasDocEndMarkers, :indentOnExit, :hasLineBreak),
+      PreScalar(
+        :hasDocEndMarkers,
+        :indentDidChange,
+        :indentOnExit,
+        :hasLineBreak,
+      ),
       delegate,
     ) = _parseScalar(
       event,
@@ -1086,7 +1091,7 @@ final class DocumentParser {
         !event.isFlowContext ||
         !degenerateToImplicitMap ||
         hasLineBreak ||
-        (indentOnExit != seamlessIndentMarker && indentOnExit < laxIndent)) {
+        indentDidChange) {
       return (
         delegate: delegate,
         nodeInfo: (
