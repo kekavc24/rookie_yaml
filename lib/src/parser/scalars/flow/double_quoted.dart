@@ -125,7 +125,7 @@ void _parseEscaped(
 }) {
   scanner.skipCharAtCursor();
 
-  var charAfterEscape = scanner.charAtCursor;
+  final charAfterEscape = scanner.charAtCursor;
 
   if (charAfterEscape == null) {
     throw _doubleQuoteException;
@@ -134,10 +134,16 @@ void _parseEscaped(
   // Attempt to resolve as an hex
   if (SpecialEscaped.checkHexWidth(charAfterEscape) case var hexToRead
       when hexToRead != 0) {
-    // TODO: Should hex characters be converted?
-    buffer
-      ..writeChar(SpecialEscaped.backSlash)
-      ..writeChar(charAfterEscape);
+    int? hexCode;
+    const hexDec = 16;
+
+    void convertRollingHex(String digit) {
+      final binary = int.parse(digit, radix: hexDec); // We know it is valid
+
+      hexCode = hexCode == null
+          ? binary
+          : (hexCode! << 4) ^ binary; // Shift 4 bits at a ime
+    }
 
     scanner.skipCharAtCursor(); // Point the hex character
 
@@ -157,27 +163,35 @@ void _parseEscaped(
         throw const FormatException('Invalid hex digit found!');
       }
 
-      buffer.writeChar(hexChar);
       --hexToRead;
+      convertRollingHex(hexChar.string);
       scanner.skipCharAtCursor();
     }
 
-    if (hexToRead > 0) {
+    if (hexToRead > 0 || hexCode == null) {
       throw FormatException('$hexToRead hex digit(s) are missing.');
     }
 
+    buffer.writeChar(GraphemeChar.fromUnicode(hexCode!));
     return;
   }
 
   /// Resolve raw representations of characters in double quotes. This also
-  /// helps resolves ASCII characters not represented correctly in Dart.
+  /// helps resolves ASCII characters not represented correctly in Dart but the
+  /// caller wants to (maybe?).
   ///
   /// The downside/upside (subjective), we implicitly replace any escaped
-  /// characters with their expected `unicode` representations. Additionally,
-  /// the next char is just written by default without caring
-  buffer.writeChar(
-    SpecialEscaped.resolveUnrecognized(charAfterEscape) ?? charAfterEscape,
-  );
+  /// characters with their expected `unicode` representations.
+  ///
+  /// TODO: May need more work. For now, just throw.
+  if (SpecialEscaped.resolveUnrecognized(charAfterEscape)
+      case ReadableChar escaped) {
+    buffer.writeChar(escaped);
+    scanner.skipCharAtCursor();
+    return;
+  }
 
-  scanner.skipCharAtCursor();
+  throw FormatException(
+    'Unknown escaped character found: ${charAfterEscape.string}',
+  );
 }

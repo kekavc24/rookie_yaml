@@ -47,6 +47,7 @@ enum SpecialEscaped implements ReadableChar {
   String get string => String.fromCharCode(unicode);
 
   /// ASCII characters not represented/recognized correctly in a `Dart` string.
+  /// This is (..maybe?..) great if we also get raw strings as input.
   static final _abstractDartStr = <String, ReadableChar>{
     '0': SpecialEscaped.unicodeNull,
     'a': SpecialEscaped.bell,
@@ -80,6 +81,15 @@ enum SpecialEscaped implements ReadableChar {
 
   /// Resolves a character that cannot be represented accurately in a `Dart`
   /// string
-  static ReadableChar? resolveUnrecognized(ReadableChar char) =>
-      _abstractDartStr[char.string];
+  static ReadableChar? resolveUnrecognized(ReadableChar char) {
+    //
+    if (char
+        case SpecialEscaped.backSlash ||
+            WhiteSpace.space ||
+            Indicator.doubleQuote) {
+      return char;
+    }
+
+    return _abstractDartStr[char.string];
+  }
 }
