@@ -28,6 +28,7 @@ PreScalar parseSingleQuoted(
   var quoteCount = 1;
   var foundLineBreak = false;
 
+  sQuotedLoop:
   while (scanner.canChunkMore && quoteCount != 2) {
     final possibleChar = scanner.charAtCursor;
 
@@ -35,7 +36,6 @@ PreScalar parseSingleQuoted(
       throw _exception;
     }
 
-    sQuotedLoop:
     switch (possibleChar) {
       case _singleQuote:
         {
