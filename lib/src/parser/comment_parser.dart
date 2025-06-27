@@ -1,3 +1,4 @@
+import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 
 const _pattern = '# ';
@@ -41,7 +42,7 @@ final class YamlComment implements Comparable<YamlComment> {
   /// A comment forces us to read the entire line till the end.
   final chunkInfo = scanner.bufferChunk(
     (char) => buffer.write(char.string),
-    exitIf: (_, current) => false,
+    exitIf: (_, current) => current is LineBreak,
   );
 
   var comment = buffer.toString().trim();

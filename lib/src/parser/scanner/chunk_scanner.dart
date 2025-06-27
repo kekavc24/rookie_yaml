@@ -243,6 +243,7 @@ final class ChunkScanner {
     ReadableChar? maybeCharOnExit;
 
     final nonNullLine = _currentLine!; // Not null at this point.
+    var evalChatArCursor = false;
 
     // Iterate as long as we can buffer characters
     while (nonNullLine.hasMoreChars) {
@@ -258,6 +259,7 @@ final class ChunkScanner {
       ++_currentOffset;
 
       if (exitIf(_charBeforeExit, maybeCharOnExit)) {
+        evalChatArCursor = true;
         break;
       }
 
@@ -276,7 +278,10 @@ final class ChunkScanner {
     //final offset = _getOffset(buffer);
     return (
       //offset: offset,
-      sourceEnded: !_hasMoreLines && _currentOffset >= (source.length - 1),
+      sourceEnded:
+          !evalChatArCursor &&
+          !_hasMoreLines &&
+          _currentOffset >= (source.length - 1),
       lineEnded: _currentLine == null,
       charOnExit: maybeCharOnExit,
     );
