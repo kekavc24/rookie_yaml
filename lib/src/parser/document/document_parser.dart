@@ -872,6 +872,7 @@ final class DocumentParser {
           final (prescalar, delegate) = _parseScalar(
             event,
             isImplicit: forceInline || isImplicitKey,
+            isInFlowContext: true,
             indentLevel: currentIndentLevel,
             minIndent: minIndent,
           );
@@ -924,6 +925,7 @@ final class DocumentParser {
   (PreScalar scalar, ScalarDelegate delegate) _parseScalar(
     ScalarEvent event, {
     required bool isImplicit,
+    required bool isInFlowContext,
     required int indentLevel,
     required int minIndent,
   }) {
@@ -931,7 +933,7 @@ final class DocumentParser {
 
     final prescalar = switch (event) {
       ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
-          when !isImplicit =>
+          when !isImplicit || !isInFlowContext =>
         parseBlockStyle(_scanner, minimumIndent: minIndent),
 
       ScalarEvent.startFlowDoubleQuoted => parseDoubleQuoted(
@@ -952,10 +954,12 @@ final class DocumentParser {
         indent: minIndent,
         charsOnGreedy: '',
         isImplicit: isImplicit,
+        isInFlowContext: isInFlowContext,
       ),
 
       _ => throw FormatException(
-        'Failed to parse block scalar as it can never be implicit!',
+        'Failed to parse block scalar as it can never be implicit or used in a'
+        ' flow context!',
       ),
     };
 
@@ -1069,6 +1073,7 @@ final class DocumentParser {
     ) = _parseScalar(
       event,
       isImplicit: isInlined,
+      isInFlowContext: false,
       indentLevel: indentLevel,
       minIndent: laxIndent, // Parse with minimum allowed indent
     );

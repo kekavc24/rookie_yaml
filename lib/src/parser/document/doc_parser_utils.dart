@@ -299,6 +299,7 @@ _RootNodeInfo _parseNodeAtRoot(
       indent: indent,
       charsOnGreedy: greedyChars.join(),
       isImplicit: false,
+      isInFlowContext: false
     )!,
   };
 

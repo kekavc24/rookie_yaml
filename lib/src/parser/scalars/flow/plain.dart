@@ -34,6 +34,7 @@ PreScalar? parsePlain(
   required int indent,
   required String charsOnGreedy,
   required bool isImplicit,
+  required bool isInFlowContext,
 }) {
   var greedyChars = charsOnGreedy;
   var indentOnExit = seamlessIndentMarker;
@@ -145,7 +146,8 @@ PreScalar? parsePlain(
           foundLineBreak = foundLineBreak || hasLineBreak;
         }
 
-      case _ when flowDelimiters.contains(char):
+      case _
+          when (isImplicit || isInFlowContext) && flowDelimiters.contains(char):
         break chunker;
 
       default:
