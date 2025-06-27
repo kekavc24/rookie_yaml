@@ -30,7 +30,7 @@ PreScalar parseDoubleQuoted(
   if (leadingChar != _doubleQuoteIndicator) {
     throw FormatException(
       'Expected an opening double quote (") but found'
-      ' ${leadingChar?.string}',
+      ' "${leadingChar?.string}"',
     );
   }
 
@@ -135,10 +135,9 @@ void _parseEscaped(
   if (SpecialEscaped.checkHexWidth(charAfterEscape) case var hexToRead
       when hexToRead != 0) {
     int? hexCode;
-    const hexDec = 16;
 
     void convertRollingHex(String digit) {
-      final binary = int.parse(digit, radix: hexDec); // We know it is valid
+      final binary = int.parse(digit, radix: 16); // We know it is valid
 
       hexCode = hexCode == null
           ? binary
@@ -192,6 +191,6 @@ void _parseEscaped(
   }
 
   throw FormatException(
-    'Unknown escaped character found: ${charAfterEscape.string}',
+    'Unknown escaped character found: "${charAfterEscape.string}"',
   );
 }
