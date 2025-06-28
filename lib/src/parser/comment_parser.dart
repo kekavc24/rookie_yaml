@@ -19,6 +19,7 @@ final class YamlComment implements Comparable<YamlComment> {
   /// Comment with leading `#` stripped off
   final String comment;
 
+  /// Sorting based on position in document
   @override
   int compareTo(YamlComment other) {
     if (other.endOffset < startOffset) return -1;
@@ -27,7 +28,14 @@ final class YamlComment implements Comparable<YamlComment> {
   }
 
   @override
+  bool operator ==(Object other) =>
+      other is YamlComment && other.comment == comment;
+
+  @override
   String toString() => '# $comment';
+
+  @override
+  int get hashCode => comment.hashCode;
 }
 
 /// Parses a `YAML` comment
