@@ -3,7 +3,10 @@ part of 'block_scalar.dart';
 /// Parses a block scalar's header info. `YAML` recommends that the first
 /// should only include the block and chomping indicators or a comment
 /// restricted to a single line.
-_BlockHeaderInfo _parseBlockHeader(ChunkScanner scanner) {
+_BlockHeaderInfo _parseBlockHeader(
+  ChunkScanner scanner, {
+  required void Function(YamlComment comment) onParseComment,
+}) {
   var current = scanner.charAtCursor;
   final isLiteral = _isLiteralIndicator(current);
 
@@ -14,21 +17,13 @@ _BlockHeaderInfo _parseBlockHeader(ChunkScanner scanner) {
   }
 
   /// Runs and updates the value at the cursor for evaluation
-  T functionDelegate<T>(
-    T Function(ChunkScanner scanner) runnable, {
-    void Function(T value, ChunkScanner scanner)? cleanup,
-  }) {
-    final val = runnable(scanner);
-
-    if (cleanup != null) {
-      cleanup(val, scanner);
-    }
-
+  T functionDelegate<T>(T Function() runnable) {
+    final val = runnable();
     current = scanner.charAtCursor;
     return val;
   }
 
-  void skipChar() => functionDelegate((scanner) => scanner.skipCharAtCursor());
+  void skipChar() => functionDelegate(scanner.skipCharAtCursor);
 
   // Skip literal indicator
   skipChar();
@@ -42,20 +37,14 @@ _BlockHeaderInfo _parseBlockHeader(ChunkScanner scanner) {
     );
   }
 
-  final (chomping, indentIndicator) = functionDelegate(_extractIndicators);
+  final (chomping, indentIndicator) = functionDelegate(
+    () => _extractIndicators(scanner),
+  );
 
   // Skip whitespace
   if (current is WhiteSpace) {
-    functionDelegate(
-      (scanner) => scanner.skipWhitespace(
-        skipTabs: true,
-        previouslyRead: [current! as WhiteSpace],
-      ),
-      cleanup: (value, scanner) {
-        if (value.isEmpty) return;
-        scanner.skipCharAtCursor();
-      },
-    );
+    functionDelegate(() => scanner.skipWhitespace(skipTabs: true));
+    skipChar(); // Must always skip char at cursor. We peek ahead.
   }
 
   // Extract any comments
@@ -66,7 +55,7 @@ _BlockHeaderInfo _parseBlockHeader(ChunkScanner scanner) {
       );
     }
 
-    functionDelegate(parseComment); // TODO: Save this somewhere?
+    functionDelegate(() => onParseComment(parseComment(scanner).comment));
   } else if (current == LineBreak.carriageReturn &&
       scanner.peekCharAfterCursor() == LineBreak.lineFeed) {
     skipChar();

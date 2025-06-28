@@ -16,9 +16,16 @@ part 'block_utils.dart';
 /// Returns a [PlainStyleInfo] record since a block style scalar is a plain
 /// scalar with explicit indicators qualifying it as a block scalar. A plain
 /// and block scalar both use indentation to convey content information.
-PreScalar parseBlockStyle(ChunkScanner scanner, {required int minimumIndent}) {
+PreScalar parseBlockStyle(
+  ChunkScanner scanner, {
+  required int minimumIndent,
+  required void Function(YamlComment comment) onParseComment,
+}) {
   var indentOnExit = seamlessIndentMarker;
-  final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(scanner);
+  final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(
+    scanner,
+    onParseComment: onParseComment,
+  );
 
   final style = isLiteral ? ScalarStyle.literal : ScalarStyle.folded;
 

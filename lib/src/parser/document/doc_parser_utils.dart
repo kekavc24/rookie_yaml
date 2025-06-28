@@ -278,8 +278,12 @@ _RootNodeInfo _parseNodeAtRoot(
 
   // Nothing else should be present
   final scalar = switch (event) {
-    ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded =>
-      parseBlockStyle(scanner, minimumIndent: indent),
+    ScalarEvent.startBlockLiteral ||
+    ScalarEvent.startBlockFolded => parseBlockStyle(
+      scanner,
+      minimumIndent: indent,
+      onParseComment: comments.add,
+    ),
 
     ScalarEvent.startFlowDoubleQuoted => parseDoubleQuoted(
       scanner,
@@ -299,7 +303,7 @@ _RootNodeInfo _parseNodeAtRoot(
       indent: indent,
       charsOnGreedy: greedyChars.join(),
       isImplicit: false,
-      isInFlowContext: false
+      isInFlowContext: false,
     )!,
   };
 
