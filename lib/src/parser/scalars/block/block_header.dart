@@ -74,11 +74,10 @@ _BlockHeaderInfo _parseBlockHeader(
 }
 
 const _indentationException = FormatException(
-  'Invalid block indentation indicator. '
-  'Value must be between 1 - 9',
+  'Invalid block indentation indicator. Value must be between 1 - 9',
 );
 
-/// Parses block and chomping indicators
+/// Parses block indentation and chomping indicators
 _IndicatorInfo _extractIndicators(ChunkScanner scanner) {
   ChompingIndicator? chomping;
   int? indentIndicator;
@@ -89,13 +88,15 @@ _IndicatorInfo _extractIndicators(ChunkScanner scanner) {
 
     if (char case null || LineBreak _ || WhiteSpace _) break;
 
+    final ReadableChar(string: charAsStr) = char;
+
     if (isDigit(char)) {
       // Allows only a single digit between 1 - 9
       if (indentIndicator != null) {
         throw _indentationException;
       }
 
-      indentIndicator = int.parse(char.string);
+      indentIndicator = int.parse(charAsStr);
 
       RangeError.checkValueInInterval(
         indentIndicator,
@@ -105,17 +106,22 @@ _IndicatorInfo _extractIndicators(ChunkScanner scanner) {
         _indentationException.message,
       );
     } else {
+      // We must not see duplicate chomping indicators or any other char
+      if (chomping != null) {
+        throw FormatException(
+          'Duplicate chomping indicators not allowed! Already declared'
+          ' "$chomping" but found "$charAsStr"',
+        );
+      }
+
       chomping = _resolveChompingIndicator(char);
 
       if (chomping == null) {
-        final str = char.string;
+        /// Break once we see comment. Let it bubble up and be handled by the
+        /// function parsing the block header
+        if (charAsStr == '#') break;
 
-        // We can only allow a comment indicator
-        if (str != Indicator.comment.string) {
-          throw _charNotAllowedException(str);
-        }
-
-        break;
+        throw _charNotAllowedException(charAsStr);
       }
     }
 
