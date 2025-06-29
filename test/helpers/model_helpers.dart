@@ -8,6 +8,9 @@ extension PreScalarHelper on Subject<PreScalar?> {
   void hasScalarStyle(ScalarStyle style) =>
       isNotNull().has((p) => p.scalarStyle, 'ScalarStyle').equals(style);
 
+  void hasIndent(int indent) =>
+      isNotNull().has((p) => p.scalarIndent, 'Inferred indent').equals(indent);
+
   void hasFormattedContent(String content) => isNotNull()
       .has((p) => p.parsedContent, 'Canonical Content')
       .equals(content);
@@ -20,16 +23,16 @@ extension PreScalarHelper on Subject<PreScalar?> {
     ..has((p) => p.indentDidChange, 'Indent Change Indicator').isTrue()
     ..has((p) => p.indentOnExit, 'Indent on Exit').equals(indent);
 
-  void _hasInferred<T>(
+  void hasInferred<T>(
     T Function(PreScalar scalar) extractor,
     String name,
     T expected,
   ) => isNotNull().has(extractor, name).isA<T>().equals(expected);
 
   void simpleInferredType<T>(String name, T expected) =>
-      _hasInferred(_inferredValue, name, expected);
+      hasInferred(_inferredValue, name, expected);
 
-  void hasParsedInteger(int number, int radix) => _hasInferred(
+  void hasParsedInteger(int number, int radix) => hasInferred(
     (p) => (p.inferredValue, p.radix),
     'Parsed Integer',
     (number, radix),
