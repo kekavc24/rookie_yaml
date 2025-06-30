@@ -58,27 +58,18 @@ final class DocumentParser {
   SplayTreeSet<YamlComment> _comments = SplayTreeSet();
 
   bool _keyIsJsonLike(ParserDelegate? delegate) {
-    if (delegate == null) return false;
-
-    ParserDelegate unpack(ParserDelegate parser) {
-      return switch (parser) {
-        AliasDelegate a => a.anchorDelegate,
-        _ => parser,
-      };
-    }
-
-    final unpacked = switch (delegate) {
-      MapEntryDelegate e => unpack(e.keyDelegate),
-      _ => unpack(delegate),
+    /// Flow node with indicators:
+    ///   - Single & double quoted scalars
+    ///   - Flow map & sequence
+    return switch (delegate) {
+      ScalarDelegate(
+        preScalar: PreScalar(
+          scalarStyle: ScalarStyle.singleQuoted || ScalarStyle.doubleQuoted,
+        ),
+      ) ||
+      CollectionDelegate(collectionStyle: NodeStyle.flow) => true,
+      _ => false,
     };
-
-    if (unpacked case ScalarDelegate(
-      preScalar: PreScalar(scalarStyle: ScalarStyle.doubleQuoted),
-    )) {
-      return true;
-    }
-
-    return false;
   }
 
   void _restartParser() {
