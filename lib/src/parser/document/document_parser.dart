@@ -385,10 +385,11 @@ final class DocumentParser {
 
         final fauxBuffer = <String>[];
 
-        if (!hasDocumentMarkers(
-          _scanner,
-          onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
-        )) {
+        if (_scanner.canChunkMore &&
+            !hasDocumentMarkers(
+              _scanner,
+              onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
+            )) {
           throw FormatException(
             'Expected to find document end chars "..." or directive end chars '
             '"---" but found ${fauxBuffer.join()}',
