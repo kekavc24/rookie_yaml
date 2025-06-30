@@ -458,8 +458,8 @@ final class DocumentParser {
 
     if (char != delimiter) {
       throw FormatException(
-        'Expected the flow delimiter: ${delimiter.string} but found: '
-        '${char?.string ?? ''} at ${_scanner.charAtCursor}',
+        'Expected the flow delimiter: $delimiter "${delimiter.string}" but'
+        ' found: "${char?.string ?? 'nothing'}"',
       );
     }
 
@@ -546,8 +546,8 @@ final class DocumentParser {
                     'Expected to find the first value but found ","',
                   )
                 : FormatException(
-                    'Found a duplicate "," before finding a'
-                    ' flow sequence entry',
+                    'Found a duplicate "," before finding a flow sequence '
+                    'entry',
                   );
 
             throw exception;
@@ -706,7 +706,7 @@ final class DocumentParser {
 
     final expectedCharErr = FormatException(
       'Expected a next flow entry indicator "," or a map value indicator ":" '
-      'or a terminating delimiter ${exitIndicator.string}',
+      'or a terminating delimiter "${exitIndicator.string}"',
     );
 
     if (!_nextLineSafeInFlow(minIndent, forceInline: forceInline)) {

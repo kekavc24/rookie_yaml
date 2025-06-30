@@ -6,6 +6,8 @@ DocumentParser bootstrapDocParser(String yaml) =>
     DocumentParser(ChunkScanner.of(yaml));
 
 extension DocParserUtil on DocumentParser {
+  String nodeAsSimpleString() => parseNodeSingle().toString();
+
   Node? parseNodeSingle() => parsedNodes().firstOrNull;
 
   YamlDocument parseSingle() => parseDocs().first;
