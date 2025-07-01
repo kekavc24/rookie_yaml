@@ -713,41 +713,40 @@ final class DocumentParser {
       throw expectedCharErr;
     }
 
+    /// Checks if we should parse a value or ignore it
     bool ignoreValue(ReadableChar? char) {
       return char == null ||
           char == Indicator.flowEntryEnd ||
           char == exitIndicator;
     }
 
-    switch (_scanner.charAtCursor) {
-      case Indicator.mappingValue
-          when keyIsJsonLike ||
-              _scanner.peekCharAfterCursor() == WhiteSpace.space:
-        {
-          _scanner.skipCharAtCursor();
+    // Check if this is the start of a flow value
+    if (_inferNextEvent(
+          _scanner,
+          isBlockContext: false,
+          lastKeyWasJsonLike: keyIsJsonLike,
+        ) ==
+        FlowCollectionEvent.startEntryValue) {
+      _scanner.skipCharAtCursor();
 
-          if (!_nextLineSafeInFlow(minIndent, forceInline: forceInline)) {
-            throw expectedCharErr;
-          }
-
-          if (ignoreValue(_scanner.charAtCursor)) break;
-
-          value = _parseFlowNode(
-            isParsingKey: false,
-            currentIndentLevel: indentLevel + 1, // One level deeper than key
-            minIndent: minIndent,
-            forceInline: forceInline,
-            isExplicitKey: false,
-            keyIsJsonLike: keyIsJsonLike,
-            collectionDelimiter: exitIndicator,
-          );
-        }
-
-      case ReadableChar char when ignoreValue(char):
-        break;
-
-      default:
+      if (!_nextLineSafeInFlow(minIndent, forceInline: forceInline)) {
         throw expectedCharErr;
+      }
+
+      if (!ignoreValue(_scanner.charAtCursor)) {
+        value = _parseFlowNode(
+          isParsingKey: false,
+          currentIndentLevel: indentLevel + 1, // One level deeper than key
+          minIndent: minIndent,
+          forceInline: forceInline,
+          isExplicitKey: false,
+          keyIsJsonLike: keyIsJsonLike,
+          collectionDelimiter: exitIndicator,
+        );
+      }
+    } else if (!ignoreValue(_scanner.charAtCursor)) {
+      // Must at least be end of parser, "," and ["}" if map or "]" if list
+      throw expectedCharErr;
     }
 
     return (parsedKey, value);
