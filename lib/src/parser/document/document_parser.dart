@@ -1628,12 +1628,12 @@ final class DocumentParser {
 
     /// Implicit values exit immediately a line break is seen but do not skip
     /// it. However, the block parent (map) needs to have the correct indent
-    /// info to prevent any premature termination to the parsing of subsequenct
-    /// nodes.
-    if (_scanner.canChunkMore &&
-        !hasDocEndMarkers &&
-        exitIndent == seamlessIndentMarker &&
-        _scanner.charAtCursor is LineBreak) {
+    /// info to prevent any premature termination before subsequent nodes can
+    /// be parsed.
+    if (_scanner.charAtCursor case LineBreak _ || WhiteSpace _
+        when _scanner.canChunkMore &&
+            !hasDocEndMarkers &&
+            exitIndent == seamlessIndentMarker) {
       indentOnExit = _skipToParsableChar(_scanner, comments: _comments);
     }
 
