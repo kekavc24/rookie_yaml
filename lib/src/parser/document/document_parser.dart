@@ -369,7 +369,8 @@ final class DocumentParser {
       // Versatile and unpredictable
       blockMap:
       case BlockCollectionEvent.startExplicitKey ||
-          BlockCollectionEvent.startImplicitKey:
+          BlockCollectionEvent.startImplicitKey ||
+          BlockCollectionEvent.startEntryValue:
         rootInfo = _parseBlockMap(root as MappingDelegate, keyIfMap);
 
       // Should never be the case
