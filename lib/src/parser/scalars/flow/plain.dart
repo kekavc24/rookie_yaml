@@ -172,11 +172,7 @@ PreScalar? parsePlain(
             },
           );
 
-          if (sourceEnded) {
-            break chunker;
-          }
-
-          continue chunker; // TODO: Yank this
+          if (sourceEnded) break chunker;
         }
     }
   }

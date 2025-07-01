@@ -275,13 +275,19 @@ final class ChunkScanner {
     // Possible if we never iterated the loop!
     _charOnLastExit = maybeCharOnExit ?? _charOnLastExit;
 
+    final sourceEnded =
+        !evalChatArCursor &&
+        !_hasMoreLines &&
+        _currentOffset >= (source.length - 1);
+
+    if (sourceEnded) {
+      skipCharAtCursor();
+    }
+
     //final offset = _getOffset(buffer);
     return (
       //offset: offset,
-      sourceEnded:
-          !evalChatArCursor &&
-          !_hasMoreLines &&
-          _currentOffset >= (source.length - 1),
+      sourceEnded: sourceEnded,
       lineEnded: _currentLine == null,
       charOnExit: maybeCharOnExit,
     );
