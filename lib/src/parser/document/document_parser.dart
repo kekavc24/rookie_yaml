@@ -1571,7 +1571,7 @@ final class DocumentParser {
         nextEvent() != BlockCollectionEvent.startEntryValue) {
       throw FormatException(
         'Expected a ":" (after the key) but found '
-        '${_scanner.charAtCursor?.string}',
+        '"${_scanner.charAtCursor?.string}"',
       );
     }
 
@@ -1653,8 +1653,8 @@ final class DocumentParser {
   void _throwIfDangling(int collectionIndent, int currentIndent) {
     if (_scanner.canChunkMore && currentIndent > collectionIndent) {
       throw FormatException(
-        'Dangling node found at ${_scanner.charAtCursor?.string} with indent'
-        '$currentIndent space(s) while parsing',
+        'Dangling node found with indent of $currentIndent space(s) while'
+        ' parsing',
       );
     }
   }
@@ -1731,8 +1731,7 @@ final class DocumentParser {
       if (exitIndent == null) {
         if (_scanner.canChunkMore) {
           throw FormatException(
-            'Invalid map entry found at ${_scanner.charAtCursor?.string} while'
-            ' parsing block map',
+            'Invalid map entry found at while parsing block map',
           );
         }
 
