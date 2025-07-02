@@ -1777,8 +1777,8 @@ final class DocumentParser {
           false,
 
         _ => throw FormatException(
-          'Expected a "- " while parsing sequence but found '
-          '${_scanner.charAtCursor?.string}',
+          'Expected a "- " while parsing sequence but found "${char?.string}'
+          '${charAfter?.string}"',
         ),
       };
     }
