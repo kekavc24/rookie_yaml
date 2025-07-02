@@ -1605,8 +1605,12 @@ final class DocumentParser {
         delegate: (key: implicitKey, value: null),
         nodeInfo: (hasDocEndMarkers: false, exitIndent: indentOrSeparation),
       );
-    } else if (isInlineChild && isBlockList) {
-      throw FormatException('The block sequence must start on a new line');
+    } else if (isInlineChild &&
+        (isBlockList || childEvent == BlockCollectionEvent.startExplicitKey)) {
+      throw FormatException(
+        'The block collections must start on a new line'
+        ' when used as values of an implicit key',
+      );
     }
 
     final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
