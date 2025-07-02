@@ -1593,17 +1593,20 @@ final class DocumentParser {
     final isInlineChild = indentOrSeparation == null;
     final childEvent = nextEvent();
 
+    final isBlockList = childEvent == BlockCollectionEvent.startBlockListEntry;
+
     /// YAML recommends grace for block lists that start on a new line but
     /// have the same indent as the implicit key since the "-" is usually
     /// perceived as indent.
     if (!isInlineChild &&
         (indentOrSeparation < indent ||
-            (indentOrSeparation == indent &&
-                childEvent != BlockCollectionEvent.startBlockListEntry))) {
+            (indentOrSeparation == indent && !isBlockList))) {
       return (
         delegate: (key: implicitKey, value: null),
         nodeInfo: (hasDocEndMarkers: false, exitIndent: indentOrSeparation),
       );
+    } else if (isInlineChild && isBlockList) {
+      throw FormatException('The block sequence must start on a new line');
     }
 
     final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
