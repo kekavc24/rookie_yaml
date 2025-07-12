@@ -356,10 +356,8 @@ _RootNodeInfo _parseNodeAtRoot(
 
 typedef _NodeProperties = ({
   int? indentOnExit,
-  Set<ResolvedTag> blockTags,
-  Set<ResolvedTag> inlineTags,
-  Set<String> blockAnchors,
-  Set<String> inlineAnchors,
+  String? anchor,
+  ResolvedTag? tag,
   String? alias,
 });
 
@@ -375,44 +373,24 @@ _NodeProperties _parseNodeProperties(
   required ResolvedTag Function(LocalTag tag) resolver,
   required SplayTreeSet<YamlComment> comments,
 }) {
-  final blockTags = <ResolvedTag>{};
-  final inlineTags = <ResolvedTag>{};
-  final blockAnchors = <String>{};
-  final inlineAnchors = <String>{};
-
+  String? anchor;
+  ResolvedTag? tag;
   String? alias;
   int? indentOnExit;
   var lastWasLineBreak = false;
 
-  /// Resets [lastWasLineBreak] to `false` if `true` and adds all [inline]
-  /// elements to [block] since a new line was encountered and the properties
-  /// are aligned in block with respect to where the node starts
-  void resetIfLastWasLF<T>(
-    T? object,
-    Set<T> block,
-    Set<T> inline, {
-    bool forceReset = false,
-  }) {
-    if (lastWasLineBreak || forceReset) {
-      lastWasLineBreak = false;
-      block.addAll(inline);
-      inline.clear();
-    }
+  void notLineBreak() => lastWasLineBreak = false;
 
-    if (object != null) inline.add(object);
-  }
-
-  parser:
-  while (scanner.canChunkMore) {
+  while (scanner.canChunkMore && (tag == null || anchor == null)) {
     switch (scanner.charAtCursor) {
-      /// Skip any separation space. This is only done if we are on the
-      /// same line after parsing any node property. We assume it is content if
-      /// we just inferred the indent.
-      case WhiteSpace _ when !lastWasLineBreak:
+      // Skip any separation space
+      case WhiteSpace _:
         {
           scanner
             ..skipWhitespace(skipTabs: true)
             ..skipCharAtCursor();
+
+          notLineBreak();
         }
 
       // Node properties must be have the same/more indented than node
@@ -421,7 +399,12 @@ _NodeProperties _parseNodeProperties(
           indentOnExit = _skipToParsableChar(scanner, comments: comments);
 
           if (indentOnExit == null || indentOnExit < minIndent) {
-            break parser;
+            return (
+              alias: alias,
+              anchor: anchor,
+              tag: tag,
+              indentOnExit: indentOnExit,
+            );
           }
 
           lastWasLineBreak = true;
@@ -430,63 +413,66 @@ _NodeProperties _parseNodeProperties(
       // Parse local tag or verbatim tag
       case Indicator.tag:
         {
+          if (tag != null) {
+            throw FormatException('A node can only have a single tag');
+          }
+
           // Check if we are passing a verbatim tag
-          ResolvedTag tag = switch (scanner.peekCharAfterCursor()) {
+          tag = switch (scanner.peekCharAfterCursor()) {
             ReadableChar next when next.string == verbatimStart.string =>
               parseVerbatimTag(scanner),
 
             _ => resolver(parseLocalTag(scanner)),
           };
 
-          resetIfLastWasLF(tag, blockTags, inlineTags);
+          notLineBreak();
         }
 
-      // Parse anchors
+      // Parse anchors. Simple URI chars preceded by "&"
       case Indicator.anchor:
         {
           scanner.skipCharAtCursor();
-          resetIfLastWasLF(
-            parseAnchorOrAlias(scanner), // Parse remainining chars as URI chars
-            blockAnchors,
-            inlineAnchors,
-          );
+          anchor = parseAnchorOrAlias(scanner);
+
+          notLineBreak();
         }
 
       // Parsing an alias. Can never have more than one alias.
       case Indicator.alias:
         {
-          // TODO: Alias nodes cannot have any node properties
-          if (alias != null) {
+          if (tag != null || anchor != null) {
             throw FormatException(
-              'The current node already declared an alias: "$alias". '
-              'However another unexpected declaration has been found.',
+              'Alias nodes cannot have an anchor or tag property',
             );
           }
 
           scanner.skipCharAtCursor();
-          alias = parseAnchorOrAlias(scanner);
-
-          final forceReset = lastWasLineBreak;
-          resetIfLastWasLF(null, blockTags, inlineTags, forceReset: forceReset);
-          resetIfLastWasLF(
-            null,
-            blockAnchors,
-            inlineAnchors,
-            forceReset: forceReset,
+          return (
+            alias: parseAnchorOrAlias(scanner),
+            anchor: null,
+            tag: null,
+            indentOnExit: _skipToParsableChar(scanner, comments: comments),
           );
         }
 
+      // Exit immediately since we reached char that isn't a node property
       default:
-        break parser;
+        return (
+          alias: alias,
+          anchor: anchor,
+          tag: tag,
+          indentOnExit: lastWasLineBreak ? indentOnExit : null,
+        );
     }
   }
 
   return (
-    indentOnExit: indentOnExit,
-    blockTags: blockTags,
-    inlineTags: inlineTags,
-    blockAnchors: blockAnchors,
-    inlineAnchors: inlineAnchors,
     alias: alias,
+    anchor: anchor,
+    tag: tag,
+
+    /// Prefer having accurate indent info. Parsing only reaches here if we
+    /// managed to parse both the tag and anchor.
+    indentOnExit: _skipToParsableChar(scanner, comments: comments),
   );
 }
