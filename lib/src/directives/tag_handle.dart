@@ -40,7 +40,7 @@ final class TagHandle {
     var modded = name;
 
     for (final (index, char) in name.split('').indexed) {
-      if (!isAlphaNumeric(GraphemeChar.wrap(char))) {
+      if (!isAlphaNumeric(ReadableChar.scanned(char))) {
         throw FormatException(
           'Found a non-alphanumeric char "$char" at index "$index"',
         );

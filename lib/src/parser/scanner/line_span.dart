@@ -41,7 +41,12 @@ final class LineSpan {
     }
 
     _charQueue = characters
-        .mapIndexed((index, char) => LineSpanChar.wrap(char, index))
+        .mapIndexed(
+          (index, char) => LineSpanChar._(
+            ReadableChar.scanned(char),
+            index,
+          ),
+        )
         .iterator;
     _hasNextChar = _charQueue.moveNext();
   }
@@ -82,7 +87,7 @@ final class LineSpan {
   LineSpanChar? get peekNextChar => _hasNextChar
       ? _charQueue.current
       : _canEmitEOL
-      ? LineSpanChar.terminal(_currentIndex + 1)
+      ? LineSpanChar._terminal(_currentIndex + 1)
       : null;
 
   /// Number of characters iterated in this line span
@@ -116,7 +121,7 @@ final class LineSpan {
 
       case _ when _canEmitEOL:
         // Update current index, base on last character emitted
-        char = LineSpanChar.terminal(++_currentIndex);
+        char = LineSpanChar._terminal(++_currentIndex);
         _emittedEndToken = true;
 
       default:
@@ -154,16 +159,10 @@ abstract mixin class _LineColumnIntrinsics {
 /// A wrapper class representing a single human readable character within
 /// a [LineSpan].
 final class LineSpanChar with _LineColumnIntrinsics {
-  LineSpanChar._(this.character, this.columnIndex);
-
-  /// Wraps a single character within a string/line.
-  factory LineSpanChar.wrap(String char, int index) {
-    final wrapped = char.isEmpty ? LineBreak.lineFeed : GraphemeChar.wrap(char);
-    return LineSpanChar._(delimiterMap[wrapped.unicode] ?? wrapped, index);
-  }
+  const LineSpanChar._(this.character, this.columnIndex);
 
   /// Last character of the line.
-  LineSpanChar.terminal(int index) : this._(LineBreak.lineFeed, index);
+  const LineSpanChar._terminal(int index) : this._(LineBreak.lineFeed, index);
 
   /// A single character within a line.
   final ReadableChar character;

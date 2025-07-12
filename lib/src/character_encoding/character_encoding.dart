@@ -13,6 +13,11 @@ part 'char_utils.dart';
 
 /// A single human readable character referred to as a "grapheme cluster".
 abstract interface class ReadableChar {
+  factory ReadableChar.scanned(String char) {
+    final _GraphemeWrapper(:unicode) = _GraphemeWrapper(char);
+    return _delimiterMap[unicode] ?? GraphemeChar._(unicode, char);
+  }
+
   /// String representing the character
   String get string;
 
@@ -26,12 +31,6 @@ abstract interface class ReadableChar {
 @immutable
 final class GraphemeChar implements ReadableChar {
   const GraphemeChar._(this.unicode, this.string);
-
-  /// Wraps a single `UTF-16` character.
-  ///
-  /// `NOTE:` May be prone to errors if length of string is greater than 1.
-  GraphemeChar.wrap(String string)
-    : this._(_GraphemeWrapper(string).unicode, string);
 
   /// Wraps a unicode value
   GraphemeChar.fromUnicode(int unicode)
@@ -85,7 +84,7 @@ extension RawString on ReadableChar {
 }
 
 /// Convenient map of all character encodings that are somewhat special
-final delimiterMap = UnmodifiableMapView(
+final _delimiterMap = UnmodifiableMapView(
   Map.fromEntries(
     <List<ReadableChar>>[
       Indicator.values,
