@@ -1,6 +1,5 @@
-import 'dart:collection';
+import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/comment_parser.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
@@ -49,111 +48,124 @@ PreScalar parseBlockStyle(
   var lastWasIndented = false;
   var didRun = false;
 
-  final previousIndents = SplayTreeSet<int>();
+  /// Block scalar have no set indent. They infer indent using the first
+  /// non-empty line.
+  int? previousMaxIndent;
   var hasDocMarkers = false;
 
-  while (scanner.canChunkMore) {
+  blockParser:
+  while (scanner.canChunkMore && !hasDocMarkers) {
     final indent = trueIndent ?? minimumIndent;
     char = scanner.charAtCursor;
 
-    if (char is LineBreak) {
-      char = skipCrIfPossible(char, scanner: scanner);
+    switch (char) {
+      case LineBreak _:
+        {
+          char = skipCrIfPossible(char, scanner: scanner);
 
-      if (didRun) {
-        lineBreaks.add(char);
-      }
-
-      final scannedIndent = scanner.skipWhitespace(max: indent).length;
-      final charAfter = scanner.peekCharAfterCursor();
-
-      if (charAfter is! LineBreak) {
-        /// While `YAML` suggested we parse the comment thereafter, it is
-        /// better to exit and allow the `root` parser to determine how to
-        /// parse it.
-        ///
-        /// Also check if we need to exit incase a document/directives
-        /// end marker is found in a top level scalar
-        final isDocEnd =
-            scannedIndent == 0 &&
-            hasDocumentMarkers(
-              scanner,
-              onMissing: (greedy) => buffer.writeAll(greedy),
-            );
-
-        if (charAfter == null || isDocEnd || scannedIndent < indent) {
-          hasDocMarkers = isDocEnd;
-          indentOnExit = scannedIndent;
-          scanner.skipCharAtCursor();
-          break;
-        }
-
-        // Attempt to infer indent if null
-        if (trueIndent == null) {
-          final (:inferredIndent, :isEmptyLine, :startsWithTab) = _inferIndent(
-            scanner,
-            contentBuffer: buffer,
-            scannedIndent: scannedIndent,
-            callBeforeTabWrite: () => _maybeFoldLF(
-              buffer,
-              isLiteral: isLiteral,
-              lastNonEmptyWasIndented: false, // Not possible with no indent
-              lineBreaks: lineBreaks,
-            ),
-          );
-
-          if (isEmptyLine) {
-            previousIndents.add(inferredIndent); // Only whitespace
-          } else {
-            if (previousIndents.isNotEmpty &&
-                previousIndents.max > inferredIndent) {
-              throw FormatException(
-                'A previous empty line was more indented than the current line',
-              );
-            }
-
-            trueIndent = inferredIndent;
+          if (didRun) {
+            lineBreaks.add(char);
           }
 
-          lastWasIndented = startsWithTab || lastWasIndented;
+          final scannedIndent = scanner.skipWhitespace(max: indent).length;
+          final charAfter = scanner.peekCharAfterCursor();
+
+          if (charAfter is! LineBreak) {
+            /// While `YAML` suggested we parse the comment thereafter, it is
+            /// better to exit and allow the `root` parser to determine how to
+            /// parse it.
+            ///
+            /// Also check if we need to exit incase a document/directives
+            /// end marker is found in a top level scalar
+            if (charAfter == null || scannedIndent < indent) {
+              indentOnExit = scannedIndent;
+              scanner.skipCharAtCursor();
+              break;
+            }
+
+            // Attempt to infer indent if null
+            if (trueIndent == null) {
+              final (
+                :inferredIndent,
+                :isEmptyLine,
+                :startsWithTab,
+              ) = _inferIndent(
+                scanner,
+                contentBuffer: buffer,
+                scannedIndent: scannedIndent,
+                callBeforeTabWrite: () => _maybeFoldLF(
+                  buffer,
+                  isLiteral: isLiteral,
+                  lastNonEmptyWasIndented: false, // Not possible with no indent
+                  lineBreaks: lineBreaks,
+                ),
+              );
+
+              if (isEmptyLine) {
+                previousMaxIndent = max(previousMaxIndent ?? 0, inferredIndent);
+              } else {
+                if (previousMaxIndent != null &&
+                    previousMaxIndent > inferredIndent) {
+                  throw FormatException(
+                    'A previous empty line was more indented than the current'
+                    ' line',
+                  );
+                }
+
+                trueIndent = inferredIndent;
+              }
+
+              lastWasIndented = startsWithTab || lastWasIndented;
+            }
+          }
+
+          scanner.skipCharAtCursor();
+          didRun = true;
         }
-      }
 
-      scanner.skipCharAtCursor();
+      case Indicator.blockSequenceEntry || Indicator.period
+          when trueIndent == 0:
+        {
+          hasDocMarkers = hasDocumentMarkers(
+            scanner,
+            onMissing: buffer.writeAll,
+          );
+        }
 
-      didRun = true;
-      continue;
+      default:
+        {
+          if (char is WhiteSpace) {
+            buffer.writeAll(
+              _preserveEmptyIndented(
+                isLiteral: isLiteral,
+                lineBreaks: lineBreaks,
+                lastWasIndented: lastWasIndented,
+              ),
+            );
+
+            lastWasIndented = true;
+            lineBreaks.clear();
+          } else {
+            _maybeFoldLF(
+              buffer,
+              isLiteral: isLiteral,
+              lastNonEmptyWasIndented: lastWasIndented,
+              lineBreaks: lineBreaks,
+            );
+            lastWasIndented = false;
+          }
+
+          buffer.writeChar(char!);
+
+          // Write the remaining line to the end without including line break
+          final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
+            buffer.writeChar,
+            exitIf: (_, curr) => curr is LineBreak,
+          );
+
+          if (sourceEnded) break blockParser;
+        }
     }
-
-    if (char is WhiteSpace) {
-      buffer.writeAll(
-        _preserveEmptyIndented(
-          isLiteral: isLiteral,
-          lineBreaks: lineBreaks,
-          lastWasIndented: lastWasIndented,
-        ),
-      );
-
-      lastWasIndented = true;
-      lineBreaks.clear();
-    } else {
-      _maybeFoldLF(
-        buffer,
-        isLiteral: isLiteral,
-        lastNonEmptyWasIndented: lastWasIndented,
-        lineBreaks: lineBreaks,
-      );
-      lastWasIndented = false;
-    }
-
-    buffer.writeChar(char!);
-
-    // Write the remaining line to the end without including line break
-    final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
-      buffer.writeChar,
-      exitIf: (_, curr) => curr is LineBreak,
-    );
-
-    if (sourceEnded) break;
   }
 
   _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
