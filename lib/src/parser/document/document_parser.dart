@@ -1128,8 +1128,15 @@ final class DocumentParser {
     }
 
     // Always throw if this isn't a ":". It must be!
-    if (charAtCursor != kvColon) {
-      throw FormatException('Expected a ":" but found ${charAtCursor?.string}');
+    if (_inferNextEvent(
+          _scanner,
+          isBlockContext: true,
+          lastKeyWasJsonLike: false,
+        ) !=
+        BlockCollectionEvent.startEntryValue) {
+      throw FormatException(
+        'Expected a ": " but found ${charAtCursor?.string}',
+      );
     }
 
     final map = MappingDelegate(
