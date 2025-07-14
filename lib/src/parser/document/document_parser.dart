@@ -764,6 +764,7 @@ final class DocumentParser {
     required Indicator collectionDelimiter,
     bool isBlockContext = false, // Block styles should override
     ParserEvent? inferredEvent,
+    int? startOffset,
   }) {
     final event =
         inferredEvent ??
@@ -772,6 +773,8 @@ final class DocumentParser {
           isBlockContext: false,
           lastKeyWasJsonLike: keyIsJsonLike,
         );
+
+    final flowStartOffset = startOffset ?? _scanner.currentOffset;
 
     if (!event.isFlowContext) {
       throw Exception(
@@ -819,6 +822,7 @@ final class DocumentParser {
             isExplicitKey: true,
             keyIsJsonLike: keyIsJsonLike,
             collectionDelimiter: collectionDelimiter,
+            startOffset: flowStartOffset,
           );
         }
 
@@ -828,7 +832,7 @@ final class DocumentParser {
             collectionStyle: NodeStyle.flow,
             indentLevel: currentIndentLevel + 1,
             indent: minIndent,
-            startOffset: _scanner.currentOffset,
+            startOffset: flowStartOffset,
             blockTags: {},
             inlineTags: {},
             blockAnchors: {},
@@ -845,7 +849,7 @@ final class DocumentParser {
             collectionStyle: NodeStyle.flow,
             indentLevel: currentIndentLevel + 1,
             indent: minIndent,
-            startOffset: _scanner.currentOffset,
+            startOffset: flowStartOffset,
             blockTags: {},
             inlineTags: {},
             blockAnchors: {},
@@ -867,6 +871,7 @@ final class DocumentParser {
             isInFlowContext: true,
             indentLevel: currentIndentLevel,
             minIndent: minIndent,
+            startOffset: flowStartOffset,
           );
 
           /// Plain scalars can have document/directive end chars embedded
@@ -920,8 +925,9 @@ final class DocumentParser {
     required bool isInFlowContext,
     required int indentLevel,
     required int minIndent,
+    int? startOffset,
   }) {
-    final startOffset = _scanner.currentOffset;
+    final scalarOffset = startOffset ?? _scanner.currentOffset;
 
     final prescalar = switch (event) {
       ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
@@ -976,7 +982,7 @@ final class DocumentParser {
       ScalarDelegate(
         indentLevel: indentLevel,
         indent: minIndent,
-        startOffset: startOffset,
+        startOffset: scalarOffset,
         blockTags: {},
         inlineTags: {},
         blockAnchors: {},
@@ -1062,6 +1068,7 @@ final class DocumentParser {
     required int indentLevel,
     required bool isInlined,
     required bool degenerateToImplicitMap,
+    required int startOffset,
   }) {
     final (
       PreScalar(
@@ -1077,6 +1084,7 @@ final class DocumentParser {
       isInFlowContext: false,
       indentLevel: indentLevel,
       minIndent: laxIndent, // Parse with minimum allowed indent
+      startOffset: startOffset,
     );
 
     /// - Block keys cannot degenerate to implicit maps. Only flow keys.
@@ -1149,6 +1157,7 @@ final class DocumentParser {
     required bool isInlined,
     required bool isParsingKey,
     required bool isExplicitKey,
+    required int startOffset,
   }) => _parseFlowNode(
     /// Ensure we prevent an event check and default it to an event
     /// we are privy to thus limiting the scope of the function.
@@ -1170,6 +1179,7 @@ final class DocumentParser {
     /// Faux value. Never used. Block explicit keys are intercepted by the
     /// [_parseExplicitBlockEntry] function.
     collectionDelimiter: Indicator.reservedAtSign,
+    startOffset: startOffset,
   );
 
   /// Parses a block node within a block collection.
@@ -1181,6 +1191,7 @@ final class DocumentParser {
     required bool isParsingKey,
     required bool isExplicitKey,
     required bool degenerateToImplicitMap,
+    required int startOffset,
     ParserEvent? event,
   }) {
     _BlockNodeInfo? info;
@@ -1201,6 +1212,7 @@ final class DocumentParser {
             isInlined: forceInlined,
             isParsingKey: isParsingKey,
             isExplicitKey: isExplicitKey,
+            startOffset: startOffset,
           );
 
           info = (
@@ -1218,6 +1230,7 @@ final class DocumentParser {
             indentLevel: indentLevel,
             isInlined: forceInlined,
             degenerateToImplicitMap: degenerateToImplicitMap,
+            startOffset: startOffset,
           );
 
           info = nodeInfo;
@@ -1301,97 +1314,73 @@ final class DocumentParser {
     return (delegate: node, nodeInfo: info);
   }
 
-  /// Parses an explicit block map entry within a block collection declared
-  /// using the `?` character.
-  _BlockEntry _parseExplicitBlockEntry({
-    required int indentLevel,
-    required int indent,
-  }) {
-    final explicitChar = _scanner.charAtCursor;
+  _ParseExplicitInfo _explicitIsParsable(int startOffset, int indent) {
+    _scanner.skipCharAtCursor(); // Skip the "?" or ":"
 
-    // Must have explicit key indicator
-    if (explicitChar != Indicator.mappingKey) {
-      throw Exception(
-        'Expected an explicit key but found ${explicitChar?.string}',
+    /// Typically exists as "?"<whitespace>. We can't know what/where to
+    /// start parsing. Skip to the next possible char
+    final inferredIndent = _skipToParsableChar(_scanner, comments: _comments);
+
+    // Must be able to parse more characters
+    if (!_scanner.canChunkMore) {
+      return (
+        shouldExit: true,
+        hasIndent: false,
+        inferredIndent: seamlessIndentMarker,
+        laxIndent: seamlessIndentMarker,
+        inlineIndent: seamlessIndentMarker,
       );
     }
 
-    ({
-      bool shouldExit,
-      bool hasIndent,
-      int? inferredIndent,
-      int laxIndent,
-      int inlineIndent,
-    })
-    checkIfParsable() {
-      final startOffset = _scanner.currentOffset;
+    final hasIndent = inferredIndent != null;
 
-      _scanner.skipCharAtCursor(); // Skip the "?" or ":"
-
-      /// Typically exists as "?"<whitespace>. We can't know what/where to
-      /// start parsing. Skip to the next possible char
-      final inferredIndent = _skipToParsableChar(_scanner, comments: _comments);
-
-      // Must be able to parse more characters
-      if (!_scanner.canChunkMore) {
-        return (
-          shouldExit: true,
-          hasIndent: false,
-          inferredIndent: seamlessIndentMarker,
-          laxIndent: seamlessIndentMarker,
-          inlineIndent: seamlessIndentMarker,
-        );
-      }
-
-      final hasIndent = inferredIndent != null;
-
-      if (hasIndent && inferredIndent < indent) {
-        return (
-          shouldExit: true,
-          hasIndent: hasIndent,
-          inferredIndent: inferredIndent,
-          laxIndent: seamlessIndentMarker,
-          inlineIndent: seamlessIndentMarker,
-        );
-      }
-
-      final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
-        inferredIndent,
-        blockParentIndent: indent,
-        startOffset: startOffset,
-      );
-
+    if (hasIndent && inferredIndent < indent) {
       return (
-        shouldExit: false,
+        shouldExit: true,
         hasIndent: hasIndent,
         inferredIndent: inferredIndent,
-        laxIndent: laxIndent,
-        inlineIndent: inlineFixedIndent,
+        laxIndent: seamlessIndentMarker,
+        inlineIndent: seamlessIndentMarker,
       );
     }
 
-    // Check and see if we can parse the key first
+    final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
+      inferredIndent,
+      blockParentIndent: indent,
+      startOffset: startOffset,
+    );
+
+    return (
+      shouldExit: false,
+      hasIndent: hasIndent,
+      inferredIndent: inferredIndent,
+      laxIndent: laxIndent,
+      inlineIndent: inlineFixedIndent,
+    );
+  }
+
+  (bool shouldExit, _BlockNodeInfo info, ParserDelegate key)
+  _parseExplicitBlockKey({required int indentLevel, required int indent}) {
+    final keyOffset = _scanner.currentOffset;
+
     final (
-      shouldExit: exitBeforeKey,
-      hasIndent: keyHasIndent,
-      inferredIndent: inferredKeyIndent,
-      laxIndent: laxKeyIndent,
-      inlineIndent: inlineKeyIndent,
-    ) = checkIfParsable();
+      :shouldExit,
+      :hasIndent,
+      :inferredIndent,
+      :laxIndent,
+      :inlineIndent,
+    ) = _explicitIsParsable(
+      keyOffset,
+      indent,
+    );
 
-    if (exitBeforeKey) {
+    if (shouldExit) {
       return (
-        nodeInfo: (exitIndent: inferredKeyIndent, hasDocEndMarkers: false),
-        delegate: (
-          key: nullScalarDelegate(indentLevel: indentLevel, indent: indent),
-          value: null,
-        ),
+        true,
+        (exitIndent: inferredIndent, hasDocEndMarkers: false),
+        nullScalarDelegate(indentLevel: indentLevel, indent: indent),
       );
     }
-
-    ParserDelegate? explicitKey;
-
-    final childIndentLevel = indentLevel + 1;
 
     /// Parse a key only if the indent is null or greater than the current
     /// indent. Since:
@@ -1399,11 +1388,12 @@ final class DocumentParser {
     ///     with the indicator
     ///   - A larger indent indicates the element is more indented than the
     ///     indicator
-    if (!keyHasIndent || inferredKeyIndent! > indent) {
+    if (!hasIndent || inferredIndent! > indent) {
       final (:nodeInfo, :delegate) = _parseBlockNode(
-        indentLevel: childIndentLevel,
-        laxIndent: laxKeyIndent,
-        fixedInlineIndent: inlineKeyIndent,
+        startOffset: keyOffset,
+        indentLevel: indentLevel,
+        laxIndent: laxIndent,
+        fixedInlineIndent: inlineIndent,
         forceInlined: false,
         isParsingKey: true,
         isExplicitKey: true,
@@ -1414,38 +1404,71 @@ final class DocumentParser {
 
       final hasIndent = exitIndent != null;
 
-      /// We can exit early if we are no longer at the current map's level
-      /// based on the indent (the current map is the caller of this function)
-      /// or the current document ended.
-      if (hasDocEndMarkers || (hasIndent && exitIndent < indent)) {
-        return (
-          delegate: (
-            key: delegate,
-            value: null,
-          ),
-          nodeInfo: nodeInfo,
-        );
-      } else if ((!hasIndent &&
-              _scanner
-                  .canChunkMore) || // TODO: Revisit this condition. Explicit key must not declare value. Needs to be tested
+      /// Parsing YAML makes you a skeptic with the layout restrictions.
+      ///
+      /// A ":" must be declared on a new line while being aligned with the
+      /// "?" that triggered this key to be parsed. Thus, their indents
+      /// *MUST* match.
+      if ((!hasIndent && _scanner.canChunkMore) ||
           (hasIndent && exitIndent > indent)) {
-        /// A ":" must be declared on a new line while being aligned with the
-        /// "?" that triggered this key to be parsed. Thus, their indents
-        /// *MUST* match.
         throw FormatException(
           'Expected ":" on a new line with an indent of $indent space(s) and'
           ' not ${exitIndent ?? 0} space(s)',
         );
       }
 
-      explicitKey = delegate;
+      return (
+        /// We can exit early if we are no longer at the current map's level
+        /// based on the indent (the current map is the caller of this function)
+        /// or the current document ended.
+        hasDocEndMarkers || (hasIndent && exitIndent < indent),
+        nodeInfo,
+        delegate,
+      );
     }
 
-    // We must have at least a key at this point. Even if null
-    explicitKey ??= nullScalarDelegate(
-      indentLevel: indentLevel,
+    return (
+      false,
+      (exitIndent: inferredIndent, hasDocEndMarkers: false),
+      nullScalarDelegate(
+        indentLevel: indentLevel,
+        indent: indent,
+      ),
+    );
+  }
+
+  /// Parses an explicit block map entry within a block collection declared
+  /// using the `?` character.
+  _BlockEntry _parseExplicitBlockEntry({
+    required int indentLevel,
+    required int indent,
+  }) {
+    // Must have explicit key indicator
+    if (_inferNextEvent(
+          _scanner,
+          isBlockContext: true,
+          lastKeyWasJsonLike: false,
+        ) !=
+        BlockCollectionEvent.startExplicitKey) {
+      throw Exception(
+        'Expected an explicit key but found ${_scanner.charAtCursor?.string}',
+      );
+    }
+
+    final childIndentLevel = indentLevel + 1;
+
+    // Attempt to parse key
+    final (exitAfterKey, keyNodeInfo, explicitKey) = _parseExplicitBlockKey(
+      indentLevel: childIndentLevel,
       indent: indent,
     );
+
+    if (exitAfterKey) {
+      return (
+        nodeInfo: keyNodeInfo,
+        delegate: (key: explicitKey, value: null),
+      );
+    }
 
     /// At this point, we may be parsing a new node or the value of this
     /// explicit key since block nodes have no indicators. Ensure this is the
@@ -1468,14 +1491,19 @@ final class DocumentParser {
       );
     }
 
-    // Skip ":" and check if we can parse it as a node
+    final valueOffset = _scanner.currentOffset;
+
+    // Check if we can parse the value
     final (
       :shouldExit,
       :hasIndent,
       :inferredIndent,
       :laxIndent,
       :inlineIndent,
-    ) = checkIfParsable();
+    ) = _explicitIsParsable(
+      valueOffset,
+      indent,
+    );
 
     /// No need to parse the value if we moved to the next line and the
     /// indent matches. Usually means there is no value to parse
@@ -1490,6 +1518,7 @@ final class DocumentParser {
     }
 
     final (:delegate, :nodeInfo) = _parseBlockNode(
+      startOffset: valueOffset,
       indentLevel: childIndentLevel,
       laxIndent: laxIndent,
       fixedInlineIndent: inlineIndent,
@@ -1532,6 +1561,7 @@ final class DocumentParser {
 
     if (key == null && event != BlockCollectionEvent.startEntryValue) {
       final (:delegate, :nodeInfo) = _parseBlockNode(
+        startOffset: _scanner.currentOffset,
         event: event,
         indentLevel: indentLevel,
         laxIndent: indent,
@@ -1575,6 +1605,7 @@ final class DocumentParser {
       );
     }
 
+    final valueOffset = _scanner.currentOffset;
     _scanner.skipCharAtCursor(); // Skip ":"
 
     final indentOrSeparation = _skipToParsableChar(
@@ -1623,6 +1654,7 @@ final class DocumentParser {
       :delegate,
       nodeInfo: _BlockNodeInfo(:hasDocEndMarkers, :exitIndent),
     ) = _parseBlockNode(
+      startOffset: valueOffset,
       indentLevel: indentLevel + 1,
       laxIndent: indentOrSeparation ?? laxIndent,
       fixedInlineIndent: indentOrSeparation ?? inlineFixedIndent,
@@ -1829,6 +1861,7 @@ final class DocumentParser {
       );
 
       final (:delegate, :nodeInfo) = _parseBlockNode(
+        startOffset: startOffset,
         indentLevel: childIndentLevel,
         laxIndent: laxIndent,
         fixedInlineIndent: inlineFixedIndent,
