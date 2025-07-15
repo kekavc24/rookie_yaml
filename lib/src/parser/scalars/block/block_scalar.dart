@@ -80,7 +80,7 @@ PreScalar parseBlockStyle(
             if (charAfter == null || scannedIndent < indent) {
               indentOnExit = scannedIndent;
               scanner.skipCharAtCursor();
-              break;
+              break blockParser;
             }
 
             // Attempt to infer indent if null
