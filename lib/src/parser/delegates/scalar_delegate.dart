@@ -23,6 +23,7 @@ final class ScalarDelegate extends ParserDelegate {
     preScalar = scalar;
     indent = scalar.scalarIndent;
     _hasLineBreak = scalar.hasLineBreak;
+    updateEndOffset = scalar.endOffset;
   }
 
   @override

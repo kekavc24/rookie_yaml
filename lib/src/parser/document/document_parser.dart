@@ -516,6 +516,7 @@ final class DocumentParser {
     }
 
     _throwIfNotFlowDelimiter(mapEnd);
+    delegate.updateEndOffset = _scanner.currentOffset;
   }
 
   /// Parse a flow sequence/list.
@@ -663,6 +664,7 @@ final class DocumentParser {
     }
 
     _throwIfNotFlowDelimiter(seqEnd);
+    delegate.updateEndOffset = _scanner.currentOffset;
   }
 
   /// Parses a single flow map entry.

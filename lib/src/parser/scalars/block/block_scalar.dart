@@ -51,6 +51,8 @@ PreScalar parseBlockStyle(
   /// Block scalar have no set indent. They infer indent using the first
   /// non-empty line.
   int? previousMaxIndent;
+
+  int? endOffset;
   var hasDocMarkers = false;
 
   blockParser:
@@ -71,15 +73,23 @@ PreScalar parseBlockStyle(
           final charAfter = scanner.peekCharAfterCursor();
 
           if (charAfter is! LineBreak) {
+            final hasCharAfter = charAfter != null;
+
             /// While `YAML` suggested we parse the comment thereafter, it is
             /// better to exit and allow the `root` parser to determine how to
             /// parse it.
             ///
             /// Also check if we need to exit incase a document/directives
             /// end marker is found in a top level scalar
-            if (charAfter == null || scannedIndent < indent) {
+            if (!hasCharAfter || scannedIndent < indent) {
               indentOnExit = scannedIndent;
               scanner.skipCharAtCursor();
+
+              final ChunkScanner(:currentOffset, :source) = scanner;
+
+              endOffset = hasCharAfter
+                  ? (currentOffset - scannedIndent)
+                  : source.length;
               break blockParser;
             }
 
@@ -126,10 +136,15 @@ PreScalar parseBlockStyle(
       case Indicator.blockSequenceEntry || Indicator.period
           when trueIndent == 0:
         {
+          final maybeEndOffset = scanner.currentOffset;
+
           hasDocMarkers = hasDocumentMarkers(
             scanner,
             onMissing: buffer.writeAll,
           );
+
+          // We will exit in the next iteration
+          if (hasDocMarkers) endOffset = maybeEndOffset;
         }
 
       default:
@@ -177,5 +192,6 @@ PreScalar parseBlockStyle(
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
     foundLinebreak: indentOnExit != seamlessIndentMarker || !buffer.isEmpty,
+    endOffset: currentOrMaxOffset(scanner, endOffset),
   );
 }

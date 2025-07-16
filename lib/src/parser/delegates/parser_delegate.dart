@@ -30,15 +30,20 @@ abstract interface class ParserDelegate {
   /// Starting offset.
   final int startOffset;
 
+  /// Exclusive
   int? _endOffset;
 
-  set endOffset(int offset) {
-    if (_endOffset != null) {
-      print(
-        'You are overwriting an already resolved offset at: \n'
-        '\tIndent Level: $indentLevel\n'
-        '\tStart offset: $offset\n'
-        '\tCurrent Delegate: $runtimeType',
+  set updateEndOffset(int? offset) {
+    if ((offset == null) ||
+        offset < startOffset ||
+        (_endOffset != null && _endOffset! > offset)) {
+      throw StateError(
+        'The current delegate [$runtimeType] with:'
+        '\n\t'
+        'Start offset: $startOffset'
+        '\n\t'
+        'Current end offset: $_endOffset'
+        '\nreceived an invalid end offset: $offset',
       );
     }
 

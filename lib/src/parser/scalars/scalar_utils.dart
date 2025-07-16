@@ -1,7 +1,11 @@
 import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+
+int currentOrMaxOffset(ChunkScanner scanner, int? offset) =>
+    offset ?? scanner.source.length;
 
 /// A non-existent indent level if a scalar was parsed correctly.
 ///
@@ -21,6 +25,7 @@ final class PreScalar {
     required this.inferredValue,
     required this.scalarIndent,
     required this.indentOnExit,
+    required this.endOffset,
     this.radix,
   }) : indentDidChange = indentOnExit != seamlessIndentMarker;
 
@@ -74,6 +79,9 @@ final class PreScalar {
   /// on indentation to convey content may provide a different value when
   /// [indentDidChange] is `true`.
   final int indentOnExit;
+
+  /// End offset of the scalar (exclusive)
+  final int endOffset;
 
   /// Value inferred based on its kind as specified in the YAML generic
   /// schema
@@ -153,6 +161,7 @@ PreScalar preformatScalar(
   required ScalarStyle scalarStyle,
   required int actualIdent,
   required bool foundLinebreak,
+  required int endOffset,
   bool trim = false,
   int indentOnExit = seamlessIndentMarker,
   bool hasDocEndMarkers = false,
@@ -200,6 +209,7 @@ PreScalar preformatScalar(
     inferredValue: value,
     scalarIndent: actualIdent,
     indentOnExit: indentOnExit,
+    endOffset: endOffset,
     radix: radix,
   );
 }

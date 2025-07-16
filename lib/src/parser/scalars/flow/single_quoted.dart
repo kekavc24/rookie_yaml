@@ -88,5 +88,6 @@ PreScalar parseSingleQuoted(
     scalarStyle: ScalarStyle.singleQuoted,
     actualIdent: indent,
     foundLinebreak: foundLineBreak,
+    endOffset: scanner.currentOffset,
   );
 }

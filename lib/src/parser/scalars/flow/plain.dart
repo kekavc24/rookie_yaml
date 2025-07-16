@@ -63,6 +63,7 @@ PreScalar? parsePlain(
           scalarStyle: _style,
           actualIdent: indent,
           foundLinebreak: false,
+          endOffset: scanner.currentOffset,
         );
       }
 
@@ -78,6 +79,9 @@ PreScalar? parsePlain(
 
   var hasDocMarkers = false;
   var foundLineBreak = false;
+  int? endOffset;
+
+  void defaultToCurrentOffset() => endOffset = scanner.currentOffset;
 
   chunker:
   while (scanner.canChunkMore) {
@@ -95,12 +99,15 @@ PreScalar? parsePlain(
       case Indicator.blockSequenceEntry || Indicator.period
           when charBefore is LineBreak && charAfter == char:
         {
+          final maybeEndOffset = scanner.currentOffset;
+
           if (indent == 0 &&
               hasDocumentMarkers(
                 scanner,
                 onMissing: (greedy) => buffer.writeAll(greedy),
               )) {
             hasDocMarkers = true;
+            endOffset = maybeEndOffset;
             break chunker;
           }
 
@@ -111,20 +118,24 @@ PreScalar? parsePlain(
       /// of whether we folded this scalar before.
       case _kvColon
           when charAfter == WhiteSpace.space || charAfter is LineBreak:
+        defaultToCurrentOffset();
         break chunker;
 
       /// A look behind condition if encountered while folding the scalar.
       case Indicator.comment
           when charBefore is WhiteSpace || charBefore is LineBreak:
+        defaultToCurrentOffset();
         break chunker;
 
       /// A lookahead condition of the rule above before folding the scalar
       case WhiteSpace _ when charAfter == Indicator.comment:
+        defaultToCurrentOffset();
         break chunker;
 
       /// Restricted to a single line when implicit. Instead of throwing,
       /// exit and allow parser to determine next course of action
       case LineBreak _ when isImplicit:
+        defaultToCurrentOffset();
         break chunker;
 
       /// Attempt to fold by default anytime we see a line break or white space
@@ -139,6 +150,7 @@ PreScalar? parsePlain(
           );
 
           if (indentDidChange) {
+            endOffset = scanner.currentOffset - foldIndent;
             indentOnExit = foldIndent;
             break chunker;
           }
@@ -148,6 +160,7 @@ PreScalar? parsePlain(
 
       case _
           when (isImplicit || isInFlowContext) && flowDelimiters.contains(char):
+        defaultToCurrentOffset();
         break chunker;
 
       default:
@@ -185,5 +198,6 @@ PreScalar? parsePlain(
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
     foundLinebreak: foundLineBreak,
+    endOffset: currentOrMaxOffset(scanner, endOffset),
   );
 }
