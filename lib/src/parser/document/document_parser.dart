@@ -933,7 +933,7 @@ final class DocumentParser {
 
     final prescalar = switch (event) {
       ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
-          when !isImplicit || !isInFlowContext =>
+          when !isImplicit && !isInFlowContext =>
         parseBlockStyle(
           _scanner,
           minimumIndent: minIndent,
