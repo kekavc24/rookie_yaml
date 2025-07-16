@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';

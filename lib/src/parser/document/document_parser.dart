@@ -630,8 +630,8 @@ final class DocumentParser {
 
             delegate.pushEntry(
               MapEntryDelegate(
-                  nodeStyle: NodeStyle.flow,
-                  keyDelegate: keyOrElement,
+                nodeStyle: NodeStyle.flow,
+                keyDelegate: keyOrElement,
               )..updateValue = value,
             );
           }
@@ -1346,7 +1346,7 @@ final class DocumentParser {
     return (delegate: node, nodeInfo: info);
   }
 
-  _ParseExplicitInfo _explicitIsParsable(int startOffset, int indent) {
+  _ParseExplicitInfo _explicitIsParsable(int startOffset, int parentIndent) {
     _scanner.skipCharAtCursor(); // Skip the "?" or ":"
 
     /// Typically exists as "?"<whitespace>. We can't know what/where to
@@ -1366,7 +1366,9 @@ final class DocumentParser {
 
     final hasIndent = inferredIndent != null;
 
-    if (hasIndent && inferredIndent < indent) {
+    /// If equal then we are at the same level as a "?" or ":" on a new line.
+    /// Anything we moved back a level/several
+    if (hasIndent && inferredIndent <= parentIndent) {
       return (
         shouldExit: true,
         hasIndent: hasIndent,
@@ -1378,7 +1380,7 @@ final class DocumentParser {
 
     final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
       inferredIndent,
-      blockParentIndent: indent,
+      blockParentIndent: parentIndent,
       startOffset: startOffset,
     );
 
@@ -1391,13 +1393,16 @@ final class DocumentParser {
     );
   }
 
+  /// Parses an explicit key. This function is always called by
+  /// [_parseExplicitBlockEntry]. You should never call it directly unless
+  /// you only need the key!
   (bool shouldExit, _BlockNodeInfo info, ParserDelegate key)
   _parseExplicitBlockKey({required int indentLevel, required int indent}) {
     final keyOffset = _scanner.currentOffset;
 
     final (
       :shouldExit,
-      :hasIndent,
+      hasIndent: preKeyHasIndent,
       :inferredIndent,
       :laxIndent,
       :inlineIndent,
@@ -1407,6 +1412,7 @@ final class DocumentParser {
     );
 
     if (shouldExit) {
+      // We have an empty/null key on our hands
       return (
         true,
         (exitIndent: inferredIndent, hasDocEndMarkers: false),
@@ -1426,53 +1432,46 @@ final class DocumentParser {
     ///   - Null indent which indicates that the key is declared on the same
     ///     line with the indicator.
     ///   - A larger indent indicates the element is more indented than the
-    ///     indicator
-    if (!hasIndent || inferredIndent! > indent) {
-      final (:nodeInfo, :delegate) = _parseBlockNode(
-        startOffset: keyOffset,
-        indentLevel: indentLevel,
-        laxIndent: laxIndent,
-        fixedInlineIndent: inlineIndent,
-        forceInlined: false,
-        isParsingKey: true,
-        isExplicitKey: true,
-        degenerateToImplicitMap: true,
-      );
+    ///     indicator.
+    ///
+    /// We don't care (because we don't know how differentiate this). Let the
+    /// block node function determine where these indents fit in our grand
+    /// scheme of things.
+    final (:nodeInfo, :delegate) = _parseBlockNode(
+      startOffset: keyOffset,
+      indentLevel: indentLevel,
+      laxIndent: laxIndent,
+      fixedInlineIndent: inlineIndent,
+      forceInlined: false,
+      isParsingKey: true,
+      isExplicitKey: true,
+      degenerateToImplicitMap: true,
+    );
 
-      final (:exitIndent, :hasDocEndMarkers) = nodeInfo;
+    final (:exitIndent, :hasDocEndMarkers) = nodeInfo;
 
-      final hasIndent = exitIndent != null;
+    final hasIndent = exitIndent != null;
 
-      /// Parsing YAML makes you a skeptic with the layout restrictions.
-      ///
-      /// A ":" must be declared on a new line while being aligned with the
-      /// "?" that triggered this key to be parsed. Thus, their indents
-      /// *MUST* match.
-      if ((!hasIndent && _scanner.canChunkMore) ||
-          (hasIndent && exitIndent > indent)) {
-        throw FormatException(
-          'Expected ":" on a new line with an indent of $indent space(s) and'
-          ' not ${exitIndent ?? 0} space(s)',
-        );
-      }
-
-      return (
-        /// We can exit early if we are no longer at the current map's level
-        /// based on the indent (the current map is the caller of this function)
-        /// or the current document ended.
-        hasDocEndMarkers || (hasIndent && exitIndent < indent),
-        nodeInfo,
-        delegate,
+    /// Parsing YAML makes you a skeptic with the layout restrictions.
+    ///
+    /// A ":" must be declared on a new line while being aligned with the
+    /// "?" that triggered this key to be parsed. Thus, their indents
+    /// *MUST* match.
+    if ((!hasIndent && _scanner.canChunkMore) ||
+        (hasIndent && exitIndent > indent)) {
+      throw FormatException(
+        'Expected ":" on a new line with an indent of $indent space(s) and'
+        ' not ${exitIndent ?? 0} space(s)',
       );
     }
 
     return (
-      false,
-      (exitIndent: inferredIndent, hasDocEndMarkers: false),
-      nullScalarDelegate(
-        indentLevel: indentLevel,
-        indent: indent,
-      ),
+      /// We can exit early if we are no longer at the current map's level
+      /// based on the indent (the current map is the caller of this function)
+      /// or the current document ended.
+      hasDocEndMarkers || (hasIndent && exitIndent < indent),
+      nodeInfo,
+      delegate,
     );
   }
 
@@ -1519,14 +1518,8 @@ final class DocumentParser {
         ) !=
         BlockCollectionEvent.startEntryValue) {
       return (
-        delegate: (
-          key: explicitKey,
-          value: null,
-        ),
-        nodeInfo: (
-          exitIndent: indent,
-          hasDocEndMarkers: false,
-        ),
+        delegate: (key: explicitKey, value: null),
+        nodeInfo: (exitIndent: indent, hasDocEndMarkers: false),
       );
     }
 
@@ -1546,7 +1539,7 @@ final class DocumentParser {
 
     /// No need to parse the value if we moved to the next line and the
     /// indent matches. Usually means there is no value to parse
-    if (shouldExit || (hasIndent && inferredIndent! == indent)) {
+    if (shouldExit) {
       return (
         nodeInfo: (exitIndent: inferredIndent, hasDocEndMarkers: false),
         delegate: (
@@ -1629,11 +1622,6 @@ final class DocumentParser {
 
       implicitKey = delegate;
     }
-
-    implicitKey ??= nullScalarDelegate(
-      indentLevel: indentLevel,
-      indent: indent,
-    );
 
     // Must declare ":" on the same line
     if (_skipToParsableChar(_scanner, comments: _comments) != null ||
