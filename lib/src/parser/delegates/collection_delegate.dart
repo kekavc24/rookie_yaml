@@ -11,6 +11,7 @@ final _bareScalar = Scalar(
 ScalarDelegate nullScalarDelegate({
   required int indentLevel,
   required int indent,
+  required int startOffset,
 }) => ScalarDelegate(
   indentLevel: indentLevel,
   indent: indent,
@@ -27,7 +28,6 @@ final class MapEntryDelegate extends ParserDelegate {
   MapEntryDelegate({
     required this.nodeStyle,
     required this.keyDelegate,
-    this.valueDelegate,
   }) : super(
          indent: keyDelegate.indent,
          indentLevel: keyDelegate.indentLevel,
@@ -46,11 +46,21 @@ final class MapEntryDelegate extends ParserDelegate {
   /// Optional value delegate.
   ///
   /// `YAML` allows for keys to be specified alone with no value in maps.
-  ParserDelegate? valueDelegate;
+  ParserDelegate? _valueDelegate;
+
+  set updateValue(ParserDelegate? value) {
+    final hasValue = value != null;
+
+    hasLineBreak =
+        keyDelegate.encounteredLineBreak ||
+        (hasValue && value.encounteredLineBreak);
+    updateEndOffset = hasValue ? value._endOffset : keyDelegate._endOffset;
+    _valueDelegate = value;
+  }
 
   @override
   bool isChild(int indent) =>
-      indent > this.indent || (valueDelegate?.indent ?? -1) == indent;
+      indent > this.indent || (_valueDelegate?.indent ?? -1) == indent;
 
   /// Usually returns a [Mapping].
   ///
@@ -58,7 +68,7 @@ final class MapEntryDelegate extends ParserDelegate {
   /// only a single value. A key must exist.
   @override
   Node _resolveNode() => Mapping(
-    {keyDelegate.parsed(): valueDelegate?.parsed() ?? _bareScalar},
+    {keyDelegate.parsed(): _valueDelegate?.parsed() ?? _bareScalar},
     nodeStyle: nodeStyle,
     tags: tags(),
     anchors: anchors(),
@@ -116,6 +126,7 @@ final class SequenceDelegate extends CollectionDelegate {
   void pushEntry(ParserDelegate entry) {
     _firstEntry ??= entry;
     _hasLineBreak = _hasLineBreak || entry._hasLineBreak;
+    updateEndOffset = entry._endOffset;
 
     _nodes.add(entry.parsed());
   }

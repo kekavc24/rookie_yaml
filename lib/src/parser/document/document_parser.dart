@@ -577,10 +577,7 @@ final class DocumentParser {
 
             delegate.pushEntry(
               MapEntryDelegate(nodeStyle: NodeStyle.flow, keyDelegate: key)
-                ..valueDelegate = value
-                ..hasLineBreak =
-                    key.encounteredLineBreak ||
-                    (value?.encounteredLineBreak ?? false),
+                ..updateValue = value,
             );
           }
 
@@ -635,11 +632,7 @@ final class DocumentParser {
               MapEntryDelegate(
                   nodeStyle: NodeStyle.flow,
                   keyDelegate: keyOrElement,
-                )
-                ..valueDelegate = value
-                ..hasLineBreak =
-                    keyOrElement.encounteredLineBreak ||
-                    (value?.encounteredLineBreak ?? false),
+              )..updateValue = value,
             );
           }
       }
@@ -738,10 +731,34 @@ final class DocumentParser {
         throw expectedCharErr;
       }
 
-      if (!ignoreValue(_scanner.charAtCursor)) {
+      final valueLevel = indentLevel + 1;
+
+      /// Having a ":" changes the layout dynamics. This means the value is
+      /// present-ish by virtue of having seen the delimiter. This ensures
+      /// we provide the correct end offset for an editor trying to make
+      /// edits to the source. Such that:
+      ///
+      ///
+      /// {
+      /// key,
+      ///    ^ Key ends here by default. Value null, non-existent (virtual)
+      ///
+      /// key:,
+      ///    ^^ Key ends at the first caret. Value is null, but exists since
+      ///       the ":" is present. Thus a "physical" null that ends at the
+      ///       second caret.
+      /// }
+      if (ignoreValue(_scanner.charAtCursor)) {
+        final endOffset = _scanner.currentOffset;
+        value = nullScalarDelegate(
+          indentLevel: valueLevel,
+          indent: minIndent,
+          startOffset: endOffset - 1,
+        )..updateEndOffset = endOffset;
+      } else {
         value = _parseFlowNode(
           isParsingKey: false,
-          currentIndentLevel: indentLevel + 1, // One level deeper than key
+          currentIndentLevel: valueLevel,
           minIndent: minIndent,
           forceInline: forceInline,
           isExplicitKey: false,
@@ -794,6 +811,7 @@ final class DocumentParser {
         return nullScalarDelegate(
           indentLevel: currentIndentLevel,
           indent: minIndent,
+          startOffset: flowStartOffset,
         );
 
       case FlowCollectionEvent.startExplicitKey:
@@ -815,7 +833,8 @@ final class DocumentParser {
             return nullScalarDelegate(
               indentLevel: currentIndentLevel,
               indent: minIndent,
-            );
+              startOffset: flowStartOffset,
+            )..updateEndOffset = _scanner.currentOffset;
           }
 
           return _parseFlowNode(
@@ -912,7 +931,8 @@ final class DocumentParser {
           return nullScalarDelegate(
             indentLevel: currentIndentLevel,
             indent: minIndent,
-          );
+            startOffset: flowStartOffset,
+          )..updateEndOffset = flowStartOffset;
         }
 
       default:
@@ -1267,7 +1287,8 @@ final class DocumentParser {
             nullScalarDelegate(
               indentLevel: indentLevel,
               indent: fixedInlineIndent,
-            ),
+              startOffset: startOffset,
+            )..updateEndOffset = startOffset,
           );
         }
 
@@ -1389,14 +1410,21 @@ final class DocumentParser {
       return (
         true,
         (exitIndent: inferredIndent, hasDocEndMarkers: false),
-        nullScalarDelegate(indentLevel: indentLevel, indent: indent),
+
+        nullScalarDelegate(
+            indentLevel: indentLevel,
+            indent: indent,
+            startOffset: keyOffset,
+          )
+          ..updateEndOffset = preKeyHasIndent
+              ? _scanner.currentOffset - inferredIndent!
+              : keyOffset,
       );
     }
 
-    /// Parse a key only if the indent is null or greater than the current
-    /// indent. Since:
-    ///   - Null indent indicates that the key is declared on the same line
-    ///     with the indicator
+    /// Our key can either have:
+    ///   - Null indent which indicates that the key is declared on the same
+    ///     line with the indicator.
     ///   - A larger indent indicates the element is more indented than the
     ///     indicator
     if (!hasIndent || inferredIndent! > indent) {
@@ -1617,6 +1645,13 @@ final class DocumentParser {
     }
 
     final valueOffset = _scanner.currentOffset;
+
+    implicitKey ??= nullScalarDelegate(
+      indentLevel: indentLevel,
+      indent: indent,
+      startOffset: valueOffset,
+    )..updateEndOffset = valueOffset;
+
     _scanner.skipCharAtCursor(); // Skip ":"
 
     final indentOrSeparation = _skipToParsableChar(
@@ -1637,7 +1672,7 @@ final class DocumentParser {
 
     final isBlockList = childEvent == BlockCollectionEvent.startBlockListEntry;
 
-    /// YAML recommends grace for block lists that start on a new line but
+    /// YAML 1.2 recommends grace for block lists that start on a new line but
     /// have the same indent as the implicit key since the "-" is usually
     /// perceived as indent.
     if (!isInlineChild &&
@@ -1755,11 +1790,10 @@ final class DocumentParser {
         value = delegate.value;
       }
 
-      final (:hasDocEndMarkers, :exitIndent) = mapInfo;
-
       /// Most probably encountered doc end chars while parsing implicit map.
       /// An explicit key should never return null here
       if (key == null) {
+        _blockNodeInfoEndOffset(map, scanner: _scanner, info: mapInfo);
         return mapInfo;
       }
 
@@ -1768,6 +1802,17 @@ final class DocumentParser {
           'Block map cannot contain entries sharing the same key',
         );
       }
+
+      final (:hasDocEndMarkers, :exitIndent) = mapInfo;
+
+      /// Update end offset. We must always have the correct end offset
+      /// independent of the last node.
+      _blockNodeEndOffset(
+        map,
+        scanner: _scanner,
+        hasDocEndMarkers: hasDocEndMarkers,
+        indentOnExit: exitIndent,
+      );
 
       if (hasDocEndMarkers) {
         return mapInfo;
@@ -1853,7 +1898,8 @@ final class DocumentParser {
             nullScalarDelegate(
               indentLevel: childIndentLevel,
               indent: indent + 1,
-            ),
+              startOffset: startOffset
+            )..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
           );
 
           if (isLess) {
@@ -1882,9 +1928,18 @@ final class DocumentParser {
         degenerateToImplicitMap: true,
       );
 
+      // Block sequence's end offset similar to last node. Updated internally
       sequence.pushEntry(delegate);
 
       final (:hasDocEndMarkers, :exitIndent) = nodeInfo;
+
+      // Update offset of sequence. May span more than the last node
+      _blockNodeEndOffset(
+        sequence,
+        scanner: _scanner,
+        hasDocEndMarkers: hasDocEndMarkers,
+        indentOnExit: exitIndent,
+      );
 
       if (hasDocEndMarkers) return nodeInfo;
 

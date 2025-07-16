@@ -6,6 +6,14 @@ typedef _RootNodeInfo = ({
   ParserDelegate rootDelegate,
 });
 
+typedef _ParseExplicitInfo = ({
+  bool shouldExit,
+  bool hasIndent,
+  int? inferredIndent,
+  int laxIndent,
+  int inlineIndent,
+});
+
 typedef _BlockNodeInfo = ({int? exitIndent, bool hasDocEndMarkers});
 
 const _BlockNodeInfo _emptyScanner = (
@@ -475,4 +483,53 @@ _NodeProperties _parseNodeProperties(
     /// managed to parse both the tag and anchor.
     indentOnExit: _skipToParsableChar(scanner, comments: comments),
   );
+}
+
+/// Updates the end offset of a [blockNode] (mapping/sequence) using its
+/// undestructured [info]
+void _blockNodeInfoEndOffset(
+  CollectionDelegate blockNode, {
+  required ChunkScanner scanner,
+  required _BlockNodeInfo info,
+}) => _blockNodeEndOffset(
+  blockNode,
+  scanner: scanner,
+  hasDocEndMarkers: info.hasDocEndMarkers,
+  indentOnExit: info.exitIndent,
+);
+
+/// Updates the end offset of a [blockNode] (mapping/sequence) based on its
+/// [indentOnExit]. If [hasDocEndMarkers] is `true`, the end offset is
+/// the offset of the last `\n` (even if part of `\r\n`) before the
+/// document end markers (`---` or `...`) `+1`.
+void _blockNodeEndOffset(
+  CollectionDelegate blockNode, {
+  required ChunkScanner scanner,
+  required bool hasDocEndMarkers,
+  required int? indentOnExit,
+}) {
+  final ChunkScanner(:currentOffset, :source) = scanner;
+
+  int? endOffset;
+
+  if (hasDocEndMarkers) {
+    // We perform a lookback to the last "\n"
+    endOffset = max(
+      0,
+      source.lastIndexOf(RegExp('[\r|\n]'), currentOffset - 1),
+    );
+  } else {
+    // Block node must have an exit indent if we can parse more characters
+    endOffset = switch (indentOnExit) {
+      int indent => currentOffset - indent,
+      _ when !scanner.canChunkMore => max(currentOffset, source.length),
+      _ => throw ArgumentError.value(
+        indentOnExit,
+        'indentOnExit',
+        'A block node always ends after an indent change but found null',
+      ),
+    };
+  }
+
+  blockNode.updateEndOffset = endOffset;
 }
