@@ -556,8 +556,10 @@ final class DocumentParser {
 
         // Parse explicit key
         case Indicator.mappingKey
-            when charAfter == WhiteSpace.space ||
-                flowDelimiters.contains(charAfter):
+            when charAfter is WhiteSpace ||
+                charAfter is LineBreak ||
+                charAfter == Indicator.flowEntryEnd ||
+                charAfter == seqEnd:
           {
             final (key, value) = _parseFlowMapEntry(
               null,
