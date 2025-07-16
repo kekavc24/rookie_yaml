@@ -110,7 +110,7 @@ ParserEvent _inferNextEvent(
   /// Can be allowed after map like indicator such as:
   ///   - "?" -> an explicit key indicator
   ///   - ":" -> indicates start of a value
-  final canBeSeparation = charAfter is LineBreak || charAfter is WhiteSpace;
+  final canBeSeparation = charAfter is LineBreak? || charAfter is WhiteSpace?;
 
   return switch (scanner.charAtCursor) {
     Indicator.doubleQuote => ScalarEvent.startFlowDoubleQuoted,
