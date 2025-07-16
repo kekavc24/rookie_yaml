@@ -1921,8 +1921,7 @@ final class DocumentParser {
         isExplicitKey: false,
         degenerateToImplicitMap: true,
       );
-
-      // Block sequence's end offset similar to last node. Updated internally
+      
       sequence.pushEntry(delegate);
 
       final (:hasDocEndMarkers, :exitIndent) = nodeInfo;

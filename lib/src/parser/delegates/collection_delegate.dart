@@ -36,7 +36,10 @@ final class MapEntryDelegate extends ParserDelegate {
          inlineTags: {},
          blockAnchors: {}, // Set.from(keyDelegate.blockAnchors),
          inlineAnchors: {},
-       );
+       ) {
+    hasLineBreak = keyDelegate.encounteredLineBreak;
+    updateEndOffset = keyDelegate._endOffset;
+  }
 
   final NodeStyle nodeStyle;
 
@@ -49,12 +52,10 @@ final class MapEntryDelegate extends ParserDelegate {
   ParserDelegate? _valueDelegate;
 
   set updateValue(ParserDelegate? value) {
-    final hasValue = value != null;
+    if (value == null) return;
 
-    hasLineBreak =
-        keyDelegate.encounteredLineBreak ||
-        (hasValue && value.encounteredLineBreak);
-    updateEndOffset = hasValue ? value._endOffset : keyDelegate._endOffset;
+    hasLineBreak = value.encounteredLineBreak;
+    updateEndOffset = value._endOffset;
     _valueDelegate = value;
   }
 
@@ -125,9 +126,7 @@ final class SequenceDelegate extends CollectionDelegate {
 
   void pushEntry(ParserDelegate entry) {
     _firstEntry ??= entry;
-    _hasLineBreak = _hasLineBreak || entry._hasLineBreak;
-    updateEndOffset = entry._endOffset;
-
+    hasLineBreak = entry._hasLineBreak;
     _nodes.add(entry.parsed());
   }
 
@@ -168,8 +167,7 @@ final class MappingDelegate extends CollectionDelegate {
     }
 
     _map[keyNode] = value?.parsed() ?? _bareScalar;
-    _hasLineBreak =
-        _hasLineBreak || key._hasLineBreak || (value?._hasLineBreak ?? false);
+    hasLineBreak = key._hasLineBreak || (value?._hasLineBreak ?? false);
     return true;
   }
 
