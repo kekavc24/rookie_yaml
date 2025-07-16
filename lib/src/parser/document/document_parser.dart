@@ -1849,7 +1849,10 @@ final class DocumentParser {
           true,
 
         // Normal "- " combination for block list
-        indicator when charAfter is WhiteSpace || charAfter is LineBreak =>
+        indicator
+            when charAfter == null ||
+                charAfter is WhiteSpace ||
+                charAfter is LineBreak =>
           false,
 
         _ => throw FormatException(
@@ -1861,7 +1864,9 @@ final class DocumentParser {
 
     final childIndentLevel = indentLevel + 1;
 
-    while (_scanner.canChunkMore) {
+    /// Always want it run the first time. We need that first empty node
+    /// with the "-<null>" pattern
+    do {
       if (exitOrThrowIfNotBlock()) {
         return (hasDocEndMarkers: true, exitIndent: null);
       }
@@ -1886,10 +1891,11 @@ final class DocumentParser {
             nullScalarDelegate(
               indentLevel: childIndentLevel,
               indent: indent + 1,
-              startOffset: startOffset
+              startOffset: startOffset,
             )..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
           );
 
+          // Not a skill issue. 2 birds, 1 stone
           if (isLess) {
             return (exitIndent: indentOrSeparation, hasDocEndMarkers: false);
           }
@@ -1898,7 +1904,7 @@ final class DocumentParser {
         }
       }
 
-      // Determine indentation
+      // Determine indentation of child node
       final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
         indentOrSeparation,
         blockParentIndent: indent,
@@ -1948,7 +1954,7 @@ final class DocumentParser {
 
       // Must no have a dangling indent at this point
       _throwIfDangling(indent, exitIndent);
-    }
+    } while (_scanner.canChunkMore);
 
     return _emptyScanner;
   }
