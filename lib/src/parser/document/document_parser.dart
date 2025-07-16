@@ -171,249 +171,76 @@ final class DocumentParser {
     return ParsedTag(tag, suffix);
   }
 
-  /// Parses the next [YamlDocument] if present in the YAML string.
-  ///
-  /// `NOTE:` This advances the parsing forward and holds no reference to a
-  /// previously parsed [YamlDocument].
-  YamlDocument? parseNext() {
-    _restartParser();
+  /// Parses a [Scalar].
+  (PreScalar scalar, ScalarDelegate delegate) _parseScalar(
+    ScalarEvent event, {
+    required bool isImplicit,
+    required bool isInFlowContext,
+    required int indentLevel,
+    required int minIndent,
+    int? startOffset,
+  }) {
+    final scalarOffset = startOffset ?? _scanner.currentOffset;
 
-    if (!_scanner.canChunkMore) return null;
+    final prescalar = switch (event) {
+      ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
+          when !isImplicit && !isInFlowContext =>
+        parseBlockStyle(
+          _scanner,
+          minimumIndent: minIndent,
+          onParseComment: _comments.add,
+        ),
 
-    YamlDirective? version;
-    var tags = <TagHandle, GlobalTag>{};
-    var reserved = <ReservedDirective>[];
-
-    _docStartExplicit = _lastWasDocEndChars == '---';
-
-    // If no directives end indicator, parse directives
-    if (!_docStartExplicit) {
-      final (:isDocEnd, :yamlDirective, :globalTags, :reservedDirectives) =
-          _processDirectives();
-
-      if (isDocEnd) {
-        _updateDocEndChars('.'.padRight(3, '.'));
-        return YamlDocument._(
-          _currentIndex,
-          yamlDirective,
-          globalTags.values.toSet(),
-          reservedDirectives,
-          _comments,
-          null,
-          YamlDocType.inferType(
-            hasDirectives: _hasDirectives,
-            isDocStartExplicit: _docStartExplicit,
-          ),
-          _docStartExplicit,
-          _docEndExplicit,
-        );
-      }
-
-      version = yamlDirective;
-      tags = globalTags;
-      reserved = reservedDirectives;
-    }
-
-    // YAML allows the secondary tag to be declared with custom global tag
-    _globalTags.addAll(tags);
-
-    _rootInMarkerLine = _docIsInMarkerLine(
-      _scanner,
-      isDocStartExplicit: _docStartExplicit,
-    );
-
-    final (:foundDocEndMarkers, :rootEvent, :rootDelegate) = _parseNodeAtRoot(
-      _scanner,
-      rootInMarkerLine: _rootInMarkerLine,
-      isDocStartExplicit: _docStartExplicit,
-      hasDirectives: _hasDirectives,
-      comments: _comments,
-      greedyChars: _greedyChars.map((c) => c.string),
-    );
-
-    var event = rootEvent;
-    var root = rootDelegate;
-    ParserDelegate? keyIfMap;
-
-    /// Further verify if the scalar parsed on a single line is a key or just
-    /// a scalar on a single line
-    if (rootDelegate is ScalarDelegate) {
-      var isInlineScalar = true;
-
-      if (!foundDocEndMarkers) {
-        // Move to the next parsable character
-        switch (_skipToParsableChar(_scanner, comments: _comments)) {
-          // No more characters. This is the last document.
-          case null when !_scanner.canChunkMore:
-            break;
-
-          // Convert to key delegate ready to parse a map
-          case null
-              when _inferNextEvent(
-                    _scanner,
-                    isBlockContext: true,
-                    lastKeyWasJsonLike: false,
-                  ) ==
-                  BlockCollectionEvent.startEntryValue:
-            {
-              isInlineScalar = false;
-              final ScalarDelegate(:startOffset, :indent) = rootDelegate;
-
-              event = BlockCollectionEvent.startImplicitKey;
-              keyIfMap = rootDelegate;
-              root = MappingDelegate(
-                collectionStyle: NodeStyle.block,
-                indentLevel: 0,
-                indent: indent,
-                startOffset: startOffset,
-                blockTags: {},
-                inlineTags: {},
-                blockAnchors: {},
-                inlineAnchors: {},
-              );
-            }
-
-          default:
-            {
-              if (_scanner.charAtCursor case LineBreak char) {
-                skipCrIfPossible(char, scanner: _scanner);
-                _scanner.skipCharAtCursor();
-              }
-
-              // Check for document/directive end marker
-              if (!hasDocumentMarkers(_scanner, onMissing: (_) {})) {
-                throw FormatException(
-                  'Expected a directive/document end marker after parsing'
-                  ' scalar',
-                );
-              }
-            }
-        }
-      }
-
-      if (isInlineScalar) {
-        if (_scanner.canChunkMore) {
-          _updateDocEndChars(_inferDocEndChars(_scanner));
-        }
-
-        return YamlDocument._(
-          _currentIndex,
-          version,
-          tags.values.toSet(),
-          reserved,
-          _comments,
-          rootDelegate.parsed(),
-          YamlDocType.inferType(
-            hasDirectives: _hasDirectives,
-            isDocStartExplicit: _docStartExplicit,
-          ),
-          _docStartExplicit,
-          _docEndExplicit,
-        );
-      }
-    }
-
-    /// Why block info? YAML clearly has a favourite child and that is the
-    /// block(-like) styles. They are indeed a human friendly format. Also, the
-    /// doc end chars "..." and "---" exist in this format.
-    _BlockNodeInfo? rootInfo;
-
-    switch (event) {
-      // Start of flow map or sequence. Never inlined ahead of time.
-      case FlowCollectionEvent event:
-        {
-          event == FlowCollectionEvent.startFlowMap
-              ? _parseFlowMap(root as MappingDelegate, forceInline: false)
-              : _parseFlowSequence(
-                  root as SequenceDelegate,
-                  forceInline: false,
-                );
-
-          final ParserDelegate(:indent, :startOffset, :encounteredLineBreak) =
-              root;
-
-          /// As indicated initially, YAML considerably favours block(-like)
-          /// styles. This flow collection may be an implicit key if only it
-          /// is inline and we see a ": " char combination ahead.
-          if (!encounteredLineBreak &&
-              _skipToParsableChar(
-                    _scanner,
-                    comments: _comments,
-                  ) ==
-                  null &&
-              _inferNextEvent(
-                    _scanner,
-                    isBlockContext: true,
-                    lastKeyWasJsonLike: false,
-                  ) ==
-                  BlockCollectionEvent.startEntryValue) {
-            keyIfMap = root;
-            root = MappingDelegate(
-              collectionStyle: NodeStyle.block,
-              indentLevel: 0,
-              indent: indent,
-              startOffset: startOffset,
-              blockTags: {},
-              inlineTags: {},
-              blockAnchors: {},
-              inlineAnchors: {},
-            );
-
-            continue blockMap; // Executes without eval. Sure bet!
-          }
-        }
-
-      case BlockCollectionEvent.startBlockListEntry:
-        rootInfo = _parseBlockSequence(root as SequenceDelegate);
-
-      // Versatile and unpredictable
-      blockMap:
-      case BlockCollectionEvent.startExplicitKey ||
-          BlockCollectionEvent.startImplicitKey ||
-          BlockCollectionEvent.startEntryValue:
-        rootInfo = _parseBlockMap(root as MappingDelegate, keyIfMap);
-
-      // Should never be the case
-      default:
-        throw Exception('[Parser Error]: Unhandled parser event: "$event"');
-    }
-
-    if (_scanner.canChunkMore) {
-      /// We must see document end chars and don't care how they are laid within
-      /// the document
-      if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
-        _skipToParsableChar(_scanner, comments: _comments);
-
-        final fauxBuffer = <String>[];
-
-        if (_scanner.canChunkMore &&
-            !hasDocumentMarkers(
-              _scanner,
-              onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
-            )) {
-          throw FormatException(
-            'Expected to find document end chars "..." or directive end chars '
-            '"---" but found ${fauxBuffer.join()}',
-          );
-        }
-      }
-
-      _updateDocEndChars(_inferDocEndChars(_scanner));
-    }
-
-    return YamlDocument._(
-      _currentIndex,
-      version,
-      tags.values.toSet(),
-      reserved,
-      _comments,
-      root.parsed(),
-      YamlDocType.inferType(
-        hasDirectives: _hasDirectives,
-        isDocStartExplicit: _docStartExplicit,
+      ScalarEvent.startFlowDoubleQuoted => parseDoubleQuoted(
+        _scanner,
+        indent: minIndent,
+        isImplicit: isImplicit,
       ),
-      _docStartExplicit,
-      _docEndExplicit,
+
+      ScalarEvent.startFlowSingleQuoted => parseSingleQuoted(
+        _scanner,
+        indent: minIndent,
+        isImplicit: isImplicit,
+      ),
+
+      // We are aware of what character is at the start. Cannot be null
+      ScalarEvent.startFlowPlain => parsePlain(
+        _scanner,
+        indent: minIndent,
+        charsOnGreedy: '',
+        isImplicit: isImplicit,
+        isInFlowContext: isInFlowContext,
+      ),
+
+      _ => throw FormatException(
+        'Failed to parse block scalar as it can never be implicit or used in a'
+        ' flow context!',
+      ),
+    };
+
+    /// This is a failsafe. Every map/list (flow or block) must look for
+    /// ways to ensure a `null` plain scalar is never returned. This ensures
+    /// the internal parsing logic for parsing the map/list is correct. Each
+    /// flow/block map/list handles missing values differently.
+    ///
+    /// TODO: Fix later. Wrap while parsing plain scalar?
+    /// TODO(cont): If fixing, consider how this null is handled by each
+    /// TODO(cont): flow/block collection beforehand
+    if (prescalar == null) {
+      throw FormatException('Null was returned when parsing a plain scalar!');
+    }
+
+    return (
+      prescalar,
+      ScalarDelegate(
+        indentLevel: indentLevel,
+        indent: minIndent,
+        startOffset: scalarOffset,
+        blockTags: {},
+        inlineTags: {},
+        blockAnchors: {},
+        inlineAnchors: {},
+      )..scalar = prescalar,
     );
   }
 
@@ -465,199 +292,6 @@ final class DocumentParser {
     }
 
     _scanner.skipCharAtCursor(); // Skip it if valid
-  }
-
-  /// Parses a flow map.
-  ///
-  /// If [forceInline] is `true`, the map must be declared on the same line
-  /// with no line breaks and throws if otherwise.
-  void _parseFlowMap(MappingDelegate delegate, {required bool forceInline}) {
-    _throwIfNotFlowDelimiter(Indicator.mappingStart);
-
-    final MappingDelegate(:indent, :indentLevel) = delegate;
-    const mapEnd = Indicator.mappingEnd;
-
-    while (_scanner.canChunkMore) {
-      final (key, value) = _parseFlowMapEntry(
-        null,
-        indentLevel: indentLevel,
-
-        /// As per YAML, no need forcing indentation in flow map as long as it
-        /// adheres to the minimum indent set by block parent if in block
-        /// context. If in flow context, let it "flow" and lay itself!
-        minIndent: indent,
-        forceInline: forceInline,
-        exitIndicator: mapEnd,
-      );
-
-      /// If our key is null, it means no parsing occured. The
-      /// [_parseFlowMapEntry] guarantees that it will return a wrapped null
-      /// key when no key was parsed.
-      if (key == null) break;
-
-      // Map already contains key
-      if (!delegate.pushEntry(key, value)) {
-        // TODO: Show next key to help user know which key!
-        // TODO: Inline the key if too long
-        throw FormatException(
-          'Flow map cannot contain duplicate entries by the same key',
-        );
-      }
-
-      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
-
-      // Only continues if current non-space character is a ","
-      if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
-        _scanner.skipCharAtCursor();
-        continue;
-      }
-
-      break; // Always assume we are ending the parsing if not continuing!
-    }
-
-    _throwIfNotFlowDelimiter(mapEnd);
-    delegate.updateEndOffset = _scanner.currentOffset;
-  }
-
-  /// Parse a flow sequence/list.
-  ///
-  /// If [forceInline] is `true`, the list must be declared on the same line
-  /// with no line breaks and throws if otherwise.
-  void _parseFlowSequence(
-    SequenceDelegate delegate, {
-    required bool forceInline,
-  }) {
-    _throwIfNotFlowDelimiter(Indicator.flowSequenceStart);
-
-    final SequenceDelegate(:indent, :indentLevel) = delegate;
-    const seqEnd = Indicator.flowSequenceEnd;
-
-    listParser:
-    while (_scanner.canChunkMore) {
-      // Always ensure we are at a parsable char. Safely.
-      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
-
-      final charAfter = _scanner.peekCharAfterCursor();
-
-      // We will always have a char here
-      switch (_scanner.charAtCursor) {
-        case Indicator.flowEntryEnd:
-          {
-            final exception = delegate.isEmpty
-                ? FormatException(
-                    'Expected to find the first value but found ","',
-                  )
-                : FormatException(
-                    'Found a duplicate "," before finding a flow sequence '
-                    'entry',
-                  );
-
-            throw exception;
-          }
-
-        // Parse explicit key
-        case Indicator.mappingKey
-            when charAfter is WhiteSpace ||
-                charAfter is LineBreak ||
-                charAfter == Indicator.flowEntryEnd ||
-                charAfter == seqEnd:
-          {
-            final (key, value) = _parseFlowMapEntry(
-              null,
-              indentLevel: indentLevel,
-              minIndent: indent,
-              forceInline: forceInline,
-              exitIndicator: seqEnd,
-            );
-
-            /// The key cannot be null since we know it is explicit.
-            /// [_parseFlowMapEntry] will wrap it in a null key. However, for
-            /// null safety, just check
-            if (key == null) break listParser;
-
-            delegate.pushEntry(
-              MapEntryDelegate(nodeStyle: NodeStyle.flow, keyDelegate: key)
-                ..updateValue = value,
-            );
-          }
-
-        case seqEnd:
-          break listParser;
-
-        default:
-          {
-            // Handles all flow node types i.e map, sequence and scalars
-            final keyOrElement = _parseFlowNode(
-              isParsingKey: false,
-              currentIndentLevel: indentLevel,
-              minIndent: indent,
-              forceInline: forceInline,
-              isExplicitKey: false,
-              keyIsJsonLike: false,
-              collectionDelimiter: seqEnd,
-            );
-
-            // Go to the next parsable char
-            if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) {
-              break listParser;
-            }
-
-            /// Normally a list is a wildcard. We must assume that we parsed
-            /// an implicit key unless we never see ":". Encountering a
-            /// linebreak means the current flow node cannot be an implicit key.
-            ///
-            /// YAML requires us to treat all keys as implicit unless explicit
-            /// which are normally restricted to a single line.
-            if (keyOrElement.encounteredLineBreak ||
-                _inferNextEvent(
-                      _scanner,
-                      isBlockContext: false,
-                      lastKeyWasJsonLike: _keyIsJsonLike(keyOrElement),
-                    ) !=
-                    FlowCollectionEvent.startEntryValue) {
-              delegate.pushEntry(keyOrElement);
-              break;
-            }
-
-            // We have the key. No need for it!
-            final (_, value) = _parseFlowMapEntry(
-              keyOrElement,
-              indentLevel: indentLevel,
-              minIndent: indent,
-              forceInline: forceInline,
-              exitIndicator: seqEnd,
-            );
-
-            delegate.pushEntry(
-              MapEntryDelegate(
-                nodeStyle: NodeStyle.flow,
-                keyDelegate: keyOrElement,
-              )..updateValue = value,
-            );
-          }
-      }
-
-      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
-
-      // Must see "]" or ","
-      switch (_scanner.charAtCursor) {
-        case Indicator.flowEntryEnd:
-          _scanner.skipCharAtCursor();
-
-        case seqEnd:
-          break listParser;
-
-        default:
-          throw FormatException(
-            'Expected to find a flow entry end indicator ","'
-            ' or flow sequence end "]" but'
-            ' found ${_scanner.charAtCursor?.string}',
-          );
-      }
-    }
-
-    _throwIfNotFlowDelimiter(seqEnd);
-    delegate.updateEndOffset = _scanner.currentOffset;
   }
 
   /// Parses a single flow map entry.
@@ -942,77 +576,197 @@ final class DocumentParser {
     }
   }
 
-  /// Parses a [Scalar].
-  (PreScalar scalar, ScalarDelegate delegate) _parseScalar(
-    ScalarEvent event, {
-    required bool isImplicit,
-    required bool isInFlowContext,
-    required int indentLevel,
-    required int minIndent,
-    int? startOffset,
-  }) {
-    final scalarOffset = startOffset ?? _scanner.currentOffset;
+  /// Parses a flow map.
+  ///
+  /// If [forceInline] is `true`, the map must be declared on the same line
+  /// with no line breaks and throws if otherwise.
+  void _parseFlowMap(MappingDelegate delegate, {required bool forceInline}) {
+    _throwIfNotFlowDelimiter(Indicator.mappingStart);
 
-    final prescalar = switch (event) {
-      ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
-          when !isImplicit && !isInFlowContext =>
-        parseBlockStyle(
-          _scanner,
-          minimumIndent: minIndent,
-          onParseComment: _comments.add,
-        ),
+    final MappingDelegate(:indent, :indentLevel) = delegate;
+    const mapEnd = Indicator.mappingEnd;
 
-      ScalarEvent.startFlowDoubleQuoted => parseDoubleQuoted(
-        _scanner,
-        indent: minIndent,
-        isImplicit: isImplicit,
-      ),
+    while (_scanner.canChunkMore) {
+      final (key, value) = _parseFlowMapEntry(
+        null,
+        indentLevel: indentLevel,
 
-      ScalarEvent.startFlowSingleQuoted => parseSingleQuoted(
-        _scanner,
-        indent: minIndent,
-        isImplicit: isImplicit,
-      ),
+        /// As per YAML, no need forcing indentation in flow map as long as it
+        /// adheres to the minimum indent set by block parent if in block
+        /// context. If in flow context, let it "flow" and lay itself!
+        minIndent: indent,
+        forceInline: forceInline,
+        exitIndicator: mapEnd,
+      );
 
-      // We are aware of what character is at the start. Cannot be null
-      ScalarEvent.startFlowPlain => parsePlain(
-        _scanner,
-        indent: minIndent,
-        charsOnGreedy: '',
-        isImplicit: isImplicit,
-        isInFlowContext: isInFlowContext,
-      ),
+      /// If our key is null, it means no parsing occured. The
+      /// [_parseFlowMapEntry] guarantees that it will return a wrapped null
+      /// key when no key was parsed.
+      if (key == null) break;
 
-      _ => throw FormatException(
-        'Failed to parse block scalar as it can never be implicit or used in a'
-        ' flow context!',
-      ),
-    };
+      // Map already contains key
+      if (!delegate.pushEntry(key, value)) {
+        // TODO: Show next key to help user know which key!
+        // TODO: Inline the key if too long
+        throw FormatException(
+          'Flow map cannot contain duplicate entries by the same key',
+        );
+      }
 
-    /// This is a failsafe. Every map/list (flow or block) must look for
-    /// ways to ensure a `null` plain scalar is never returned. This ensures
-    /// the internal parsing logic for parsing the map/list is correct. Each
-    /// flow/block map/list handles missing values differently.
-    ///
-    /// TODO: Fix later. Wrap while parsing plain scalar?
-    /// TODO(cont): If fixing, consider how this null is handled by each
-    /// TODO(cont): flow/block collection beforehand
-    if (prescalar == null) {
-      throw FormatException('Null was returned when parsing a plain scalar!');
+      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
+
+      // Only continues if current non-space character is a ","
+      if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
+        _scanner.skipCharAtCursor();
+        continue;
+      }
+
+      break; // Always assume we are ending the parsing if not continuing!
     }
 
-    return (
-      prescalar,
-      ScalarDelegate(
-        indentLevel: indentLevel,
-        indent: minIndent,
-        startOffset: scalarOffset,
-        blockTags: {},
-        inlineTags: {},
-        blockAnchors: {},
-        inlineAnchors: {},
-      )..scalar = prescalar,
-    );
+    _throwIfNotFlowDelimiter(mapEnd);
+    delegate.updateEndOffset = _scanner.currentOffset;
+  }
+
+  /// Parse a flow sequence/list.
+  ///
+  /// If [forceInline] is `true`, the list must be declared on the same line
+  /// with no line breaks and throws if otherwise.
+  void _parseFlowSequence(
+    SequenceDelegate delegate, {
+    required bool forceInline,
+  }) {
+    _throwIfNotFlowDelimiter(Indicator.flowSequenceStart);
+
+    final SequenceDelegate(:indent, :indentLevel) = delegate;
+    const seqEnd = Indicator.flowSequenceEnd;
+
+    listParser:
+    while (_scanner.canChunkMore) {
+      // Always ensure we are at a parsable char. Safely.
+      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
+
+      final charAfter = _scanner.peekCharAfterCursor();
+
+      // We will always have a char here
+      switch (_scanner.charAtCursor) {
+        case Indicator.flowEntryEnd:
+          {
+            final exception = delegate.isEmpty
+                ? FormatException(
+                    'Expected to find the first value but found ","',
+                  )
+                : FormatException(
+                    'Found a duplicate "," before finding a flow sequence '
+                    'entry',
+                  );
+
+            throw exception;
+          }
+
+        // Parse explicit key
+        case Indicator.mappingKey
+            when charAfter is WhiteSpace ||
+                charAfter is LineBreak ||
+                charAfter == Indicator.flowEntryEnd ||
+                charAfter == seqEnd:
+          {
+            final (key, value) = _parseFlowMapEntry(
+              null,
+              indentLevel: indentLevel,
+              minIndent: indent,
+              forceInline: forceInline,
+              exitIndicator: seqEnd,
+            );
+
+            /// The key cannot be null since we know it is explicit.
+            /// [_parseFlowMapEntry] will wrap it in a null key. However, for
+            /// null safety, just check
+            if (key == null) break listParser;
+
+            delegate.pushEntry(
+              MapEntryDelegate(nodeStyle: NodeStyle.flow, keyDelegate: key)
+                ..updateValue = value,
+            );
+          }
+
+        case seqEnd:
+          break listParser;
+
+        default:
+          {
+            // Handles all flow node types i.e map, sequence and scalars
+            final keyOrElement = _parseFlowNode(
+              isParsingKey: false,
+              currentIndentLevel: indentLevel,
+              minIndent: indent,
+              forceInline: forceInline,
+              isExplicitKey: false,
+              keyIsJsonLike: false,
+              collectionDelimiter: seqEnd,
+            );
+
+            // Go to the next parsable char
+            if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) {
+              break listParser;
+            }
+
+            /// Normally a list is a wildcard. We must assume that we parsed
+            /// an implicit key unless we never see ":". Encountering a
+            /// linebreak means the current flow node cannot be an implicit key.
+            ///
+            /// YAML requires us to treat all keys as implicit unless explicit
+            /// which are normally restricted to a single line.
+            if (keyOrElement.encounteredLineBreak ||
+                _inferNextEvent(
+                      _scanner,
+                      isBlockContext: false,
+                      lastKeyWasJsonLike: _keyIsJsonLike(keyOrElement),
+                    ) !=
+                    FlowCollectionEvent.startEntryValue) {
+              delegate.pushEntry(keyOrElement);
+              break;
+            }
+
+            // We have the key. No need for it!
+            final (_, value) = _parseFlowMapEntry(
+              keyOrElement,
+              indentLevel: indentLevel,
+              minIndent: indent,
+              forceInline: forceInline,
+              exitIndicator: seqEnd,
+            );
+
+            delegate.pushEntry(
+              MapEntryDelegate(
+                nodeStyle: NodeStyle.flow,
+                keyDelegate: keyOrElement,
+              )..updateValue = value,
+            );
+          }
+      }
+
+      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
+
+      // Must see "]" or ","
+      switch (_scanner.charAtCursor) {
+        case Indicator.flowEntryEnd:
+          _scanner.skipCharAtCursor();
+
+        case seqEnd:
+          break listParser;
+
+        default:
+          throw FormatException(
+            'Expected to find a flow entry end indicator ","'
+            ' or flow sequence end "]" but'
+            ' found ${_scanner.charAtCursor?.string}',
+          );
+      }
+    }
+
+    _throwIfNotFlowDelimiter(seqEnd);
+    delegate.updateEndOffset = _scanner.currentOffset;
   }
 
   /// Calculates the indent for a block node within a block collection
@@ -1026,20 +780,21 @@ final class DocumentParser {
       return (laxIndent: inferred, inlineFixedIndent: inferred);
     }
 
-    /// The calculation applies for the "?" and ":" as the both have to
-    /// have the same indent since the ":" *MUST* be declared on a new line
-    /// for block explicit keys.
+    /// Being null indicates the child is okay being indented at least "+1" if
+    /// the rest of its content spans multiple lines. This applies to
+    /// [ScalarStyle.literal] and [ScalarStyle.folded]. Flow collections also
+    /// benefit from this as the indent serves no purpose other than respecting
+    /// the current block parent's indentation. This is its [laxIndent].
     ///
-    /// If null, that is, on the same line as the indicator:
-    ///   - [isLax] indicates the child is okay being indented at least "+1".
-    ///     This applies to [ScalarStyle.literal] and [ScalarStyle.folded].
-    ///     Flow collections also benefit from this as the indent serves no
-    ///     purpose other than respecting the current block parent's
-    ///     indentation.
-    ///   - Otherwise, we force a fixed indent/layout based on the character
-    ///     difference upto the current parsable char. Forcing it to be aligned
-    ///     if the node spills over into the next line. This may be seen with
-    ///     block sequences and maps nested in a block sequence entry
+    /// Its [inlineFixedIndent] is the character difference upto the current
+    /// parsable char. This indent is enforced on block sequences and maps used
+    /// as:
+    ///   1. a block sequence entry
+    ///   2. content of an explicit key
+    ///   3. content of an explicit key's value
+    ///
+    /// "?" is used as an example but applies to all block nodes that use an
+    /// indicator.
     ///
     /// (meh! No markdown hover)
     /// ```yaml
@@ -1063,9 +818,10 @@ final class DocumentParser {
     ///   - blah
     ///
     /// # With implicit or explict map
-    /// ? key:
-    ///   ? keey
-    ///   : value
+    /// ? key: value
+    ///   keyB: value
+    ///   keyC: value # Explicit key ends here
+    /// : actual-value # Explicit key's value
     ///
     /// # With block sequence. If this is done. Still okay. Inferred.
     /// ?
@@ -1346,6 +1102,17 @@ final class DocumentParser {
     return (delegate: node, nodeInfo: info);
   }
 
+  /// Checks to see if an explicit [_BlockEntry] can be parsed.
+  ///
+  /// If the entry doesn't start on the next line (inline), the [startOffset]
+  /// is used to compute the `inlineIndent` and the `laxIndent` is computed
+  /// from the [parentIndent].
+  ///
+  /// If the entry does start on the next line, the `inlineIndent` and
+  /// `laxIndent` are equal. In this case, if the indent `<=` [parentIndent],
+  /// then this node cannot be parsed.
+  ///
+  /// See [_blockChildIndent] implementation.
   _ParseExplicitInfo _explicitIsParsable(int startOffset, int parentIndent) {
     _scanner.skipCharAtCursor(); // Skip the "?" or ":"
 
@@ -1921,7 +1688,7 @@ final class DocumentParser {
         isExplicitKey: false,
         degenerateToImplicitMap: true,
       );
-      
+
       sequence.pushEntry(delegate);
 
       final (:hasDocEndMarkers, :exitIndent) = nodeInfo;
@@ -1956,5 +1723,253 @@ final class DocumentParser {
     } while (_scanner.canChunkMore);
 
     return _emptyScanner;
+  }
+
+  /// Parses the next [YamlDocument] if present in the YAML string.
+  ///
+  /// `NOTE:` This advances the parsing forward and holds no reference to a
+  /// previously parsed [YamlDocument].
+  YamlDocument? parseNext() {
+    _restartParser();
+
+    if (!_scanner.canChunkMore) return null;
+
+    YamlDirective? version;
+    var tags = <TagHandle, GlobalTag>{};
+    var reserved = <ReservedDirective>[];
+
+    _docStartExplicit = _lastWasDocEndChars == '---';
+
+    // If no directives end indicator, parse directives
+    if (!_docStartExplicit) {
+      final (:isDocEnd, :yamlDirective, :globalTags, :reservedDirectives) =
+          _processDirectives();
+
+      if (isDocEnd) {
+        _updateDocEndChars('.'.padRight(3, '.'));
+        return YamlDocument._(
+          _currentIndex,
+          yamlDirective,
+          globalTags.values.toSet(),
+          reservedDirectives,
+          _comments,
+          null,
+          YamlDocType.inferType(
+            hasDirectives: _hasDirectives,
+            isDocStartExplicit: _docStartExplicit,
+          ),
+          _docStartExplicit,
+          _docEndExplicit,
+        );
+      }
+
+      version = yamlDirective;
+      tags = globalTags;
+      reserved = reservedDirectives;
+    }
+
+    // YAML allows the secondary tag to be declared with custom global tag
+    _globalTags.addAll(tags);
+
+    _rootInMarkerLine = _docIsInMarkerLine(
+      _scanner,
+      isDocStartExplicit: _docStartExplicit,
+    );
+
+    final (:foundDocEndMarkers, :rootEvent, :rootDelegate) = _parseNodeAtRoot(
+      _scanner,
+      rootInMarkerLine: _rootInMarkerLine,
+      isDocStartExplicit: _docStartExplicit,
+      hasDirectives: _hasDirectives,
+      comments: _comments,
+      greedyChars: _greedyChars.map((c) => c.string),
+    );
+
+    var event = rootEvent;
+    var root = rootDelegate;
+    ParserDelegate? keyIfMap;
+
+    /// Further verify if the scalar parsed on a single line is a key or just
+    /// a scalar on a single line
+    if (rootDelegate is ScalarDelegate) {
+      var isInlineScalar = true;
+
+      if (!foundDocEndMarkers) {
+        // Move to the next parsable character
+        switch (_skipToParsableChar(_scanner, comments: _comments)) {
+          // No more characters. This is the last document.
+          case null when !_scanner.canChunkMore:
+            break;
+
+          // Convert to key delegate ready to parse a map
+          case null
+              when _inferNextEvent(
+                    _scanner,
+                    isBlockContext: true,
+                    lastKeyWasJsonLike: false,
+                  ) ==
+                  BlockCollectionEvent.startEntryValue:
+            {
+              isInlineScalar = false;
+              final ScalarDelegate(:startOffset, :indent) = rootDelegate;
+
+              event = BlockCollectionEvent.startImplicitKey;
+              keyIfMap = rootDelegate;
+              root = MappingDelegate(
+                collectionStyle: NodeStyle.block,
+                indentLevel: 0,
+                indent: indent,
+                startOffset: startOffset,
+                blockTags: {},
+                inlineTags: {},
+                blockAnchors: {},
+                inlineAnchors: {},
+              );
+            }
+
+          default:
+            {
+              if (_scanner.charAtCursor case LineBreak char) {
+                skipCrIfPossible(char, scanner: _scanner);
+                _scanner.skipCharAtCursor();
+              }
+
+              // Check for document/directive end marker
+              if (!hasDocumentMarkers(_scanner, onMissing: (_) {})) {
+                throw FormatException(
+                  'Expected a directive/document end marker after parsing'
+                  ' scalar',
+                );
+              }
+            }
+        }
+      }
+
+      if (isInlineScalar) {
+        if (_scanner.canChunkMore) {
+          _updateDocEndChars(_inferDocEndChars(_scanner));
+        }
+
+        return YamlDocument._(
+          _currentIndex,
+          version,
+          tags.values.toSet(),
+          reserved,
+          _comments,
+          rootDelegate.parsed(),
+          YamlDocType.inferType(
+            hasDirectives: _hasDirectives,
+            isDocStartExplicit: _docStartExplicit,
+          ),
+          _docStartExplicit,
+          _docEndExplicit,
+        );
+      }
+    }
+
+    // TODO: If rootMarker inline. Must have a line break!
+
+    /// Why block info? YAML clearly has a favourite child and that is the
+    /// block(-like) styles. They are indeed a human friendly format. Also, the
+    /// doc end chars "..." and "---" exist in this format.
+    _BlockNodeInfo? rootInfo;
+
+    switch (event) {
+      // Start of flow map or sequence. Never inlined ahead of time.
+      case FlowCollectionEvent event:
+        {
+          event == FlowCollectionEvent.startFlowMap
+              ? _parseFlowMap(root as MappingDelegate, forceInline: false)
+              : _parseFlowSequence(
+                  root as SequenceDelegate,
+                  forceInline: false,
+                );
+
+          final ParserDelegate(:indent, :startOffset, :encounteredLineBreak) =
+              root;
+
+          /// As indicated initially, YAML considerably favours block(-like)
+          /// styles. This flow collection may be an implicit key if only it
+          /// is inline and we see a ": " char combination ahead.
+          if (!encounteredLineBreak &&
+              _skipToParsableChar(
+                    _scanner,
+                    comments: _comments,
+                  ) ==
+                  null &&
+              _inferNextEvent(
+                    _scanner,
+                    isBlockContext: true,
+                    lastKeyWasJsonLike: false,
+                  ) ==
+                  BlockCollectionEvent.startEntryValue) {
+            keyIfMap = root;
+            root = MappingDelegate(
+              collectionStyle: NodeStyle.block,
+              indentLevel: 0,
+              indent: indent,
+              startOffset: startOffset,
+              blockTags: {},
+              inlineTags: {},
+              blockAnchors: {},
+              inlineAnchors: {},
+            );
+
+            continue blockMap; // Executes without eval. Sure bet!
+          }
+        }
+
+      case BlockCollectionEvent.startBlockListEntry:
+        rootInfo = _parseBlockSequence(root as SequenceDelegate);
+
+      // Versatile and unpredictable
+      blockMap:
+      case BlockCollectionEvent.startExplicitKey ||
+          BlockCollectionEvent.startImplicitKey ||
+          BlockCollectionEvent.startEntryValue:
+        rootInfo = _parseBlockMap(root as MappingDelegate, keyIfMap);
+
+      // Should never be the case
+      default:
+        throw Exception('[Parser Error]: Unhandled parser event: "$event"');
+    }
+
+    if (_scanner.canChunkMore) {
+      /// We must see document end chars and don't care how they are laid within
+      /// the document
+      if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
+        _skipToParsableChar(_scanner, comments: _comments);
+
+        final fauxBuffer = <String>[];
+
+        if (_scanner.canChunkMore &&
+            !hasDocumentMarkers(
+              _scanner,
+              onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
+            )) {
+          throw FormatException(
+            'Expected to find document end chars "..." or directive end chars '
+            '"---" but found ${fauxBuffer.join()}',
+          );
+        }
+      }
+
+      _updateDocEndChars(_inferDocEndChars(_scanner));
+    }
+
+    return YamlDocument._(
+      _currentIndex,
+      version,
+      tags.values.toSet(),
+      reserved,
+      _comments,
+      root.parsed(),
+      YamlDocType.inferType(
+        hasDirectives: _hasDirectives,
+        isDocStartExplicit: _docStartExplicit,
+      ),
+      _docStartExplicit,
+      _docEndExplicit,
+    );
   }
 }
