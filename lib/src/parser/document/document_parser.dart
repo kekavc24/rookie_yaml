@@ -1725,6 +1725,57 @@ final class DocumentParser {
     return _emptyScanner;
   }
 
+  /// Parses a root flow mapping or sequence.
+  CollectionDelegate _parseRootFlow(
+    FlowCollectionEvent event, {
+    required int rootStartOffset,
+    required int rootIndentLevel,
+    required int rootIndent,
+  }) {
+    switch (event) {
+      case FlowCollectionEvent.startFlowMap:
+        {
+          final map = MappingDelegate(
+            collectionStyle: NodeStyle.flow,
+            indentLevel: rootIndentLevel,
+            indent: rootIndent,
+            startOffset: rootStartOffset,
+            blockTags: {},
+            inlineTags: {},
+            blockAnchors: {},
+            inlineAnchors: {},
+          );
+
+          _parseFlowMap(map, forceInline: false);
+          return map;
+        }
+
+      case FlowCollectionEvent.startFlowSequence:
+        {
+          final sequence = SequenceDelegate(
+            collectionStyle: NodeStyle.flow,
+            indentLevel: rootIndentLevel,
+            indent: rootIndent,
+            startOffset: rootStartOffset,
+            blockTags: {},
+            inlineTags: {},
+            blockAnchors: {},
+            inlineAnchors: {},
+          );
+
+          _parseFlowSequence(sequence, forceInline: false);
+
+          return sequence;
+        }
+
+      default:
+        throw FormatException(
+          'Leading "," "}" or "]" flow indicators found with no'
+          ' opening "[" "{"',
+        );
+    }
+  }
+
   /// Parses the next [YamlDocument] if present in the YAML string.
   ///
   /// `NOTE:` This advances the parsing forward and holds no reference to a
@@ -1776,122 +1827,46 @@ final class DocumentParser {
       isDocStartExplicit: _docStartExplicit,
     );
 
-    final (:foundDocEndMarkers, :rootEvent, :rootDelegate) = _parseNodeAtRoot(
-      _scanner,
-      rootInMarkerLine: _rootInMarkerLine,
-      isDocStartExplicit: _docStartExplicit,
-      hasDirectives: _hasDirectives,
-      comments: _comments,
-      greedyChars: _greedyChars.map((c) => c.string),
-    );
-
-    var event = rootEvent;
-    var root = rootDelegate;
-    ParserDelegate? keyIfMap;
-
-    /// Further verify if the scalar parsed on a single line is a key or just
-    /// a scalar on a single line
-    if (rootDelegate is ScalarDelegate) {
-      var isInlineScalar = true;
-
-      if (!foundDocEndMarkers) {
-        // Move to the next parsable character
-        switch (_skipToParsableChar(_scanner, comments: _comments)) {
-          // No more characters. This is the last document.
-          case null when !_scanner.canChunkMore:
-            break;
-
-          // Convert to key delegate ready to parse a map
-          case null
-              when _inferNextEvent(
-                    _scanner,
-                    isBlockContext: true,
-                    lastKeyWasJsonLike: false,
-                  ) ==
-                  BlockCollectionEvent.startEntryValue:
-            {
-              isInlineScalar = false;
-              final ScalarDelegate(:startOffset, :indent) = rootDelegate;
-
-              event = BlockCollectionEvent.startImplicitKey;
-              keyIfMap = rootDelegate;
-              root = MappingDelegate(
-                collectionStyle: NodeStyle.block,
-                indentLevel: 0,
-                indent: indent,
-                startOffset: startOffset,
-                blockTags: {},
-                inlineTags: {},
-                blockAnchors: {},
-                inlineAnchors: {},
-              );
-            }
-
-          default:
-            {
-              if (_scanner.charAtCursor case LineBreak char) {
-                skipCrIfPossible(char, scanner: _scanner);
-                _scanner.skipCharAtCursor();
-              }
-
-              // Check for document/directive end marker
-              if (!hasDocumentMarkers(_scanner, onMissing: (_) {})) {
-                throw FormatException(
-                  'Expected a directive/document end marker after parsing'
-                  ' scalar',
-                );
-              }
-            }
-        }
-      }
-
-      if (isInlineScalar) {
-        if (_scanner.canChunkMore) {
-          _updateDocEndChars(_inferDocEndChars(_scanner));
-        }
-
-        return YamlDocument._(
-          _currentIndex,
-          version,
-          tags.values.toSet(),
-          reserved,
-          _comments,
-          rootDelegate.parsed(),
-          YamlDocType.inferType(
-            hasDirectives: _hasDirectives,
-            isDocStartExplicit: _docStartExplicit,
-          ),
-          _docStartExplicit,
-          _docEndExplicit,
-        );
-      }
-    }
-
-    // TODO: If rootMarker inline. Must have a line break!
-
     /// Why block info? YAML clearly has a favourite child and that is the
     /// block(-like) styles. They are indeed a human friendly format. Also, the
     /// doc end chars "..." and "---" exist in this format.
+    ParserDelegate? root;
     _BlockNodeInfo? rootInfo;
+    const rootIndentLevel = 0;
+    final rootIndent = _skipToParsableChar(_scanner, comments: _comments) ?? 0;
 
-    switch (event) {
+    _throwIfUnsafeForDirectiveChar(
+      _scanner.charAtCursor,
+      indent: rootIndent,
+      isDocStartExplicit: _docStartExplicit,
+      hasDirectives: _hasDirectives,
+    );
+
+    final rootStartOffset = _scanner.currentOffset;
+    final rootEvent = _inferNextEvent(
+      _scanner,
+      isBlockContext: true, // Always prefer block styling over flow
+      lastKeyWasJsonLike: false,
+    );
+
+    switch (rootEvent) {
       // Start of flow map or sequence. Never inlined ahead of time.
       case FlowCollectionEvent event:
         {
-          event == FlowCollectionEvent.startFlowMap
-              ? _parseFlowMap(root as MappingDelegate, forceInline: false)
-              : _parseFlowSequence(
-                  root as SequenceDelegate,
-                  forceInline: false,
-                );
-
-          final ParserDelegate(:indent, :startOffset, :encounteredLineBreak) =
-              root;
+          final flowCollection = _parseRootFlow(
+            event,
+            rootStartOffset: rootStartOffset,
+            rootIndentLevel: rootIndentLevel,
+            rootIndent: rootIndent,
+          );
 
           /// As indicated initially, YAML considerably favours block(-like)
           /// styles. This flow collection may be an implicit key if only it
           /// is inline and we see a ": " char combination ahead.
-          if (!encounteredLineBreak &&
+          ///
+          /// Also implicit maps cannot start on "---" line
+          if (!_rootInMarkerLine &&
+              !flowCollection.encounteredLineBreak &&
               _skipToParsableChar(
                     _scanner,
                     comments: _comments,
@@ -1903,35 +1878,41 @@ final class DocumentParser {
                     lastKeyWasJsonLike: false,
                   ) ==
                   BlockCollectionEvent.startEntryValue) {
-            keyIfMap = root;
             root = MappingDelegate(
               collectionStyle: NodeStyle.block,
               indentLevel: 0,
-              indent: indent,
-              startOffset: startOffset,
+              indent: rootIndent,
+              startOffset: rootStartOffset,
               blockTags: {},
               inlineTags: {},
               blockAnchors: {},
               inlineAnchors: {},
             );
 
-            continue blockMap; // Executes without eval. Sure bet!
+            rootInfo = _parseBlockMap(root as MappingDelegate, flowCollection);
+            break;
           }
+
+          root = flowCollection;
         }
 
-      case BlockCollectionEvent.startBlockListEntry:
-        rootInfo = _parseBlockSequence(root as SequenceDelegate);
-
-      // Versatile and unpredictable
-      blockMap:
-      case BlockCollectionEvent.startExplicitKey ||
-          BlockCollectionEvent.startImplicitKey ||
-          BlockCollectionEvent.startEntryValue:
-        rootInfo = _parseBlockMap(root as MappingDelegate, keyIfMap);
-
-      // Should never be the case
       default:
-        throw Exception('[Parser Error]: Unhandled parser event: "$event"');
+        {
+          final (:delegate, :nodeInfo) = _parseBlockNode(
+            indentLevel: rootIndentLevel,
+            laxIndent: rootIndent,
+            fixedInlineIndent: rootIndent,
+            forceInlined: false,
+            isParsingKey: false, // No effect if explicit. Handled
+            isExplicitKey: false,
+            degenerateToImplicitMap: !_rootInMarkerLine,
+            startOffset: rootStartOffset,
+            event: rootEvent,
+          );
+
+          root = delegate;
+          rootInfo = nodeInfo;
+        }
     }
 
     if (_scanner.canChunkMore) {

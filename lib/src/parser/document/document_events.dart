@@ -103,7 +103,6 @@ ParserEvent _inferNextEvent(
   ChunkScanner scanner, {
   required bool isBlockContext,
   required bool lastKeyWasJsonLike,
-  bool isRootCheck = false,
 }) {
   final charAfter = scanner.peekCharAfterCursor();
 
@@ -141,8 +140,7 @@ ParserEvent _inferNextEvent(
 
     Indicator.flowSequenceStart => FlowCollectionEvent.startFlowSequence,
     Indicator.flowSequenceEnd => FlowCollectionEvent.endFlowSequence,
-    Indicator.flowEntryEnd when !isRootCheck =>
-      FlowCollectionEvent.nextFlowEntry,
+    Indicator.flowEntryEnd => FlowCollectionEvent.nextFlowEntry,
     Indicator.mappingStart => FlowCollectionEvent.startFlowMap,
     Indicator.mappingEnd => FlowCollectionEvent.endFlowMap,
 
