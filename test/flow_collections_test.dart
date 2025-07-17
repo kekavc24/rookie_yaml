@@ -94,7 +94,7 @@ void main() {
       check(
         () => bootstrapDocParser('}').nodeAsSimpleString(),
       ).throwsAFormatException(
-        'Leading closing "}" or "]" flow indicators found with no opening "["'
+        'Leading "," "}" or "]" flow indicators found with no opening "["'
         ' "{"',
       );
 
@@ -189,7 +189,7 @@ implicit: pair,
         check(
           () => bootstrapDocParser(']').nodeAsSimpleString(),
         ).throwsAFormatException(
-          'Leading closing "}" or "]" flow indicators found with no opening "["'
+          'Leading "," "}" or "]" flow indicators found with no opening "["'
           ' "{"',
         );
 
