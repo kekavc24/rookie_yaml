@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
@@ -14,10 +15,6 @@ abstract interface class ParserDelegate {
     required this.indentLevel,
     required this.indent,
     required this.startOffset,
-    required this.blockTags,
-    required this.inlineTags,
-    required this.blockAnchors,
-    required this.inlineAnchors,
     this.parent,
   });
 
@@ -50,17 +47,24 @@ abstract interface class ParserDelegate {
     _endOffset = offset;
   }
 
-  /// Tags present in their own lines before this node was parsed.
-  final Set<ResolvedTag> blockTags;
+  set updateNodeProperties(NodeProperties properties) {
+    if (_tag != null || _anchor != null || _alias != null) {
+      throw ArgumentError(
+        'Duplicate node properties provided to a node',
+      );
+    }
 
-  /// Tags present on the same line as the node.
-  final Set<ResolvedTag> inlineTags;
+    final (:alias, :anchor, :tag) = properties;
+    _tag = tag;
+    _anchor = anchor;
+    _alias = alias;
+  }
 
-  /// Anchors in their own lines before this node was parsed
-  final Set<String> blockAnchors;
+  ResolvedTag? _tag;
 
-  /// Anchors on the same line as the anchor.
-  final Set<String> inlineAnchors;
+  String? _anchor;
+
+  String? _alias;
 
   /// Delegate's parent
   ParserDelegate? parent;
@@ -77,12 +81,6 @@ abstract interface class ParserDelegate {
 
   set hasLineBreak(bool foundLineBreak) =>
       _hasLineBreak = _hasLineBreak || foundLineBreak;
-
-  /// Returns all tags relating to the current node being parsed.
-  Set<ResolvedTag> tags() => blockTags.union(inlineTags);
-
-  /// Returns all anchors relating to the current node
-  Set<String> anchors() => blockAnchors.union(inlineAnchors);
 
   Node? _parsedNode;
 
@@ -118,24 +116,16 @@ abstract interface class ParserDelegate {
 final class AliasDelegate extends ParserDelegate {
   AliasDelegate(
     this.anchorDelegate, {
-    required String name,
     required super.indentLevel,
     required super.indent,
     required super.startOffset,
-    required super.blockTags,
-    required super.inlineTags,
-    required super.blockAnchors,
-    required super.inlineAnchors,
-  }) : _name = name;
-
-  /// Anchor reference name
-  final String _name;
+  });
 
   /// Delegate resolving to the parsed node
   final ParserDelegate anchorDelegate;
 
   @override
-  Node _resolveNode() => AliasNode(_name, anchorDelegate.parsed());
+  Node _resolveNode() => AliasNode(_alias ?? '', anchorDelegate.parsed());
 
   @override
   bool isChild(int indent) => false;

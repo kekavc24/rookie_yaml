@@ -236,10 +236,6 @@ final class DocumentParser {
         indentLevel: indentLevel,
         indent: minIndent,
         startOffset: scalarOffset,
-        blockTags: {},
-        inlineTags: {},
-        blockAnchors: {},
-        inlineAnchors: {},
       )..scalar = prescalar,
     );
   }
@@ -490,10 +486,6 @@ final class DocumentParser {
             indentLevel: currentIndentLevel + 1,
             indent: minIndent,
             startOffset: flowStartOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           _parseFlowMap(map, forceInline: forceInline || isImplicitKey);
@@ -507,10 +499,6 @@ final class DocumentParser {
             indentLevel: currentIndentLevel + 1,
             indent: minIndent,
             startOffset: flowStartOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           _parseFlowSequence(
@@ -927,10 +915,6 @@ final class DocumentParser {
       /// be aligned with the first key
       indent: fixedIndent,
       startOffset: delegate.startOffset, // Use offset of first key
-      blockTags: {},
-      inlineTags: {},
-      blockAnchors: {},
-      inlineAnchors: {},
     );
 
     return (delegate: map, nodeInfo: _parseBlockMap(map, delegate));
@@ -1031,10 +1015,6 @@ final class DocumentParser {
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
             startOffset: _scanner.currentOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           node = map;
@@ -1055,10 +1035,6 @@ final class DocumentParser {
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
             startOffset: _scanner.currentOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           node = list;
@@ -1072,10 +1048,6 @@ final class DocumentParser {
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
             startOffset: _scanner.currentOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           node = map;
@@ -1740,10 +1712,6 @@ final class DocumentParser {
             indentLevel: rootIndentLevel,
             indent: rootIndent,
             startOffset: rootStartOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           _parseFlowMap(map, forceInline: false);
@@ -1757,10 +1725,6 @@ final class DocumentParser {
             indentLevel: rootIndentLevel,
             indent: rootIndent,
             startOffset: rootStartOffset,
-            blockTags: {},
-            inlineTags: {},
-            blockAnchors: {},
-            inlineAnchors: {},
           );
 
           _parseFlowSequence(sequence, forceInline: false);
@@ -1883,10 +1847,6 @@ final class DocumentParser {
               indentLevel: 0,
               indent: rootIndent,
               startOffset: rootStartOffset,
-              blockTags: {},
-              inlineTags: {},
-              blockAnchors: {},
-              inlineAnchors: {},
             );
 
             rootInfo = _parseBlockMap(root as MappingDelegate, flowCollection);

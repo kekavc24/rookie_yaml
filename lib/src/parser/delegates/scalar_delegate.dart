@@ -6,10 +6,6 @@ final class ScalarDelegate extends ParserDelegate {
     required super.indentLevel,
     required super.indent,
     required super.startOffset,
-    required super.blockTags,
-    required super.inlineTags,
-    required super.blockAnchors,
-    required super.inlineAnchors,
   });
 
   PreScalar? preScalar;
@@ -36,16 +32,13 @@ final class ScalarDelegate extends ParserDelegate {
   /// scalar is emitted with a [ScalarStyle.doubleQuoted].
   @override
   Node _resolveNode() {
-    final parsedTags = tags();
-    final parsedAnchors = anchors();
-
-    return preScalar?.parsedScalar(parsedTags, parsedAnchors) ??
+    return preScalar?.parsedScalar(_tag, _anchor) ??
         Scalar(
           null,
           content: '',
           scalarStyle: ScalarStyle.plain,
-          tags: parsedTags,
-          anchors: parsedAnchors,
+          tag: _tag,
+          anchor: _anchor,
         );
   }
 }

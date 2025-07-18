@@ -4,22 +4,19 @@ final _bareScalar = Scalar(
   null,
   content: '',
   scalarStyle: ScalarStyle.plain,
-  tags: {},
-  anchors: {},
+  tag: null,
+  anchor: null,
 );
 
 ScalarDelegate nullScalarDelegate({
   required int indentLevel,
   required int indent,
   required int startOffset,
+  // TODO: Introduce tag & anchor
 }) => ScalarDelegate(
   indentLevel: indentLevel,
   indent: indent,
   startOffset: -1,
-  blockTags: {},
-  inlineTags: {},
-  blockAnchors: {},
-  inlineAnchors: {},
 );
 
 /// A delegate that represents a single key-value pair within a flow/block
@@ -32,10 +29,6 @@ final class MapEntryDelegate extends ParserDelegate {
          indent: keyDelegate.indent,
          indentLevel: keyDelegate.indentLevel,
          startOffset: keyDelegate.startOffset,
-         blockTags: {}, // Set.from(keyDelegate.blockTags),
-         inlineTags: {},
-         blockAnchors: {}, // Set.from(keyDelegate.blockAnchors),
-         inlineAnchors: {},
        ) {
     hasLineBreak = keyDelegate.encounteredLineBreak;
     updateEndOffset = keyDelegate._endOffset;
@@ -71,8 +64,8 @@ final class MapEntryDelegate extends ParserDelegate {
   Node _resolveNode() => Mapping(
     {keyDelegate.parsed(): _valueDelegate?.parsed() ?? _bareScalar},
     nodeStyle: nodeStyle,
-    tags: tags(),
-    anchors: anchors(),
+    tag: _tag,
+    anchor: _anchor,
   );
 }
 
@@ -83,10 +76,6 @@ abstract base class CollectionDelegate extends ParserDelegate {
     required super.indentLevel,
     required super.indent,
     required super.startOffset,
-    required super.blockTags,
-    required super.inlineTags,
-    required super.blockAnchors,
-    required super.inlineAnchors,
   });
 
   /// Collection style
@@ -115,10 +104,6 @@ final class SequenceDelegate extends CollectionDelegate {
     required super.indentLevel,
     required super.indent,
     required super.startOffset,
-    required super.blockTags,
-    required super.inlineTags,
-    required super.blockAnchors,
-    required super.inlineAnchors,
   });
 
   /// Node delegates that resolve to nodes that are elements of the sequence.
@@ -132,12 +117,8 @@ final class SequenceDelegate extends CollectionDelegate {
 
   /// Returns a [Sequence]
   @override
-  Node _resolveNode() => Sequence(
-    _nodes,
-    nodeStyle: collectionStyle,
-    tags: tags(),
-    anchors: anchors(),
-  );
+  Node _resolveNode() =>
+      Sequence(_nodes, nodeStyle: collectionStyle, tag: _tag, anchor: _anchor);
 }
 
 /// A delegate that resolves to a [Mapping]
@@ -147,10 +128,6 @@ final class MappingDelegate extends CollectionDelegate {
     required super.indentLevel,
     required super.indent,
     required super.startOffset,
-    required super.blockTags,
-    required super.inlineTags,
-    required super.blockAnchors,
-    required super.inlineAnchors,
   });
 
   /// A map that is resolved as a key is added
@@ -173,10 +150,6 @@ final class MappingDelegate extends CollectionDelegate {
 
   /// Returns a [Mapping].
   @override
-  Node _resolveNode() => Mapping(
-    _map,
-    nodeStyle: collectionStyle,
-    tags: tags(),
-    anchors: anchors(),
-  );
+  Node _resolveNode() =>
+      Mapping(_map, nodeStyle: collectionStyle, tag: _tag, anchor: _anchor);
 }

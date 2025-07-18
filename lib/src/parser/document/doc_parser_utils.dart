@@ -156,12 +156,11 @@ int? _skipToParsableChar(
   return indent;
 }
 
-typedef _NodeProperties = ({
+typedef _ParsedNodeProperties = ({
   int? indentOnExit,
-  String? anchor,
-  ResolvedTag? tag,
-  String? alias,
+  NodeProperties properties,
 });
+typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 
 /// Parses the node properties of a [Node] and resolves any [LocalTag] parsed
 /// using the [resolver]. A [VerbatimTag] is never resolved. All node
@@ -169,7 +168,7 @@ typedef _NodeProperties = ({
 /// than the [minIndent].
 ///
 /// See [_skipToParsableChar] which adds any comments parsed to [comments].
-_NodeProperties _parseNodeProperties(
+_ParsedNodeProperties _parseNodeProperties(
   ChunkScanner scanner, {
   required int minIndent,
   required ResolvedTag Function(LocalTag tag) resolver,
@@ -202,9 +201,7 @@ _NodeProperties _parseNodeProperties(
 
           if (indentOnExit == null || indentOnExit < minIndent) {
             return (
-              alias: alias,
-              anchor: anchor,
-              tag: tag,
+              properties: (alias: alias, anchor: anchor, tag: tag),
               indentOnExit: indentOnExit,
             );
           }
@@ -250,9 +247,11 @@ _NodeProperties _parseNodeProperties(
 
           scanner.skipCharAtCursor();
           return (
-            alias: parseAnchorOrAlias(scanner),
-            anchor: null,
-            tag: null,
+            properties: (
+              alias: parseAnchorOrAlias(scanner),
+              anchor: null,
+              tag: null,
+            ),
             indentOnExit: _skipToParsableChar(scanner, comments: comments),
           );
         }
@@ -260,18 +259,14 @@ _NodeProperties _parseNodeProperties(
       // Exit immediately since we reached char that isn't a node property
       default:
         return (
-          alias: alias,
-          anchor: anchor,
-          tag: tag,
+          properties: (alias: alias, anchor: anchor, tag: tag),
           indentOnExit: lastWasLineBreak ? indentOnExit : null,
         );
     }
   }
 
   return (
-    alias: alias,
-    anchor: anchor,
-    tag: tag,
+    properties: (alias: alias, anchor: anchor, tag: tag),
 
     /// Prefer having accurate indent info. Parsing only reaches here if we
     /// managed to parse both the tag and anchor.
