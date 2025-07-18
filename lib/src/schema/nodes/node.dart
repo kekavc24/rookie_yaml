@@ -9,47 +9,48 @@ part 'scalar.dart';
 const _equality = DeepCollectionEquality.unordered();
 
 /// A node parsed from a `YAML` source string
-abstract interface class Node {
-  Node({
-    required this.nodeStyle,
-    required Set<ResolvedTag> tags,
-    required Set<String> anchors,
-  }) : _tags = tags,
-       _anchors = anchors;
-
+abstract mixin class Node {
   /// Style used to serialize the node within the `YAML` source string
-  final NodeStyle nodeStyle;
+  NodeStyle get nodeStyle;
 
-  /// [Tag] directive(s) describing how the node is represented natively.
+  /// [Tag] directive describing how the node is represented natively.
   ///
   /// If a custom [NativeResolverTag] tag was parsed, the [Node] may
   /// be viewed in a resolved format by calling [alternate] getter on the node.
-  final Set<ResolvedTag> _tags;
+  ResolvedTag? get _tag => null;
 
   /// Anchor names that allow other nodes to reference this node.
-  final Set<String> _anchors;
+  String? get _anchor => null;
+
+  /// A valid `YAML` node that can be dumped back to a source string. Override
+  /// this if you need your custom `Dart` object dumped as YAML
+  Node asDumpable() => this;
 }
 
 /// Utility method for mapping any [Node] that has a [NativeResolverTag]
 /// among its parsed tags.
 extension CustomResolved on Node {
   /// Returns a custom resolved format if any [NativeResolverTag] is present.
-  Iterable get alternate =>
-      _tags.whereType<NativeResolverTag>().map((tag) => tag.resolver(this));
+  T? asCustomType<T>() => switch (_tag) {
+    NativeResolverTag(:final resolver) => resolver(this) as T,
+    _ => null,
+  };
 }
 
 /// A node that is a pointer to another node.
 final class AliasNode extends Node {
   AliasNode(String alias, this.aliased)
     : assert(alias.isNotEmpty, 'An alias name cannot be empty'),
-      _alias = alias,
-      super(nodeStyle: aliased.nodeStyle, tags: aliased._tags, anchors: {});
+      _alias = alias;
 
   /// Anchor name to [aliased]
   final String _alias;
 
   /// `YAML` node's reference
   final Node aliased;
+
+  @override
+  NodeStyle get nodeStyle => aliased.nodeStyle;
 
   @override
   bool operator ==(Object other) => aliased == other;

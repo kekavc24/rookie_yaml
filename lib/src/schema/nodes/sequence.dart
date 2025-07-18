@@ -1,30 +1,28 @@
 part of 'node.dart';
 
 /// A read-only `YAML` [List]
-final class Sequence extends UnmodifiableListView<Node> implements Node {
+final class Sequence extends UnmodifiableListView<Node> with Node {
   Sequence(
     super.source, {
     required this.nodeStyle,
-    required Set<ResolvedTag> tags,
-    required Set<String> anchors,
-  }) : _tags = tags,
-       _anchors = anchors;
-
-  @override
-  final Set<ResolvedTag> _tags;
+    required ResolvedTag? tag,
+    required String? anchor,
+  }) : _tag = tag,
+       _anchor = anchor;
 
   @override
   final NodeStyle nodeStyle;
 
   @override
-  final Set<String> _anchors;
+  final ResolvedTag? _tag;
+
+  @override
+  final String? _anchor;
 
   @override
   bool operator ==(Object other) =>
-      other is Sequence &&
-      _equality.equals(_tags, other._tags) &&
-      _equality.equals(this, other);
+      other is Sequence && _tag == other._tag && _equality.equals(this, other);
 
   @override
-  int get hashCode => _equality.hash([_tags, this]);
+  int get hashCode => _equality.hash([_tag, this]);
 }

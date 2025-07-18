@@ -2,31 +2,29 @@ part of 'node.dart';
 
 /// A read-only `YAML` [Map].
 ///
-/// A mapping may allow a `null` key.
-final class Mapping extends UnmodifiableMapView<Node, Node> implements Node {
+/// A mapping may allow a `null` key but it must be wrapped by a [Scalar].
+final class Mapping extends UnmodifiableMapView<Node, Node> with Node {
   Mapping(
     super.source, {
     required this.nodeStyle,
-    required Set<ResolvedTag> tags,
-    required Set<String> anchors,
-  }) : _tags = tags,
-       _anchors = anchors;
-
-  @override
-  final Set<ResolvedTag> _tags;
+    required ResolvedTag? tag,
+    required String? anchor,
+  }) : _tag = tag,
+       _anchor = anchor;
 
   @override
   final NodeStyle nodeStyle;
 
   @override
-  final Set<String> _anchors;
+  final ResolvedTag? _tag;
+
+  @override
+  final String? _anchor;
 
   @override
   bool operator ==(Object other) =>
-      other is Mapping &&
-      _equality.equals(_tags, other._tags) &&
-      _equality.equals(this, other);
+      other is Mapping && _tag == other._tag && _equality.equals(this, other);
 
   @override
-  int get hashCode => _equality.hash([_tags, this]);
+  int get hashCode => _equality.hash([_tag, this]);
 }

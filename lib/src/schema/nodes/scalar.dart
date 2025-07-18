@@ -2,15 +2,16 @@ part of 'node.dart';
 
 /// Any value that is not a collection in `YAML`, that is, not a [Sequence] or
 /// [Mapping]
-base class Scalar<T> extends Node {
+base class Scalar<T> with Node {
   Scalar(
     this.value, {
     required String content,
     required this.scalarStyle,
-    required super.anchors,
-    required super.tags,
+    required ResolvedTag? tag,
+    required String? anchor,
   }) : _content = content,
-       super(nodeStyle: scalarStyle._nodeStyle);
+       _tag = tag,
+       _anchor = anchor;
 
   /// Style used to serialize the scalar. Can be degenerated to a `block` or
   /// `flow` too.
@@ -23,13 +24,20 @@ base class Scalar<T> extends Node {
   final T? value;
 
   @override
-  bool operator ==(Object other) =>
-      other is Scalar &&
-      _equality.equals(_tags, other._tags) &&
-      _content == other._content;
+  final ResolvedTag? _tag;
 
   @override
-  int get hashCode => _equality.hash([_tags, _content]);
+  final String? _anchor;
+
+  @override
+  NodeStyle get nodeStyle => scalarStyle._nodeStyle;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Scalar && _tag == other._tag && _content == other._content;
+
+  @override
+  int get hashCode => _equality.hash([_tag, _content]);
 
   @override
   String toString() => '${value?.toString()}';
@@ -39,10 +47,10 @@ final class IntScalar extends Scalar<int> {
   IntScalar(
     int super.value, {
     required this.radix,
-    required super.anchors,
     required super.content,
     required super.scalarStyle,
-    required super.tags,
+    required super.tag,
+    required super.anchor,
   });
 
   /// Base in number system this scalar belongs to.
