@@ -32,12 +32,10 @@ final class TagHandle {
   /// `!!`
   TagHandle.secondary() : this._(TagHandleVariant.secondary, null);
 
-  /// [name] is a valid non-empty tag uri surrounded by a single `!`. Any other
-  /// `!` must be encoded as 2 hex characters preceded by the `%`.
+  /// [name] is a valid non-empty tag uri. Any `!`, `{`, `}`, `[`, or `]`
+  /// must be encoded as 2 hex characters preceded by the `%`.
   factory TagHandle.named(String name) {
     assert(name.isNotEmpty, 'Name cannot be empty!');
-
-    var modded = name;
 
     for (final (index, char) in name.split('').indexed) {
       if (!isAlphaNumeric(ReadableChar.scanned(char))) {
@@ -47,11 +45,8 @@ final class TagHandle {
       }
     }
 
-    final pattern = _tagIndicator.string;
-
-    if (!name.startsWith(pattern)) modded = '$pattern$modded';
-    if (!name.endsWith(pattern)) modded = '$modded$pattern';
-    return TagHandle._(TagHandleVariant.named, modded);
+    final prefix = _tagIndicator.string;
+    return TagHandle._(TagHandleVariant.named, '$prefix$name$prefix');
   }
 
   /// Type of tag handle
@@ -106,28 +101,26 @@ TagHandle parseTagHandle(ChunkScanner scanner) {
     // Strictly expect a named tag handle if not primary/secondary
     default:
       {
-        // Prefer setting the leading and trailing "!"
-        final namedBuffer = StringBuffer(indicatorStr);
+        final namedBuffer = StringBuffer();
 
-        final ChunkInfo(:charOnExit, :sourceEnded) = scanner.bufferChunk(
-          (c) => namedBuffer.write(c.string),
-          exitIf: (_, curr) => !isAlphaNumeric(curr),
-        );
+        scanner
+          ..takeUntil(
+            includeCharAtCursor: true, // Prefer setting the leading "!"
+            mapper: (c) => c.string,
+            onMapped: (c) => namedBuffer.write(c),
+            stopIf: (_, n) => !isAlphaNumeric(n),
+          )
+          ..skipCharAtCursor();
 
-        if (charOnExit != _tagIndicator) {
-          var current = charOnExit;
+        final current = scanner.charAtCursor;
 
-          if (sourceEnded) {
-            scanner.skipCharAtCursor();
-            current = scanner.charAtCursor;
-          }
-
-          final bufferVal = namedBuffer.toString();
-
+        /// The named tag must not degenerate to a "!" or "!!". "!" is not
+        /// alphanumeric
+        if (current != _tagIndicator || namedBuffer.length <= 1) {
           throw FormatException(
-            'Invalid named tag handle format. '
-            'Expected $bufferVal! but found'
-            ' $bufferVal<${current?.string}>',
+            'Invalid/incomplete named tag handle. Expected a tag with '
+            'alphanumeric characters but found $namedBuffer'
+            '<${current?.string}>',
           );
         }
 
