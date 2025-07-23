@@ -8,11 +8,11 @@ const _onNonEmptyVerbatimUri =
 final verbatimStart = ReadableChar.scanned('<');
 
 /// End of verbatim tag declaration
-final _verbatimEnd = ReadableChar.scanned('>');
+const _verbatimEnd = Indicator.folded;
 
 /// Wraps a valid tag uri in verbatim
 String _wrapAsVerbatim(String uri) =>
-    '${_tagIndicator.string}$verbatimStart$uri$_verbatimEnd';
+    '${_tagIndicator.string}$verbatimStart$uri${_verbatimEnd.string}';
 
 /// Represents a tag explicitly declared in its raw form. Never resolved to
 /// [GlobalTag]
@@ -123,7 +123,7 @@ VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
   final ReadableChar(string: vEnd, unicode: veCode) = _verbatimEnd;
 
   isNotNullOrMatches(
-    matcher: (char) => char.unicode == veCode,
+    matcher: (char) => char == _verbatimEnd,
     errorOnMismatch: 'Expected to find a "$vEnd" after parsing a verbatim tag',
   );
   skipAndMove();
