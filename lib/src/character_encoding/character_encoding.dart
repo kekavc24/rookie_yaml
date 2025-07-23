@@ -14,6 +14,7 @@ part 'char_utils.dart';
 /// A single human readable character referred to as a "grapheme cluster".
 abstract interface class ReadableChar {
   factory ReadableChar.scanned(String char) {
+    assert(char.length <= 1, 'Expected a single grapheme cluster!');
     final _GraphemeWrapper(:unicode) = _GraphemeWrapper(char);
     return _delimiterMap[unicode] ?? GraphemeChar._(unicode, char);
   }
