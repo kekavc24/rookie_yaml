@@ -2,7 +2,7 @@ part of 'node.dart';
 
 /// Any value that is not a collection in `YAML`, that is, not a [Sequence] or
 /// [Mapping]
-base class Scalar<T> with Node {
+base class Scalar<T> extends ParsedYamlNode {
   Scalar(
     this.value, {
     required String content,

@@ -3,7 +3,8 @@ part of 'node.dart';
 /// A read-only `YAML` [Map].
 ///
 /// A mapping may allow a `null` key but it must be wrapped by a [Scalar].
-final class Mapping extends UnmodifiableMapView<Node, Node> with Node {
+final class Mapping extends UnmodifiableMapView<ParsedYamlNode, ParsedYamlNode>
+    implements ParsedYamlNode {
   Mapping(
     super.source, {
     required this.nodeStyle,
@@ -27,4 +28,7 @@ final class Mapping extends UnmodifiableMapView<Node, Node> with Node {
 
   @override
   int get hashCode => _equality.hash([_tag, this]);
+
+  @override
+  ParsedYamlNode asDumpable() => this;
 }

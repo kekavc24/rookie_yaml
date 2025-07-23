@@ -8,37 +8,45 @@ part 'scalar.dart';
 
 const _equality = DeepCollectionEquality.unordered();
 
-/// A node parsed from a `YAML` source string
-abstract mixin class Node {
+/// A node dumpable to a `YAML` source string
+abstract mixin class YamlNode<T extends ParsedYamlNode> {
   /// Style used to serialize the node within the `YAML` source string
   NodeStyle get nodeStyle;
 
-  /// [Tag] directive describing how the node is represented natively.
+  /// A valid `YAML` node that can be dumped back to a source string.
   ///
-  /// If a custom [NativeResolverTag] tag was parsed, the [Node] may
-  /// be viewed in a resolved format by calling [alternate] getter on the node.
-  ResolvedTag? get _tag => null;
-
-  /// Anchor names that allow other nodes to reference this node.
-  String? get _anchor => null;
-
-  /// A valid `YAML` node that can be dumped back to a source string. Override
-  /// this if you need your custom `Dart` object dumped as YAML
-  Node asDumpable() => this;
+  /// Caller of this method expects a [Mapping], [Sequence] or [Scalar].
+  /// Override this method to dump your `Dart` object as a valid YAML string.
+  T asDumpable();
 }
 
-/// Utility method for mapping any [Node] that has a [NativeResolverTag]
+/// A node parsed from a `YAML` source string
+sealed class ParsedYamlNode extends YamlNode {
+  /// [Tag] directive describing how the node is represented natively.
+  ///
+  /// If a custom [TypeResolverTag] tag was parsed, the [Node] may be viewed in
+  /// a resolved format by calling [asCustomType] getter on the node.
+  ResolvedTag? get _tag => null;
+
+  /// Anchor name that allow other nodes to reference this node.
+  String? get _anchor => null;
+
+  @override
+  ParsedYamlNode asDumpable() => this;
+}
+
+/// Utility method for mapping any [ParsedYamlNode] that has a [TypeResolverTag]
 /// among its parsed tags.
-extension CustomResolved on Node {
-  /// Returns a custom resolved format if any [NativeResolverTag] is present.
+extension CustomResolved on ParsedYamlNode {
+  /// Returns a custom resolved format if any [TypeResolverTag] is present.
   T? asCustomType<T>() => switch (_tag) {
-    NativeResolverTag(:final resolver) => resolver(this) as T,
+    TypeResolverTag<T>(:final resolver) => resolver(this),
     _ => null,
   };
 }
 
 /// A node that is a pointer to another node.
-final class AliasNode extends Node {
+final class AliasNode extends ParsedYamlNode {
   AliasNode(String alias, this.aliased)
     : assert(alias.isNotEmpty, 'An alias name cannot be empty'),
       _alias = alias;
@@ -47,7 +55,7 @@ final class AliasNode extends Node {
   final String _alias;
 
   /// `YAML` node's reference
-  final Node aliased;
+  final ParsedYamlNode aliased;
 
   @override
   NodeStyle get nodeStyle => aliased.nodeStyle;
@@ -57,4 +65,7 @@ final class AliasNode extends Node {
 
   @override
   int get hashCode => aliased.hashCode;
+
+  @override
+  ParsedYamlNode asDumpable() => aliased;
 }

@@ -82,13 +82,13 @@ abstract interface class ParserDelegate {
   set hasLineBreak(bool foundLineBreak) =>
       _hasLineBreak = _hasLineBreak || foundLineBreak;
 
-  Node? _parsedNode;
+  ParsedYamlNode? _parsedNode;
 
   /// Resolves a delegate's node
-  Node _resolveNode();
+  ParsedYamlNode _resolveNode();
 
   /// `YAML` node delegated to the parser.
-  Node parsed() {
+  ParsedYamlNode parsed() {
     _parsedNode ??= _resolveNode();
     return _parsedNode!;
   }
@@ -115,17 +115,17 @@ abstract interface class ParserDelegate {
 /// Represents a delegate that resolves to an [AliasNode]
 final class AliasDelegate extends ParserDelegate {
   AliasDelegate(
-    this.anchorDelegate, {
+    this._reference, {
     required super.indentLevel,
     required super.indent,
     required super.startOffset,
   });
 
   /// Delegate resolving to the parsed node
-  final ParserDelegate anchorDelegate;
+  final ParsedYamlNode _reference;
 
   @override
-  Node _resolveNode() => AliasNode(_alias ?? '', anchorDelegate.parsed());
+  AliasNode _resolveNode() => AliasNode(_alias ?? '', _reference);
 
   @override
   bool isChild(int indent) => false;

@@ -61,7 +61,7 @@ final class MapEntryDelegate extends ParserDelegate {
   /// This will rarely be called, but if so, this must a return a mapping with
   /// only a single value. A key must exist.
   @override
-  Node _resolveNode() => Mapping(
+  Mapping _resolveNode() => Mapping(
     {keyDelegate.parsed(): _valueDelegate?.parsed() ?? _bareScalar},
     nodeStyle: nodeStyle,
     tag: _tag,
@@ -107,7 +107,7 @@ final class SequenceDelegate extends CollectionDelegate {
   });
 
   /// Node delegates that resolve to nodes that are elements of the sequence.
-  final List<Node> _nodes = [];
+  final List<ParsedYamlNode> _nodes = [];
 
   void pushEntry(ParserDelegate entry) {
     _firstEntry ??= entry;
@@ -117,7 +117,7 @@ final class SequenceDelegate extends CollectionDelegate {
 
   /// Returns a [Sequence]
   @override
-  Node _resolveNode() =>
+  Sequence _resolveNode() =>
       Sequence(_nodes, nodeStyle: collectionStyle, tag: _tag, anchor: _anchor);
 }
 
@@ -131,7 +131,7 @@ final class MappingDelegate extends CollectionDelegate {
   });
 
   /// A map that is resolved as a key is added
-  final _map = <Node, Node>{};
+  final _map = <ParsedYamlNode, ParsedYamlNode>{};
 
   /// Returns `true` if the [entry] is added. Otherwise, `false`.
   bool pushEntry(ParserDelegate key, ParserDelegate? value) {
@@ -150,6 +150,6 @@ final class MappingDelegate extends CollectionDelegate {
 
   /// Returns a [Mapping].
   @override
-  Node _resolveNode() =>
+  Mapping _resolveNode() =>
       Mapping(_map, nodeStyle: collectionStyle, tag: _tag, anchor: _anchor);
 }

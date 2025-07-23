@@ -8,11 +8,11 @@ DocumentParser bootstrapDocParser(String yaml) =>
 extension DocParserUtil on DocumentParser {
   String nodeAsSimpleString() => parseNodeSingle().toString();
 
-  Node? parseNodeSingle() => parsedNodes().firstOrNull;
+  ParsedYamlNode? parseNodeSingle() => parsedNodes().firstOrNull;
 
   YamlDocument parseSingle() => parseDocs().first;
 
-  Iterable<Node?> parsedNodes() => parseDocs().map((n) => n.root);
+  Iterable<ParsedYamlNode?> parsedNodes() => parseDocs().map((n) => n.root);
 
   Iterable<YamlDocument> parseDocs() sync* {
     YamlDocument? doc = parseNext();

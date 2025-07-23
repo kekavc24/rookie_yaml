@@ -31,14 +31,13 @@ final class ScalarDelegate extends ParserDelegate {
   /// [scalar] setter is called. If the setter is never called, an empty
   /// scalar is emitted with a [ScalarStyle.doubleQuoted].
   @override
-  Node _resolveNode() {
-    return preScalar?.parsedScalar(_tag, _anchor) ??
-        Scalar(
-          null,
-          content: '',
-          scalarStyle: ScalarStyle.plain,
-          tag: _tag,
-          anchor: _anchor,
-        );
-  }
+  ParsedYamlNode _resolveNode() =>
+      preScalar?.parsedScalar(_tag, _anchor) ??
+      Scalar(
+        null,
+        content: '',
+        scalarStyle: ScalarStyle.plain,
+        tag: _tag,
+        anchor: _anchor,
+      );
 }

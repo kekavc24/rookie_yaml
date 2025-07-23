@@ -9,7 +9,7 @@ final class TypeResolverTag<T> implements ResolvedTag {
   final ResolvedTag _resolvedTag;
 
   /// Function that generates
-  final O Function(Node node) resolver;
+  final T Function(ParsedYamlNode node) resolver;
 
   @override
   String get prefix => _resolvedTag.prefix;

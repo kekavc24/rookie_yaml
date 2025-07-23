@@ -93,24 +93,20 @@ final class YamlDocument {
   final SplayTreeSet<YamlComment> _comments;
 
   /// Node at the root of the document
-  final Node? root;
+  final ParsedYamlNode? root;
 
   /// Generic type of document based on the use of directives, directives end
   /// markers (`---`) and document end markers (`...`) as described by the
   /// YAML spec.
   ///
-  /// See [hasExplicitStart] and [hasExplicitEnd] for fine-grained info.
+  /// See also [hasExplicitStart] and [hasExplicitEnd] for fine-grained info.
   final YamlDocType docType;
 
-  /// Whether `---` is present at the beginning.
-  ///
-  /// Indicates explicit end of directives and start of the document whether
-  /// the directives were present or not.
+  /// Whether `---` is present at the beginning which marks the end of doc's
+  /// directives and its start.
   final bool hasExplicitStart;
 
-  /// Whether `...` is present at the end.
-  ///
-  /// Indicates explicit end of the current document.
+  /// Whether `...` is present at the end which marks the end of the document.
   final bool hasExplicitEnd;
 
   /// Version directive for the document

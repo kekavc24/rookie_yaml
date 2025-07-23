@@ -1,7 +1,8 @@
 part of 'node.dart';
 
 /// A read-only `YAML` [List]
-final class Sequence extends UnmodifiableListView<Node> with Node {
+final class Sequence extends UnmodifiableListView<ParsedYamlNode>
+    implements ParsedYamlNode {
   Sequence(
     super.source, {
     required this.nodeStyle,
@@ -25,4 +26,7 @@ final class Sequence extends UnmodifiableListView<Node> with Node {
 
   @override
   int get hashCode => _equality.hash([_tag, this]);
+
+  @override
+  ParsedYamlNode asDumpable() => this;
 }
