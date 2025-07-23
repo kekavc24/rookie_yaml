@@ -1,9 +1,18 @@
 part of 'yaml_document.dart';
 
+typedef _MapPreflightInfo = ({
+  ParserEvent event,
+  bool hasProperties,
+  bool isExplicitEntry,
+  bool blockMapContinue,
+  int? indentOnExit,
+});
+
 typedef _ParseExplicitInfo = ({
   bool shouldExit,
   bool hasIndent,
   int? inferredIndent,
+  _ParsedNodeProperties parsedNodeProperties,
   int laxIndent,
   int inlineIndent,
 });
@@ -19,8 +28,9 @@ typedef _BlockNodeGeneric<T> = ({_BlockNodeInfo nodeInfo, T delegate});
 
 typedef _BlockNode = _BlockNodeGeneric<ParserDelegate>;
 
-typedef _BlockEntry =
-    _BlockNodeGeneric<({ParserDelegate? key, ParserDelegate? value})>;
+typedef _BlockMapEntry = ({ParserDelegate? key, ParserDelegate? value});
+
+typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
 
 /// Throws an exception if the prospective [Node] has an [indent] of `0`
 /// (a child of the root node or the root node itself) and the document being
@@ -31,12 +41,12 @@ typedef _BlockEntry =
 /// method should only be called from block
 void _throwIfUnsafeForDirectiveChar(
   ReadableChar? char, {
-  required int indent,
+  //required int indent,
   required bool isDocStartExplicit,
   required bool hasDirectives,
 }) {
   if (char case Indicator.directive
-      when indent == 0 && (!isDocStartExplicit || !hasDirectives)) {
+      when (!isDocStartExplicit || !hasDirectives)) {
     throw FormatException(
       'Missing directives end marker "---" prevent the use of the directives '
       'indicator "%" at the start of a node',
@@ -158,8 +168,28 @@ int? _skipToParsableChar(
 
 typedef _ParsedNodeProperties = ({
   int? indentOnExit,
+  bool isMultiline,
   NodeProperties properties,
 });
+
+extension on _ParsedNodeProperties? {
+  /// Returns `true` if any properties were parsed
+  bool get parsedAny {
+    if (this == null) return false;
+
+    final NodeProperties(:isAlias, :parsedAnchorOrTag) = this!.properties;
+    return isAlias || parsedAnchorOrTag;
+  }
+}
+
+extension on NodeProperties {
+  /// Returns `true` if any tag and/or anchor is parsed.
+  bool get parsedAnchorOrTag => this.anchor != null || this.tag != null;
+
+  /// Returns `true` if only an alias was parsed
+  bool get isAlias => this.alias != null;
+}
+
 typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 
 /// Parses the node properties of a [Node] and resolves any [LocalTag] parsed
@@ -178,45 +208,58 @@ _ParsedNodeProperties _parseNodeProperties(
   ResolvedTag? tag;
   String? alias;
   int? indentOnExit;
+
+  var lfCount = 0;
+
   var lastWasLineBreak = false;
 
   void notLineBreak() => lastWasLineBreak = false;
 
+  bool isMultiline() => lfCount > 0;
+
+  int? skipAndTrackLF() {
+    final indentOnExit = _skipToParsableChar(scanner, comments: comments);
+    ++lfCount;
+    return indentOnExit;
+  }
+
+  /// A node can only have:
+  ///   - Either a tag or anchor or both
+  ///   - Alias only
+  ///
+  /// The two options above are mutually exclusive.
   while (scanner.canChunkMore && (tag == null || anchor == null)) {
     switch (scanner.charAtCursor) {
-      // Skip any separation space
       case WhiteSpace _:
         {
           scanner
-            ..skipWhitespace(skipTabs: true)
+            ..skipWhitespace(skipTabs: true) // Separation space
             ..skipCharAtCursor();
 
           notLineBreak();
         }
 
-      // Node properties must be have the same/more indented than node
       case LineBreak _ || Indicator.comment:
         {
-          indentOnExit = _skipToParsableChar(scanner, comments: comments);
+          indentOnExit = skipAndTrackLF();
 
           if (indentOnExit == null || indentOnExit < minIndent) {
             return (
               properties: (alias: alias, anchor: anchor, tag: tag),
               indentOnExit: indentOnExit,
+              isMultiline: true, // We know it is. Comments included ;)
             );
           }
 
           lastWasLineBreak = true;
         }
 
-      // Parse local tag or verbatim tag
       case Indicator.tag:
         {
           if (tag != null) {
-            throw FormatException('A node can only have a single tag');
+            throw FormatException('A node can only have a single tag property');
           }
 
-          // Check if we are passing a verbatim tag
           tag = switch (scanner.peekCharAfterCursor()) {
             ReadableChar next when next.string == verbatimStart.string =>
               parseVerbatimTag(scanner),
@@ -227,16 +270,20 @@ _ParsedNodeProperties _parseNodeProperties(
           notLineBreak();
         }
 
-      // Parse anchors. Simple URI chars preceded by "&"
       case Indicator.anchor:
         {
+          if (anchor != null) {
+            throw FormatException(
+              'A node can only have a single anchor property',
+            );
+          }
+
           scanner.skipCharAtCursor();
-          anchor = parseAnchorOrAlias(scanner);
+          anchor = parseAnchorOrAlias(scanner); // URI chars preceded by "&"
 
           notLineBreak();
         }
 
-      // Parsing an alias. Can never have more than one alias.
       case Indicator.alias:
         {
           if (tag != null || anchor != null) {
@@ -246,6 +293,8 @@ _ParsedNodeProperties _parseNodeProperties(
           }
 
           scanner.skipCharAtCursor();
+
+          // Parsing an alias ignores any tag and anchor
           return (
             properties: (
               alias: parseAnchorOrAlias(scanner),
@@ -253,6 +302,7 @@ _ParsedNodeProperties _parseNodeProperties(
               tag: null,
             ),
             indentOnExit: _skipToParsableChar(scanner, comments: comments),
+            isMultiline: isMultiline(),
           );
         }
 
@@ -261,6 +311,7 @@ _ParsedNodeProperties _parseNodeProperties(
         return (
           properties: (alias: alias, anchor: anchor, tag: tag),
           indentOnExit: lastWasLineBreak ? indentOnExit : null,
+          isMultiline: isMultiline(),
         );
     }
   }
@@ -270,14 +321,71 @@ _ParsedNodeProperties _parseNodeProperties(
 
     /// Prefer having accurate indent info. Parsing only reaches here if we
     /// managed to parse both the tag and anchor.
-    indentOnExit: _skipToParsableChar(scanner, comments: comments),
+    indentOnExit: skipAndTrackLF(),
+    isMultiline: isMultiline(),
+  );
+}
+
+typedef _FlowNodeProperties = ({
+  ParserEvent event,
+  bool hasMultilineProps,
+  NodeProperties? properties,
+});
+
+_FlowNodeProperties _parseSimpleFlowProps(
+  ChunkScanner scanner, {
+  required int minIndent,
+  required ResolvedTag Function(LocalTag tag) resolver,
+  required SplayTreeSet<YamlComment> comments,
+  bool lastKeyWasJsonLike = false,
+}) {
+  void throwHasLessIndent(int lessIndent) {
+    throw FormatException(
+      'Expected at ${minIndent - lessIndent} additional spaces but'
+      ' found: ${scanner.charAtCursor}',
+    );
+  }
+
+  if (_skipToParsableChar(scanner, comments: comments) case int indent
+      when indent < minIndent) {
+    throwHasLessIndent(indent);
+  }
+
+  if (_inferNextEvent(
+        scanner,
+        isBlockContext: false,
+        lastKeyWasJsonLike: lastKeyWasJsonLike,
+      )
+      case ParserEvent e when e is! NodePropertyEvent) {
+    return (event: e, properties: null, hasMultilineProps: false);
+  }
+
+  final (:indentOnExit, :isMultiline, :properties) = _parseNodeProperties(
+    scanner,
+    minIndent: minIndent,
+    resolver: resolver,
+    comments: comments,
+  );
+
+  if (indentOnExit != null && indentOnExit < minIndent) {
+    throwHasLessIndent(indentOnExit);
+  }
+
+  return (
+    properties: properties,
+    hasMultilineProps: isMultiline,
+    event: _inferNextEvent(
+      scanner,
+      isBlockContext: false,
+      lastKeyWasJsonLike: lastKeyWasJsonLike,
+    ),
   );
 }
 
 /// Updates the end offset of a [blockNode] (mapping/sequence) using its
 /// undestructured [info]
 void _blockNodeInfoEndOffset(
-  CollectionDelegate blockNode, {
+  ParserDelegate blockNode, {
   required ChunkScanner scanner,
   required _BlockNodeInfo info,
 }) => _blockNodeEndOffset(
@@ -292,7 +400,7 @@ void _blockNodeInfoEndOffset(
 /// the offset of the last `\n` (even if part of `\r\n`) before the
 /// document end markers (`---` or `...`) `+1`.
 void _blockNodeEndOffset(
-  CollectionDelegate blockNode, {
+  ParserDelegate blockNode, {
   required ChunkScanner scanner,
   required bool hasDocEndMarkers,
   required int? indentOnExit,

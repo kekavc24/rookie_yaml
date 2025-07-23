@@ -44,9 +44,10 @@ enum NodePropertyEvent implements ParserEvent {
   /// Parse an alias
   startAlias;
 
-  // Intentional. TODO: Implement in parser
   @override
-  bool get isFlowContext => throw UnimplementedError();
+  bool get isFlowContext => throw UnsupportedError(
+    'A node property should not be detected when parsing nodes!',
+  );
 }
 
 /// An event that triggers parsing of a [Node] with [NodeStyle.block] styling.

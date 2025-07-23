@@ -53,9 +53,54 @@ final class DocumentParser {
 
   final _greedyChars = <ReadableChar>[];
 
-  final _anchorNodes = <String, ParserDelegate>{};
+  final _anchorNodes = <String, ParsedYamlNode>{};
 
   SplayTreeSet<YamlComment> _comments = SplayTreeSet();
+
+  AliasDelegate _referenceAlias(
+    NodeProperties properties, {
+    required int indentLevel,
+    required int indent,
+    required int startOffset,
+  }) {
+    final alias = properties.alias;
+
+    if (_anchorNodes[alias] case ParsedYamlNode node) {
+      return AliasDelegate(
+        node,
+        indentLevel: indentLevel,
+        indent: indent,
+        startOffset: startOffset,
+      );
+    }
+
+    throw FormatException('Node alias "$alias" is unrecognized');
+  }
+
+  ParserDelegate? _nullOrAlias(
+    NodeProperties? properties, {
+    required int indentLevel,
+    required int indent,
+    required int startOffset,
+  }) {
+    if (properties == null) return null;
+
+    return (properties.isAlias
+          ? _referenceAlias(
+              properties,
+              indentLevel: indentLevel,
+              indent: indent,
+              startOffset: startOffset,
+            )
+          : properties.parsedAnchorOrTag
+          ? nullScalarDelegate(
+              indentLevel: indentLevel,
+              indent: indent,
+              startOffset: startOffset,
+            )
+          : null)
+      ?..updateNodeProperties = properties;
+  }
 
   bool _keyIsJsonLike(ParserDelegate? delegate) {
     /// Flow node with indicators:
@@ -155,17 +200,29 @@ final class DocumentParser {
     var suffix = ''; // Local tags have no suffixes
 
     // Check if alias to global tag
-    final globalTag = _globalTags[tag.tagHandle];
+    final globalTag = _globalTags[tagHandle];
     final hasGlobalTag = globalTag != null;
 
-    // A named tag must have a corresponding global tag
-    if (tagHandle.handleVariant == TagHandleVariant.named && !hasGlobalTag) {
-      throw FormatException(
-        'Tags with named shorthands must have a corresponding global tag',
-      );
-    } else if (hasGlobalTag) {
-      tag = globalTag;
-      suffix = content; // Local tag is prefixed with global tag uri
+    switch (tagHandle.handleVariant) {
+      // All named tags must have a corresponding global tag
+      case TagHandleVariant.named when !hasGlobalTag:
+        throw FormatException(
+          'Tags with named shorthands must have a corresponding global tag',
+        );
+
+      // Secondary tags limited to tags only supported by YAML
+      case TagHandleVariant.secondary when !yamlTags.contains(localTag):
+        throw FormatException(
+          'Unrecognized secondary tag "$localTag". Expected any of: $yamlTags',
+        );
+
+      default:
+        {
+          if (hasGlobalTag) {
+            tag = globalTag;
+            suffix = content; // Local tag is prefixed with global tag uri
+          }
+        }
     }
 
     return ParsedTag(tag, suffix);
@@ -240,6 +297,99 @@ final class DocumentParser {
     );
   }
 
+  _MapPreflightInfo _checkMapState(
+    _ParsedNodeProperties? parsedProperties, {
+    required bool isBlockContext,
+    required int minMapIndent,
+  }) {
+    final skippedOrParsedAny = parsedProperties != null;
+    final event = _inferNextEvent(
+      _scanner,
+      isBlockContext: isBlockContext,
+      lastKeyWasJsonLike: false,
+    );
+
+    bool ensureMapIsSafe(int? indentOnExit) {
+      if (indentOnExit != null) {
+        if (isBlockContext) {
+          _throwIfDangling(minMapIndent, indentOnExit, allowProperties: false);
+          return indentOnExit == minMapIndent;
+        } else {
+          if (indentOnExit < minMapIndent) {
+            throw FormatException(
+              'Expected at ${minMapIndent - indentOnExit} additional spaces but'
+              ' found: ${_scanner.charAtCursor}',
+            );
+          }
+        }
+      }
+
+      return true;
+    }
+
+    if (event
+        case BlockCollectionEvent.startExplicitKey ||
+            FlowCollectionEvent.startExplicitKey) {
+      var blockMapContinue = true;
+      int? exitIndent;
+
+      /// Explicit keys cannot have properties. Do not be confused by this
+      /// condition. Most parsing functions use the [_parseNodeProperties]
+      /// functions to also skip to the next parsable char
+      if (skippedOrParsedAny) {
+        final _ParsedNodeProperties(:indentOnExit, :parsedAny) =
+            parsedProperties;
+
+        if (parsedAny) {
+          throw FormatException(
+            'Explicit keys cannot have any node properties before the "?" '
+            'indicator',
+          );
+        }
+
+        blockMapContinue = ensureMapIsSafe(indentOnExit);
+        exitIndent = indentOnExit;
+      }
+
+      return (
+        event: event,
+        hasProperties: false,
+        blockMapContinue: blockMapContinue,
+        isExplicitEntry: true,
+        indentOnExit: exitIndent,
+      );
+    }
+
+    // Implicit keys cannot span multiple lines
+    if (skippedOrParsedAny) {
+      final _ParsedNodeProperties(:isMultiline, :indentOnExit, :parsedAny) =
+          parsedProperties;
+
+      if (parsedAny && isMultiline) {
+        throw FormatException(
+          'Node properties for an implicit ${isBlockContext ? 'block' : 'flow'}'
+          ' key cannot span multiple lines',
+        );
+      }
+
+      return (
+        event: event,
+        hasProperties: true,
+        isExplicitEntry: false,
+        blockMapContinue: ensureMapIsSafe(indentOnExit),
+        indentOnExit: indentOnExit,
+      );
+    }
+
+    return (
+      event: event,
+      hasProperties: false,
+      isExplicitEntry: false,
+      blockMapContinue: true,
+      indentOnExit: null,
+    );
+  }
+
   /// Skips to the next parsable flow indicator/character.
   ///
   /// If declared on a new line and [forceInline] is `false`, the flow
@@ -274,6 +424,21 @@ final class DocumentParser {
     return true;
   }
 
+  bool _continueToNextEntry(
+    int minIndent, {
+    required bool forceInline,
+  }) {
+    _nextLineSafeInFlow(minIndent, forceInline: forceInline);
+
+    if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
+      _scanner.skipCharAtCursor();
+      _nextLineSafeInFlow(minIndent, forceInline: forceInline);
+      return true;
+    }
+
+    return false;
+  }
+
   /// Throws if the current char doesn't match the flow collection [delimiter]
   void _throwIfNotFlowDelimiter(Indicator delimiter) {
     _skipToParsableChar(_scanner, comments: _comments);
@@ -297,6 +462,7 @@ final class DocumentParser {
     required int minIndent,
     required bool forceInline,
     required Indicator exitIndicator,
+    int? startOffset,
   }) {
     var parsedKey = key;
     ParserDelegate? value;
@@ -310,8 +476,7 @@ final class DocumentParser {
     /// parsed, that is, limited use of [ParserEvent]. This is because the
     /// scope is limited when actual parsing is being done. We don't need
     /// events here to know what fine grained action we need to do.
-
-    if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
+    if (_scanner.charAtCursor case Indicator.flowEntryEnd when key == null) {
       throw FormatException(
         'Expected at least a key in the flow map entry but found ","',
       );
@@ -319,6 +484,7 @@ final class DocumentParser {
 
     parsedKey ??= _parseFlowNode(
       isParsingKey: true,
+      startOffset: startOffset,
       currentIndentLevel: indentLevel,
       minIndent: minIndent,
       forceInline: forceInline,
@@ -329,8 +495,6 @@ final class DocumentParser {
       keyIsJsonLike: false,
       collectionDelimiter: exitIndicator,
     );
-
-    final keyIsJsonLike = _keyIsJsonLike(parsedKey);
 
     final expectedCharErr = FormatException(
       'Expected a next flow entry indicator "," or a map value indicator ":" '
@@ -352,14 +516,19 @@ final class DocumentParser {
     if (_inferNextEvent(
           _scanner,
           isBlockContext: false,
-          lastKeyWasJsonLike: keyIsJsonLike,
+          lastKeyWasJsonLike: _keyIsJsonLike(parsedKey),
         ) ==
         FlowCollectionEvent.startEntryValue) {
-      _scanner.skipCharAtCursor();
+      final valueOffset = _scanner.currentOffset;
+      _scanner.skipCharAtCursor(); // ":"
 
-      if (!_nextLineSafeInFlow(minIndent, forceInline: forceInline)) {
-        throw expectedCharErr;
-      }
+      final _FlowNodeProperties(:event, :properties) = _parseSimpleFlowProps(
+        _scanner,
+        minIndent: minIndent,
+        resolver: _resolveTag,
+        comments: _comments,
+        lastKeyWasJsonLike: false, // no effect
+      );
 
       final valueLevel = indentLevel + 1;
 
@@ -379,25 +548,28 @@ final class DocumentParser {
       ///       second caret.
       /// }
       if (ignoreValue(_scanner.charAtCursor)) {
-        final endOffset = _scanner.currentOffset;
-        value = nullScalarDelegate(
-          indentLevel: valueLevel,
-          indent: minIndent,
-          startOffset: endOffset - 1,
-        )..updateEndOffset = endOffset;
+        value =
+            nullScalarDelegate(
+                indentLevel: valueLevel,
+                indent: minIndent,
+                startOffset: valueOffset,
+              )
+              ..updateEndOffset = _scanner.currentOffset
+              ..updateNodeProperties = properties;
       } else {
         value = _parseFlowNode(
+          inferredEvent: event,
           isParsingKey: false,
           currentIndentLevel: valueLevel,
           minIndent: minIndent,
           forceInline: forceInline,
           isExplicitKey: false,
-          keyIsJsonLike: keyIsJsonLike,
+          keyIsJsonLike: false, // No effect here
           collectionDelimiter: exitIndicator,
-        );
+        )..updateNodeProperties = properties;
       }
     } else if (!ignoreValue(_scanner.charAtCursor)) {
-      // Must at least be end of parser, "," and ["}" if map or "]" if list
+      // Must at least be end of parser, "," and ["}" if map or "]" if list]
       throw expectedCharErr;
     }
 
@@ -575,8 +747,25 @@ final class DocumentParser {
     const mapEnd = Indicator.mappingEnd;
 
     while (_scanner.canChunkMore) {
+      final keyOffset = _scanner.currentOffset;
+
+      final props = _parseNodeProperties(
+        _scanner,
+        minIndent: indent,
+        resolver: _resolveTag,
+        comments: _comments,
+      );
+
+      _checkMapState(props, isBlockContext: false, minMapIndent: indent);
+
       final (key, value) = _parseFlowMapEntry(
-        null,
+        _nullOrAlias(
+          props.properties,
+          indentLevel: indentLevel,
+          indent: indent,
+          startOffset: keyOffset,
+        ),
+        startOffset: keyOffset,
         indentLevel: indentLevel,
 
         /// As per YAML, no need forcing indentation in flow map as long as it
@@ -601,15 +790,10 @@ final class DocumentParser {
         );
       }
 
-      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
-
       // Only continues if current non-space character is a ","
-      if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
-        _scanner.skipCharAtCursor();
-        continue;
+      if (!_continueToNextEntry(indent, forceInline: forceInline)) {
+        break;
       }
-
-      break; // Always assume we are ending the parsing if not continuing!
     }
 
     _throwIfNotFlowDelimiter(mapEnd);
@@ -631,14 +815,18 @@ final class DocumentParser {
 
     listParser:
     while (_scanner.canChunkMore) {
-      // Always ensure we are at a parsable char. Safely.
-      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
+      final flowStartOffset = _scanner.currentOffset;
 
-      final charAfter = _scanner.peekCharAfterCursor();
+      final (:event, :properties, :hasMultilineProps) = _parseSimpleFlowProps(
+        _scanner,
+        minIndent: indent,
+        resolver: _resolveTag,
+        comments: _comments,
+      );
 
       // We will always have a char here
-      switch (_scanner.charAtCursor) {
-        case Indicator.flowEntryEnd:
+      switch (event) {
+        case FlowCollectionEvent.nextFlowEntry:
           {
             final exception = delegate.isEmpty
                 ? FormatException(
@@ -653,12 +841,15 @@ final class DocumentParser {
           }
 
         // Parse explicit key
-        case Indicator.mappingKey
-            when charAfter is WhiteSpace ||
-                charAfter is LineBreak ||
-                charAfter == Indicator.flowEntryEnd ||
-                charAfter == seqEnd:
+        case FlowCollectionEvent.startExplicitKey:
           {
+            if (properties != null) {
+              throw FormatException(
+                'Explicit keys cannot have any node properties before the "?" '
+                'indicator',
+              );
+            }
+
             final (key, value) = _parseFlowMapEntry(
               null,
               indentLevel: indentLevel,
@@ -678,7 +869,7 @@ final class DocumentParser {
             );
           }
 
-        case seqEnd:
+        case FlowCollectionEvent.endFlowSequence:
           break listParser;
 
         default:
@@ -691,6 +882,7 @@ final class DocumentParser {
               forceInline: forceInline,
               isExplicitKey: false,
               keyIsJsonLike: false,
+              startOffset: flowStartOffset,
               collectionDelimiter: seqEnd,
             );
 
@@ -712,7 +904,9 @@ final class DocumentParser {
                       lastKeyWasJsonLike: _keyIsJsonLike(keyOrElement),
                     ) !=
                     FlowCollectionEvent.startEntryValue) {
-              delegate.pushEntry(keyOrElement);
+              delegate.pushEntry(
+                keyOrElement..updateNodeProperties = properties,
+              );
               break;
             }
 
@@ -725,31 +919,22 @@ final class DocumentParser {
               exitIndicator: seqEnd,
             );
 
-            delegate.pushEntry(
-              MapEntryDelegate(
-                nodeStyle: NodeStyle.flow,
-                keyDelegate: keyOrElement,
-              )..updateValue = value,
-            );
+            final entry = MapEntryDelegate(
+              nodeStyle: NodeStyle.flow,
+              keyDelegate: keyOrElement,
+            )..updateValue = value;
+
+            // Give multiline props to the entry rather than the key
+            hasMultilineProps
+                ? entry.updateNodeProperties = properties
+                : keyOrElement.updateNodeProperties = properties;
+
+            delegate.pushEntry(entry);
           }
       }
 
-      if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) break;
-
-      // Must see "]" or ","
-      switch (_scanner.charAtCursor) {
-        case Indicator.flowEntryEnd:
-          _scanner.skipCharAtCursor();
-
-        case seqEnd:
-          break listParser;
-
-        default:
-          throw FormatException(
-            'Expected to find a flow entry end indicator ","'
-            ' or flow sequence end "]" but'
-            ' found ${_scanner.charAtCursor?.string}',
-          );
+      if (!_continueToNextEntry(indent, forceInline: forceInline)) {
+        break;
       }
     }
 
@@ -829,14 +1014,18 @@ final class DocumentParser {
   /// Block scalars can create in an implicit block map if declared on a new
   /// line. If [degenerateToImplicitMap] is `true`, then this function attempts
   /// to greedily parse a block map if possible.
+  ///
+  ///
   _BlockNode _parseBlockScalarWildcard(
     ScalarEvent event, {
+    required int startOffset,
     required int laxIndent,
     required int fixedIndent,
     required int indentLevel,
     required bool isInlined,
     required bool degenerateToImplicitMap,
-    required int startOffset,
+    required bool parentEnforcedCompactness,
+    required _ParsedNodeProperties? parsedProperties,
   }) {
     final (
       PreScalar(
@@ -865,7 +1054,7 @@ final class DocumentParser {
         hasLineBreak ||
         indentDidChange) {
       return (
-        delegate: delegate,
+        delegate: delegate..updateNodeProperties = parsedProperties?.properties,
         nodeInfo: (
           exitIndent: indentOnExit,
           hasDocEndMarkers: hasDocEndMarkers,
@@ -873,12 +1062,11 @@ final class DocumentParser {
       );
     }
 
-    const kvColon = Indicator.mappingValue;
     var charAtCursor = _scanner.charAtCursor;
 
     if (event == ScalarEvent.startFlowDoubleQuoted ||
         event == ScalarEvent.startFlowSingleQuoted ||
-        charAtCursor != kvColon) {
+        charAtCursor != Indicator.mappingValue) {
       final greedyIndent = _skipToParsableChar(_scanner, comments: _comments);
 
       // The indent must be null. This must be an inlined key.
@@ -917,7 +1105,23 @@ final class DocumentParser {
       startOffset: delegate.startOffset, // Use offset of first key
     );
 
-    return (delegate: map, nodeInfo: _parseBlockMap(map, delegate));
+    if (parsedProperties != null) {
+      final _ParsedNodeProperties(:isMultiline, :parsedAny, :properties) =
+          parsedProperties;
+
+      // Compact nodes cannot have node properties
+      if (parentEnforcedCompactness && parsedAny) {
+        throw FormatException(
+          'Compact implicit block maps cannot have node properties',
+        );
+      }
+
+      isMultiline
+          ? map.updateNodeProperties = properties
+          : delegate.updateNodeProperties = properties;
+    }
+
+    return (delegate: map, nodeInfo: _parseBlockMap(map, delegate, null));
   }
 
   /// Parses a flow collection embedded within a block collection.
@@ -953,6 +1157,29 @@ final class DocumentParser {
     startOffset: startOffset,
   );
 
+  void _throwIfNotCompactCompatible(
+    _ParsedNodeProperties? parsedProperties, {
+    required bool parentEnforcedCompactness,
+    required bool isBlockSequence,
+  }) {
+    if (parsedProperties case _ParsedNodeProperties(
+      :final isMultiline,
+      :final parsedAny,
+    ) when parsedAny) {
+      // Compact notation prevents nodes from having properties
+      if (parentEnforcedCompactness) {
+        throw FormatException(
+          'A compact block node cannot have node properties',
+        );
+      } else if (!isMultiline) {
+        throw FormatException(
+          'Inline node properties cannot be declared before the first '
+          '${isBlockSequence ? '"- "' : '"? "'} indicator',
+        );
+      }
+    }
+  }
+
   /// Parses a block node within a block collection.
   _BlockNode _parseBlockNode({
     required int indentLevel,
@@ -962,11 +1189,28 @@ final class DocumentParser {
     required bool isParsingKey,
     required bool isExplicitKey,
     required bool degenerateToImplicitMap,
+    required bool parentEnforcedCompactness,
     required int startOffset,
+    required _ParsedNodeProperties? parsedProperties,
     ParserEvent? event,
   }) {
     _BlockNodeInfo? info;
     ParserDelegate? node;
+
+    final parsedProps = parsedProperties != null;
+
+    if (parsedProps && parsedProperties.properties.isAlias) {
+      // Lax indent is always the minimum
+      return (
+        delegate: _referenceAlias(
+          parsedProperties.properties,
+          indentLevel: indentLevel,
+          indent: laxIndent,
+          startOffset: startOffset,
+        ),
+        nodeInfo: (exitIndent: laxIndent, hasDocEndMarkers: false),
+      );
+    }
 
     switch (event ??
         _inferNextEvent(
@@ -984,7 +1228,7 @@ final class DocumentParser {
             isParsingKey: isParsingKey,
             isExplicitKey: isExplicitKey,
             startOffset: startOffset,
-          );
+          )..updateNodeProperties = parsedProperties?.properties;
 
           info = (
             hasDocEndMarkers: false,
@@ -1001,7 +1245,9 @@ final class DocumentParser {
             indentLevel: indentLevel,
             isInlined: forceInlined,
             degenerateToImplicitMap: degenerateToImplicitMap,
+            parentEnforcedCompactness: parentEnforcedCompactness,
             startOffset: startOffset,
+            parsedProperties: parsedProperties,
           );
 
           info = nodeInfo;
@@ -1014,28 +1260,58 @@ final class DocumentParser {
             collectionStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
-            startOffset: _scanner.currentOffset,
+            startOffset: startOffset,
           );
 
+          ParserDelegate? nonExistentKey = nullScalarDelegate(
+            indentLevel: indentLevel,
+            indent: fixedInlineIndent,
+            startOffset: startOffset,
+          )..updateEndOffset = _scanner.currentOffset;
+
+          _ParsedNodeProperties? downStream;
+
+          /// We want to allow the map to determine its own state. Ideally,
+          /// this could be achieved here but a map can have multiple values?
+          ///
+          /// We want to reduce wasted cycles doing the same check. Because..
+          /// <insert Spongebob meme> "A bLoCk MaP aLwAyS dEtErMiNeS iT's StAtE"
+          /// before parsing a block entry and each (implicit/explicit) block
+          /// entry is handled differently.
+          ///
+          /// If there are no node properties. We can safely just pass a null
+          /// key and wrapped in a delegate
+          if (parsedProps && parsedProperties.parsedAny) {
+            final _ParsedNodeProperties(:isMultiline, :properties) =
+                parsedProperties;
+
+            if (isMultiline) {
+              map.updateNodeProperties = properties;
+              downStream = null;
+            } else {
+              nonExistentKey = null; //
+              downStream = parsedProperties;
+            }
+          }
+
           node = map;
-          info = _parseBlockMap(
-            map,
-            nullScalarDelegate(
-              indentLevel: indentLevel,
-              indent: fixedInlineIndent,
-              startOffset: startOffset,
-            )..updateEndOffset = startOffset,
-          );
+          info = _parseBlockMap(map, nonExistentKey, downStream);
         }
 
       case BlockCollectionEvent.startBlockListEntry when !forceInlined:
         {
+          _throwIfNotCompactCompatible(
+            parsedProperties,
+            parentEnforcedCompactness: parentEnforcedCompactness,
+            isBlockSequence: true,
+          );
+
           final list = SequenceDelegate(
             collectionStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
-            startOffset: _scanner.currentOffset,
-          );
+            startOffset: startOffset,
+          )..updateNodeProperties = parsedProperties?.properties;
 
           node = list;
           info = _parseBlockSequence(list);
@@ -1043,15 +1319,21 @@ final class DocumentParser {
 
       case BlockCollectionEvent.startExplicitKey when !forceInlined:
         {
+          _throwIfNotCompactCompatible(
+            parsedProperties,
+            parentEnforcedCompactness: parentEnforcedCompactness,
+            isBlockSequence: false,
+          );
+
           final map = MappingDelegate(
             collectionStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
-            startOffset: _scanner.currentOffset,
+            startOffset: startOffset,
           );
 
           node = map;
-          info = _parseBlockMap(map, null);
+          info = _parseBlockMap(map, null, null);
         }
 
       default:
@@ -1089,20 +1371,28 @@ final class DocumentParser {
     _scanner.skipCharAtCursor(); // Skip the "?" or ":"
 
     /// Typically exists as "?"<whitespace>. We can't know what/where to
-    /// start parsing. Skip to the next possible char
-    final inferredIndent = _skipToParsableChar(_scanner, comments: _comments);
+    /// start parsing. Attempt to parsed node properties. The function also
+    /// skips to the next possible parsable char
+    final properties = _parseNodeProperties(
+      _scanner,
+      minIndent: parentIndent + 1,
+      resolver: _resolveTag,
+      comments: _comments,
+    );
 
     // Must be able to parse more characters
     if (!_scanner.canChunkMore) {
       return (
         shouldExit: true,
         hasIndent: false,
+        parsedNodeProperties: properties,
         inferredIndent: seamlessIndentMarker,
         laxIndent: seamlessIndentMarker,
         inlineIndent: seamlessIndentMarker,
       );
     }
 
+    final inferredIndent = properties.indentOnExit;
     final hasIndent = inferredIndent != null;
 
     /// If equal then we are at the same level as a "?" or ":" on a new line.
@@ -1111,6 +1401,7 @@ final class DocumentParser {
       return (
         shouldExit: true,
         hasIndent: hasIndent,
+        parsedNodeProperties: properties,
         inferredIndent: inferredIndent,
         laxIndent: seamlessIndentMarker,
         inlineIndent: seamlessIndentMarker,
@@ -1126,6 +1417,7 @@ final class DocumentParser {
     return (
       shouldExit: false,
       hasIndent: hasIndent,
+      parsedNodeProperties: properties,
       inferredIndent: inferredIndent,
       laxIndent: laxIndent,
       inlineIndent: inlineFixedIndent,
@@ -1136,34 +1428,46 @@ final class DocumentParser {
   /// [_parseExplicitBlockEntry]. You should never call it directly unless
   /// you only need the key!
   (bool shouldExit, _BlockNodeInfo info, ParserDelegate key)
-  _parseExplicitBlockKey({required int indentLevel, required int indent}) {
+  _parseExplicitBlockKey({required int indentLevel, required int mapIndent}) {
     final keyOffset = _scanner.currentOffset;
 
     final (
       :shouldExit,
       hasIndent: preKeyHasIndent,
       :inferredIndent,
+      :parsedNodeProperties,
       :laxIndent,
       :inlineIndent,
     ) = _explicitIsParsable(
       keyOffset,
-      indent,
+      mapIndent,
     );
 
     if (shouldExit) {
+      final endOffset = _scanner.currentOffset;
+
+      final emptyExplicitKey =
+          _nullOrAlias(
+            parsedNodeProperties.properties,
+            indentLevel: indentLevel,
+            indent: mapIndent,
+            startOffset: keyOffset,
+          ) ??
+          nullScalarDelegate(
+            indentLevel: indentLevel,
+            indent: mapIndent,
+            startOffset: keyOffset,
+          );
+
       // We have an empty/null key on our hands
       return (
         true,
         (exitIndent: inferredIndent, hasDocEndMarkers: false),
 
-        nullScalarDelegate(
-            indentLevel: indentLevel,
-            indent: indent,
-            startOffset: keyOffset,
-          )
+        emptyExplicitKey
           ..updateEndOffset = preKeyHasIndent
-              ? _scanner.currentOffset - inferredIndent!
-              : keyOffset,
+              ? endOffset - inferredIndent!
+              : endOffset,
       );
     }
 
@@ -1185,6 +1489,8 @@ final class DocumentParser {
       isParsingKey: true,
       isExplicitKey: true,
       degenerateToImplicitMap: true,
+      parentEnforcedCompactness: true,
+      parsedProperties: parsedNodeProperties,
     );
 
     final (:exitIndent, :hasDocEndMarkers) = nodeInfo;
@@ -1197,9 +1503,9 @@ final class DocumentParser {
     /// "?" that triggered this key to be parsed. Thus, their indents
     /// *MUST* match.
     if ((!hasIndent && _scanner.canChunkMore) ||
-        (hasIndent && exitIndent > indent)) {
+        (hasIndent && exitIndent > mapIndent)) {
       throw FormatException(
-        'Expected ":" on a new line with an indent of $indent space(s) and'
+        'Expected ":" on a new line with an indent of $mapIndent space(s) and'
         ' not ${exitIndent ?? 0} space(s)',
       );
     }
@@ -1208,7 +1514,7 @@ final class DocumentParser {
       /// We can exit early if we are no longer at the current map's level
       /// based on the indent (the current map is the caller of this function)
       /// or the current document ended.
-      hasDocEndMarkers || (hasIndent && exitIndent < indent),
+      hasDocEndMarkers || (hasIndent && exitIndent < mapIndent),
       nodeInfo,
       delegate,
     );
@@ -1237,7 +1543,7 @@ final class DocumentParser {
     // Attempt to parse key
     final (exitAfterKey, keyNodeInfo, explicitKey) = _parseExplicitBlockKey(
       indentLevel: childIndentLevel,
-      indent: indent,
+      mapIndent: indent,
     );
 
     if (exitAfterKey) {
@@ -1269,6 +1575,7 @@ final class DocumentParser {
       :shouldExit,
       :hasIndent,
       :inferredIndent,
+      :parsedNodeProperties,
       :laxIndent,
       :inlineIndent,
     ) = _explicitIsParsable(
@@ -1297,6 +1604,8 @@ final class DocumentParser {
       isParsingKey: false,
       isExplicitKey: false,
       degenerateToImplicitMap: true,
+      parentEnforcedCompactness: true,
+      parsedProperties: parsedNodeProperties,
     );
 
     return (delegate: (key: explicitKey, value: delegate), nodeInfo: nodeInfo);
@@ -1305,8 +1614,8 @@ final class DocumentParser {
   /// Parses an implicit block map entry within a block collection.
   _BlockEntry _parseImplicitBlockEntry(
     ParserDelegate? key, {
-    required int indent,
-    required int indentLevel,
+    required int parentIndent,
+    required int parentIndentLevel,
     ParserEvent? mapEvent,
   }) {
     ParserEvent nextEvent() => _inferNextEvent(
@@ -1334,13 +1643,27 @@ final class DocumentParser {
       final (:delegate, :nodeInfo) = _parseBlockNode(
         startOffset: _scanner.currentOffset,
         event: event,
-        indentLevel: indentLevel,
-        laxIndent: indent,
-        fixedInlineIndent: indent,
+        indentLevel: parentIndentLevel,
+        laxIndent: parentIndent, // Key is the parent's contact in this entry
+        fixedInlineIndent: parentIndent,
         forceInlined: true,
         isParsingKey: true,
         isExplicitKey: false,
         degenerateToImplicitMap: false,
+        parentEnforcedCompactness: false,
+
+        /// Callers of this [_parseImplicitBlockEntry] function must correctly
+        /// handle its node properties. Usually, implicit maps are tightly
+        /// controlled. This is evident when:
+        ///   1. Parsing block keys - Cannot span multiple lines
+        ///   2. Compact notation prevents the implicit maps nested in
+        ///      block sequences and explicit block keys from having node
+        ///      properties
+        ///
+        /// Ergo, the callers should never call the [_parseImplicitBlockEntry]
+        /// directly unless via [_parseBlockMap] or [_parseBlockNode]. If they
+        /// do, they must handle the node properties ahead of time!
+        parsedProperties: null,
       );
 
       final (:hasDocEndMarkers, :exitIndent) = nodeInfo;
@@ -1355,7 +1678,13 @@ final class DocumentParser {
       }
 
       // This was never a key. We assumed it was a plain scalar and parsed it.
-      if (hasDocEndMarkers) {
+      if (delegate case ScalarDelegate(
+        preScalar: PreScalar(
+          inferredValue: null,
+          scalarStyle: ScalarStyle.plain,
+          :final parsedContent,
+        ),
+      ) when hasDocEndMarkers && parsedContent.isEmpty) {
         return (nodeInfo: nodeInfo, delegate: (key: null, value: null));
       }
 
@@ -1374,52 +1703,79 @@ final class DocumentParser {
     final valueOffset = _scanner.currentOffset;
 
     implicitKey ??= nullScalarDelegate(
-      indentLevel: indentLevel,
-      indent: indent,
+      indentLevel: parentIndentLevel,
+      indent: parentIndent,
       startOffset: valueOffset,
     )..updateEndOffset = valueOffset;
 
     _scanner.skipCharAtCursor(); // Skip ":"
+    var indentOrSeparation = _skipToParsableChar(_scanner, comments: _comments);
 
-    final indentOrSeparation = _skipToParsableChar(
-      _scanner,
-      comments: _comments,
-    );
+    final minValueIndent = parentIndent + 1;
+    final valueIndentLevel = parentIndentLevel + 1;
 
+    var childEvent = nextEvent();
+    var spanMultipleLines = indentOrSeparation != null;
+
+    _ParsedNodeProperties? parsedProperties;
+
+    if (childEvent is NodePropertyEvent) {
+      parsedProperties = _parseNodeProperties(
+        _scanner,
+        minIndent: minValueIndent,
+        resolver: _resolveTag,
+        comments: _comments,
+      );
+
+      spanMultipleLines = parsedProperties.isMultiline;
+      indentOrSeparation = parsedProperties.indentOnExit;
+      childEvent = nextEvent();
+    }
+
+    // Nothing available
     if (!_scanner.canChunkMore) {
       return (
-        delegate: (key: implicitKey, value: null),
+        delegate: (
+          key: implicitKey,
+
+          /// Coin toss. We either have a null value or it's an alias if we
+          /// have any props :)
+          value: _nullOrAlias(
+            parsedProperties?.properties,
+            indentLevel: valueIndentLevel,
+            indent: minValueIndent,
+            startOffset: valueOffset,
+          )?..updateEndOffset = _scanner.currentOffset,
+        ),
         nodeInfo: _emptyScanner,
       );
     }
-
-    // We skipped separation space and the child is on the same line
-    final isInlineChild = indentOrSeparation == null;
-    final childEvent = nextEvent();
 
     final isBlockList = childEvent == BlockCollectionEvent.startBlockListEntry;
 
     /// YAML 1.2 recommends grace for block lists that start on a new line but
     /// have the same indent as the implicit key since the "-" is usually
     /// perceived as indent.
-    if (!isInlineChild &&
-        (indentOrSeparation < indent ||
-            (indentOrSeparation == indent && !isBlockList))) {
-      return (
-        delegate: (key: implicitKey, value: null),
-        nodeInfo: (hasDocEndMarkers: false, exitIndent: indentOrSeparation),
-      );
-    } else if (isInlineChild &&
-        (isBlockList || childEvent == BlockCollectionEvent.startExplicitKey)) {
+    if (spanMultipleLines) {
+      if (indentOrSeparation != null &&
+          ((indentOrSeparation == parentIndent && !isBlockList) ||
+              (indentOrSeparation < parentIndent))) {
+        return (
+          delegate: (key: implicitKey, value: null),
+          nodeInfo: (hasDocEndMarkers: false, exitIndent: indentOrSeparation),
+        );
+      }
+    } else if ((isBlockList ||
+        childEvent == BlockCollectionEvent.startExplicitKey)) {
       throw FormatException(
-        'The block collections must start on a new line'
-        ' when used as values of an implicit key',
+        'The block collections must start on a new line when used as values of '
+        'an implicit key',
       );
     }
 
     final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
       indentOrSeparation,
-      blockParentIndent: indent,
+      blockParentIndent: parentIndent,
       startOffset: implicitKey.startOffset,
     );
 
@@ -1428,13 +1784,16 @@ final class DocumentParser {
       nodeInfo: _BlockNodeInfo(:hasDocEndMarkers, :exitIndent),
     ) = _parseBlockNode(
       startOffset: valueOffset,
-      indentLevel: indentLevel + 1,
-      laxIndent: indentOrSeparation ?? laxIndent,
-      fixedInlineIndent: indentOrSeparation ?? inlineFixedIndent,
+      indentLevel: valueIndentLevel,
+      laxIndent: laxIndent,
+      fixedInlineIndent: inlineFixedIndent,
       forceInlined: false,
       isParsingKey: false,
       isExplicitKey: false,
-      degenerateToImplicitMap: !isInlineChild, // Only if not inline
+      degenerateToImplicitMap: spanMultipleLines, // Only if not inline
+      parentEnforcedCompactness: false,
+      parsedProperties: parsedProperties,
+      event: childEvent,
     );
 
     var indentOnExit = exitIndent;
@@ -1459,13 +1818,45 @@ final class DocumentParser {
   /// Throws if a block node is declared with an indent that is greater than
   /// the block parent's indent but less than the indent of the first child of
   /// the block
-  void _throwIfDangling(int collectionIndent, int currentIndent) {
-    if (_scanner.canChunkMore && currentIndent > collectionIndent) {
+  (int? offset, _ParsedNodeProperties? properties) _throwIfDangling(
+    int collectionIndent,
+    int currentIndent, {
+    required bool allowProperties,
+  }) {
+    final isNodeEvent =
+        _inferNextEvent(
+              _scanner,
+              isBlockContext: true,
+              lastKeyWasJsonLike: false,
+            )
+            is NodePropertyEvent;
+
+    if (currentIndent > collectionIndent && _scanner.canChunkMore) {
+      if (isNodeEvent && allowProperties) {
+        final offset = _scanner.currentOffset;
+
+        return (
+          offset,
+          _parseNodeProperties(
+            _scanner,
+            minIndent: collectionIndent + 1,
+            resolver: _resolveTag,
+            comments: _comments,
+          ),
+        );
+      }
+
       throw FormatException(
-        'Dangling node found with indent of $currentIndent space(s) while'
-        ' parsing',
+        'Dangling node/node properties found with indent of $currentIndent'
+        ' space(s) while parsing',
+      );
+    } else if (isNodeEvent && !allowProperties) {
+      throw FormatException(
+        'Dangling node properties found at ${_scanner.currentOffset}',
       );
     }
+
+    return (null, null);
   }
 
   /// Parses a block map. If [firstImplicitKey] is present, the map parses
@@ -1473,44 +1864,90 @@ final class DocumentParser {
   _BlockNodeInfo _parseBlockMap(
     MappingDelegate map,
     ParserDelegate? firstImplicitKey,
+    _ParsedNodeProperties? parsedProperties,
   ) {
     var parsedKey = firstImplicitKey;
     final MappingDelegate(:indent, :indentLevel) = map;
+
+    var properties = parsedProperties;
+    NodeProperties? nodeProps;
+    int? implicitStartOffset;
+
+    void resetProps(_ParsedNodeProperties? props, int? offset) {
+      properties = props;
+      implicitStartOffset = offset;
+      nodeProps = null;
+    }
+
+    void throwIfDanglingProps() {
+      if (properties != null) {
+        throw FormatException(
+          'Dangling node properties found while exiting block map',
+        );
+      }
+    }
 
     while (_scanner.canChunkMore) {
       ParserDelegate? key;
       ParserDelegate? value;
       _BlockNodeInfo mapInfo;
 
-      // Implicit key already parsed
-      if (parsedKey != null) {
-        final (:delegate, :nodeInfo) = _parseImplicitBlockEntry(
-          parsedKey,
-          indent: indent,
+      final (
+        :event,
+        :hasProperties,
+        :blockMapContinue,
+        :isExplicitEntry,
+        :indentOnExit,
+      ) = _checkMapState(
+        parsedProperties,
+        isBlockContext: true,
+        minMapIndent: indent,
+      );
+
+      if (!blockMapContinue) {
+        throw FormatException(
+          'Incomplete block map at ${_scanner.currentOffset}',
+        );
+      }
+
+      if (isExplicitEntry) {
+        final (:delegate, :nodeInfo) = _parseExplicitBlockEntry(
           indentLevel: indentLevel,
+          indent: indent,
         );
 
         mapInfo = nodeInfo;
-        key = parsedKey;
+        key = delegate.key;
         value = delegate.value;
       } else {
-        final event = _inferNextEvent(
-          _scanner,
-          isBlockContext: true,
-          lastKeyWasJsonLike: false,
-        );
+        // Implicit keys restricted to a single line
+        if (hasProperties) {
+          final _ParsedNodeProperties(properties: dProps) = properties!;
 
-        final (
-          :delegate,
-          :nodeInfo,
-        ) = event == BlockCollectionEvent.startExplicitKey
-            ? _parseExplicitBlockEntry(indentLevel: indentLevel, indent: indent)
-            : _parseImplicitBlockEntry(
-                parsedKey,
-                indent: indent,
-                indentLevel: indentLevel,
-                mapEvent: event,
+          if (dProps.isAlias) {
+            if (parsedKey != null) {
+              throw FormatException(
+                'An existing key found while referencing an alias',
               );
+            }
+
+            parsedKey = _referenceAlias(
+              dProps,
+              indentLevel: indentLevel,
+              indent: indent,
+              startOffset: implicitStartOffset!, // Must be present!
+            );
+          }
+
+          nodeProps = dProps;
+        }
+
+        final (:delegate, :nodeInfo) = _parseImplicitBlockEntry(
+          parsedKey,
+          parentIndent: indent,
+          parentIndentLevel: indentLevel,
+          mapEvent: event,
+        );
 
         mapInfo = nodeInfo;
         key = delegate.key;
@@ -1520,9 +1957,12 @@ final class DocumentParser {
       /// Most probably encountered doc end chars while parsing implicit map.
       /// An explicit key should never return null here
       if (key == null) {
+        throwIfDanglingProps();
         _blockNodeInfoEndOffset(map, scanner: _scanner, info: mapInfo);
         return mapInfo;
       }
+
+      key.updateNodeProperties = nodeProps;
 
       if (!map.pushEntry(key, value)) {
         throw FormatException(
@@ -1554,16 +1994,24 @@ final class DocumentParser {
           );
         }
 
+        resetProps(null, null);
         break;
       } else if (exitIndent < indent) {
         return mapInfo;
       }
 
-      // Must not have a dangling indent at this point
-      _throwIfDangling(indent, exitIndent);
+      // Must not have a dangling indent or properties at this point
+      final (indentOnProps, props) = _throwIfDangling(
+        indent,
+        exitIndent,
+        allowProperties: true,
+      );
+
+      resetProps(props, indentOnProps);
       parsedKey = null;
     }
 
+    throwIfDanglingProps();
     return _emptyScanner;
   }
 
@@ -1614,10 +2062,14 @@ final class DocumentParser {
 
       _scanner.skipCharAtCursor(); // Skip "-"
 
-      final indentOrSeparation = _skipToParsableChar(
+      final parsedProps = _parseNodeProperties(
         _scanner,
+        minIndent: indent + 1,
+        resolver: _resolveTag,
         comments: _comments,
       );
+
+      final indentOrSeparation = parsedProps.indentOnExit;
 
       if (!_scanner.canChunkMore) break;
 
@@ -1628,10 +2080,12 @@ final class DocumentParser {
         if (isLess || indentOrSeparation == indent) {
           sequence.pushEntry(
             nullScalarDelegate(
-              indentLevel: childIndentLevel,
-              indent: indent + 1,
-              startOffset: startOffset,
-            )..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
+                indentLevel: childIndentLevel,
+                indent: indent + 1,
+                startOffset: startOffset,
+              )
+              ..updateNodeProperties = parsedProps.properties
+              ..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
           );
 
           // Not a skill issue. 2 birds, 1 stone
@@ -1659,6 +2113,8 @@ final class DocumentParser {
         isParsingKey: false,
         isExplicitKey: false,
         degenerateToImplicitMap: true,
+        parentEnforcedCompactness: true,
+        parsedProperties: parsedProps,
       );
 
       sequence.pushEntry(delegate);
@@ -1691,7 +2147,7 @@ final class DocumentParser {
       }
 
       // Must no have a dangling indent at this point
-      _throwIfDangling(indent, exitIndent);
+      _throwIfDangling(indent, exitIndent, allowProperties: false);
     } while (_scanner.canChunkMore);
 
     return _emptyScanner;
@@ -1796,88 +2252,128 @@ final class DocumentParser {
     /// doc end chars "..." and "---" exist in this format.
     ParserDelegate? root;
     _BlockNodeInfo? rootInfo;
+    _ParsedNodeProperties? parsedProperties;
+
     const rootIndentLevel = 0;
-    final rootIndent = _skipToParsableChar(_scanner, comments: _comments) ?? 0;
-
-    _throwIfUnsafeForDirectiveChar(
-      _scanner.charAtCursor,
-      indent: rootIndent,
-      isDocStartExplicit: _docStartExplicit,
-      hasDirectives: _hasDirectives,
-    );
-
+    var rootIndent = _skipToParsableChar(_scanner, comments: _comments);
     final rootStartOffset = _scanner.currentOffset;
-    final rootEvent = _inferNextEvent(
+
+    var rootEvent = _inferNextEvent(
       _scanner,
       isBlockContext: true, // Always prefer block styling over flow
       lastKeyWasJsonLike: false,
     );
 
-    switch (rootEvent) {
-      // Start of flow map or sequence. Never inlined ahead of time.
-      case FlowCollectionEvent event:
-        {
-          final flowCollection = _parseRootFlow(
-            event,
-            rootStartOffset: rootStartOffset,
-            rootIndentLevel: rootIndentLevel,
-            rootIndent: rootIndent,
-          );
+    if (rootEvent is NodePropertyEvent) {
+      parsedProperties = _parseNodeProperties(
+        _scanner,
 
-          /// As indicated initially, YAML considerably favours block(-like)
-          /// styles. This flow collection may be an implicit key if only it
-          /// is inline and we see a ": " char combination ahead.
-          ///
-          /// Also implicit maps cannot start on "---" line
-          if (!_rootInMarkerLine &&
-              !flowCollection.encounteredLineBreak &&
-              _skipToParsableChar(
-                    _scanner,
-                    comments: _comments,
-                  ) ==
-                  null &&
-              _inferNextEvent(
-                    _scanner,
-                    isBlockContext: true,
-                    lastKeyWasJsonLike: false,
-                  ) ==
-                  BlockCollectionEvent.startEntryValue) {
-            root = MappingDelegate(
-              collectionStyle: NodeStyle.block,
-              indentLevel: 0,
-              indent: rootIndent,
-              startOffset: rootStartOffset,
-            );
+        // Default to "-1" if we have no node in place.
+        minIndent: rootIndent ?? -1,
+        resolver: _resolveTag,
+        comments: _comments,
+      );
 
-            rootInfo = _parseBlockMap(root as MappingDelegate, flowCollection);
-            break;
-          }
+      if (parsedProperties.properties.isAlias) {
+        throw FormatException('Root node cannot be an alias!');
+      }
 
-          root = flowCollection;
+      rootEvent = _inferNextEvent(
+        _scanner,
+        isBlockContext: true,
+        lastKeyWasJsonLike: false,
+      );
+
+      rootIndent = parsedProperties.indentOnExit;
+    }
+
+    rootIndent ??= 0; // Defaults to zero if null
+
+    _throwIfUnsafeForDirectiveChar(
+      _scanner.charAtCursor,
+      //indent: rootIndent,
+      isDocStartExplicit: _docStartExplicit,
+      hasDirectives: _hasDirectives,
+    );
+
+    if (rootEvent case FlowCollectionEvent event) {
+      final key = _parseRootFlow(
+        event,
+        rootStartOffset: rootStartOffset,
+        rootIndentLevel: rootIndentLevel,
+        rootIndent: rootIndent,
+      );
+
+      /// As indicated initially, YAML considerably favours block(-like)
+      /// styles. This flow collection may be an implicit key if only it
+      /// is inline and we see a ": " char combination ahead.
+      ///
+      /// Also implicit maps cannot start on "---" line
+      if (!_rootInMarkerLine &&
+          !key.encounteredLineBreak &&
+          _skipToParsableChar(
+                _scanner,
+                comments: _comments,
+              ) ==
+              null &&
+          _inferNextEvent(
+                _scanner,
+                isBlockContext: true,
+                lastKeyWasJsonLike: false,
+              ) ==
+              BlockCollectionEvent.startEntryValue) {
+        final (
+          delegate: (key: _, :value),
+          :nodeInfo,
+        ) = _parseImplicitBlockEntry(
+          key,
+          parentIndent: rootIndent,
+          parentIndentLevel: rootIndentLevel,
+        );
+
+        root =
+            MapEntryDelegate(
+                nodeStyle: NodeStyle.block,
+                keyDelegate: key,
+              )
+              ..updateValue = value
+              ..updateEndOffset = _scanner.currentOffset;
+
+        if (parsedProperties != null) {
+          final _ParsedNodeProperties(:isMultiline, :properties) =
+              parsedProperties;
+
+          isMultiline
+              ? root.updateNodeProperties = properties
+              : key.updateNodeProperties = properties;
         }
 
-      default:
-        {
-          final (:delegate, :nodeInfo) = _parseBlockNode(
-            indentLevel: rootIndentLevel,
-            laxIndent: rootIndent,
-            fixedInlineIndent: rootIndent,
-            forceInlined: false,
-            isParsingKey: false, // No effect if explicit. Handled
-            isExplicitKey: false,
-            degenerateToImplicitMap: !_rootInMarkerLine,
-            startOffset: rootStartOffset,
-            event: rootEvent,
-          );
+        rootInfo = nodeInfo;
+      } else {
+        root = key..updateNodeProperties = parsedProperties?.properties;
+      }
+    } else {
+      final (:delegate, :nodeInfo) = _parseBlockNode(
+        event: rootEvent,
+        startOffset: rootStartOffset,
+        indentLevel: rootIndentLevel,
+        laxIndent: rootIndent,
+        fixedInlineIndent: rootIndent,
+        forceInlined: false,
+        isParsingKey: false, // No effect if explicit. Handled
+        isExplicitKey: false,
+        degenerateToImplicitMap: !_rootInMarkerLine,
+        parentEnforcedCompactness: false,
+        parsedProperties: parsedProperties,
+      );
 
-          root = delegate;
-          rootInfo = nodeInfo;
-        }
+      root = delegate;
+      rootInfo = nodeInfo;
     }
 
     if (_scanner.canChunkMore) {
       /// We must see document end chars and don't care how they are laid within
-      /// the document
+      /// the document. At this point the document is or should be complete
       if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
         _skipToParsableChar(_scanner, comments: _comments);
 

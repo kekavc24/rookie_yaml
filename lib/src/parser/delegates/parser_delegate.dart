@@ -47,7 +47,9 @@ abstract interface class ParserDelegate {
     _endOffset = offset;
   }
 
-  set updateNodeProperties(NodeProperties properties) {
+  set updateNodeProperties(NodeProperties? properties) {
+    if (properties == null) return;
+
     if (_tag != null || _anchor != null || _alias != null) {
       throw ArgumentError(
         'Duplicate node properties provided to a node',
@@ -65,6 +67,10 @@ abstract interface class ParserDelegate {
   String? _anchor;
 
   String? _alias;
+
+  bool get hasAnchor => _alias != null;
+
+  String? get alias => _alias;
 
   /// Delegate's parent
   ParserDelegate? parent;
