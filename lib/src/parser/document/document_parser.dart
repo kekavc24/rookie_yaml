@@ -205,10 +205,18 @@ final class DocumentParser {
 
     switch (tagHandle.handleVariant) {
       // All named tags must have a corresponding global tag
-      case TagHandleVariant.named when !hasGlobalTag:
-        throw FormatException(
-          'Tags with named shorthands must have a corresponding global tag',
-        );
+      case TagHandleVariant.named:
+        {
+          if (!hasGlobalTag) {
+            throw FormatException(
+              'Named tag "$localTag" has no corresponding global tag',
+            );
+          } else if (content.isEmpty) {
+            throw FormatException('Named tag "$localTag" has no suffix');
+          }
+
+          continue resolver;
+        }
 
       // Secondary tags limited to tags only supported by YAML
       case TagHandleVariant.secondary when !yamlTags.contains(localTag):
@@ -216,6 +224,7 @@ final class DocumentParser {
           'Unrecognized secondary tag "$localTag". Expected any of: $yamlTags',
         );
 
+      resolver:
       default:
         {
           if (hasGlobalTag) {
