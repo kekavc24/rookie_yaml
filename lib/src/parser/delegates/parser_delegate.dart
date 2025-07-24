@@ -31,20 +31,18 @@ abstract interface class ParserDelegate {
   int? _endOffset;
 
   set updateEndOffset(int? offset) {
-    if ((offset == null) ||
-        offset < startOffset ||
-        (_endOffset != null && _endOffset! > offset)) {
+    if ((offset == null) || offset < startOffset) {
       throw StateError(
-        'The current delegate [$runtimeType] with:'
-        '\n\t'
-        'Start offset: $startOffset'
-        '\n\t'
-        'Current end offset: $_endOffset'
-        '\nreceived an invalid end offset: $offset',
+        [
+          'Invalid end offset for delegate [$runtimeType] with:',
+          'Start offset: $startOffset',
+          'Current end offset: $_endOffset',
+          'End offset provided: $offset',
+        ].join('\n\t'),
       );
     }
 
-    _endOffset = offset;
+    _endOffset = max(offset, _endOffset ?? -1);
   }
 
   set updateNodeProperties(NodeProperties? properties) {
