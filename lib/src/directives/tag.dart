@@ -21,15 +21,15 @@ sealed class ResolvedTag extends Tag {
   /// way even if it is unresolved.
   ///
   /// ```yaml
-  /// !<tag:yaml.org,2002:str>` # Global Tag for strings
+  /// !<tag:yaml.org,2002:str> # Global Tag for strings
   /// !<!foo> # Local Tag
   /// ```
   String get verbatim;
 }
 
 /// Represents a [Tag] that can be represented as a [GlobalTag] or [LocalTag].
-/// `YAML` requires that after parsing a node must either be resolved to a
-/// [SpecificTag] or be represented as is as a [VerbatimTag].
+/// `YAML` requires a parsed node to be resolved as a [SpecificTag] or be
+/// represented as is as a [VerbatimTag].
 sealed class SpecificTag<T> implements Tag {
   SpecificTag._(this.tagHandle, this.content);
 
@@ -43,17 +43,4 @@ sealed class SpecificTag<T> implements Tag {
   final TagHandle tagHandle;
 
   final T content;
-}
-
-/// Indicates a node has no native data structure preference and allows `YAML`
-/// to assign one based on its kind.
-///
-/// Typically, indicated either by a `!` only with no trailing uri characters or
-/// no tag altogether. Must always be resolved to a [SpecificTag].
-final class NonSpecificTag implements Tag {
-  @override
-  TagHandle get tagHandle => TagHandle.primary();
-
-  @override
-  String get prefix => tagHandle.handle;
 }

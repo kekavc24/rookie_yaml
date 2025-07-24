@@ -17,6 +17,12 @@ final class LocalTag extends SpecificTag<String> {
   @override
   String toString() => '$prefix$content';
 
+  /// Indicates a tag with with a single `!` prefix and no [content].
+  ///
+  /// `!!` is invalid while `?` cannot be specified.
+  bool get isNonSpecific =>
+      tagHandle.handleVariant == TagHandleVariant.primary && content.isEmpty;
+
   @override
   bool operator ==(Object other) =>
       other is LocalTag && other.toString() == toString();
