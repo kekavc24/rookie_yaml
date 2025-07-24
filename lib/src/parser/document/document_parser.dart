@@ -1072,7 +1072,8 @@ final class DocumentParser {
       // The indent must be null. This must be an inlined key.
       if (greedyIndent != null || !_scanner.canChunkMore) {
         return (
-          delegate: delegate,
+          delegate: delegate
+            ..updateNodeProperties = parsedProperties?.properties,
           nodeInfo: (
             exitIndent: greedyIndent,
             hasDocEndMarkers: false,
