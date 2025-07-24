@@ -6,26 +6,25 @@ final class Sequence extends UnmodifiableListView<ParsedYamlNode>
   Sequence(
     super.source, {
     required this.nodeStyle,
-    required ResolvedTag? tag,
-    required String? anchor,
-  }) : _tag = tag,
-       _anchor = anchor;
+    required this.tag,
+    required this.anchor,
+  });
 
   @override
   final NodeStyle nodeStyle;
 
   @override
-  final ResolvedTag? _tag;
+  final ResolvedTag? tag;
 
   @override
-  final String? _anchor;
+  final String? anchor;
 
   @override
   bool operator ==(Object other) =>
-      other is Sequence && _tag == other._tag && _equality.equals(this, other);
+      other is Sequence && tag == other.tag && _equality.equals(this, other);
 
   @override
-  int get hashCode => _equality.hash([_tag, this]);
+  int get hashCode => _equality.hash([tag, this]);
 
   @override
   ParsedYamlNode asDumpable() => this;

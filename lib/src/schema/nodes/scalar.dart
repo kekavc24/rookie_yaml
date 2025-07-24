@@ -7,11 +7,9 @@ base class Scalar<T> extends ParsedYamlNode {
     this.value, {
     required String content,
     required this.scalarStyle,
-    required ResolvedTag? tag,
-    required String? anchor,
-  }) : _content = content,
-       _tag = tag,
-       _anchor = anchor;
+    required this.tag,
+    required this.anchor,
+  }) : _content = content;
 
   /// Style used to serialize the scalar. Can be degenerated to a `block` or
   /// `flow` too.
@@ -24,20 +22,20 @@ base class Scalar<T> extends ParsedYamlNode {
   final T? value;
 
   @override
-  final ResolvedTag? _tag;
+  final ResolvedTag? tag;
 
   @override
-  final String? _anchor;
+  final String? anchor;
 
   @override
   NodeStyle get nodeStyle => scalarStyle._nodeStyle;
 
   @override
   bool operator ==(Object other) =>
-      other is Scalar && _tag == other._tag && _content == other._content;
+      other is Scalar && tag == other.tag && _content == other._content;
 
   @override
-  int get hashCode => _equality.hash([_tag, _content]);
+  int get hashCode => _equality.hash([tag, _content]);
 
   @override
   String toString() => '${value?.toString()}';

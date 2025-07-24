@@ -26,10 +26,10 @@ sealed class ParsedYamlNode extends YamlNode {
   ///
   /// If a custom [TypeResolverTag] tag was parsed, the [Node] may be viewed in
   /// a resolved format by calling [asCustomType] getter on the node.
-  ResolvedTag? get _tag => null;
+  ResolvedTag? get tag => null;
 
   /// Anchor name that allow other nodes to reference this node.
-  String? get _anchor => null;
+  String? get anchor => null;
 
   @override
   ParsedYamlNode asDumpable() => this;
@@ -39,7 +39,7 @@ sealed class ParsedYamlNode extends YamlNode {
 /// among its parsed tags.
 extension CustomResolved on ParsedYamlNode {
   /// Returns a custom resolved format if any [TypeResolverTag] is present.
-  T? asCustomType<T>() => switch (_tag) {
+  T? asCustomType<T>() => switch (tag) {
     TypeResolverTag<T>(:final resolver) => resolver(this),
     _ => null,
   };
@@ -47,12 +47,11 @@ extension CustomResolved on ParsedYamlNode {
 
 /// A node that is a pointer to another node.
 final class AliasNode extends ParsedYamlNode {
-  AliasNode(String alias, this.aliased)
-    : assert(alias.isNotEmpty, 'An alias name cannot be empty'),
-      _alias = alias;
+  AliasNode(this.alias, this.aliased)
+    : assert(alias.isNotEmpty, 'An alias name cannot be empty');
 
   /// Anchor name to [aliased]
-  final String _alias;
+  final String alias;
 
   /// `YAML` node's reference
   final ParsedYamlNode aliased;
@@ -65,6 +64,9 @@ final class AliasNode extends ParsedYamlNode {
 
   @override
   int get hashCode => aliased.hashCode;
+
+  @override
+  String toString() => aliased.toString();
 
   @override
   ParsedYamlNode asDumpable() => aliased;
