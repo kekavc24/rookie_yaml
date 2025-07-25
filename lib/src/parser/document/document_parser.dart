@@ -399,6 +399,31 @@ final class DocumentParser {
     );
   }
 
+  ParserDelegate? _aliasKeyOrNull(
+    NodeProperties? properties, {
+    ParserDelegate? existing,
+    required int indentLevel,
+    required int indent,
+    required int keyStartOffset,
+  }) {
+    if (properties case NodeProperties(:final isAlias) when isAlias) {
+      if (existing != null) {
+        throw FormatException(
+          'An existing key found while attempting to reference an alias',
+        );
+      }
+
+      return _referenceAlias(
+        properties,
+        indentLevel: indentLevel,
+        indent: indent,
+        startOffset: keyStartOffset,
+      );
+    }
+
+    return null;
+  }
+
   /// Skips to the next parsable flow indicator/character.
   ///
   /// If declared on a new line and [forceInline] is `false`, the flow
@@ -768,11 +793,11 @@ final class DocumentParser {
       _checkMapState(props, isBlockContext: false, minMapIndent: indent);
 
       final (key, value) = _parseFlowMapEntry(
-        _nullOrAlias(
+        _aliasKeyOrNull(
           props.properties,
           indentLevel: indentLevel,
           indent: indent,
-          startOffset: keyOffset,
+          keyStartOffset: keyOffset,
         ),
         startOffset: keyOffset,
         indentLevel: indentLevel,
