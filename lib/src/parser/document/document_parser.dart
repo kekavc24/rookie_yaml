@@ -1774,6 +1774,31 @@ final class DocumentParser {
     var childEvent = nextEvent();
     var spanMultipleLines = indentOrSeparation != null;
 
+    /// This is not similar to the [valueOffset]. YAML indicates a value starts
+    /// when the ":" is seen; which is fine. However, the node's alignment with
+    /// subsequent siblings (in case this node becomes an implicit map) depends
+    /// on where it actually starts. Such that:
+    ///
+    /// key: value
+    ///    ^^^ It starts in the first caret but it's alignment must start at "v"
+    ///
+    /// Now see below:
+    ///
+    /// ```yaml
+    /// key:
+    ///   nested: implicit-block-map-as-value
+    ///   another: nested
+    /// another:
+    ///   !!tag key: value
+    /// ```
+    ///
+    /// Our argument is now evident. Our actual content offset starts when we
+    /// see the first parsable char. Serves no purpose now but maybe
+    /// later?
+    ///
+    /// TODO: Dumper & editor see this 🧙🏽‍♂️. Explicit too
+    final contentOffset = _scanner.currentOffset;
+
     _ParsedNodeProperties? parsedProperties;
 
     if (childEvent is NodePropertyEvent) {
@@ -1833,7 +1858,7 @@ final class DocumentParser {
     final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
       indentOrSeparation,
       blockParentIndent: parentIndent,
-      startOffset: implicitKey.startOffset,
+      startOffset: contentOffset,
     );
 
     final (
