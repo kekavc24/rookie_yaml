@@ -441,7 +441,7 @@ final class DocumentParser {
   /// If declared on a new line and [forceInline] is `false`, the flow
   /// indicator/character must be indented at least [minIndent] spaces. Throws
   /// otherwise.
-  bool _nextLineSafeInFlow(int minIndent, {required bool forceInline}) {
+  bool _nextSafeLineInFlow(int minIndent, {required bool forceInline}) {
     final indent = _skipToParsableChar(_scanner, comments: _comments);
 
     if (indent != null) {
@@ -474,11 +474,11 @@ final class DocumentParser {
     int minIndent, {
     required bool forceInline,
   }) {
-    _nextLineSafeInFlow(minIndent, forceInline: forceInline);
+    _nextSafeLineInFlow(minIndent, forceInline: forceInline);
 
     if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
       _scanner.skipCharAtCursor();
-      _nextLineSafeInFlow(minIndent, forceInline: forceInline);
+      _nextSafeLineInFlow(minIndent, forceInline: forceInline);
       return true;
     }
 
@@ -513,7 +513,7 @@ final class DocumentParser {
     var parsedKey = key;
     ParserDelegate? value;
 
-    if (!_nextLineSafeInFlow(minIndent, forceInline: forceInline) ||
+    if (!_nextSafeLineInFlow(minIndent, forceInline: forceInline) ||
         _scanner.charAtCursor == exitIndicator) {
       return (key, value);
     }
@@ -547,7 +547,7 @@ final class DocumentParser {
       'or a terminating delimiter "${exitIndicator.string}"',
     );
 
-    if (!_nextLineSafeInFlow(minIndent, forceInline: forceInline)) {
+    if (!_nextSafeLineInFlow(minIndent, forceInline: forceInline)) {
       throw expectedCharErr;
     }
 
@@ -665,7 +665,7 @@ final class DocumentParser {
         {
           _scanner.skipCharAtCursor();
 
-          if (!_nextLineSafeInFlow(
+          if (!_nextSafeLineInFlow(
             minIndent,
             forceInline: forceInline,
           )) {
@@ -791,6 +791,11 @@ final class DocumentParser {
     final MappingDelegate(:indent, :indentLevel) = delegate;
     const mapEnd = Indicator.mappingEnd;
 
+    /// We need to ensure we don't unintentionally make the first key's
+    /// property's multiline if implicit and declared inline. This may happen
+    /// if the first key is not declared on the same line as the "{".
+    _nextSafeLineInFlow(indent, forceInline: forceInline);
+
     while (_scanner.canChunkMore) {
       final keyOffset = _scanner.currentOffset;
 
@@ -857,6 +862,13 @@ final class DocumentParser {
 
     final SequenceDelegate(:indent, :indentLevel) = delegate;
     const seqEnd = Indicator.flowSequenceEnd;
+
+    /// Similar to flow map, move this to the first parsable char. This has
+    /// little effect for other sequence entries but may be crucial to
+    /// compact maps (flow map entries without leading "{" and trailing "}")
+    /// that may suffer from the same issue we want to suppress in a flow
+    /// map's first key.
+    _nextSafeLineInFlow(indent, forceInline: forceInline);
 
     listParser:
     while (_scanner.canChunkMore) {
@@ -932,7 +944,7 @@ final class DocumentParser {
             );
 
             // Go to the next parsable char
-            if (!_nextLineSafeInFlow(indent, forceInline: forceInline)) {
+            if (!_nextSafeLineInFlow(indent, forceInline: forceInline)) {
               break listParser;
             }
 
