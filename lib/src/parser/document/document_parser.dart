@@ -808,9 +808,11 @@ final class DocumentParser {
 
       _checkMapState(props, isBlockContext: false, minMapIndent: indent);
 
+      final keyProps = props.properties;
+
       final (key, value) = _parseFlowMapEntry(
         _aliasKeyOrNull(
-          props.properties,
+          keyProps,
           indentLevel: indentLevel,
           indent: indent,
           keyStartOffset: keyOffset,
@@ -830,6 +832,8 @@ final class DocumentParser {
       /// [_parseFlowMapEntry] guarantees that it will return a wrapped null
       /// key when no key was parsed.
       if (key == null) break;
+
+      _trackAnchor(key, keyProps);
 
       // Map already contains key
       if (!delegate.pushEntry(key, value)) {
