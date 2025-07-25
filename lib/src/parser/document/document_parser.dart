@@ -1914,27 +1914,27 @@ final class DocumentParser {
             is NodePropertyEvent;
 
     if (currentIndent > collectionIndent && _scanner.canChunkMore) {
-      if (isNodeEvent && allowProperties) {
-        final offset = _scanner.currentOffset;
-
-        return (
-          offset,
-          _parseNodeProperties(
-            _scanner,
-            minIndent: collectionIndent + 1,
-            resolver: _resolveTag,
-            comments: _comments,
-          ),
-        );
-      }
-
       throw FormatException(
         'Dangling node/node properties found with indent of $currentIndent'
         ' space(s) while parsing',
       );
-    } else if (isNodeEvent && !allowProperties) {
-      throw FormatException(
-        'Dangling node properties found at ${_scanner.currentOffset}',
+    } else if (isNodeEvent) {
+      if (!allowProperties) {
+        throw FormatException(
+          'Dangling node properties found at ${_scanner.currentOffset}',
+        );
+      }
+
+      final offset = _scanner.currentOffset;
+
+      return (
+        offset,
+        _parseNodeProperties(
+          _scanner,
+          minIndent: collectionIndent + 1,
+          resolver: _resolveTag,
+          comments: _comments,
+        ),
       );
     }
 
@@ -1981,7 +1981,7 @@ final class DocumentParser {
         :isExplicitEntry,
         :indentOnExit,
       ) = _checkMapState(
-        parsedProperties,
+        properties,
         isBlockContext: true,
         minMapIndent: indent,
       );
