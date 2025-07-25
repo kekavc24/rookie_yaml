@@ -57,6 +57,17 @@ final class DocumentParser {
 
   SplayTreeSet<YamlComment> _comments = SplayTreeSet();
 
+  ParserDelegate _trackAnchor(
+    ParserDelegate delegate,
+    NodeProperties? properties,
+  ) {
+    if (properties case NodeProperties(:final String anchor)) {
+      _anchorNodes[anchor] = delegate.parsed();
+    }
+
+    return delegate..updateNodeProperties = properties;
+  }
+
   AliasDelegate _referenceAlias(
     NodeProperties properties, {
     required int indentLevel,
@@ -85,21 +96,22 @@ final class DocumentParser {
   }) {
     if (properties == null) return null;
 
-    return (properties.isAlias
-          ? _referenceAlias(
-              properties,
-              indentLevel: indentLevel,
-              indent: indent,
-              startOffset: startOffset,
-            )
-          : properties.parsedAnchorOrTag
-          ? nullScalarDelegate(
-              indentLevel: indentLevel,
-              indent: indent,
-              startOffset: startOffset,
-            )
-          : null)
-      ?..updateNodeProperties = properties;
+    final node = (properties.isAlias
+        ? _referenceAlias(
+            properties,
+            indentLevel: indentLevel,
+            indent: indent,
+            startOffset: startOffset,
+          )
+        : properties.parsedAnchorOrTag
+        ? nullScalarDelegate(
+            indentLevel: indentLevel,
+            indent: indent,
+            startOffset: startOffset,
+          )
+        : null);
+
+    return node != null ? _trackAnchor(node, properties) : node;
   }
 
   bool _keyIsJsonLike(ParserDelegate? delegate) {
@@ -582,14 +594,11 @@ final class DocumentParser {
       ///       second caret.
       /// }
       if (ignoreValue(_scanner.charAtCursor)) {
-        value =
-            nullScalarDelegate(
-                indentLevel: valueLevel,
-                indent: minIndent,
-                startOffset: valueOffset,
-              )
-              ..updateEndOffset = _scanner.currentOffset
-              ..updateNodeProperties = properties;
+        value = nullScalarDelegate(
+          indentLevel: valueLevel,
+          indent: minIndent,
+          startOffset: valueOffset,
+        )..updateEndOffset = _scanner.currentOffset;
       } else {
         value = _parseFlowNode(
           inferredEvent: event,
@@ -600,8 +609,10 @@ final class DocumentParser {
           isExplicitKey: false,
           keyIsJsonLike: false, // No effect here
           collectionDelimiter: exitIndicator,
-        )..updateNodeProperties = properties;
+        );
       }
+
+      value = _trackAnchor(value, properties);
     } else if (!ignoreValue(_scanner.charAtCursor)) {
       // Must at least be end of parser, "," and ["}" if map or "]" if list]
       throw expectedCharErr;
@@ -938,9 +949,7 @@ final class DocumentParser {
                       lastKeyWasJsonLike: _keyIsJsonLike(keyOrElement),
                     ) !=
                     FlowCollectionEvent.startEntryValue) {
-              delegate.pushEntry(
-                keyOrElement..updateNodeProperties = properties,
-              );
+              delegate.pushEntry(_trackAnchor(keyOrElement, properties));
               break;
             }
 
@@ -958,11 +967,7 @@ final class DocumentParser {
               keyDelegate: keyOrElement,
             )..updateValue = value;
 
-            // Give multiline props to the entry rather than the key
-            hasMultilineProps
-                ? entry.updateNodeProperties = properties
-                : keyOrElement.updateNodeProperties = properties;
-
+            _trackAnchor(hasMultilineProps ? entry : keyOrElement, properties);
             delegate.pushEntry(entry);
           }
       }
@@ -1088,7 +1093,7 @@ final class DocumentParser {
         hasLineBreak ||
         indentDidChange) {
       return (
-        delegate: delegate..updateNodeProperties = parsedProperties?.properties,
+        delegate: _trackAnchor(delegate, parsedProperties?.properties),
         nodeInfo: (
           exitIndent: indentOnExit,
           hasDocEndMarkers: hasDocEndMarkers,
@@ -1106,8 +1111,7 @@ final class DocumentParser {
       // The indent must be null. This must be an inlined key.
       if (greedyIndent != null || !_scanner.canChunkMore) {
         return (
-          delegate: delegate
-            ..updateNodeProperties = parsedProperties?.properties,
+          delegate: _trackAnchor(delegate, parsedProperties?.properties),
           nodeInfo: (
             exitIndent: greedyIndent,
             hasDocEndMarkers: false,
@@ -1151,9 +1155,7 @@ final class DocumentParser {
         );
       }
 
-      isMultiline
-          ? map.updateNodeProperties = properties
-          : delegate.updateNodeProperties = properties;
+      _trackAnchor(isMultiline ? map : delegate, properties);
     }
 
     return (delegate: map, nodeInfo: _parseBlockMap(map, delegate, null));
@@ -1255,15 +1257,18 @@ final class DocumentParser {
         )) {
       case FlowCollectionEvent flowEvent:
         {
-          node = _parseEmbeddedFlowCollection(
-            flowEvent,
-            indentLevel: indentLevel,
-            indent: laxIndent, // Indent doesn't matter that much
-            isInlined: forceInlined,
-            isParsingKey: isParsingKey,
-            isExplicitKey: isExplicitKey,
-            startOffset: startOffset,
-          )..updateNodeProperties = parsedProperties?.properties;
+          node = _trackAnchor(
+            _parseEmbeddedFlowCollection(
+              flowEvent,
+              indentLevel: indentLevel,
+              indent: laxIndent, // Indent doesn't matter that much
+              isInlined: forceInlined,
+              isParsingKey: isParsingKey,
+              isExplicitKey: isExplicitKey,
+              startOffset: startOffset,
+            ),
+            parsedProperties?.properties,
+          );
 
           info = (
             hasDocEndMarkers: false,
@@ -1305,6 +1310,7 @@ final class DocumentParser {
           )..updateEndOffset = _scanner.currentOffset;
 
           _ParsedNodeProperties? downStream;
+          NodeProperties? mapProps;
 
           /// We want to allow the map to determine its own state. Ideally,
           /// this could be achieved here but a map can have multiple values?
@@ -1321,7 +1327,7 @@ final class DocumentParser {
                 parsedProperties;
 
             if (isMultiline) {
-              map.updateNodeProperties = properties;
+              mapProps = properties;
               downStream = null;
             } else {
               nonExistentKey = null; //
@@ -1329,8 +1335,8 @@ final class DocumentParser {
             }
           }
 
-          node = map;
           info = _parseBlockMap(map, nonExistentKey, downStream);
+          node = _trackAnchor(map, mapProps);
         }
 
       case BlockCollectionEvent.startBlockListEntry when !forceInlined:
@@ -1346,10 +1352,10 @@ final class DocumentParser {
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
             startOffset: startOffset,
-          )..updateNodeProperties = parsedProperties?.properties;
+          );
 
-          node = list;
           info = _parseBlockSequence(list);
+          node = _trackAnchor(list, parsedProperties?.properties);
         }
 
       case BlockCollectionEvent.startExplicitKey when !forceInlined:
@@ -1959,20 +1965,13 @@ final class DocumentParser {
         if (hasProperties) {
           final _ParsedNodeProperties(properties: dProps) = properties!;
 
-          if (dProps.isAlias) {
-            if (parsedKey != null) {
-              throw FormatException(
-                'An existing key found while referencing an alias',
-              );
-            }
-
-            parsedKey = _referenceAlias(
-              dProps,
-              indentLevel: indentLevel,
-              indent: indent,
-              startOffset: implicitStartOffset!, // Must be present!
-            );
-          }
+          parsedKey = _aliasKeyOrNull(
+            dProps,
+            indentLevel: indentLevel,
+            indent: indent,
+            keyStartOffset: implicitStartOffset!,
+            existing: parsedKey,
+          );
 
           nodeProps = dProps;
         }
@@ -1997,7 +1996,7 @@ final class DocumentParser {
         return mapInfo;
       }
 
-      key.updateNodeProperties = nodeProps;
+      _trackAnchor(key, nodeProps);
 
       if (!map.pushEntry(key, value)) {
         throw FormatException(
@@ -2114,13 +2113,14 @@ final class DocumentParser {
         // We moved to the next node irrespective of its indent.
         if (isLess || indentOrSeparation == indent) {
           sequence.pushEntry(
-            nullScalarDelegate(
+            _trackAnchor(
+              nullScalarDelegate(
                 indentLevel: childIndentLevel,
                 indent: indent + 1,
                 startOffset: startOffset,
-              )
-              ..updateNodeProperties = parsedProps.properties
-              ..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
+              ),
+              parsedProps.properties,
+            )..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
           );
 
           // Not a skill issue. 2 birds, 1 stone
@@ -2357,6 +2357,19 @@ final class DocumentParser {
                 lastKeyWasJsonLike: false,
               ) ==
               BlockCollectionEvent.startEntryValue) {
+        NodeProperties? props;
+
+        if (parsedProperties != null) {
+          final _ParsedNodeProperties(:isMultiline, :properties) =
+              parsedProperties;
+
+          if (!isMultiline) {
+            _trackAnchor(key, properties);
+          } else {
+            props = properties;
+          }
+        }
+
         final (
           delegate: (key: _, :value),
           :nodeInfo,
@@ -2372,16 +2385,8 @@ final class DocumentParser {
                 keyDelegate: key,
               )
               ..updateValue = value
-              ..updateEndOffset = _scanner.currentOffset;
-
-        if (parsedProperties != null) {
-          final _ParsedNodeProperties(:isMultiline, :properties) =
-              parsedProperties;
-
-          isMultiline
-              ? root.updateNodeProperties = properties
-              : key.updateNodeProperties = properties;
-        }
+              ..updateEndOffset = _scanner.currentOffset
+              ..updateNodeProperties = props;
 
         rootInfo = nodeInfo;
       } else {
