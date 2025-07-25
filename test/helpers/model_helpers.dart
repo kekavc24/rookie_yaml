@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
@@ -43,4 +44,16 @@ extension PreScalarHelper on Subject<PreScalar?> {
   void inferredFloat(double value) => simpleInferredType('Float', value);
 
   void inferredNull() => isNotNull().has(_inferredValue, 'Null').isNull();
+}
+
+extension ParsedNodeHelper on Subject<ParsedYamlNode?> {
+  Subject<ResolvedTag?> withTag() =>
+      isNotNull().has((n) => n.tag, 'Resolved tag');
+
+  void hasNoTag() => withTag().isNull();
+
+  void hasTag<T>(SpecificTag<T> tag, {String suffix = ''}) => withTag()
+      .isNotNull()
+      .has((t) => t.verbatim, 'As verbatim')
+      .equals(ParsedTag(tag, suffix).verbatim);
 }
