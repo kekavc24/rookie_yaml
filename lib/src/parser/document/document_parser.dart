@@ -1492,8 +1492,8 @@ final class DocumentParser {
         hasIndent: hasIndent,
         parsedNodeProperties: properties,
         inferredIndent: inferredIndent,
-        laxIndent: seamlessIndentMarker,
-        inlineIndent: seamlessIndentMarker,
+        laxIndent: inferredIndent,
+        inlineIndent: inferredIndent,
       );
     }
 
