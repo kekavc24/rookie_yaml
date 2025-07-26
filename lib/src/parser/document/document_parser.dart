@@ -897,6 +897,17 @@ final class DocumentParser {
       switch (event) {
         case FlowCollectionEvent.nextFlowEntry:
           {
+            if (_aliasKeyOrNull(
+                  properties,
+                  indentLevel: indentLevel,
+                  indent: indent,
+                  keyStartOffset: flowStartOffset,
+                )
+                case ParserDelegate entry) {
+              delegate.pushEntry(_trackAnchor(entry, properties));
+              break;
+            }
+
             final exception = delegate.isEmpty
                 ? FormatException(
                     'Expected to find the first value but found ","',
@@ -943,8 +954,19 @@ final class DocumentParser {
 
         default:
           {
+            ParserDelegate? keyOrElement;
+
+            if (properties != null && properties.isAlias) {
+              keyOrElement = _referenceAlias(
+                properties,
+                indentLevel: indentLevel,
+                indent: indent,
+                startOffset: flowStartOffset,
+              );
+            }
+
             // Handles all flow node types i.e map, sequence and scalars
-            final keyOrElement = _parseFlowNode(
+            keyOrElement ??= _parseFlowNode(
               isParsingKey: false,
               currentIndentLevel: indentLevel,
               minIndent: indent,
