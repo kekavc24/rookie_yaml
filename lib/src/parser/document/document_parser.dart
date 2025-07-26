@@ -2184,15 +2184,22 @@ final class DocumentParser {
 
         // We moved to the next node irrespective of its indent.
         if (isLess || indentOrSeparation == indent) {
-          sequence.pushEntry(
-            _trackAnchor(
+          final entry =
+              _nullOrAlias(
+                parsedProps.properties,
+                indentLevel: indentLevel,
+                indent: indent,
+                startOffset: startOffset,
+              ) ??
               nullScalarDelegate(
                 indentLevel: childIndentLevel,
                 indent: indent + 1,
                 startOffset: startOffset,
-              ),
-              parsedProps.properties,
-            )..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
+              );
+
+          sequence.pushEntry(
+            entry
+              ..updateEndOffset = _scanner.currentOffset - indentOrSeparation,
           );
 
           // Not a skill issue. 2 birds, 1 stone
