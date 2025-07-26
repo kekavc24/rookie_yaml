@@ -593,26 +593,34 @@ final class DocumentParser {
       ///       the ":" is present. Thus a "physical" null that ends at the
       ///       second caret.
       /// }
-      if (ignoreValue(_scanner.charAtCursor)) {
-        value = nullScalarDelegate(
+      if (properties?.isAlias ?? false) {
+        value = _referenceAlias(
+          properties!,
           indentLevel: valueLevel,
           indent: minIndent,
           startOffset: valueOffset,
-        )..updateEndOffset = _scanner.currentOffset;
+        )..updateNodeProperties = properties;
       } else {
-        value = _parseFlowNode(
-          inferredEvent: event,
-          isParsingKey: false,
-          currentIndentLevel: valueLevel,
-          minIndent: minIndent,
-          forceInline: forceInline,
-          isExplicitKey: false,
-          keyIsJsonLike: false, // No effect here
-          collectionDelimiter: exitIndicator,
+        value = _trackAnchor(
+          ignoreValue(_scanner.charAtCursor)
+              ? (nullScalarDelegate(
+                  indentLevel: valueLevel,
+                  indent: minIndent,
+                  startOffset: valueOffset,
+                )..updateEndOffset = _scanner.currentOffset)
+              : _parseFlowNode(
+                  inferredEvent: event,
+                  isParsingKey: false,
+                  currentIndentLevel: valueLevel,
+                  minIndent: minIndent,
+                  forceInline: forceInline,
+                  isExplicitKey: false,
+                  keyIsJsonLike: false, // No effect here
+                  collectionDelimiter: exitIndicator,
+                ),
+          properties,
         );
       }
-
-      value = _trackAnchor(value, properties);
     } else if (!ignoreValue(_scanner.charAtCursor)) {
       // Must at least be end of parser, "," and ["}" if map or "]" if list]
       throw expectedCharErr;
