@@ -897,11 +897,11 @@ final class DocumentParser {
       switch (event) {
         case FlowCollectionEvent.nextFlowEntry:
           {
-            if (_aliasKeyOrNull(
+            if (_nullOrAlias(
                   properties,
                   indentLevel: indentLevel,
                   indent: indent,
-                  keyStartOffset: flowStartOffset,
+                  startOffset: flowStartOffset,
                 )
                 case ParserDelegate entry) {
               delegate.pushEntry(_trackAnchor(entry, properties));
