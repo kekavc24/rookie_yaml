@@ -1283,14 +1283,16 @@ final class DocumentParser {
     final parsedProps = parsedProperties != null;
 
     if (parsedProps && parsedProperties.properties.isAlias) {
+      final props = parsedProperties.properties;
+
       // Lax indent is always the minimum
       return (
         delegate: _referenceAlias(
-          parsedProperties.properties,
+          props,
           indentLevel: indentLevel,
           indent: laxIndent,
           startOffset: startOffset,
-        ),
+        )..updateNodeProperties = props,
         nodeInfo: (exitIndent: laxIndent, hasDocEndMarkers: false),
       );
     }
