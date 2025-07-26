@@ -198,5 +198,163 @@ $tag ignored :)
         'Named tag "$tag" has no suffix',
       );
     });
+
+    test(
+      'Throws when tags are used before explicit keys in block and flow styles',
+      () {
+        check(
+          () => bootstrapDocParser(
+            '!!str ? explicit-key',
+          ).parseNodeSingle(),
+        ).throwsAFormatException(
+          'Inline node properties cannot be declared before the first "? "'
+          ' indicator',
+        );
+
+        check(
+          () => bootstrapDocParser(
+            '''
+? key
+: okay
+
+!error ? never-parsed
+''',
+          ).parseNodeSingle(),
+        ).throwsAFormatException(
+          'Explicit keys cannot have any node properties before the "?" '
+          'indicator',
+        );
+
+        check(
+          () => bootstrapDocParser(
+            '''
+? key
+: okay
+
+!error
+? even-when-on-a-new-line
+''',
+          ).parseNodeSingle(),
+        ).throwsAFormatException(
+          'Explicit keys cannot have any node properties before the "?" '
+          'indicator',
+        );
+
+        check(
+          () => bootstrapDocParser(
+            '''
+{
+? key
+: okay,
+
+!error
+? also-applies-to-flow
+}
+''',
+          ).parseNodeSingle(),
+        ).throwsAFormatException(
+          'Explicit keys cannot have any node properties before the "?" '
+          'indicator',
+        );
+      },
+    );
+
+    test('Throws when tags are multiline in implicit keys', () {
+      check(
+        () => bootstrapDocParser(
+          '''
+!tag-okay implicit-1: is-fine
+
+!this-is-not-okay
+implicit-2: is-an-error
+''',
+        ).parseNodeSingle(),
+      ).throwsAFormatException(
+        'Node properties for an implicit block key cannot span multiple lines',
+      );
+
+      check(
+        () => bootstrapDocParser(
+          '''
+{
+!tag-okay implicit-1: is-fine,
+
+!this-is-not-okay
+implicit-2: is-an-error}
+''',
+        ).parseNodeSingle(),
+      ).throwsAFormatException(
+        'Node properties for an implicit flow key cannot span multiple lines',
+      );
+    });
+
+    test('Throws when tags are declared before block sequence indicator', () {
+      check(
+        () => bootstrapDocParser('!!str - not-okay').parseNodeSingle(),
+      ).throwsAFormatException(
+        'Inline node properties cannot be declared before the first "- "'
+        ' indicator',
+      );
+
+      const yaml = '''
+!experimental-okay-1st
+- first
+
+!not-and-unlikely-okay
+- second
+''';
+
+      check(
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
+      ).throwsAFormatException(
+        'Dangling node properties found at ${yaml.indexOf('!', 3)}',
+      );
+    });
+  });
+
+  group('Anchors & alias', () {
+    test('Parses simple anchor and alias', () {
+      const yaml = '''
+&a key: &b [ &c value ]
+
+*b : &d { *a : *b }
+
+*c :
+  &e
+  - ? *a
+    : *b
+  - *c
+
+*d : *e
+''';
+
+      check(
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).equals(
+        {
+          'key': ['value'],
+
+          ['value']: {
+            'key': ['value'],
+          },
+
+          'value': [
+            {
+              'key': ['value'],
+            },
+            'value',
+          ],
+
+          {
+            'key': ['value'],
+          }: [
+            {
+              'key': ['value'],
+            },
+            'value',
+          ],
+        }.toString(),
+      );
+    });
   });
 }
