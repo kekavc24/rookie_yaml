@@ -1532,28 +1532,22 @@ final class DocumentParser {
       mapIndent,
     );
 
-    if (shouldExit) {
+    if (shouldExit && !parsedNodeProperties.properties.isAlias) {
       final endOffset = _scanner.currentOffset;
-
-      final emptyExplicitKey =
-          _nullOrAlias(
-            parsedNodeProperties.properties,
-            indentLevel: indentLevel,
-            indent: mapIndent,
-            startOffset: keyOffset,
-          ) ??
-          nullScalarDelegate(
-            indentLevel: indentLevel,
-            indent: mapIndent,
-            startOffset: keyOffset,
-          );
 
       // We have an empty/null key on our hands
       return (
-        true,
+        !preKeyHasIndent || inferredIndent! < mapIndent,
         (exitIndent: inferredIndent, hasDocEndMarkers: false),
 
-        emptyExplicitKey
+        _trackAnchor(
+            nullScalarDelegate(
+              indentLevel: indentLevel,
+              indent: mapIndent,
+              startOffset: keyOffset,
+            ),
+            parsedNodeProperties.properties,
+          )
           ..updateEndOffset = preKeyHasIndent
               ? endOffset - inferredIndent!
               : endOffset,
@@ -1603,7 +1597,7 @@ final class DocumentParser {
       /// We can exit early if we are no longer at the current map's level
       /// based on the indent (the current map is the caller of this function)
       /// or the current document ended.
-      hasDocEndMarkers || (hasIndent && exitIndent < mapIndent),
+      hasDocEndMarkers || !hasIndent || exitIndent < mapIndent,
       nodeInfo,
       delegate,
     );
@@ -1679,7 +1673,12 @@ final class DocumentParser {
         nodeInfo: (exitIndent: inferredIndent, hasDocEndMarkers: false),
         delegate: (
           key: explicitKey,
-          value: null,
+          value: _nullOrAlias(
+            parsedNodeProperties.properties,
+            indentLevel: indentLevel,
+            indent: indent,
+            startOffset: valueOffset,
+          ),
         ),
       );
     }
