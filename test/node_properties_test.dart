@@ -356,5 +356,13 @@ implicit-2: is-an-error}
         }.toString(),
       );
     });
+
+    test('Throws when non-existent alias is used', () {
+      const alias = 'value';
+
+      check(
+        () => bootstrapDocParser('key: *$alias').parseNodeSingle(),
+      ).throwsAFormatException('Node alias "$alias" is unrecognized');
+    });
   });
 }
