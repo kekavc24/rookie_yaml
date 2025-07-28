@@ -904,7 +904,7 @@ final class DocumentParser {
                   startOffset: flowStartOffset,
                 )
                 case ParserDelegate entry) {
-              delegate.pushEntry(_trackAnchor(entry, properties));
+              delegate.pushEntry(entry); // TODO: Test this
               break;
             }
 
