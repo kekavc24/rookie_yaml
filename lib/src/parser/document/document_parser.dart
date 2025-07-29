@@ -1,12 +1,5 @@
 part of 'yaml_document.dart';
 
-typedef _ParsedDocDirectives = ({
-  bool isDocEnd,
-  YamlDirective? yamlDirective,
-  Map<TagHandle, GlobalTag> globalTags,
-  List<ReservedDirective> reservedDirectives,
-});
-
 final _defaultGlobalTag = MapEntry(TagHandle.secondary(), yamlGlobalTag);
 
 final class DocumentParser {
@@ -158,50 +151,6 @@ final class DocumentParser {
         when _docEndExplicit) {
       _skipToParsableChar(_scanner, comments: _comments);
     }
-  }
-
-  /// Parses directives and any its end marker if present
-  _ParsedDocDirectives _processDirectives() {
-    final (:yamlDirective, :globalTags, :reservedDirectives) = parseDirectives(
-      _scanner,
-    );
-
-    var hasDocMarker = false;
-
-    final charAtCursor = _scanner.charAtCursor;
-
-    if (charAtCursor == Indicator.period ||
-        (charAtCursor == Indicator.blockSequenceEntry &&
-            _scanner.peekCharAfterCursor() == Indicator.blockSequenceEntry)) {
-      hasDocMarker = hasDocumentMarkers(
-        _scanner,
-        onMissing: (greedy) => _greedyChars.addAll(greedy),
-      );
-
-      if (hasDocMarker) {
-        _docStartExplicit = _inferDocEndChars(_scanner) == '---';
-      }
-    }
-
-    _hasDirectives =
-        yamlDirective != null ||
-        globalTags.isNotEmpty ||
-        reservedDirectives.isNotEmpty;
-
-    /// Must have explicit directive end if directives are present or just a
-    /// document end to terminate the current document after its directives
-    if (_hasDirectives && !(_docStartExplicit || hasDocMarker)) {
-      throw FormatException(
-        'Expected the directive end marker [---] after declaring directives',
-      );
-    }
-
-    return (
-      isDocEnd: !_docStartExplicit && hasDocMarker,
-      yamlDirective: yamlDirective,
-      globalTags: globalTags,
-      reservedDirectives: reservedDirectives,
-    );
   }
 
   /// Resolves a local tag to a global tag uri if present.
@@ -2328,26 +2277,21 @@ final class DocumentParser {
 
     // If no directives end indicator, parse directives
     if (!_docStartExplicit) {
-      final (:isDocEnd, :yamlDirective, :globalTags, :reservedDirectives) =
-          _processDirectives();
+      final (
+        :yamlDirective,
+        :globalTags,
+        :reservedDirectives,
+        :hasDirectiveEnd,
+      ) = parseDirectives(
+        _scanner,
+      );
 
-      if (isDocEnd) {
-        _updateDocEndChars('.'.padRight(3, '.'));
-        return YamlDocument._(
-          _currentIndex,
-          yamlDirective,
-          globalTags.values.toSet(),
-          reservedDirectives,
-          _comments,
-          null,
-          YamlDocType.inferType(
-            hasDirectives: _hasDirectives,
-            isDocStartExplicit: _docStartExplicit,
-          ),
-          _docStartExplicit,
-          _docEndExplicit,
-        );
-      }
+      _hasDirectives =
+          yamlDirective != null ||
+          globalTags.isNotEmpty ||
+          reservedDirectives.isNotEmpty;
+
+      _docStartExplicit = hasDirectiveEnd;
 
       version = yamlDirective;
       tags = globalTags;
