@@ -14,6 +14,7 @@ import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+import 'package:source_span/source_span.dart';
 
 part 'document_parser.dart';
 part 'document_events.dart';

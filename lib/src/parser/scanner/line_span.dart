@@ -1,10 +1,7 @@
 part of 'chunk_scanner.dart';
 
-/// `start` to `end` index in string. Exclusive of the `end`.
-typedef Offset = ({int start, int end});
+typedef LineRangeInfo = ({SourceLocation start, SourceLocation current});
 
-/// See [Offset]
-typedef GraphemeSourceSpan = Offset;
 const _emptyIterable = Iterable<LineSpanChar>.empty();
 
 /// A span representing a collection of grapheme clusters/utf8 characters.
@@ -31,9 +28,10 @@ final class LineSpan {
     required int startOffset,
     required Characters characters,
   }) : _shouldEmitEndToken = hasLineBreak,
-       _startOffset = startOffset,
-       _endOffset = startOffset,
+       _start = SourceLocation(startOffset, line: lineIndex, column: 0),
        source = characters.string {
+    _current = _start;
+
     if (source.isEmpty) {
       _hasNextChar = false;
       _charQueue = _emptyIterable.iterator;
@@ -62,11 +60,9 @@ final class LineSpan {
   /// character.
   final bool _shouldEmitEndToken;
 
-  /// Start offset in the entire string to which [source] represents a portion
-  /// of it or its entirety.
-  final int _startOffset;
+  final SourceLocation _start;
 
-  int _endOffset;
+  late SourceLocation _current;
 
   /// Collection of characters in line
   late final Iterator<LineSpanChar> _charQueue;
@@ -93,19 +89,7 @@ final class LineSpan {
   /// Number of characters iterated in this line span
   int get charsIterated => _currentIndex + 1;
 
-  /// Returns the offset of this line that has been iterated.
-  ///
-  /// By default, if the iteration has not started, the `start` and `end`
-  /// offset will both be `-1`.
-  ///
-  /// Otherwise, the `end` offset will be equal to the offset of the last
-  /// character iterated.
-  GraphemeSourceSpan get offset {
-    if (charsIterated == 0) return (start: _currentIndex, end: _currentIndex);
-
-    // Add 1 to exclude the last character
-    return (start: _startOffset, end: _endOffset + 1);
-  }
+  LineRangeInfo get lineRangeInfo => (start: _start, current: _current);
 
   /// Obtains the current character in the line under the cursor and moves the
   /// cursor forward.
@@ -130,7 +114,14 @@ final class LineSpan {
         );
     }
 
-    ++_endOffset;
+    if (charsIterated > 1) {
+      _current = SourceLocation(
+        _start.offset + _currentIndex,
+        line: lineIndex,
+        column: char.columnIndex,
+      );
+    }
+
     return char;
   }
 

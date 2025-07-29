@@ -3,6 +3,7 @@ import 'package:rookie_yaml/src/parser/comment_parser.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:source_span/source_span.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
@@ -39,11 +40,9 @@ $indent
     });
 
     test('Parses block header with comments', () {
-      final comment = YamlComment(
-        'Block comment',
-        startOffset: -1,
-        endOffset: -1,
-      );
+      final holder = SourceLocation(0);
+
+      final comment = YamlComment('Block comment', start: holder, end: holder);
 
       final trailing =
           '''

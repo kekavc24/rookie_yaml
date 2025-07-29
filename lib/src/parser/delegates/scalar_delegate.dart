@@ -5,7 +5,7 @@ final class ScalarDelegate extends ParserDelegate {
   ScalarDelegate({
     required super.indentLevel,
     required super.indent,
-    required super.startOffset,
+    required super.start,
   });
 
   PreScalar? preScalar;
@@ -19,7 +19,7 @@ final class ScalarDelegate extends ParserDelegate {
     preScalar = scalar;
     indent = scalar.scalarIndent;
     _hasLineBreak = scalar.hasLineBreak;
-    updateEndOffset = scalar.endOffset;
+    updateEndOffset = scalar.end;
   }
 
   @override

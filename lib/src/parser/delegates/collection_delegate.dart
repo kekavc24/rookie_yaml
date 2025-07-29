@@ -11,12 +11,12 @@ final _bareScalar = Scalar(
 ScalarDelegate nullScalarDelegate({
   required int indentLevel,
   required int indent,
-  required int startOffset,
+  required SourceLocation startOffset,
   // TODO: Introduce tag & anchor
 }) => ScalarDelegate(
   indentLevel: indentLevel,
   indent: indent,
-  startOffset: -1,
+  start: startOffset,
 );
 
 /// A delegate that represents a single key-value pair within a flow/block
@@ -28,10 +28,10 @@ final class MapEntryDelegate extends ParserDelegate {
   }) : super(
          indent: keyDelegate.indent,
          indentLevel: keyDelegate.indentLevel,
-         startOffset: keyDelegate.startOffset,
+         start: keyDelegate.start,
        ) {
     hasLineBreak = keyDelegate.encounteredLineBreak;
-    updateEndOffset = keyDelegate._endOffset;
+    updateEndOffset = keyDelegate._end;
   }
 
   final NodeStyle nodeStyle;
@@ -48,7 +48,7 @@ final class MapEntryDelegate extends ParserDelegate {
     if (value == null) return;
 
     hasLineBreak = value.encounteredLineBreak;
-    updateEndOffset = value._endOffset;
+    updateEndOffset = value._end;
     _valueDelegate = value;
   }
 
@@ -75,7 +75,7 @@ abstract base class CollectionDelegate extends ParserDelegate {
     required this.collectionStyle,
     required super.indentLevel,
     required super.indent,
-    required super.startOffset,
+    required super.start,
   });
 
   /// Collection style
@@ -103,7 +103,7 @@ final class SequenceDelegate extends CollectionDelegate {
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
-    required super.startOffset,
+    required super.start,
   });
 
   /// Node delegates that resolve to nodes that are elements of the sequence.
@@ -127,7 +127,7 @@ final class MappingDelegate extends CollectionDelegate {
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
-    required super.startOffset,
+    required super.start,
   });
 
   /// A map that is resolved as a key is added

@@ -405,28 +405,20 @@ void _blockNodeEndOffset(
   required bool hasDocEndMarkers,
   required int? indentOnExit,
 }) {
-  final ChunkScanner(:currentOffset, :source) = scanner;
+  if (!hasDocEndMarkers && indentOnExit == null) {
+    if (!scanner.canChunkMore) {
+      scanner.skipCharAtCursor(); // Completely skip last char
+      blockNode.updateEndOffset = scanner.lineInfo().current;
+      return;
+    }
 
-  int? endOffset;
-
-  if (hasDocEndMarkers) {
-    // We perform a lookback to the last "\n"
-    endOffset = max(
-      0,
-      source.lastIndexOf(RegExp('[\r|\n]'), currentOffset - 1),
+    throw ArgumentError.value(
+      indentOnExit,
+      'indentOnExit',
+      'A block node always ends after an indent change but found null',
     );
-  } else {
-    // Block node must have an exit indent if we can parse more characters
-    endOffset = switch (indentOnExit) {
-      int indent => currentOffset - indent,
-      _ when !scanner.canChunkMore => max(currentOffset, source.length),
-      _ => throw ArgumentError.value(
-        indentOnExit,
-        'indentOnExit',
-        'A block node always ends after an indent change but found null',
-      ),
-    };
   }
 
-  blockNode.updateEndOffset = endOffset;
+  // For both doc end chars and indent change. Reference start of line
+  blockNode.updateEndOffset = scanner.lineInfo().start;
 }

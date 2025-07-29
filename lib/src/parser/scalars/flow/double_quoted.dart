@@ -114,7 +114,7 @@ PreScalar parseDoubleQuoted(
     scalarStyle: ScalarStyle.doubleQuoted,
     actualIdent: indent,
     foundLinebreak: foundLineBreak,
-    endOffset: scanner.currentOffset
+    end: scanner.lineInfo().current,
   );
 }
 

@@ -4,6 +4,7 @@ import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:source_span/source_span.dart';
 
 part 'scalar_delegate.dart';
 part 'collection_delegate.dart';
@@ -14,7 +15,7 @@ abstract interface class ParserDelegate {
   ParserDelegate({
     required this.indentLevel,
     required this.indent,
-    required this.startOffset,
+    required this.start,
     this.parent,
   });
 
@@ -25,24 +26,31 @@ abstract interface class ParserDelegate {
   int indent;
 
   /// Starting offset.
-  final int startOffset;
+  final SourceLocation start;
 
   /// Exclusive
-  int? _endOffset;
+  SourceLocation? _end;
 
-  set updateEndOffset(int? offset) {
-    if ((offset == null) || offset < startOffset) {
+  set updateEndOffset(SourceLocation? end) {
+    if (end == null) return;
+
+    final startOffset = start.offset;
+    final currentOffset = end.offset;
+
+    if (currentOffset < start.offset) {
       throw StateError(
         [
           'Invalid end offset for delegate [$runtimeType] with:',
           'Start offset: $startOffset',
-          'Current end offset: $_endOffset',
-          'End offset provided: $offset',
+          'Current end offset: ${_end?.offset}',
+          'End offset provided: $currentOffset',
         ].join('\n\t'),
       );
     }
 
-    _endOffset = max(offset, _endOffset ?? -1);
+    if (_end case SourceLocation(:final offset) when offset < currentOffset) {
+      _end = end;
+    }
   }
 
   set updateNodeProperties(NodeProperties? properties) {
@@ -102,7 +110,13 @@ abstract interface class ParserDelegate {
   ///
   /// `NOTE:` This method is entirely situational and depends on the
   /// correctness of the parser or parser delegate calling it.
-  int charDiff(int currentOffset) => max(0, currentOffset - startOffset);
+  int charDiff() {
+    if (_end case SourceLocation(:final offset)) {
+      return max(0, offset - start.offset);
+    }
+
+    return 0;
+  }
 
   /// Returns `true` if an incoming delegate is a child of the current
   /// delegate.
@@ -122,7 +136,7 @@ final class AliasDelegate extends ParserDelegate {
     this._reference, {
     required super.indentLevel,
     required super.indent,
-    required super.startOffset,
+    required super.start,
   });
 
   /// Delegate resolving to the parsed node

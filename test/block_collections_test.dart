@@ -282,7 +282,8 @@ implicit:
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsAFormatException(
-        'Dangling node/node properties found with indent of 2 space(s) while parsing',
+        'Dangling node/node properties found with indent of 2 space(s) while'
+        ' parsing',
       );
     });
   });

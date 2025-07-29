@@ -1,20 +1,17 @@
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:source_span/source_span.dart';
 
 const _pattern = '# ';
 
 final class YamlComment implements Comparable<YamlComment> {
-  YamlComment(
-    this.comment, {
-    required this.startOffset,
-    required this.endOffset,
-  });
+  YamlComment(this.comment, {required this.start, required this.end});
 
   /// Start offset for the comment (inclusive).
-  final int startOffset;
+  final SourceLocation start;
 
   /// End offset for the comment (exclusive).
-  final int endOffset;
+  final SourceLocation end;
 
   /// Comment with leading `#` stripped off
   final String comment;
@@ -22,8 +19,8 @@ final class YamlComment implements Comparable<YamlComment> {
   /// Sorting based on position in document
   @override
   int compareTo(YamlComment other) {
-    if (other.endOffset < startOffset) return -1;
-    if (other.startOffset >= endOffset) return 1;
+    if (other.end.offset < start.offset) return -1;
+    if (other.start.offset > end.offset) return 1;
     return 0;
   }
 
@@ -45,7 +42,7 @@ final class YamlComment implements Comparable<YamlComment> {
 }) {
   final buffer = StringBuffer(prepend ?? '');
 
-  var startOffset = scanner.currentOffset;
+  final start = scanner.lineInfo().current;
 
   /// A comment forces us to read the entire line till the end.
   final chunkInfo = scanner.bufferChunk(
@@ -57,16 +54,18 @@ final class YamlComment implements Comparable<YamlComment> {
 
   if (comment.startsWith(_pattern)) {
     comment = comment.replaceFirst(_pattern, '');
-  } else {
-    --startOffset;
+  }
+
+  if (chunkInfo.sourceEnded && chunkInfo.charOnExit is! LineBreak) {
+    scanner.skipCharAtCursor();
   }
 
   return (
     onExit: chunkInfo,
     comment: YamlComment(
       comment,
-      startOffset: startOffset,
-      endOffset: scanner.currentOffset + 1,
+      start: start,
+      end: scanner.lineInfo().current,
     ),
   );
 }

@@ -1,6 +1,7 @@
 import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:source_span/source_span.dart';
 
 part 'line_span.dart';
 
@@ -40,6 +41,7 @@ final class ChunkScanner {
     // We don't want chunks from empty lines
     if (source.isEmpty) return;
     _hasMoreLines = _iterator.moveNext();
+    ++_currentOffset;
   }
 
   /// Initializes a [ChunkScanner] and moves character to first character
@@ -83,9 +85,19 @@ final class ChunkScanner {
   /// Character at the cursor
   ReadableChar? _charOnLastExit;
 
-  /// Current offset in source string with `0` being the start and
-  /// `source.length - 1` being the end.
-  int get currentOffset => _currentOffset;
+  ///
+  LineRangeInfo lineInfo() {
+    if (_currentLine == null) {
+      _fetchNextLine();
+    }
+
+    if (_currentLine case LineSpan span) {
+      return span.lineRangeInfo;
+    }
+
+    final current = SourceLocation(_currentOffset);
+    return (start: current, current: current);
+  }
 
   /// Peeks the last char preceding the character that triggered the last
   /// [bufferChunk] call to exit.

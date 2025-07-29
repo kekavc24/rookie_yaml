@@ -6,6 +6,7 @@ import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:source_span/source_span.dart';
 
 part 'block_header.dart';
 part 'block_utils.dart';
@@ -52,7 +53,7 @@ PreScalar parseBlockStyle(
   /// non-empty line.
   int? previousMaxIndent;
 
-  int? endOffset;
+  SourceLocation? end;
   var hasDocMarkers = false;
 
   blockParser:
@@ -85,11 +86,12 @@ PreScalar parseBlockStyle(
               indentOnExit = scannedIndent;
               scanner.skipCharAtCursor();
 
-              final ChunkScanner(:currentOffset, :source) = scanner;
+              final lineInfo = scanner.lineInfo();
 
-              endOffset = hasCharAfter
-                  ? (currentOffset - scannedIndent)
-                  : source.length;
+              /// If we have more characters, our actual scalar starts where
+              /// the current line starts since the indent change caused the
+              /// exit
+              end = hasCharAfter ? lineInfo.start : lineInfo.current;
               break blockParser;
             }
 
@@ -136,15 +138,15 @@ PreScalar parseBlockStyle(
       case Indicator.blockSequenceEntry || Indicator.period
           when trueIndent == 0:
         {
-          final maybeEndOffset = scanner.currentOffset;
+          // Ends when we see first "-" of "---" or "." of "..."
+          final maybeEnd = scanner.lineInfo().current;
 
           hasDocMarkers = hasDocumentMarkers(
             scanner,
             onMissing: buffer.writeAll,
           );
 
-          // We will exit in the next iteration
-          if (hasDocMarkers) endOffset = maybeEndOffset;
+          if (hasDocMarkers) end = maybeEnd;
         }
 
       default:
@@ -192,6 +194,6 @@ PreScalar parseBlockStyle(
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
     foundLinebreak: indentOnExit != seamlessIndentMarker || !buffer.isEmpty,
-    endOffset: currentOrMaxOffset(scanner, endOffset),
+    end: end ?? scanner.lineInfo().current,
   );
 }
