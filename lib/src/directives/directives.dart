@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
@@ -25,10 +26,18 @@ typedef Directives = ({
   YamlDirective? yamlDirective,
   List<ReservedDirective> reservedDirectives,
   Map<TagHandle, GlobalTag<dynamic>> globalTags,
+  bool hasDirectiveEnd,
 });
 
 /// `%` character
 const _directiveIndicator = Indicator.directive;
+
+const _noDirectives = (
+  yamlDirective: null,
+  globalTags: <TagHandle, GlobalTag>{},
+  reservedDirectives: <ReservedDirective>[],
+  hasDirectiveEnd: false,
+);
 
 /// A valid `YAML` directive
 sealed class Directive {
@@ -42,20 +51,14 @@ sealed class Directive {
 /// Parses all [Directive](s) present before the start of a node in a
 /// `YAML` document.
 Directives parseDirectives(ChunkScanner scanner) {
-  YamlDirective? directive;
-  final globalDirectives = <TagHandle, GlobalTag>{};
-  final reserved = <ReservedDirective>[];
-
   /// Skips line breaks. Returns `true` if we continue parsing directives
-  bool skipLineBreaks() {
+  void skipLineBreaks() {
     var char = scanner.charAtCursor;
 
     while (char is LineBreak) {
       scanner.skipCharAtCursor();
       char = scanner.charAtCursor;
     }
-
-    return char == _directiveIndicator;
   }
 
   void throwIfNotSeparation(ReadableChar? char) {
@@ -74,6 +77,9 @@ Directives parseDirectives(ChunkScanner scanner) {
 
   if (scanner.charAtCursor == _directiveIndicator) {
     final directiveBuffer = StringBuffer();
+    YamlDirective? directive;
+    final globalDirectives = <TagHandle, GlobalTag>{};
+    final reserved = <ReservedDirective>[];
 
     dirParser:
     while (scanner.canChunkMore) {
@@ -82,13 +88,7 @@ Directives parseDirectives(ChunkScanner scanner) {
       switch (char) {
         /// Skip line breaks greedily
         case LineBreak _:
-          {
-            if (skipLineBreaks()) {
-              continue dirParser;
-            }
-
-            break dirParser;
-          }
+          skipLineBreaks();
 
         // Extract directive
         case _directiveIndicator when scanner.charBeforeCursor is LineBreak?:
@@ -155,16 +155,33 @@ Directives parseDirectives(ChunkScanner scanner) {
             directiveBuffer.clear();
           }
 
-        /// Exit immediately we fail to see any more directives
+        /// Directives must see "---" to terminate
         default:
-          break dirParser;
+          {
+            // Force a "---" check and not "..."
+            if (char == Indicator.blockSequenceEntry &&
+                hasDocumentMarkers(scanner, onMissing: (_) {})) {
+              return (
+                yamlDirective: directive,
+                globalTags: globalDirectives,
+                reservedDirectives: reserved,
+                hasDirectiveEnd: true,
+              );
+            }
+
+            break dirParser;
+          }
       }
     }
+
+    /// As long as "%" was seen, we must parse directives and terminate with
+    /// the "---" marker
+    throw FormatException(
+      'Expected a directive end marker but found '
+      '"${scanner.charAtCursor?.string}${scanner.peekCharAfterCursor()?.string}'
+      '.. as the first two characters',
+    );
   }
 
-  return (
-    yamlDirective: directive,
-    globalTags: globalDirectives,
-    reservedDirectives: reserved,
-  );
+  return _noDirectives;
 }
