@@ -171,7 +171,6 @@ PreScalar preformatScalar(
   int indentOnExit = seamlessIndentMarker,
   bool hasDocEndMarkers = false,
 }) {
-  final hasLineBreak = buffer.hasLineBreaks || foundLinebreak;
   var content = buffer.bufferedString();
 
   if (trim) {
@@ -185,7 +184,7 @@ PreScalar preformatScalar(
   LocalTag tag = stringTag;
 
   // Attempt to infer a default value
-  if (!hasLineBreak) {
+  if (!foundLinebreak) {
     if (_parseInt(normalized) case _ParsedInt(
       radix: final pRadix,
       value: final pValue,
@@ -210,7 +209,7 @@ PreScalar preformatScalar(
     scalarStyle: scalarStyle,
     parsedContent: content,
     hasDocEndMarkers: hasDocEndMarkers,
-    hasLineBreak: hasLineBreak,
+    hasLineBreak: foundLinebreak,
     inferredValue: value,
     scalarIndent: actualIdent,
     indentOnExit: indentOnExit,
