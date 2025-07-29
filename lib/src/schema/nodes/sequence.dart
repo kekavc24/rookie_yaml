@@ -8,6 +8,8 @@ final class Sequence extends UnmodifiableListView<ParsedYamlNode>
     required this.nodeStyle,
     required this.tag,
     required this.anchor,
+    required this.start,
+    required this.end,
   });
 
   @override
@@ -18,6 +20,12 @@ final class Sequence extends UnmodifiableListView<ParsedYamlNode>
 
   @override
   final String? anchor;
+
+  @override
+  final SourceLocation start;
+
+  @override
+  final SourceLocation end;
 
   @override
   bool operator ==(Object other) =>

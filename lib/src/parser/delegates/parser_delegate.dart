@@ -101,6 +101,12 @@ abstract interface class ParserDelegate {
 
   /// `YAML` node delegated to the parser.
   ParsedYamlNode parsed() {
+    assert(
+      _end != null,
+      'Call to [$runtimeType.parsed()] must have a valid end offset. '
+      'Found "$_end"',
+    );
+
     _parsedNode ??= _resolveNode();
     return _parsedNode!;
   }
@@ -143,7 +149,8 @@ final class AliasDelegate extends ParserDelegate {
   final ParsedYamlNode _reference;
 
   @override
-  AliasNode _resolveNode() => AliasNode(_alias ?? '', _reference);
+  AliasNode _resolveNode() =>
+      AliasNode(_alias ?? '', _reference, start: start, end: _end!);
 
   @override
   bool isChild(int indent) => false;

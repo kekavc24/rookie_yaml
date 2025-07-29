@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:source_span/source_span.dart';
 
 part 'node_styles.dart';
 part 'sequence.dart';
@@ -22,6 +23,14 @@ abstract mixin class YamlNode<T extends ParsedYamlNode> {
 
 /// A node parsed from a `YAML` source string
 sealed class ParsedYamlNode extends YamlNode {
+  ParsedYamlNode({required this.start, required this.end});
+
+  /// Start position in the source parsed, inclusive.
+  final SourceLocation start;
+
+  /// End position in the source parsed, exclusive
+  final SourceLocation end;
+
   /// [Tag] directive describing how the node is represented natively.
   ///
   /// If a custom [TypeResolverTag] tag was parsed, the [Node] may be viewed in
@@ -47,8 +56,12 @@ extension CustomResolved on ParsedYamlNode {
 
 /// A node that is a pointer to another node.
 final class AliasNode extends ParsedYamlNode {
-  AliasNode(this.alias, this.aliased)
-    : assert(alias.isNotEmpty, 'An alias name cannot be empty');
+  AliasNode(
+    this.alias,
+    this.aliased, {
+    required super.start,
+    required super.end,
+  }) : assert(alias.isNotEmpty, 'An alias name cannot be empty');
 
   /// Anchor name to [aliased]
   final String alias;

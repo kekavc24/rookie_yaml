@@ -9,6 +9,8 @@ base class Scalar<T> extends ParsedYamlNode {
     required this.scalarStyle,
     required this.tag,
     required this.anchor,
+    required super.start,
+    required super.end,
   }) : _content = content;
 
   /// Style used to serialize the scalar. Can be degenerated to a `block` or
@@ -49,6 +51,8 @@ final class IntScalar extends Scalar<int> {
     required super.scalarStyle,
     required super.tag,
     required super.anchor,
+    required super.start,
+    required super.end,
   });
 
   /// Base in number system this scalar belongs to.

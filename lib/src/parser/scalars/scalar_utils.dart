@@ -135,7 +135,7 @@ final class PreScalar {
       ..radix = radix;
   }
 
-  Scalar parsedScalar(ResolvedTag? tag, String? anchor) {
+  Scalar parsedScalar(ResolvedTag? tag, String? anchor, SourceLocation start) {
     return inferredValue is int
         ? IntScalar(
             inferredValue,
@@ -144,6 +144,8 @@ final class PreScalar {
             scalarStyle: scalarStyle,
             tag: tag,
             anchor: anchor,
+            start: start,
+            end: end,
           )
         : Scalar(
             inferredValue,
@@ -151,6 +153,8 @@ final class PreScalar {
             scalarStyle: scalarStyle,
             tag: tag,
             anchor: anchor,
+            start: start,
+            end: end,
           );
   }
 }

@@ -1,13 +1,5 @@
 part of 'parser_delegate.dart';
 
-final _bareScalar = Scalar(
-  null,
-  content: '',
-  scalarStyle: ScalarStyle.plain,
-  tag: null,
-  anchor: null,
-);
-
 ScalarDelegate nullScalarDelegate({
   required int indentLevel,
   required int indent,
@@ -62,10 +54,12 @@ final class MapEntryDelegate extends ParserDelegate {
   /// only a single value. A key must exist.
   @override
   Mapping _resolveNode() => Mapping(
-    {keyDelegate.parsed(): _valueDelegate?.parsed() ?? _bareScalar},
+    {keyDelegate.parsed(): _valueDelegate?.parsed()},
     nodeStyle: nodeStyle,
     tag: _tag,
     anchor: _anchor,
+    start: start,
+    end: _end!,
   );
 }
 
@@ -117,8 +111,14 @@ final class SequenceDelegate extends CollectionDelegate {
 
   /// Returns a [Sequence]
   @override
-  Sequence _resolveNode() =>
-      Sequence(_nodes, nodeStyle: collectionStyle, tag: _tag, anchor: _anchor);
+  Sequence _resolveNode() => Sequence(
+    _nodes,
+    nodeStyle: collectionStyle,
+    tag: _tag,
+    anchor: _anchor,
+    start: start,
+    end: _end!,
+  );
 }
 
 /// A delegate that resolves to a [Mapping]
@@ -131,7 +131,7 @@ final class MappingDelegate extends CollectionDelegate {
   });
 
   /// A map that is resolved as a key is added
-  final _map = <ParsedYamlNode, ParsedYamlNode>{};
+  final _map = <ParsedYamlNode, ParsedYamlNode?>{};
 
   /// Returns `true` if the [entry] is added. Otherwise, `false`.
   bool pushEntry(ParserDelegate key, ParserDelegate? value) {
@@ -143,13 +143,19 @@ final class MappingDelegate extends CollectionDelegate {
       return false;
     }
 
-    _map[keyNode] = value?.parsed() ?? _bareScalar;
+    _map[keyNode] = value?.parsed();
     hasLineBreak = key._hasLineBreak || (value?._hasLineBreak ?? false);
     return true;
   }
 
   /// Returns a [Mapping].
   @override
-  Mapping _resolveNode() =>
-      Mapping(_map, nodeStyle: collectionStyle, tag: _tag, anchor: _anchor);
+  Mapping _resolveNode() => Mapping(
+    _map,
+    nodeStyle: collectionStyle,
+    tag: _tag,
+    anchor: _anchor,
+    start: start,
+    end: _end!,
+  );
 }

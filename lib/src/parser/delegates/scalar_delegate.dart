@@ -32,12 +32,14 @@ final class ScalarDelegate extends ParserDelegate {
   /// scalar is emitted with a [ScalarStyle.doubleQuoted].
   @override
   ParsedYamlNode _resolveNode() =>
-      preScalar?.parsedScalar(_tag, _anchor) ??
+      preScalar?.parsedScalar(_tag, _anchor, start) ??
       Scalar(
         null,
         content: '',
         scalarStyle: ScalarStyle.plain,
         tag: _tag,
         anchor: _anchor,
+        start: start,
+        end: _end!,
       );
 }
