@@ -13,8 +13,11 @@ part 'char_utils.dart';
 
 /// A single human readable character referred to as a "grapheme cluster".
 abstract interface class ReadableChar {
+  /// Creates a valid [ReadableChar].
+  ///
+  /// This assumes all surrogate pairs have been combined. Do not call this
+  /// directly if your string cannot be expressed as a single grapheme cluster
   factory ReadableChar.scanned(String char) {
-    assert(char.length <= 1, 'Expected a single grapheme cluster!');
     final _GraphemeWrapper(:unicode) = _GraphemeWrapper(char);
     return _delimiterMap[unicode] ?? GraphemeChar._(unicode, char);
   }
@@ -24,6 +27,10 @@ abstract interface class ReadableChar {
 
   /// Unicode value of the character
   int get unicode;
+
+  /// Returns the current character in its raw form. This may vary depending
+  /// on the type of character/implementation
+  String raw();
 }
 
 /// A single grapheme cluster obtained from a string.
@@ -58,6 +65,11 @@ final class GraphemeChar implements ReadableChar {
 
   @override
   int get hashCode => Object.hashAll([unicode, string]);
+
+  @override
+  String raw() => isPrintable(this)
+      ? string
+      : string.codeUnits.map((c) => String.fromCharCode(c)).join();
 }
 
 /// A "no-cost" read-only wrapper type that still allows access to the wrapped
@@ -69,19 +81,6 @@ extension type _GraphemeWrapper(String char) {
 
   /// Unicode value as an `int`
   int get unicode => char.isEmpty ? 0 : char.runes.first;
-}
-
-/// A raw representation for any [ReadableChar]
-extension RawString on ReadableChar {
-  /// Returns a raw representation of string as a `32-bit` unicode value
-  String get raw {
-    const prefix = r'\u';
-
-    // Emit a sequence of utf-16 raw strings
-    return string.codeUnits
-        .map((unit) => '$prefix${unit.toRadixString(16).padLeft(4, '0')}')
-        .join();
-  }
 }
 
 /// Convenient map of all character encodings that are somewhat special

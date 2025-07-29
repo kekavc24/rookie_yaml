@@ -44,7 +44,7 @@ PreScalar parseBlockStyle(
       skipCrIfPossible(char, scanner: scanner),
   ];
 
-  final buffer = ScalarBuffer(ensureIsSafe: false);
+  final buffer = ScalarBuffer(ensureIsSafe: true);
 
   var lastWasIndented = false;
   var didRun = false;
@@ -193,7 +193,7 @@ PreScalar parseBlockStyle(
     actualIdent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
     hasDocEndMarkers: hasDocMarkers,
-    foundLinebreak: indentOnExit != seamlessIndentMarker || !buffer.isEmpty,
+    foundLinebreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
     end: end ?? scanner.lineInfo().current,
   );
 }

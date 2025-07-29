@@ -72,4 +72,7 @@ enum Indicator implements ReadableChar {
 
   @override
   String get string => String.fromCharCode(unicode);
+
+  @override
+  String raw() => string;
 }

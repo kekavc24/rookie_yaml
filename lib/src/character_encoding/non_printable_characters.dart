@@ -1,5 +1,7 @@
 part of 'character_encoding.dart';
 
+const _slash = r'\';
+
 /// Characters that should be escaped in YAML
 enum SpecialEscaped implements ReadableChar {
   /// `\0`
@@ -45,6 +47,16 @@ enum SpecialEscaped implements ReadableChar {
 
   @override
   String get string => String.fromCharCode(unicode);
+
+  @override
+  String raw() => switch (this) {
+    SpecialEscaped.unicodeNull => '${_slash}0',
+    SpecialEscaped.bell => '${_slash}a',
+    SpecialEscaped.backspace => '${_slash}b',
+    SpecialEscaped.verticalTab => '${_slash}v',
+    SpecialEscaped.formFeed => '${_slash}f',
+    _ => string,
+  };
 
   /// ASCII characters not represented/recognized correctly in a `Dart` string.
   /// This is (..maybe?..) great if we also get raw strings as input.

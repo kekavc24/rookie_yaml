@@ -25,13 +25,6 @@ typedef ChunkInfo = ({
   ReadableChar? charOnExit,
 });
 
-/// Checks if [char] is printable and writes it to the [buffer]. If not
-/// printable, a sequence of raw representation of the character as UTF-16
-/// escaped code units is written
-void safeWriteChar(StringBuffer buffer, ReadableChar char) {
-  buffer.write(isPrintable(char) ? char.string : char.raw);
-}
-
 /// Represents a scanner that iterates over a source only when a chunk or a
 /// single character is requested
 final class ChunkScanner {

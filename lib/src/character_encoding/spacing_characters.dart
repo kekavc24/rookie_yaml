@@ -21,6 +21,9 @@ enum LineBreak implements ReadableChar {
 
   /// `\n`
   static String get lf => LineBreak.lineFeed.string;
+
+  @override
+  String raw() => string;
 }
 
 /// White space characters
@@ -38,4 +41,7 @@ enum WhiteSpace implements ReadableChar {
 
   @override
   String get string => String.fromCharCode(unicode);
+
+  @override
+  String raw() => string;
 }
