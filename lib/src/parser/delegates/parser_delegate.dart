@@ -48,7 +48,7 @@ abstract interface class ParserDelegate {
       );
     }
 
-    if (_end case SourceLocation(:final offset) when offset < currentOffset) {
+    if (_end == null || _end!.offset < currentOffset) {
       _end = end;
     }
   }
