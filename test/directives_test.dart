@@ -4,6 +4,7 @@ import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:test/test.dart';
 
+import 'helpers/bootstrap_parser.dart';
 import 'helpers/exception_helpers.dart';
 
 void main() {
@@ -13,6 +14,7 @@ void main() {
 %MMH.. A reserved directive
 %RESERVED cannot be constructed
 %WHY? Irriz warririz https://youtu.be/y9r_pZL4boE?si=IQyibJXzS1agg2GN
+---
 ''';
 
       check(parseDirectives(ChunkScanner.of(yaml)))
@@ -36,7 +38,9 @@ void main() {
 
   group('YAML directive', () {
     test('Parse yaml directive', () {
-      final yaml = '%YAML 2.2';
+      final yaml =
+          '%YAML 2.2\n'
+          '---';
 
       check(parseDirectives(ChunkScanner.of(yaml)))
           .has(
@@ -103,6 +107,17 @@ void main() {
         'Invalid "A" character in YAML version. '
         'Only digits separated by "."'
         ' characters are allowed.',
+      );
+    });
+  });
+
+  group('General directives', () {
+    test('Throws if directive end markers are absent', () {
+      check(
+        () => bootstrapDocParser('%TEST Yess it is').parseNodeSingle(),
+      ).throwsAFormatException(
+        'Expected a directive end marker but found "nullnull.." as the first '
+        'two characters',
       );
     });
   });

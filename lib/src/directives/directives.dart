@@ -179,7 +179,7 @@ Directives parseDirectives(ChunkScanner scanner) {
     throw FormatException(
       'Expected a directive end marker but found '
       '"${scanner.charAtCursor?.string}${scanner.peekCharAfterCursor()?.string}'
-      '.. as the first two characters',
+      '.." as the first two characters',
     );
   }
 
