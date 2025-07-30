@@ -44,7 +44,7 @@ final class DocumentParser {
   /// Tracks whether any directives were declared
   bool _hasDirectives = false;
 
-  final _greedyChars = <ReadableChar>[];
+  ({SourceLocation start, String greedChars})? _docMarkerGreedy;
 
   final _anchorNodes = <String, ParsedYamlNode>{};
 
@@ -137,7 +137,7 @@ final class DocumentParser {
       ..clear()
       ..addEntries([_defaultGlobalTag]);
 
-    _greedyChars.clear();
+    _docMarkerGreedy = null;
     _anchorNodes.clear();
     _comments = SplayTreeSet();
   }
@@ -206,38 +206,42 @@ final class DocumentParser {
     required int indentLevel,
     required int minIndent,
     SourceLocation? start,
+    String greedyOnPlain = '',
   }) {
     final scalarOffset = start ?? _scanner.lineInfo().current;
 
     final prescalar = switch (event) {
       ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
-          when !isImplicit && !isInFlowContext =>
+          when !isImplicit && !isInFlowContext && greedyOnPlain.isEmpty =>
         parseBlockStyle(
           _scanner,
           minimumIndent: minIndent,
           onParseComment: _comments.add,
         ),
 
-      ScalarEvent.startFlowDoubleQuoted => parseDoubleQuoted(
-        _scanner,
-        indent: minIndent,
-        isImplicit: isImplicit,
-      ),
+      ScalarEvent.startFlowDoubleQuoted when greedyOnPlain.isEmpty =>
+        parseDoubleQuoted(
+          _scanner,
+          indent: minIndent,
+          isImplicit: isImplicit,
+        ),
 
-      ScalarEvent.startFlowSingleQuoted => parseSingleQuoted(
-        _scanner,
-        indent: minIndent,
-        isImplicit: isImplicit,
-      ),
+      ScalarEvent.startFlowSingleQuoted when greedyOnPlain.isEmpty =>
+        parseSingleQuoted(
+          _scanner,
+          indent: minIndent,
+          isImplicit: isImplicit,
+        ),
 
       // We are aware of what character is at the start. Cannot be null
-      ScalarEvent.startFlowPlain => parsePlain(
-        _scanner,
-        indent: minIndent,
-        charsOnGreedy: '',
-        isImplicit: isImplicit,
-        isInFlowContext: isInFlowContext,
-      ),
+      _ when event == ScalarEvent.startFlowPlain || greedyOnPlain.isNotEmpty =>
+        parsePlain(
+          _scanner,
+          indent: minIndent,
+          charsOnGreedy: '',
+          isImplicit: isImplicit,
+          isInFlowContext: isInFlowContext,
+        ),
 
       _ => throw FormatException(
         'Failed to parse block scalar as it can never be implicit or used in a'
@@ -1066,6 +1070,7 @@ final class DocumentParser {
     required bool degenerateToImplicitMap,
     required bool parentEnforcedCompactness,
     required _ParsedNodeProperties? parsedProperties,
+    String greedOnPlain = '',
   }) {
     final (
       PreScalar(
@@ -1082,6 +1087,7 @@ final class DocumentParser {
       indentLevel: indentLevel,
       minIndent: laxIndent, // Parse with minimum allowed indent
       start: startOffset,
+      greedyOnPlain: greedOnPlain,
     );
 
     /// - Block keys cannot degenerate to implicit maps. Only flow keys.
@@ -2311,7 +2317,25 @@ final class DocumentParser {
           globalTags.isNotEmpty ||
           reservedDirectives.isNotEmpty;
 
-      _docStartExplicit = hasDirectiveEnd;
+      /// When directives are absent, we may see dangling "---". Just to be
+      /// sure, confirm this wasn't the case.
+      if (!hasDirectiveEnd &&
+          _scanner.charAtCursor == Indicator.blockSequenceEntry &&
+          _scanner.peekCharAfterCursor() == Indicator.blockSequenceEntry) {
+        final startOnMissing = _scanner.lineInfo().current;
+
+        _docStartExplicit = hasDocumentMarkers(
+          _scanner,
+          onMissing: (c) {
+            _docMarkerGreedy = (
+              start: startOnMissing,
+              greedChars: c.map((e) => e.string).join(),
+            );
+          },
+        );
+      } else {
+        _docStartExplicit = hasDirectiveEnd;
+      }
 
       version = yamlDirective;
       tags = globalTags;
@@ -2331,132 +2355,154 @@ final class DocumentParser {
     /// doc end chars "..." and "---" exist in this format.
     ParserDelegate? root;
     _BlockNodeInfo? rootInfo;
-    _ParsedNodeProperties? parsedProperties;
 
     const rootIndentLevel = 0;
     var rootIndent = _skipToParsableChar(_scanner, comments: _comments);
     final rootStartOffset = _scanner.lineInfo().current;
 
-    var rootEvent = _inferNextEvent(
-      _scanner,
-      isBlockContext: true, // Always prefer block styling over flow
-      lastKeyWasJsonLike: false,
-    );
+    /// If we attempted to check for doc markers and found any
+    if (_docMarkerGreedy != null) {
+      final indent = rootIndent ?? 0;
+      final (:start, :greedChars) = _docMarkerGreedy!;
 
-    if (rootEvent is NodePropertyEvent) {
-      parsedProperties = _parseNodeProperties(
-        _scanner,
-
-        // Default to "-1" if we have no node in place.
-        minIndent: rootIndent ?? -1,
-        resolver: _resolveTag,
-        comments: _comments,
-      );
-
-      if (parsedProperties.properties.isAlias) {
-        throw FormatException('Root node cannot be an alias!');
-      }
-
-      rootEvent = _inferNextEvent(
-        _scanner,
-        isBlockContext: true,
-        lastKeyWasJsonLike: false,
-      );
-
-      rootIndent = parsedProperties.indentOnExit;
-    }
-
-    rootIndent ??= 0; // Defaults to zero if null
-
-    _throwIfUnsafeForDirectiveChar(
-      _scanner.charAtCursor,
-      //indent: rootIndent,
-      isDocStartExplicit: _docStartExplicit,
-      hasDirectives: _hasDirectives,
-    );
-
-    if (rootEvent case FlowCollectionEvent event) {
-      final key = _parseRootFlow(
-        event,
-        rootStartOffset: rootStartOffset,
-        rootIndentLevel: rootIndentLevel,
-        rootIndent: rootIndent,
-      );
-
-      /// As indicated initially, YAML considerably favours block(-like)
-      /// styles. This flow collection may be an implicit key if only it
-      /// is inline and we see a ": " char combination ahead.
-      ///
-      /// Also implicit maps cannot start on "---" line
-      if (!_rootInMarkerLine &&
-          !key.encounteredLineBreak &&
-          _skipToParsableChar(
-                _scanner,
-                comments: _comments,
-              ) ==
-              null &&
-          _inferNextEvent(
-                _scanner,
-                isBlockContext: true,
-                lastKeyWasJsonLike: false,
-              ) ==
-              BlockCollectionEvent.startEntryValue) {
-        NodeProperties? props;
-
-        if (parsedProperties != null) {
-          final _ParsedNodeProperties(:isMultiline, :properties) =
-              parsedProperties;
-
-          if (!isMultiline) {
-            _trackAnchor(key, properties);
-          } else {
-            props = properties;
-          }
-        }
-
-        final (
-          delegate: (key: _, :value),
-          :nodeInfo,
-        ) = _parseImplicitBlockEntry(
-          key,
-          parentIndent: rootIndent,
-          parentIndentLevel: rootIndentLevel,
-        );
-
-        final lineInfo = _scanner.lineInfo();
-
-        root =
-            MapEntryDelegate(
-                nodeStyle: NodeStyle.block,
-                keyDelegate: key,
-              )
-              ..updateValue = value
-              ..updateEndOffset = nodeInfo.hasDocEndMarkers
-                  ? lineInfo.start
-                  : lineInfo.current
-              ..updateNodeProperties = props;
-
-        rootInfo = nodeInfo;
-      } else {
-        root = key..updateNodeProperties = parsedProperties?.properties;
-      }
-    } else {
-      final (:delegate, :nodeInfo) = _parseBlockNode(
-        event: rootEvent,
-        startOffset: rootStartOffset,
+      final (:delegate, :nodeInfo) = _parseBlockScalarWildcard(
+        ScalarEvent.startFlowPlain,
+        startOffset: start,
+        laxIndent: indent,
+        fixedIndent: indent,
         indentLevel: rootIndentLevel,
-        laxIndent: rootIndent,
-        fixedInlineIndent: rootIndent,
-        forceInlined: false,
-        isParsingKey: false, // No effect if explicit. Handled
-        isExplicitKey: false,
+        isInlined: false,
         degenerateToImplicitMap: !_rootInMarkerLine,
         parentEnforcedCompactness: false,
-        parsedProperties: parsedProperties,
+        parsedProperties: null,
       );
 
       root = delegate;
       rootInfo = nodeInfo;
+    } else {
+      _ParsedNodeProperties? parsedProperties;
+
+      var rootEvent = _inferNextEvent(
+        _scanner,
+        isBlockContext: true, // Always prefer block styling over flow
+        lastKeyWasJsonLike: false,
+      );
+
+      if (rootEvent is NodePropertyEvent) {
+        parsedProperties = _parseNodeProperties(
+          _scanner,
+
+          // Default to "-1" if we have no node in place.
+          minIndent: rootIndent ?? -1,
+          resolver: _resolveTag,
+          comments: _comments,
+        );
+
+        if (parsedProperties.properties.isAlias) {
+          throw FormatException('Root node cannot be an alias!');
+        }
+
+        rootEvent = _inferNextEvent(
+          _scanner,
+          isBlockContext: true,
+          lastKeyWasJsonLike: false,
+        );
+
+        rootIndent = parsedProperties.indentOnExit;
+      }
+
+      rootIndent ??= 0; // Defaults to zero if null
+
+      _throwIfUnsafeForDirectiveChar(
+        _scanner.charAtCursor,
+        //indent: rootIndent,
+        isDocStartExplicit: _docStartExplicit,
+        hasDirectives: _hasDirectives,
+      );
+
+      if (rootEvent case FlowCollectionEvent event) {
+        final key = _parseRootFlow(
+          event,
+          rootStartOffset: rootStartOffset,
+          rootIndentLevel: rootIndentLevel,
+          rootIndent: rootIndent,
+        );
+
+        /// As indicated initially, YAML considerably favours block(-like)
+        /// styles. This flow collection may be an implicit key if only it
+        /// is inline and we see a ": " char combination ahead.
+        ///
+        /// Also implicit maps cannot start on "---" line
+        if (!_rootInMarkerLine &&
+            !key.encounteredLineBreak &&
+            _skipToParsableChar(
+                  _scanner,
+                  comments: _comments,
+                ) ==
+                null &&
+            _inferNextEvent(
+                  _scanner,
+                  isBlockContext: true,
+                  lastKeyWasJsonLike: false,
+                ) ==
+                BlockCollectionEvent.startEntryValue) {
+          NodeProperties? props;
+
+          if (parsedProperties != null) {
+            final _ParsedNodeProperties(:isMultiline, :properties) =
+                parsedProperties;
+
+            if (!isMultiline) {
+              _trackAnchor(key, properties);
+            } else {
+              props = properties;
+            }
+          }
+
+          final (
+            delegate: (key: _, :value),
+            :nodeInfo,
+          ) = _parseImplicitBlockEntry(
+            key,
+            parentIndent: rootIndent,
+            parentIndentLevel: rootIndentLevel,
+          );
+
+          final lineInfo = _scanner.lineInfo();
+
+          root =
+              MapEntryDelegate(
+                  nodeStyle: NodeStyle.block,
+                  keyDelegate: key,
+                )
+                ..updateValue = value
+                ..updateEndOffset = nodeInfo.hasDocEndMarkers
+                    ? lineInfo.start
+                    : lineInfo.current
+                ..updateNodeProperties = props;
+
+          rootInfo = nodeInfo;
+        } else {
+          root = key..updateNodeProperties = parsedProperties?.properties;
+        }
+      } else {
+        final (:delegate, :nodeInfo) = _parseBlockNode(
+          event: rootEvent,
+          startOffset: rootStartOffset,
+          indentLevel: rootIndentLevel,
+          laxIndent: rootIndent,
+          fixedInlineIndent: rootIndent,
+          forceInlined: false,
+          isParsingKey: false, // No effect if explicit. Handled
+          isExplicitKey: false,
+          degenerateToImplicitMap: !_rootInMarkerLine,
+          parentEnforcedCompactness: false,
+          parsedProperties: parsedProperties,
+        );
+
+        root = delegate;
+        rootInfo = nodeInfo;
+      }
     }
 
     if (_scanner.canChunkMore) {
