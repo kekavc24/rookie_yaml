@@ -507,6 +507,9 @@ final class DocumentParser {
           char == exitIndicator;
     }
 
+    final valueOffset = _scanner.lineInfo().current;
+    parsedKey.updateEndOffset = valueOffset;
+
     // Check if this is the start of a flow value
     if (_inferNextEvent(
           _scanner,
@@ -514,7 +517,6 @@ final class DocumentParser {
           lastKeyWasJsonLike: _keyIsJsonLike(parsedKey),
         ) ==
         FlowCollectionEvent.startEntryValue) {
-      final valueOffset = _scanner.lineInfo().current;
       _scanner.skipCharAtCursor(); // ":"
 
       final _FlowNodeProperties(:event, :properties) = _parseSimpleFlowProps(
@@ -543,12 +545,15 @@ final class DocumentParser {
       ///       second caret.
       /// }
       if (properties?.isAlias ?? false) {
-        value = _referenceAlias(
-          properties!,
-          indentLevel: valueLevel,
-          indent: minIndent,
-          start: valueOffset,
-        )..updateNodeProperties = properties;
+        value =
+            _referenceAlias(
+                properties!,
+                indentLevel: valueLevel,
+                indent: minIndent,
+                start: valueOffset,
+              )
+              ..updateNodeProperties = properties
+              ..updateEndOffset = _scanner.lineInfo().current;
       } else {
         value = _trackAnchor(
           ignoreValue(_scanner.charAtCursor)
@@ -616,7 +621,7 @@ final class DocumentParser {
           indentLevel: currentIndentLevel,
           indent: minIndent,
           startOffset: flowStartOffset,
-        );
+        )..updateEndOffset = flowStartOffset;
 
       case FlowCollectionEvent.startExplicitKey:
         {
@@ -1579,6 +1584,8 @@ final class DocumentParser {
       mapIndent: indent,
     );
 
+    _blockNodeInfoEndOffset(explicitKey, scanner: _scanner, info: keyNodeInfo);
+
     if (exitAfterKey) {
       return (
         nodeInfo: keyNodeInfo,
@@ -1619,17 +1626,27 @@ final class DocumentParser {
     /// No need to parse the value if we moved to the next line and the
     /// indent matches. Usually means there is no value to parse
     if (shouldExit) {
-      return (
-        nodeInfo: (exitIndent: inferredIndent, hasDocEndMarkers: false),
-        delegate: (
-          key: explicitKey,
-          value: _nullOrAlias(
+      ParserDelegate? val;
+
+      if (_nullOrAlias(
             parsedNodeProperties.properties,
             indentLevel: indentLevel,
             indent: indent,
             start: valueOffset,
-          ),
-        ),
+          )
+          case ParserDelegate nullOrAlias) {
+        _blockNodeEndOffset(
+          nullOrAlias,
+          scanner: _scanner,
+          hasDocEndMarkers: false,
+          indentOnExit: inferredIndent,
+        );
+        val = nullOrAlias;
+      }
+
+      return (
+        nodeInfo: (exitIndent: inferredIndent, hasDocEndMarkers: false),
+        delegate: (key: explicitKey, value: val),
       );
     }
 
@@ -1646,6 +1663,7 @@ final class DocumentParser {
       parsedProperties: parsedNodeProperties,
     );
 
+    _blockNodeInfoEndOffset(delegate, scanner: _scanner, info: nodeInfo);
     return (delegate: (key: explicitKey, value: delegate), nodeInfo: nodeInfo);
   }
 
@@ -1744,7 +1762,9 @@ final class DocumentParser {
       indentLevel: parentIndentLevel,
       indent: parentIndent,
       startOffset: valueOffset,
-    )..updateEndOffset = valueOffset;
+    );
+
+    implicitKey.updateEndOffset = valueOffset;
 
     _scanner.skipCharAtCursor(); // Skip ":"
     var indentOrSeparation = _skipToParsableChar(_scanner, comments: _comments);
