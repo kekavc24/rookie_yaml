@@ -122,7 +122,7 @@ bool _docIsInMarkerLine(
 /// function treats them as separation space including tabs.
 int? _skipToParsableChar(
   ChunkScanner scanner, {
-  required SplayTreeSet<YamlComment> comments,
+  required List<YamlComment> comments,
 }) {
   int? indent;
   var isLeading = true;
@@ -202,7 +202,7 @@ _ParsedNodeProperties _parseNodeProperties(
   ChunkScanner scanner, {
   required int minIndent,
   required ResolvedTag Function(LocalTag tag) resolver,
-  required SplayTreeSet<YamlComment> comments,
+  required List<YamlComment> comments,
 }) {
   String? anchor;
   ResolvedTag? tag;
@@ -336,7 +336,7 @@ _FlowNodeProperties _parseSimpleFlowProps(
   ChunkScanner scanner, {
   required int minIndent,
   required ResolvedTag Function(LocalTag tag) resolver,
-  required SplayTreeSet<YamlComment> comments,
+  required List<YamlComment> comments,
   bool lastKeyWasJsonLike = false,
 }) {
   void throwHasLessIndent(int lessIndent) {

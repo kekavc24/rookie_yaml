@@ -4,17 +4,18 @@ import 'package:source_span/source_span.dart';
 
 const _pattern = '# ';
 
+/// A comment within a `YAML` source string
 final class YamlComment implements Comparable<YamlComment> {
   YamlComment(this.comment, {required this.start, required this.end});
+
+  /// Comment with leading `#` stripped off
+  final String comment;
 
   /// Start offset for the comment (inclusive).
   final SourceLocation start;
 
   /// End offset for the comment (exclusive).
   final SourceLocation end;
-
-  /// Comment with leading `#` stripped off
-  final String comment;
 
   /// Sorting based on position in document
   @override

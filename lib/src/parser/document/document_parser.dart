@@ -48,7 +48,7 @@ final class DocumentParser {
 
   final _anchorNodes = <String, ParsedYamlNode>{};
 
-  SplayTreeSet<YamlComment> _comments = SplayTreeSet();
+  var _comments = <YamlComment>[];
 
   ParserDelegate _trackAnchor(
     ParserDelegate delegate,
@@ -139,7 +139,7 @@ final class DocumentParser {
 
     _docMarkerGreedy = null;
     _anchorNodes.clear();
-    _comments = SplayTreeSet();
+    _comments = [];
   }
 
   void _updateDocEndChars(String docEndChars) {

@@ -1,4 +1,3 @@
-import 'dart:collection';
 
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
@@ -88,9 +87,11 @@ final class YamlDocument {
   /// Global tags declared for the YAML document.
   final Set<GlobalTag<dynamic>> _globalTags;
 
+  /// Reserved directives parsed
   final List<ReservedDirective> _reservedDirectives;
 
-  final SplayTreeSet<YamlComment> _comments;
+  /// Comments extracted from the document while parsing
+  final List<YamlComment> _comments;
 
   /// Node at the root of the document
   final ParsedYamlNode? root;
