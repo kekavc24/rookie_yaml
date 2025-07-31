@@ -142,9 +142,9 @@ final class DocumentParser {
     _comments = [];
   }
 
-  void _updateDocEndChars(String docEndChars) {
-    _lastWasDocEndChars = docEndChars;
-    _docEndExplicit = docEndChars == '...';
+  void _updateDocEndChars(DocumentMarker marker) {
+    _lastWasDocEndChars = marker.indicator;
+    _docEndExplicit = marker == DocumentMarker.documentEnd;
 
     if (_scanner.charAtCursor
         case LineBreak _ || WhiteSpace _ || Indicator.comment
@@ -2340,15 +2340,17 @@ final class DocumentParser {
           _scanner.peekCharAfterCursor() == Indicator.blockSequenceEntry) {
         final startOnMissing = _scanner.lineInfo().current;
 
-        _docStartExplicit = hasDocumentMarkers(
-          _scanner,
-          onMissing: (c) {
-            _docMarkerGreedy = (
-              start: startOnMissing,
-              greedChars: c.map((e) => e.string).join(),
-            );
-          },
-        );
+        _docStartExplicit =
+            checkForDocumentMarkers(
+              _scanner,
+              onMissing: (c) {
+                _docMarkerGreedy = (
+                  start: startOnMissing,
+                  greedChars: c.map((e) => e.string).join(),
+                );
+              },
+            ) ==
+            DocumentMarker.directiveEnd;
       } else {
         _docStartExplicit = hasDirectiveEnd;
       }
@@ -2492,7 +2494,7 @@ final class DocumentParser {
                   keyDelegate: key,
                 )
                 ..updateValue = value
-                ..updateEndOffset = nodeInfo.hasDocEndMarkers
+                ..updateEndOffset = nodeInfo.docMarker.stopIfParsingDoc
                     ? lineInfo.start
                     : lineInfo.current
                 ..updateNodeProperties = props;
@@ -2521,29 +2523,44 @@ final class DocumentParser {
       }
     }
 
+    DocumentMarker docMarker = DocumentMarker.none;
+
     if (_scanner.canChunkMore) {
       /// We must see document end chars and don't care how they are laid within
       /// the document. At this point the document is or should be complete
-      if (rootInfo == null || !rootInfo.hasDocEndMarkers) {
+      if (rootInfo == null || !rootInfo.docMarker.stopIfParsingDoc) {
         _skipToParsableChar(_scanner, comments: _comments);
 
         final fauxBuffer = <String>[];
 
-        if (_scanner.canChunkMore &&
-            !hasDocumentMarkers(
-              _scanner,
-              onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
-            )) {
-          throw FormatException(
-            'Expected to find document end chars "..." or directive end chars '
-            '"---" but found ${fauxBuffer.join()}',
+        // We can safely look for doc end chars
+        if (_scanner.canChunkMore) {
+          docMarker = checkForDocumentMarkers(
+            _scanner,
+            onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
           );
-        }
-      }
 
-      _updateDocEndChars(_inferDocEndChars(_scanner));
-      root.updateEndOffset = _scanner.lineInfo().start;
+          if (!docMarker.stopIfParsingDoc) {
+            throw FormatException(
+              'Expected to find document end chars "..." or directive end chars'
+              ' "---" but found ${fauxBuffer.join()}',
+            );
+          }
+        }
+
+        final sourceInfo = _scanner.lineInfo();
+
+        root.updateEndOffset = docMarker.stopIfParsingDoc
+            ? sourceInfo.start
+            : sourceInfo.current;
+      } else {
+        docMarker = rootInfo.docMarker;
+      }
+    } else {
+      docMarker = rootInfo?.docMarker ?? docMarker;
     }
+
+    _updateDocEndChars(docMarker);
 
     return YamlDocument._(
       _currentIndex,

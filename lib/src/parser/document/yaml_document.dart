@@ -1,4 +1,3 @@
-
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
@@ -94,7 +93,7 @@ final class YamlDocument {
   final List<YamlComment> _comments;
 
   /// Node at the root of the document
-  final ParsedYamlNode? root;
+  final ParsedYamlNode root;
 
   /// Generic type of document based on the use of directives, directives end
   /// markers (`---`) and document end markers (`...`) as described by the
@@ -119,7 +118,4 @@ final class YamlDocument {
   /// Any directive that is not a tag or version directive
   List<ReservedDirective> get otherDirectives =>
       UnmodifiableListView(_reservedDirectives);
-
-  /// Returns `true` if no nodes are prsent
-  bool get isEmpty => root == null;
 }

@@ -54,31 +54,6 @@ void _throwIfUnsafeForDirectiveChar(
   }
 }
 
-/// Infers and returns `---` for a directive end marker and `...` for the
-/// document end marker. Throws an exception if this could not be inferred
-String _inferDocEndChars(ChunkScanner scanner) {
-  final charToRepeat = switch (scanner.charBeforeCursor) {
-    Indicator.blockSequenceEntry => "-",
-
-    /// By default, the [hasDocumentMarkers] function attempts to greedily
-    /// verify that there are no trailing characters after the document end
-    /// marker `...` which YAML prohibits. We may be pointing to a `\n` at
-    /// this point.
-    ///
-    /// `NB:` This is an assumption. All calls to this function must have a way
-    /// to ensure the assumption about the `\n` made here is correct.
-    Indicator.period || LineBreak? _ => ".",
-
-    _ => throw FormatException(
-      'Expected a single "-" for a directive end marker or "." for a '
-      'document end marker. Alternatively, at least a line break or'
-      ' nothing should be seen if no document end marker is inferred',
-    ),
-  };
-
-  return charToRepeat.padRight(3, charToRepeat);
-}
-
 /// Returns `true` if the document starts on the same line as the directives
 /// end marker (`---`) and must have a separation space between the last `-`
 /// and the first valid document char. Throws an error if no separation space
