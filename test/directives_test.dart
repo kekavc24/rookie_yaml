@@ -114,7 +114,9 @@ void main() {
   group('General directives', () {
     test('Throws if directive end markers are absent', () {
       check(
-        () => bootstrapDocParser('%TEST Yess it is').parseNodeSingle(),
+        () => bootstrapDocParser(
+          '%TEST Yess it is',
+        ).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Expected a directive end marker but found "nullnull.." as the first '
         'two characters',

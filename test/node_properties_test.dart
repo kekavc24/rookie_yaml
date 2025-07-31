@@ -31,7 +31,7 @@ $tag
 - block sequence
 ''';
 
-      check(bootstrapDocParser(yaml).parsedNodes().toList())
+      check(bootstrapDocParser(yaml).parseDocs().parsedNodes())
         ..length.equals(7)
         ..every((n) => n.hasTag(tag));
     });
@@ -48,7 +48,9 @@ $entryTag key0: $entryTag value
 }
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle()).isA<Mapping>()
+      check(
+          bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        ).isA<Mapping>()
         ..hasTag(mapTag)
         ..has((m) => m.entries, 'Flow Map Entries').every(
           (e) => e
@@ -77,7 +79,7 @@ $seqEntryTag plain
 ]
 ''';
 
-      final parsed = bootstrapDocParser(yaml).parseNodeSingle();
+      final parsed = bootstrapDocParser(yaml).parseDocs().parseNodeSingle();
 
       // First 5 elements have tags.
       check(parsed).isA<Sequence>()
@@ -108,7 +110,9 @@ $kvTag key0: $kvTag value
 : $kvTag value
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle()).isA<Mapping>()
+      check(
+          bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        ).isA<Mapping>()
         ..hasNoTag()
         ..has((m) => m.entries, 'Block Map Entries').every(
           (e) => e
@@ -147,7 +151,7 @@ $seqTag
     not: allowed-properties
 ''';
 
-      final parsed = bootstrapDocParser(yaml).parseNodeSingle();
+      final parsed = bootstrapDocParser(yaml).parseDocs().parseNodeSingle();
 
       check(parsed).isA<Sequence>()
         ..hasTag(seqTag)
@@ -166,7 +170,7 @@ $seqTag
       final yaml = '$tag ignored :)';
 
       check(
-        () => bootstrapDocParser(yaml).parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Unrecognized secondary tag "$tag". Expected any of: $yamlTags',
       );
@@ -177,7 +181,7 @@ $seqTag
       final yaml = '$tag ignored :)';
 
       check(
-        () => bootstrapDocParser(yaml).parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Named tag "$tag" has no corresponding global tag',
       );
@@ -193,7 +197,7 @@ $tag ignored :)
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Named tag "$tag" has no suffix',
       );
@@ -205,7 +209,7 @@ $tag ignored :)
         check(
           () => bootstrapDocParser(
             '!!str ? explicit-key',
-          ).parseNodeSingle(),
+          ).parseDocs().parseNodeSingle(),
         ).throwsAFormatException(
           'Inline node properties cannot be declared before the first "? "'
           ' indicator',
@@ -219,7 +223,7 @@ $tag ignored :)
 
 !error ? never-parsed
 ''',
-          ).parseNodeSingle(),
+          ).parseDocs().parseNodeSingle(),
         ).throwsAFormatException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
@@ -234,7 +238,7 @@ $tag ignored :)
 !error
 ? even-when-on-a-new-line
 ''',
-          ).parseNodeSingle(),
+          ).parseDocs().parseNodeSingle(),
         ).throwsAFormatException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
@@ -251,7 +255,7 @@ $tag ignored :)
 ? also-applies-to-flow
 }
 ''',
-          ).parseNodeSingle(),
+          ).parseDocs().parseNodeSingle(),
         ).throwsAFormatException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
@@ -268,7 +272,7 @@ $tag ignored :)
 !this-is-not-okay
 implicit-2: is-an-error
 ''',
-        ).parseNodeSingle(),
+        ).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Node properties for an implicit block key cannot span multiple lines',
       );
@@ -282,7 +286,7 @@ implicit-2: is-an-error
 !this-is-not-okay
 implicit-2: is-an-error}
 ''',
-        ).parseNodeSingle(),
+        ).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Node properties for an implicit flow key cannot span multiple lines',
       );
@@ -290,7 +294,9 @@ implicit-2: is-an-error}
 
     test('Throws when tags are declared before block sequence indicator', () {
       check(
-        () => bootstrapDocParser('!!str - not-okay').parseNodeSingle(),
+        () => bootstrapDocParser(
+          '!!str - not-okay',
+        ).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Inline node properties cannot be declared before the first "- "'
         ' indicator',
@@ -305,7 +311,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
         'Dangling node properties found at ${yaml.indexOf('!', 3)}',
       );
@@ -329,7 +335,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
+        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).equals(
         {
           'key': ['value'],
@@ -361,7 +367,7 @@ implicit-2: is-an-error}
       const alias = 'value';
 
       check(
-        () => bootstrapDocParser('key: *$alias').parseNodeSingle(),
+        () => bootstrapDocParser('key: *$alias').parseDocs().parseNodeSingle(),
       ).throwsAFormatException('Node alias "$alias" is unrecognized');
     });
   });

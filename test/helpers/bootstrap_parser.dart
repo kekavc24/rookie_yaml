@@ -6,14 +6,6 @@ DocumentParser bootstrapDocParser(String yaml) =>
     DocumentParser(ChunkScanner.of(yaml));
 
 extension DocParserUtil on DocumentParser {
-  String nodeAsSimpleString() => parseNodeSingle().toString();
-
-  ParsedYamlNode? parseNodeSingle() => parsedNodes().firstOrNull;
-
-  YamlDocument parseSingle() => parseDocs().first;
-
-  Iterable<ParsedYamlNode?> parsedNodes() => parseDocs().map((n) => n.root);
-
   Iterable<YamlDocument> parseDocs() sync* {
     YamlDocument? doc = parseNext();
 
@@ -23,4 +15,17 @@ extension DocParserUtil on DocumentParser {
       doc = parseNext();
     }
   }
+}
+
+extension YamlDocUtil on Iterable<YamlDocument> {
+  String nodeAsSimpleString() => parseNodeSingle().toString();
+
+  ParsedYamlNode? parseNodeSingle() => parsedNodes().firstOrNull;
+
+  YamlDocument parseSingle() => first;
+
+  Iterable<ParsedYamlNode> parsedNodes() => map((n) => n.root);
+
+  Iterable<String> nodesAsSimpleString() =>
+      parsedNodes().map((e) => e.toString());
 }

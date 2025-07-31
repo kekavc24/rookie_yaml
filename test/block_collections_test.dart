@@ -17,7 +17,7 @@ void main() {
           ' - block sequence';
 
       check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
+        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).equals(
         {
           'one': 'double-quoted',
@@ -65,7 +65,7 @@ void main() {
 
 ''';
 
-      check(bootstrapDocParser(yaml).nodeAsSimpleString()).equals(
+      check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
         {
           null: null,
           'plain-key-with-empty-value': null,
@@ -97,7 +97,7 @@ key3:
 - block indicator as indent
 ''';
 
-      check(bootstrapDocParser(yaml).nodeAsSimpleString()).equals(
+      check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
         {
           null: null,
           'key': null,
@@ -116,7 +116,7 @@ key3:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Expected ":" on a new line with an indent of 0 space(s) and'
         ' not 2 space(s)',
@@ -132,7 +132,7 @@ implicit: map
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Implicit keys are restricted to a single line. Consider using an'
         ' explicit key for the entry',
@@ -148,7 +148,7 @@ rogue
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException('Expected a ":" (after the key) but found "i"');
     });
 
@@ -158,7 +158,7 @@ rogue
           ' - block sequence value # Block lists start on new line';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'The block collections must start on a new line'
         ' when used as values of an implicit key',
@@ -173,7 +173,7 @@ implicit:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Dangling node/node properties found with indent of 2 space(s) while parsing',
       );
@@ -197,7 +197,7 @@ implicit:
 - - nested
   - sequence''';
 
-      check(bootstrapDocParser(yaml).nodeAsSimpleString()).equals(
+      check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
         [
           'double quoted',
           'single quoted',
@@ -225,7 +225,7 @@ implicit:
 ''';
 
       check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
+        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).equals(
         [
           {
@@ -255,7 +255,9 @@ implicit:
 
       for (final marker in markers) {
         check(
-          bootstrapDocParser('$yaml$marker$trailing').nodeAsSimpleString(),
+          bootstrapDocParser(
+            '$yaml$marker$trailing',
+          ).parseDocs().nodeAsSimpleString(),
         ).equals(sequenceStr);
       }
     });
@@ -266,7 +268,7 @@ implicit:
           '-error';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Expected a "- " while parsing sequence but found "-e"',
       );
@@ -280,7 +282,7 @@ implicit:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Dangling node/node properties found with indent of 2 space(s) while'
         ' parsing',
