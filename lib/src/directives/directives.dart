@@ -2,22 +2,21 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-
 import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
+part 'directive_utils.dart';
 part 'global_tag.dart';
-part 'reserved_directive.dart';
-part 'tag.dart';
 part 'local_tag.dart';
 part 'parsed_tag.dart';
+part 'reserved_directive.dart';
+part 'resolver_tag.dart';
+part 'tag.dart';
 part 'tag_handle.dart';
 part 'verbatim_tag.dart';
 part 'yaml_directive.dart';
-part 'directive_utils.dart';
-part 'resolver_tag.dart';
 
 /// Denotes all YAML directives declared before a yaml document is parsed.
 ///
@@ -160,7 +159,8 @@ Directives parseDirectives(ChunkScanner scanner) {
           {
             // Force a "---" check and not "..."
             if (char == Indicator.blockSequenceEntry &&
-                hasDocumentMarkers(scanner, onMissing: (_) {})) {
+                checkForDocumentMarkers(scanner, onMissing: (_) {}) ==
+                    DocumentMarker.directiveEnd) {
               return (
                 yamlDirective: directive,
                 globalTags: globalDirectives,

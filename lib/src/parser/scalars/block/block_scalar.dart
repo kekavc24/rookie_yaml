@@ -54,10 +54,10 @@ PreScalar parseBlockStyle(
   int? previousMaxIndent;
 
   SourceLocation? end;
-  var hasDocMarkers = false;
+  var docMarkerType = DocumentMarker.none;
 
   blockParser:
-  while (scanner.canChunkMore && !hasDocMarkers) {
+  while (scanner.canChunkMore) {
     final indent = trueIndent ?? minimumIndent;
     char = scanner.charAtCursor;
 
@@ -141,12 +141,15 @@ PreScalar parseBlockStyle(
           // Ends when we see first "-" of "---" or "." of "..."
           final maybeEnd = scanner.lineInfo().current;
 
-          hasDocMarkers = hasDocumentMarkers(
+          docMarkerType = checkForDocumentMarkers(
             scanner,
             onMissing: buffer.writeAll,
           );
 
-          if (hasDocMarkers) end = maybeEnd;
+          if (docMarkerType.stopIfParsingDoc) {
+            end = maybeEnd;
+            break blockParser;
+          }
         }
 
       default:
@@ -192,7 +195,7 @@ PreScalar parseBlockStyle(
     scalarStyle: style,
     actualIdent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
-    hasDocEndMarkers: hasDocMarkers,
+    docMarkerType: docMarkerType,
     foundLinebreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
     end: end ?? scanner.lineInfo().current,
   );

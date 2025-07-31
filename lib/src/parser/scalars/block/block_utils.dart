@@ -218,14 +218,12 @@ const docEndSingle = Indicator.period;
 /// Single char for directives end marker, `---`
 const directiveEndSingle = Indicator.blockSequenceEntry;
 
-/// Returns true if directive end marker `...` or document end marker `---` is
-/// encountered with the characters added to the [buffer] if provided.
+/// Checks and returns if the next sequence of characters are valid
+/// [DocumentMarker]. Defaults to [DocumentMarker.none] if not true.
+/// May throw if non-whitespace characters are declared in the same line as
+/// document end markers (`...`).
 ///
-/// [isTopLevelCheck] must be `true` for this function to at least evaluate if
-/// their is an explicit marker. May evaluate if [isTopLevelCheck] is
-/// `null`.
-///
-/// `NOTE:` This function needs to be restricted to `block` or `block-like`
+/// `NOTE:` This function is currently restricted to `block` or `block-like`
 /// styles such `plain` scalars. While `YAML` has a test which indicates that
 /// the markers should not be in other scalar styles, it beats the purpose
 /// of having the markers in the first place.
@@ -246,8 +244,7 @@ const directiveEndSingle = Indicator.blockSequenceEntry;
 /// ---
 /// "
 /// ```
-/// // TODO: Add a preread count if any issue arises to compensate count to take. Ref plain scalar
-bool hasDocumentMarkers(
+DocumentMarker checkForDocumentMarkers(
   ChunkScanner scanner, {
   required void Function(List<ReadableChar> buffered) onMissing,
 }) {
@@ -291,7 +288,7 @@ bool hasDocumentMarkers(
         }
 
         if (charAtCursor case LineBreak? _ || Indicator.comment) {
-          return true;
+          return DocumentMarker.documentEnd;
         }
 
         throw FormatException(
@@ -302,11 +299,11 @@ bool hasDocumentMarkers(
 
       // Directives end markers can have either
       if (charAtCursor case LineBreak? _ || WhiteSpace? _) {
-        return true;
+        return DocumentMarker.directiveEnd;
       }
     }
   }
 
   onMissing(markers);
-  return false;
+  return DocumentMarker.none;
 }

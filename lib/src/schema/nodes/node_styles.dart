@@ -56,3 +56,56 @@ enum ChompingIndicator {
   /// [NodeStyle.block] indicator for a [Scalar]
   final String indicator;
 }
+
+enum DocumentMarker {
+  /// Indicates the end of any documents and implies the start of a document.
+  ///
+  /// This marker must be used after declaring the document directives to
+  /// indicate the start of the current document.
+  ///
+  /// If used while parsing a document (not its directives), the parser
+  /// immediately terminates the current document and can be called again to
+  /// parse the next document. In this case, the next documents must not
+  /// declare any directives.
+  ///
+  /// ```yaml
+  /// %SOME-DIRECTIVE this-is-fake
+  /// --- # End of directive, start of document
+  ///     # Parser scans for document starting point
+  ///
+  /// key: value
+  ///
+  /// ---- # End of document, Start of another document
+  ///      # Parser scans for document starting point.
+  /// value
+  ///
+  /// --- # End of document, Will throw if directives are declared in next
+  ///     # document
+  ///
+  /// %OOPS not-allowed
+  /// ```
+  directiveEnd('---', stopIfParsingDoc: true),
+
+  /// Indicates the end of the current document
+  documentEnd('...', stopIfParsingDoc: true),
+
+  /// No document markers.
+  none('', stopIfParsingDoc: false);
+
+  const DocumentMarker(
+    this.indicator, {
+    required this.stopIfParsingDoc,
+  });
+
+  /// Representation in a `YAML` source string
+  final String indicator;
+
+  /// Indicates if parser should stop parsing a document.
+  final bool stopIfParsingDoc;
+
+  static DocumentMarker ofString(String marker) => switch (marker.trim()) {
+    '---' => DocumentMarker.directiveEnd,
+    '...' => DocumentMarker.documentEnd,
+    _ => DocumentMarker.none,
+  };
+}

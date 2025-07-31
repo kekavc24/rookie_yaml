@@ -17,11 +17,11 @@ typedef _ParseExplicitInfo = ({
   int inlineIndent,
 });
 
-typedef _BlockNodeInfo = ({int? exitIndent, bool hasDocEndMarkers});
+typedef _BlockNodeInfo = ({int? exitIndent, DocumentMarker docMarker});
 
 const _BlockNodeInfo _emptyScanner = (
   exitIndent: null,
-  hasDocEndMarkers: false,
+  docMarker: DocumentMarker.none,
 );
 
 typedef _BlockNodeGeneric<T> = ({_BlockNodeInfo nodeInfo, T delegate});
@@ -391,7 +391,7 @@ void _blockNodeInfoEndOffset(
 }) => _blockNodeEndOffset(
   blockNode,
   scanner: scanner,
-  hasDocEndMarkers: info.hasDocEndMarkers,
+  hasDocEndMarkers: info.docMarker.stopIfParsingDoc,
   indentOnExit: info.exitIndent,
 );
 

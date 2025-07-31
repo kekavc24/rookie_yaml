@@ -21,7 +21,7 @@ final class PreScalar {
     required this.inferredYamlTag,
     required this.scalarStyle,
     required this.parsedContent,
-    required this.hasDocEndMarkers,
+    required this.docMarkerType,
     required this.hasLineBreak,
     required this.inferredValue,
     required this.scalarIndent,
@@ -59,8 +59,8 @@ final class PreScalar {
   /// equal to or greater than the indent recommended by the parent.
   final int scalarIndent;
 
-  /// Returns `true` if any `---` or `...` was encountered
-  final bool hasDocEndMarkers;
+  /// Document marker type encountered
+  final DocumentMarker docMarkerType;
 
   /// Indicates whether the [parsedContent] has a line break.
   ///
@@ -169,7 +169,7 @@ PreScalar preformatScalar(
   required SourceLocation end,
   bool trim = false,
   int indentOnExit = seamlessIndentMarker,
-  bool hasDocEndMarkers = false,
+  DocumentMarker docMarkerType = DocumentMarker.none,
 }) {
   var content = buffer.bufferedString();
 
@@ -208,7 +208,7 @@ PreScalar preformatScalar(
     inferredYamlTag: tag,
     scalarStyle: scalarStyle,
     parsedContent: content,
-    hasDocEndMarkers: hasDocEndMarkers,
+    docMarkerType: docMarkerType,
     hasLineBreak: foundLinebreak,
     inferredValue: value,
     scalarIndent: actualIdent,

@@ -28,7 +28,6 @@ final _delimiters = <ReadableChar>{
 
 const _style = ScalarStyle.plain;
 
-// TODO: Implicit
 /// Parses a `plain` scalar
 PreScalar? parsePlain(
   ChunkScanner scanner, {
@@ -78,7 +77,7 @@ PreScalar? parsePlain(
     buffer: StringBuffer(greedyChars),
   );
 
-  var hasDocMarkers = false;
+  var docMarkerType = DocumentMarker.none;
   var foundLineBreak = false;
   SourceLocation? end;
 
@@ -96,21 +95,19 @@ PreScalar? parsePlain(
     switch (char) {
       /// Check for the document end markers first always
       case Indicator.blockSequenceEntry || Indicator.period
-          when charBefore is LineBreak && charAfter == char:
+          when indent == 0 && charBefore is LineBreak && charAfter == char:
         {
           final maybeEnd = scanner.lineInfo().current;
 
-          if (indent == 0 &&
-              hasDocumentMarkers(
-                scanner,
-                onMissing: (greedy) => buffer.writeAll(greedy),
-              )) {
-            hasDocMarkers = true;
+          docMarkerType = checkForDocumentMarkers(
+            scanner,
+            onMissing: (greedy) => buffer.writeAll(greedy),
+          );
+
+          if (docMarkerType.stopIfParsingDoc) {
             end = maybeEnd;
             break chunker;
           }
-
-          continue chunker;
         }
 
       /// A mapping key can never be followed by a whitespace. Exit regardless
@@ -190,7 +187,7 @@ PreScalar? parsePlain(
     trim: true, // Plain scalars have no leading/trailing spaces!
     actualIdent: indent,
     indentOnExit: indentOnExit,
-    hasDocEndMarkers: hasDocMarkers,
+    docMarkerType: docMarkerType,
     foundLinebreak: foundLineBreak,
     end: end ?? scanner.lineInfo().current,
   );

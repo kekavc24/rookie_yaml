@@ -709,10 +709,10 @@ final class DocumentParser {
             scalarStyle: ScalarStyle.plain,
             :final indentOnExit,
             :final indentDidChange,
-            :final hasDocEndMarkers,
+            :final docMarkerType,
           ) when !isImplicitKey || !forceInline) {
             // Flow node only ends after parsing a flow delimiter
-            if (hasDocEndMarkers) {
+            if (docMarkerType.stopIfParsingDoc) {
               throw FormatException(
                 "Premature document termination when parsing flow map entry.",
               );
@@ -1074,7 +1074,7 @@ final class DocumentParser {
   }) {
     final (
       PreScalar(
-        :hasDocEndMarkers,
+        :docMarkerType,
         :indentDidChange,
         :indentOnExit,
         :hasLineBreak,
@@ -1097,14 +1097,12 @@ final class DocumentParser {
     if (!_scanner.canChunkMore ||
         !event.isFlowContext ||
         !degenerateToImplicitMap ||
+        docMarkerType.stopIfParsingDoc ||
         hasLineBreak ||
         indentDidChange) {
       return (
         delegate: _trackAnchor(delegate, parsedProperties?.properties),
-        nodeInfo: (
-          exitIndent: indentOnExit,
-          hasDocEndMarkers: hasDocEndMarkers,
-        ),
+        nodeInfo: (exitIndent: indentOnExit, docMarker: docMarkerType),
       );
     }
 
@@ -1121,7 +1119,7 @@ final class DocumentParser {
           delegate: _trackAnchor(delegate, parsedProperties?.properties),
           nodeInfo: (
             exitIndent: greedyIndent,
-            hasDocEndMarkers: false,
+            docMarker: DocumentMarker.none,
           ),
         );
       }
@@ -1254,7 +1252,7 @@ final class DocumentParser {
           indent: laxIndent,
           start: startOffset,
         )..updateNodeProperties = props,
-        nodeInfo: (exitIndent: laxIndent, hasDocEndMarkers: false),
+        nodeInfo: (exitIndent: laxIndent, docMarker: DocumentMarker.none),
       );
     }
 
@@ -1280,7 +1278,7 @@ final class DocumentParser {
           );
 
           info = (
-            hasDocEndMarkers: false,
+            docMarker: DocumentMarker.none,
             exitIndent: _skipToParsableChar(_scanner, comments: _comments),
           );
         }
@@ -1394,12 +1392,12 @@ final class DocumentParser {
     /// our block(-like) scalar was not a result of anything else like a
     /// comment.
     if (info.exitIndent == seamlessIndentMarker &&
-        !info.hasDocEndMarkers &&
+        !info.docMarker.stopIfParsingDoc &&
         _scanner.canChunkMore &&
         _scanner.charAtCursor == Indicator.comment) {
       info = (
         exitIndent: _skipToParsableChar(_scanner, comments: _comments),
-        hasDocEndMarkers: false,
+        docMarker: DocumentMarker.none,
       );
     }
 
@@ -1499,7 +1497,7 @@ final class DocumentParser {
       // We have an empty/null key on our hands
       return (
         !preKeyHasIndent || inferredIndent! < mapIndent,
-        (exitIndent: inferredIndent, hasDocEndMarkers: false),
+        (exitIndent: inferredIndent, docMarker: DocumentMarker.none),
 
         _trackAnchor(
             nullScalarDelegate(
@@ -1537,7 +1535,7 @@ final class DocumentParser {
       parsedProperties: parsedNodeProperties,
     );
 
-    final (:exitIndent, :hasDocEndMarkers) = nodeInfo;
+    final (:exitIndent, :docMarker) = nodeInfo;
 
     final hasIndent = exitIndent != null;
 
@@ -1558,7 +1556,7 @@ final class DocumentParser {
       /// We can exit early if we are no longer at the current map's level
       /// based on the indent (the current map is the caller of this function)
       /// or the current document ended.
-      hasDocEndMarkers || !hasIndent || exitIndent < mapIndent,
+      docMarker.stopIfParsingDoc || !hasIndent || exitIndent < mapIndent,
       nodeInfo,
       delegate,
     );
@@ -1610,7 +1608,7 @@ final class DocumentParser {
         BlockCollectionEvent.startEntryValue) {
       return (
         delegate: (key: explicitKey, value: null),
-        nodeInfo: (exitIndent: indent, hasDocEndMarkers: false),
+        nodeInfo: (exitIndent: indent, docMarker: DocumentMarker.none),
       );
     }
 
@@ -1651,7 +1649,10 @@ final class DocumentParser {
       }
 
       return (
-        nodeInfo: (exitIndent: inferredIndent, hasDocEndMarkers: false),
+        nodeInfo: (
+          exitIndent: inferredIndent,
+          docMarker: DocumentMarker.none,
+        ),
         delegate: (key: explicitKey, value: val),
       );
     }
@@ -1728,7 +1729,7 @@ final class DocumentParser {
         parsedProperties: null,
       );
 
-      final (:hasDocEndMarkers, :exitIndent) = nodeInfo;
+      final (:docMarker, :exitIndent) = nodeInfo;
 
       /// The exit indent *MUST* be null or be seamless (parsed completely with
       /// no indent change if quoted). This is a key that should *NEVER*
@@ -1746,7 +1747,7 @@ final class DocumentParser {
           scalarStyle: ScalarStyle.plain,
           :final parsedContent,
         ),
-      ) when hasDocEndMarkers && parsedContent.isEmpty) {
+      ) when docMarker.stopIfParsingDoc && parsedContent.isEmpty) {
         return (nodeInfo: nodeInfo, delegate: (key: null, value: null));
       }
 
@@ -1851,7 +1852,10 @@ final class DocumentParser {
               (indentOrSeparation < parentIndent))) {
         return (
           delegate: (key: implicitKey, value: null),
-          nodeInfo: (hasDocEndMarkers: false, exitIndent: indentOrSeparation),
+          nodeInfo: (
+            docMarker: DocumentMarker.none,
+            exitIndent: indentOrSeparation,
+          ),
         );
       }
     } else if ((isBlockList ||
@@ -1870,7 +1874,7 @@ final class DocumentParser {
 
     final (
       :delegate,
-      nodeInfo: _BlockNodeInfo(:hasDocEndMarkers, :exitIndent),
+      nodeInfo: _BlockNodeInfo(:docMarker, :exitIndent),
     ) = _parseBlockNode(
       startOffset: valueOffset,
       indentLevel: valueIndentLevel,
@@ -1893,14 +1897,14 @@ final class DocumentParser {
     /// be parsed.
     if (_scanner.charAtCursor case LineBreak _ || WhiteSpace _
         when _scanner.canChunkMore &&
-            !hasDocEndMarkers &&
+            !docMarker.stopIfParsingDoc &&
             exitIndent == seamlessIndentMarker) {
       indentOnExit = _skipToParsableChar(_scanner, comments: _comments);
     }
 
     return (
       delegate: (key: implicitKey, value: delegate),
-      nodeInfo: (exitIndent: indentOnExit, hasDocEndMarkers: hasDocEndMarkers),
+      nodeInfo: (exitIndent: indentOnExit, docMarker: docMarker),
     );
   }
 
@@ -2053,7 +2057,8 @@ final class DocumentParser {
         );
       }
 
-      final (:hasDocEndMarkers, :exitIndent) = mapInfo;
+      final (:docMarker, :exitIndent) = mapInfo;
+      final hasDocEndMarkers = docMarker.stopIfParsingDoc;
 
       /// Update end offset. We must always have the correct end offset
       /// independent of the last node.
@@ -2103,33 +2108,40 @@ final class DocumentParser {
     const indicator = Indicator.blockSequenceEntry;
     final SequenceDelegate(:indent, :indentLevel) = sequence;
 
-    bool exitOrThrowIfNotBlock() {
+    DocumentMarker? exitOrThrowIfNotBlock() {
       final char = _scanner.charAtCursor;
       final charAfter = _scanner.peekCharAfterCursor();
 
-      return switch (char) {
+      switch (char) {
         /// Be gracious. Maybe we have doc end chars here.
         ///
         /// TODO: Remove zero indent for doc end chars? Mulling 🤔
         /// TODO: Should doc end chars hug left or just have any indent?
-        indicator || Indicator.period
-            when indent == 0 &&
-                charAfter == char &&
-                hasDocumentMarkers(_scanner, onMissing: (_) {}) =>
-          true,
+        case indicator || Indicator.period
+            when indent == 0 && charAfter == char:
+          {
+            if (checkForDocumentMarkers(_scanner, onMissing: (_) {})
+                case DocumentMarker docType when docType.stopIfParsingDoc) {
+              return docType;
+            }
+
+            continue invalid;
+          }
 
         // Normal "- " combination for block list
-        indicator
+        case indicator
             when charAfter == null ||
                 charAfter is WhiteSpace ||
-                charAfter is LineBreak =>
-          false,
+                charAfter is LineBreak:
+          return null;
 
-        _ => throw FormatException(
-          'Expected a "- " while parsing sequence but found "${char?.string}'
-          '${charAfter?.string}"',
-        ),
-      };
+        invalid:
+        default:
+          throw FormatException(
+            'Expected a "- " while parsing sequence but found "${char?.string}'
+            '${charAfter?.string}"',
+          );
+      }
     }
 
     final childIndentLevel = indentLevel + 1;
@@ -2137,8 +2149,8 @@ final class DocumentParser {
     /// Always want it run the first time. We need that first empty node
     /// with the "-<null>" pattern
     do {
-      if (exitOrThrowIfNotBlock()) {
-        return (hasDocEndMarkers: true, exitIndent: null);
+      if (exitOrThrowIfNotBlock() case DocumentMarker docMarkerType) {
+        return (docMarker: docMarkerType, exitIndent: null);
       }
 
       final startOffset = _scanner.lineInfo().current;
@@ -2180,7 +2192,10 @@ final class DocumentParser {
 
           // Not a skill issue. 2 birds, 1 stone
           if (isLess) {
-            return (exitIndent: indentOrSeparation, hasDocEndMarkers: false);
+            return (
+              exitIndent: indentOrSeparation,
+              docMarker: DocumentMarker.none,
+            );
           }
 
           continue;
@@ -2209,7 +2224,8 @@ final class DocumentParser {
 
       sequence.pushEntry(delegate);
 
-      final (:hasDocEndMarkers, :exitIndent) = nodeInfo;
+      final (:docMarker, :exitIndent) = nodeInfo;
+      final hasDocEndMarkers = docMarker.stopIfParsingDoc;
 
       // Update offset of sequence. May span more than the last node
       _blockNodeEndOffset(
