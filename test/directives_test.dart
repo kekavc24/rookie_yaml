@@ -14,10 +14,9 @@ void main() {
 %MMH.. A reserved directive
 %RESERVED cannot be constructed
 %WHY? Irriz warririz https://youtu.be/y9r_pZL4boE?si=IQyibJXzS1agg2GN
----
 ''';
 
-      check(parseDirectives(ChunkScanner.of(yaml)))
+      check(parseDirectives(ChunkScanner.of('$yaml\n---')))
           .has(
             (d) => d.reservedDirectives.map((r) => r.toString()).join('\n'),
             'Reserved Directives',

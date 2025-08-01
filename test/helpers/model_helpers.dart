@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
@@ -17,7 +18,7 @@ extension PreScalarHelper on Subject<PreScalar?> {
       .equals(content);
 
   void hasDocEndMarkers() => isNotNull()
-      .has((p) => p.hasDocEndMarkers, 'Document End Markers')
+      .has((p) => p.docMarkerType.stopIfParsingDoc, 'Document End Markers')
       .isTrue();
 
   void indentDidChangeTo(int indent) => isNotNull()
@@ -56,4 +57,32 @@ extension ParsedNodeHelper on Subject<ParsedYamlNode?> {
       .isNotNull()
       .has((t) => t.verbatim, 'As verbatim')
       .equals(ParsedTag(tag, suffix).verbatim);
+
+  void asSimpleString(String node) => isNotNull()
+      .has((n) => n.toString(), 'Node as simple string')
+      .equals(node);
+}
+
+extension ParsedDocHelper on Subject<YamlDocument> {
+  void hasVersionDirective(YamlDirective directive) =>
+      has((d) => d.versionDirective, 'Yaml directive').equals(directive);
+
+  void hasGlobalTags(Set<GlobalTag<dynamic>> tags) =>
+      has((d) => d.tagDirectives, 'Global Tags').unorderedEquals(tags);
+
+  void hasReservedDirective(List<String> directives) => has(
+    (d) => d.otherDirectives.map((d) => d.toString()),
+    'Reserved Directives',
+  ).unorderedEquals(directives);
+
+  Subject<bool> isDocEndExplicit() =>
+      has((d) => d.hasExplicitEnd, 'Has document End Markers');
+
+  Subject<bool> isDocStartExplicit() =>
+      has((d) => d.hasExplicitStart, 'Has directive end markers');
+
+  Subject<ParsedYamlNode> hasNode() => has((d) => d.root, 'Root node');
+
+  void isDocOfType(YamlDocType docType) =>
+      has((d) => d.docType, 'Document Type').equals(docType);
 }

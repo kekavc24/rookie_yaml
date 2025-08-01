@@ -37,8 +37,8 @@ void main() {
       check(
         () => parseTagHandle(ChunkScanner.of('!fake')),
       ).throwsAFormatException(
-        'Invalid named tag handle format. Expected !fake! but found'
-        ' !fake<null>',
+        'Invalid/incomplete named tag handle. Expected a tag with alphanumeric'
+        ' characters but found !fake<null>',
       );
     });
   });
@@ -48,7 +48,9 @@ void main() {
       final tagDefinition = '%TAG ! ';
       final uriPrefix = 'tag:example.com,2000:app/';
 
-      final yaml = '$tagDefinition$uriPrefix';
+      final yaml =
+          '$tagDefinition$uriPrefix'
+          '\n---';
 
       final handle = TagHandle.primary();
 
@@ -61,7 +63,9 @@ void main() {
       final tagDefinition = '%TAG !! ';
       final uriPrefix = 'tag:example.com,2000:app/';
 
-      final yaml = '$tagDefinition$uriPrefix';
+      final yaml =
+          '$tagDefinition$uriPrefix'
+          '\n---';
 
       final handle = TagHandle.secondary();
 
@@ -73,7 +77,9 @@ void main() {
     test('Parses global tag uri with named tag handle and uri prefix', () {
       final named = 'named';
       final tagDefinition = '%TAG !$named! ';
-      final uriPrefix = 'tag:example.com,2000:app/';
+      final uriPrefix =
+          'tag:example.com,2000:app/'
+          '\n---';
 
       final yaml = '$tagDefinition$uriPrefix';
 
@@ -89,7 +95,9 @@ void main() {
       final tagDefinition = '%TAG !$name! ';
       final localTag = 'testing';
 
-      final yaml = '$tagDefinition !$localTag';
+      final yaml =
+          '$tagDefinition !$localTag'
+          '\n---';
 
       final handle = TagHandle.named(name);
 

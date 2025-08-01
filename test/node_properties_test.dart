@@ -87,15 +87,16 @@ $seqEntryTag plain
         ..has(
           (e) => e.take(5),
           'First 5 entries',
-        ).every((e) => e.hasTag(seqEntryTag));
-
-      // The last element's tag is given to the key
-      check((parsed as Sequence).last).isA<Mapping>()
-        ..hasNoTag()
-        ..has(
-          (e) => e.keys.firstOrNull,
-          'Single key',
-        ).isNotNull().hasTag(seqEntryTag);
+        ).every((e) => e.hasTag(seqEntryTag))
+        ..which(
+          // The last element's tag is given to the key
+          (s) => s.last.isA<Mapping>()
+            ..hasNoTag()
+            ..has(
+              (e) => e.keys.firstOrNull,
+              'Single key',
+            ).isNotNull().hasTag(seqEntryTag),
+        );
     });
 
     test('Parses tags in a block map', () {
@@ -158,11 +159,8 @@ $seqTag
         ..has(
           (e) => e.take(7),
           'First 7 entries',
-        ).every((e) => e.hasTag(blockSeqTag));
-
-      check((parsed as Sequence).skip(7))
-        ..length.equals(2)
-        ..every((e) => e.hasNoTag());
+        ).every((e) => e.hasTag(blockSeqTag))
+        ..has((s) => s.skip(7), 'Trailing elements').every((e) => e.hasNoTag());
     });
 
     test('Throws when an unknown secondary tag is used', () {
