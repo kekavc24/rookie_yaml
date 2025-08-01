@@ -1,6 +1,6 @@
 name: rookie_yaml
 description: A (beginner's) YAML parser.
-version: 0.0.2
+version: 0.0.3
 
 environment:
   sdk: ^3.8.0
