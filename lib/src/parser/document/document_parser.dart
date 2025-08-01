@@ -2398,6 +2398,12 @@ final class DocumentParser {
       root = delegate;
       rootInfo = nodeInfo;
     } else {
+      _throwIfUnsafeForDirectiveChar(
+        _scanner.charAtCursor,
+        indent: rootIndent ?? 0,
+        hasDirectives: _hasDirectives,
+      );
+
       _ParsedNodeProperties? parsedProperties;
 
       var rootEvent = _inferNextEvent(
@@ -2430,13 +2436,6 @@ final class DocumentParser {
       }
 
       rootIndent ??= 0; // Defaults to zero if null
-
-      _throwIfUnsafeForDirectiveChar(
-        _scanner.charAtCursor,
-        //indent: rootIndent,
-        isDocStartExplicit: _docStartExplicit,
-        hasDirectives: _hasDirectives,
-      );
 
       if (rootEvent case FlowCollectionEvent event) {
         final key = _parseRootFlow(

@@ -32,24 +32,21 @@ typedef _BlockMapEntry = ({ParserDelegate? key, ParserDelegate? value});
 
 typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
 
-/// Throws an exception if the prospective [Node] has an [indent] of `0`
-/// (a child of the root node or the root node itself) and the document being
+/// Throws an exception if the prospective [ParsedYamlNode]
+/// (a child of the root node or the root node itself) in the document being
 /// parsed did not have an explicit directives end marker (`---`) or the
 /// directives end marker (`---`) is present but no directives were parsed.
 ///
-/// While `YAML` insists that this must be true for all scalar types, this
-/// method should only be called from block
+/// This method is only works for [ScalarStyle.plain]. Any other style is safe.
 void _throwIfUnsafeForDirectiveChar(
   ReadableChar? char, {
-  //required int indent,
-  required bool isDocStartExplicit,
+  required int indent,
   required bool hasDirectives,
 }) {
-  if (char case Indicator.directive
-      when (!isDocStartExplicit || !hasDirectives)) {
+  if (indent == 0 && char == Indicator.directive && !hasDirectives) {
     throw FormatException(
-      'Missing directives end marker "---" prevent the use of the directives '
-      'indicator "%" at the start of a node',
+      '"%" cannot be used as the first non-whitespace character in a non-empty'
+      ' content line',
     );
   }
 }
