@@ -238,7 +238,7 @@ final class DocumentParser {
         parsePlain(
           _scanner,
           indent: minIndent,
-          charsOnGreedy: '',
+          charsOnGreedy: greedyOnPlain,
           isImplicit: isImplicit,
           isInFlowContext: isInFlowContext,
         ),
@@ -2363,6 +2363,8 @@ final class DocumentParser {
     // YAML allows the secondary tag to be declared with custom global tag
     _globalTags.addAll(tags);
 
+    const rootIndentLevel = 0;
+
     _rootInMarkerLine = _docIsInMarkerLine(
       _scanner,
       isDocStartExplicit: _docStartExplicit,
@@ -2374,30 +2376,29 @@ final class DocumentParser {
     ParserDelegate? root;
     _BlockNodeInfo? rootInfo;
 
-    const rootIndentLevel = 0;
-    var rootIndent = _skipToParsableChar(_scanner, comments: _comments);
-    final rootStartOffset = _scanner.lineInfo().current;
-
     /// If we attempted to check for doc markers and found any
     if (_docMarkerGreedy != null) {
-      final indent = rootIndent ?? 0;
       final (:start, :greedChars) = _docMarkerGreedy!;
 
       final (:delegate, :nodeInfo) = _parseBlockScalarWildcard(
         ScalarEvent.startFlowPlain,
         startOffset: start,
-        laxIndent: indent,
-        fixedIndent: indent,
+        laxIndent: 0,
+        fixedIndent: 0,
         indentLevel: rootIndentLevel,
         isInlined: false,
         degenerateToImplicitMap: !_rootInMarkerLine,
         parentEnforcedCompactness: false,
         parsedProperties: null,
+        greedOnPlain: greedChars,
       );
 
       root = delegate;
       rootInfo = nodeInfo;
     } else {
+      var rootIndent = _skipToParsableChar(_scanner, comments: _comments);
+      final rootStartOffset = _scanner.lineInfo().current;
+
       _throwIfUnsafeForDirectiveChar(
         _scanner.charAtCursor,
         indent: rootIndent ?? 0,
@@ -2522,7 +2523,7 @@ final class DocumentParser {
       }
     }
 
-    DocumentMarker docMarker = DocumentMarker.none;
+    var docMarker = DocumentMarker.none;
 
     if (_scanner.canChunkMore) {
       /// We must see document end chars and don't care how they are laid within
