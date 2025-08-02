@@ -157,8 +157,8 @@ final class DocumentParser {
   ResolvedTag _resolveTag(LocalTag localTag) {
     final LocalTag(:tagHandle, :content) = localTag;
 
-    SpecificTag tag = localTag;
-    var suffix = ''; // Local tags have no suffixes
+    SpecificTag prefix = localTag;
+    LocalTag? suffix; // Local tags have no suffixes
 
     // Check if alias to global tag
     final globalTag = _globalTags[tagHandle];
@@ -189,13 +189,13 @@ final class DocumentParser {
       default:
         {
           if (hasGlobalTag) {
-            tag = globalTag;
-            suffix = content; // Local tag is prefixed with global tag uri
+            prefix = globalTag;
+            suffix = localTag; // Local tag is prefixed with global tag uri
           }
         }
     }
 
-    return ParsedTag(tag, suffix);
+    return ParsedTag(prefix, suffix);
   }
 
   /// Parses a [Scalar].
@@ -1743,11 +1743,10 @@ final class DocumentParser {
       // This was never a key. We assumed it was a plain scalar and parsed it.
       if (delegate case ScalarDelegate(
         preScalar: PreScalar(
-          inferredValue: null,
           scalarStyle: ScalarStyle.plain,
-          :final parsedContent,
+          :final content // TODO: Iffy on this. Add test for this
         ),
-      ) when docMarker.stopIfParsingDoc && parsedContent.isEmpty) {
+      ) when docMarker.stopIfParsingDoc && content.isEmpty) {
         return (nodeInfo: nodeInfo, delegate: (key: null, value: null));
       }
 
