@@ -190,13 +190,14 @@ PreScalar parseBlockStyle(
 
   _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
 
-  return preformatScalar(
-    buffer,
+  return (
+    content: buffer.viewAsLines(),
     scalarStyle: style,
-    actualIdent: trueIndent ?? minimumIndent,
+    scalarIndent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
+    indentDidChange: indentOnExit != seamlessIndentMarker,
     docMarkerType: docMarkerType,
-    foundLinebreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
+    hasLineBreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
     end: end ?? scanner.lineInfo().current,
   );
 }

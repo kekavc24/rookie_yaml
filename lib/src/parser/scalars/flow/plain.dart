@@ -58,11 +58,14 @@ PreScalar? parsePlain(
       // Intentionally expressive with if statement! We eval once.
       if (firstChar == Indicator.mappingValue) {
         // TODO: Pass in null when refactoring scalar
-        return preformatScalar(
-          ScalarBuffer(ensureIsSafe: false),
+        return (
+          content: Iterable<String>.empty(),
           scalarStyle: _style,
-          actualIdent: indent,
-          foundLinebreak: false,
+          scalarIndent: indent,
+          docMarkerType: DocumentMarker.none,
+          hasLineBreak: false,
+          indentDidChange: false,
+          indentOnExit: seamlessIndentMarker,
           end: scanner.lineInfo().current,
         );
       }
@@ -181,14 +184,14 @@ PreScalar? parsePlain(
     }
   }
 
-  return preformatScalar(
-    buffer,
+  return (
+    content: buffer.viewAsLines(),
     scalarStyle: _style,
-    trim: true, // Plain scalars have no leading/trailing spaces!
-    actualIdent: indent,
-    indentOnExit: indentOnExit,
+    scalarIndent: indent,
     docMarkerType: docMarkerType,
-    foundLinebreak: foundLineBreak,
+    indentOnExit: indentOnExit,
+    hasLineBreak: foundLineBreak,
+    indentDidChange: indentOnExit != seamlessIndentMarker,
     end: end ?? scanner.lineInfo().current,
   );
 }

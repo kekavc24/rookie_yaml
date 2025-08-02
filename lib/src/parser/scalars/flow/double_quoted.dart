@@ -109,11 +109,14 @@ PreScalar parseDoubleQuoted(
     throw _doubleQuoteException;
   }
 
-  return preformatScalar(
-    buffer,
+  return (
+    content: buffer.viewAsLines(),
     scalarStyle: ScalarStyle.doubleQuoted,
-    actualIdent: indent,
-    foundLinebreak: foundLineBreak,
+    scalarIndent: indent,
+    docMarkerType: DocumentMarker.none,
+    hasLineBreak: foundLineBreak,
+    indentDidChange: false,
+    indentOnExit: seamlessIndentMarker,
     end: scanner.lineInfo().current,
   );
 }

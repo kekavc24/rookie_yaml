@@ -83,11 +83,14 @@ PreScalar parseSingleQuoted(
     throw _exception;
   }
 
-  return preformatScalar(
-    buffer,
+  return (
+    content: buffer.viewAsLines(),
     scalarStyle: ScalarStyle.singleQuoted,
-    actualIdent: indent,
-    foundLinebreak: foundLineBreak,
+    scalarIndent: indent,
+    docMarkerType: DocumentMarker.none,
+    hasLineBreak: foundLineBreak,
+    indentDidChange: false,
+    indentOnExit: seamlessIndentMarker,
     end: scanner.lineInfo().current,
   );
 }
