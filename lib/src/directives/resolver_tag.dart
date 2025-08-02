@@ -18,6 +18,9 @@ final class TypeResolverTag<T> implements ResolvedTag {
   TagHandle get tagHandle => _resolvedTag.tagHandle;
 
   @override
+  LocalTag? get suffix => _resolvedTag.suffix;
+
+  @override
   String get verbatim => _resolvedTag.verbatim;
 
   @override

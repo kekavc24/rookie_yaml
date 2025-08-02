@@ -30,12 +30,15 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
 /// [GlobalTag] after it has been parsed.
 @immutable
 final class ParsedTag<T> implements ResolvedTag {
-  /// Default initialization
-  ParsedTag(this._resolvedTag, String suffix)
-    : verbatim = _formatAsVerbatim(_resolvedTag, suffix);
+  ParsedTag(this._resolvedTag, LocalTag? suffix)
+    : verbatim = _formatAsVerbatim(_resolvedTag, suffix?.content ?? ''),
+      suffix = suffix ?? _resolvedTag as LocalTag;
 
   /// A [LocalTag] shorthand resolved to a [GlobalTag] or the tag itself.
   final SpecificTag<T> _resolvedTag;
+
+  @override
+  final LocalTag suffix; // A parsed tag always has a suffix
 
   @override
   String get prefix => _resolvedTag.prefix;

@@ -17,6 +17,11 @@ sealed class Tag {
 /// Represents any [Tag] resolved to a [GlobalTag] or declared in verbatim as
 /// a [VerbatimTag]
 sealed class ResolvedTag extends Tag {
+  /// Represents the [LocalTag] suffix resolved to [GlobalTag] prefix in a
+  /// `YAML` source string. Defaults to `null` if the [LocalTag] has no global
+  /// tag prefix.
+  LocalTag? get suffix => null;
+
   /// Full representation of a tag. Any [SpecificTag] can be represented this
   /// way even if it is unresolved.
   ///
