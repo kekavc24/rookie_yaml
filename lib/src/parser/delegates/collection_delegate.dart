@@ -4,12 +4,15 @@ ScalarDelegate nullScalarDelegate({
   required int indentLevel,
   required int indent,
   required SourceLocation startOffset,
-  // TODO: Introduce tag & anchor
 }) => ScalarDelegate(
   indentLevel: indentLevel,
   indent: indent,
   start: startOffset,
 );
+
+bool _isMapTag(LocalTag tag) => tag == sequenceTag || !scalarTags.contains(tag);
+
+NodeTag _defaultTo(LocalTag tag) => NodeTag(yamlGlobalTag, tag);
 
 /// A delegate that represents a single key-value pair within a flow/block
 /// [Sequence]
@@ -53,14 +56,27 @@ final class MapEntryDelegate extends ParserDelegate {
   /// This will rarely be called, but if so, this must a return a mapping with
   /// only a single value. A key must exist.
   @override
-  Mapping _resolveNode() => Mapping(
+  Mapping _resolveNode<T>() => Mapping(
     {keyDelegate.parsed(): _valueDelegate?.parsed()},
     nodeStyle: nodeStyle,
-    tag: _tag,
+    tag: _tag ?? _defaultTo(mappingTag),
     anchor: _anchor,
     start: start,
     end: _end!,
   );
+
+  @override
+  NodeTag _checkResolvedTag(NodeTag tag) {
+    final NodeTag(:suffix) = tag;
+
+    if (!_isMapTag(suffix)) {
+      throw FormatException(
+        'A mapping entry cannot be resolved as "$suffix" kind',
+      );
+    }
+
+    return tag;
+  }
 }
 
 /// A collection delegate
@@ -111,14 +127,25 @@ final class SequenceDelegate extends CollectionDelegate {
 
   /// Returns a [Sequence]
   @override
-  Sequence _resolveNode() => Sequence(
+  Sequence _resolveNode<T>() => Sequence(
     _nodes,
     nodeStyle: collectionStyle,
-    tag: _tag,
+    tag: _tag ?? _defaultTo(sequenceTag),
     anchor: _anchor,
     start: start,
     end: _end!,
   );
+
+  @override
+  NodeTag _checkResolvedTag(NodeTag tag) {
+    final NodeTag(:suffix) = tag;
+
+    if (suffix == mappingTag || scalarTags.contains(suffix)) {
+      throw FormatException('A sequence cannot be resolved as "$suffix" kind');
+    }
+
+    return tag;
+  }
 }
 
 /// A delegate that resolves to a [Mapping]
@@ -150,12 +177,23 @@ final class MappingDelegate extends CollectionDelegate {
 
   /// Returns a [Mapping].
   @override
-  Mapping _resolveNode() => Mapping(
+  Mapping _resolveNode<T>() => Mapping(
     _map,
     nodeStyle: collectionStyle,
-    tag: _tag,
+    tag: _tag ?? _defaultTo(mappingTag),
     anchor: _anchor,
     start: start,
     end: _end!,
   );
+
+  @override
+  NodeTag _checkResolvedTag(NodeTag tag) {
+    final NodeTag(:suffix) = tag;
+
+    if (!_isMapTag(suffix)) {
+      throw FormatException('A mapping cannot be resolved as "$suffix" kind');
+    }
+
+    return tag;
+  }
 }

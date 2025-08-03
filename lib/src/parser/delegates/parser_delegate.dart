@@ -4,6 +4,8 @@ import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
+import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:source_span/source_span.dart';
 
 part 'scalar_delegate.dart';
@@ -63,10 +65,14 @@ abstract interface class ParserDelegate {
     }
 
     final (:alias, :anchor, :tag) = properties;
-    _tag = tag;
+    _tag = tag != null
+        ? (tag is VerbatimTag ? tag : _checkResolvedTag(tag as NodeTag))
+        : null;
     _anchor = anchor;
     _alias = alias;
   }
+
+  NodeTag _checkResolvedTag(NodeTag tag);
 
   ResolvedTag? _tag;
 
@@ -97,14 +103,14 @@ abstract interface class ParserDelegate {
   ParsedYamlNode? _parsedNode;
 
   /// Resolves a delegate's node
-  ParsedYamlNode _resolveNode();
+  ParsedYamlNode _resolveNode<T>();
 
   /// `YAML` node delegated to the parser.
   ParsedYamlNode parsed() {
     assert(
       _end != null,
-      'Call to [$runtimeType.parsed()] must have a valid end offset. '
-      'Found "$_end"',
+      'Call to [$runtimeType.parsed()] with start offset [$start] must have a '
+      'valid end offset.',
     );
 
     _parsedNode ??= _resolveNode();
@@ -149,9 +155,13 @@ final class AliasDelegate extends ParserDelegate {
   final ParsedYamlNode _reference;
 
   @override
-  AliasNode _resolveNode() =>
+  AliasNode _resolveNode<T>() =>
       AliasNode(_alias ?? '', _reference, start: start, end: _end!);
 
   @override
   bool isChild(int indent) => false;
+
+  @override
+  NodeTag _checkResolvedTag(NodeTag tag) =>
+      throw FormatException('An alias cannot have a "${tag.suffix}" kind');
 }

@@ -8,7 +8,9 @@ final class ScalarDelegate extends ParserDelegate {
     required super.start,
   });
 
-  PreScalar? preScalar;
+  PreScalar? _prescalar;
+
+  PreScalar? get preScalar => _prescalar;
 
   set scalar(PreScalar scalar) {
     assert(
@@ -16,10 +18,21 @@ final class ScalarDelegate extends ParserDelegate {
       'A scalar can only be resolved once after its parsing is complete',
     );
 
-    preScalar = scalar;
+    _prescalar = scalar;
     indent = scalar.scalarIndent;
     _hasLineBreak = scalar.hasLineBreak;
     _end = scalar.end;
+  }
+
+  @override
+  NodeTag _checkResolvedTag(NodeTag tag) {
+    final NodeTag(:suffix) = tag;
+
+    if (suffix == mappingTag || suffix == sequenceTag) {
+      throw FormatException('A scalar cannot be resolved as "$suffix" kind');
+    }
+
+    return tag;
   }
 
   @override
@@ -31,15 +44,35 @@ final class ScalarDelegate extends ParserDelegate {
   /// [scalar] setter is called. If the setter is never called, an empty
   /// scalar is emitted with a [ScalarStyle.doubleQuoted].
   @override
-  ParsedYamlNode _resolveNode() =>
-      preScalar?.parsedScalar(_tag, _anchor, start) ??
-      Scalar(
-        null,
-        content: '',
-        scalarStyle: ScalarStyle.plain,
+  Scalar<T> _resolveNode<T>() {
+    final end = _end!;
+
+    if (_prescalar != null) {
+      final PreScalar(:content, :scalarStyle) = _prescalar!;
+
+      return Scalar(
+        ScalarValue.fromParsedScalar(
+          content,
+          encounteredLineBreak: encounteredLineBreak,
+          parsedTag: _tag?.suffix,
+          ifParsedTagNull: (inferred) =>
+              _tag = NodeTag(yamlGlobalTag, inferred),
+        ),
+        scalarStyle: scalarStyle,
         tag: _tag,
         anchor: _anchor,
         start: start,
-        end: _end!,
+        end: end,
       );
+    }
+
+    return Scalar(
+      NullView('') as ScalarValue<T>,
+      scalarStyle: ScalarStyle.plain,
+      tag: _tag ?? _defaultTo(nullTag),
+      anchor: _anchor,
+      start: start,
+      end: _end!,
+    );
+  }
 }
