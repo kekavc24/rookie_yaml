@@ -196,7 +196,7 @@ final class DocumentParser {
         }
     }
 
-    return ParsedTag(prefix, suffix);
+    return NodeTag(prefix, suffix);
   }
 
   /// Parses a [Scalar].
@@ -1745,7 +1745,7 @@ final class DocumentParser {
       if (delegate case ScalarDelegate(
         preScalar: PreScalar(
           scalarStyle: ScalarStyle.plain,
-          :final content // TODO: Iffy on this. Add test for this
+          :final content, // TODO: Iffy on this. Add test for this
         ),
       ) when docMarker.stopIfParsingDoc && content.isEmpty) {
         return (nodeInfo: nodeInfo, delegate: (key: null, value: null));

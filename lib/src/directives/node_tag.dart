@@ -29,8 +29,8 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
 /// Represents a [LocalTag] shorthand that has (not) been resolved to a
 /// [GlobalTag] after it has been parsed.
 @immutable
-final class ParsedTag<T> implements ResolvedTag {
-  ParsedTag(this._resolvedTag, LocalTag? suffix)
+final class NodeTag<T> implements ResolvedTag {
+  NodeTag(this._resolvedTag, LocalTag? suffix)
     : verbatim = _formatAsVerbatim(_resolvedTag, suffix?.content ?? ''),
       suffix = suffix ?? _resolvedTag as LocalTag;
 
@@ -51,7 +51,7 @@ final class ParsedTag<T> implements ResolvedTag {
 
   @override
   bool operator ==(Object other) =>
-      other is ParsedTag && other._resolvedTag == _resolvedTag;
+      other is NodeTag && other._resolvedTag == _resolvedTag;
 
   @override
   int get hashCode => _resolvedTag.hashCode;
