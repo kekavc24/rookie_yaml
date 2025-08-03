@@ -1,11 +1,9 @@
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 import 'package:source_span/source_span.dart';
 
-/// A non-existent indent level if a scalar was parsed correctly.
-///
-/// Acts as an indicator on if the end of parsing to a scalar with block(-like)
-/// syles, that is, `plain`, `literal` and `folded`, was not as a result of an
-/// indent change.
+/// A non-existent indent level for block(-like) scalars (`plain`, `literal`,
+/// `folded`) that are affected by indent changes. Indicates that the said
+/// scalar was parsed successfully without an indent change.
 const seamlessIndentMarker = -2;
 
 typedef PreScalar = ({
@@ -59,89 +57,3 @@ typedef PreScalar = ({
   /// End offset of the scalar (exclusive)
   SourceLocation end,
 });
-
-// /// Infers native type for the value parsed for the [Scalar] and provides a
-// /// default schema tag.
-// PreScalar preformatScalar(
-//   ScalarBuffer buffer, {
-//   required ScalarStyle scalarStyle,
-//   required int actualIdent,
-//   required bool foundLinebreak,
-//   required SourceLocation end,
-//   bool trim = false,
-//   int indentOnExit = seamlessIndentMarker,
-//   DocumentMarker docMarkerType = DocumentMarker.none,
-// }) {
-//   var content = buffer.bufferedString();
-
-//   if (trim) {
-//     content = content.trim();
-//   }
-
-//   var normalized = content.toLowerCase();
-
-//   dynamic value = content;
-//   int? radix;
-//   LocalTag tag = stringTag;
-
-//   // Attempt to infer a default value
-//   if (!foundLinebreak) {
-//     if (_parseInt(normalized) case _ParsedInt(
-//       radix: final pRadix,
-//       value: final pValue,
-//     )) {
-//       radix = pRadix;
-//       value = pValue;
-//       tag = integerTag;
-//     } else if (_isNull(normalized)) {
-//       value = null;
-//       tag = nullTag;
-//     } else if (bool.tryParse(normalized) case bool boolean) {
-//       value = boolean;
-//       tag = booleanTag;
-//     } else if (double.tryParse(normalized) case double parsedFloat) {
-//       value = parsedFloat;
-//       tag = floatTag;
-//     }
-//   }
-
-//   return PreScalar._(
-//     inferredYamlTag: tag,
-//     scalarStyle: scalarStyle,
-//     parsedContent: content,
-//     docMarkerType: docMarkerType,
-//     hasLineBreak: foundLinebreak,
-//     inferredValue: value,
-//     scalarIndent: actualIdent,
-//     indentOnExit: indentOnExit,
-//     end: end,
-//     radix: radix,
-//   );
-// }
-
-bool _isNull(String value) {
-  return value.isEmpty || value == '~' || value == 'null';
-}
-
-const _octalPrefix = '0o';
-
-typedef _ParsedInt = ({int value, int radix});
-
-/// Parses an [int] and returns its value and radix.
-_ParsedInt? _parseInt(String normalized) {
-  int? radix;
-
-  if (normalized.startsWith(_octalPrefix)) {
-    normalized = normalized.replaceFirst(_octalPrefix, '');
-    radix = 8;
-  }
-
-  // Check other bases used by YAML only if null
-  radix ??= normalized.startsWith('0x') ? 16 : 10;
-
-  if (int.tryParse(normalized, radix: radix) case int parsedInt) {
-    return (value: parsedInt, radix: radix);
-  }
-
-  return null;
-}

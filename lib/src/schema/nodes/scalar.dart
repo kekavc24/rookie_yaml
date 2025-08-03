@@ -1,27 +1,25 @@
 part of 'node.dart';
 
-/// Any value that is not a collection in `YAML`, that is, not a [Sequence] or
-/// [Mapping]
-base class Scalar<T> extends ParsedYamlNode {
+/// Any value that is not a [Sequence] or [Mapping]
+final class Scalar<T> extends ParsedYamlNode {
   Scalar(
-    this.value, {
-    required String content,
+    this._type, {
     required this.scalarStyle,
     required this.tag,
     required this.anchor,
     required super.start,
     required super.end,
-  }) : _content = content;
+  });
+
+  /// Type inferred from the scalar's content
+  final ScalarValue<T> _type;
 
   /// Style used to serialize the scalar. Can be degenerated to a `block` or
   /// `flow` too.
   final ScalarStyle scalarStyle;
 
-  /// Actual content parsed in YAML.
-  final String _content;
-
   /// A native value represented by the parsed scalar.
-  final T? value;
+  T get value => _type.value;
 
   @override
   final ResolvedTag? tag;
@@ -34,27 +32,11 @@ base class Scalar<T> extends ParsedYamlNode {
 
   @override
   bool operator ==(Object other) =>
-      other is Scalar && tag == other.tag && _content == other._content;
+      other is Scalar<T> && tag == other.tag && value == other.value;
 
   @override
-  int get hashCode => _equality.hash([tag, _content]);
+  int get hashCode => _equality.hash([tag, value]);
 
   @override
-  String toString() => '${value?.toString()}';
-}
-
-final class IntScalar extends Scalar<int> {
-  IntScalar(
-    int super.value, {
-    required this.radix,
-    required super.content,
-    required super.scalarStyle,
-    required super.tag,
-    required super.anchor,
-    required super.start,
-    required super.end,
-  });
-
-  /// Base in number system this scalar belongs to.
-  final int radix;
+  String toString() => _type.toString();
 }
