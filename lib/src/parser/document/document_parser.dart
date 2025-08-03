@@ -180,9 +180,10 @@ final class DocumentParser {
         }
 
       // Secondary tags limited to tags only supported by YAML
-      case TagHandleVariant.secondary when !yamlTags.contains(localTag):
+      case TagHandleVariant.secondary when !isYamlTag(localTag):
         throw FormatException(
-          'Unrecognized secondary tag "$localTag". Expected any of: $yamlTags',
+          'Unrecognized secondary tag "$localTag". Expected any of: '
+          '$mappingTag, $sequenceTag, ${scalarTags.join(', ')}',
         );
 
       resolver:
