@@ -178,13 +178,16 @@ $tag yaml
         LocalTag.fromTagUri(TagHandle.primary(), 'test-tag-for-'),
       );
 
-      const suffix = 'primary-handles';
+      final suffix = LocalTag.fromTagUri(
+        TagHandle.primary(),
+        'primary-handles',
+      );
 
       final yaml =
           '''
 $globalTag
 ---
-!$suffix node
+$suffix node
 ''';
 
       check(
@@ -195,13 +198,11 @@ $globalTag
     test(
       'Resolves shorthands with secondary handle to the YAML global tag',
       () {
-        const suffix = 'str';
-
-        final yaml = '!!$suffix node';
+        final yaml = '$stringTag node';
 
         check(
           bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
-        ).hasTag(yamlGlobalTag, suffix: suffix);
+        ).hasTag(yamlGlobalTag, suffix: stringTag);
       },
     );
 
@@ -214,18 +215,16 @@ $globalTag
         ),
       );
 
-      const suffix = 'str';
-
       final yaml =
           '''
 $globalTag
 ---
-!!$suffix node
+$stringTag node
 ''';
 
       check(
         bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
-      ).hasTag(globalTag, suffix: suffix);
+      ).hasTag(globalTag, suffix: stringTag);
     });
 
     test('Resolves named shorthands to custom declaration', () {
@@ -236,13 +235,13 @@ $globalTag
         LocalTag.fromTagUri(TagHandle.primary(), 'tag'),
       );
 
-      const suffix = 'suffix';
+      final suffix = LocalTag.fromTagUri(handle, 'suffix');
 
       final yaml =
           '''
 $globalTag
 ---
-$handle$suffix
+$suffix
 ''';
 
       check(
@@ -265,21 +264,22 @@ $handle$suffix
           'secondary://galaxy',
         );
 
-        const star = 'same-star-different-galaxy';
-
-        final defaultYaml = '$telescope$star';
+        final star = LocalTag.fromTagUri(
+          telescope,
+          'same-star-different-galaxy',
+        );
 
         final yaml =
             '''
 $firstGlobal
 ---
-$defaultYaml
+$star
 ...
 $secondGlobal
 ---
-$defaultYaml
+$star
 ---
-$defaultYaml
+$star
 ''';
 
         final docs = bootstrapDocParser(
@@ -292,7 +292,7 @@ $defaultYaml
         check(docs[1]).hasTag(secondGlobal, suffix: star);
 
         // Not resolved to any global tag
-        check(docs[2]).hasTag(LocalTag.fromTagUri(telescope, star));
+        check(docs[2]).hasTag(star);
       },
     );
   });

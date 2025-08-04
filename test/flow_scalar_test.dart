@@ -345,7 +345,7 @@ Fun with escapes:
           isImplicit: false,
           isInFlowContext: false,
         ),
-      ).inferredNull();
+      ).hasFormattedContent('');
     });
 
     test('Handles flow indicators gracefully based on context', () {

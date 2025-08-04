@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
-dynamic _inferredValue(PreScalar scalar) => scalar.inferredValue;
+T _inferredValue<T>(Scalar<T> scalar) => scalar.value;
 
 extension PreScalarHelper on Subject<PreScalar?> {
   void hasScalarStyle(ScalarStyle style) =>
@@ -14,7 +14,7 @@ extension PreScalarHelper on Subject<PreScalar?> {
       isNotNull().has((p) => p.scalarIndent, 'Inferred indent').equals(indent);
 
   void hasFormattedContent(String content) => isNotNull()
-      .has((p) => p.parsedContent, 'Canonical Content')
+      .has((p) => p.content, 'Canonical Content')
       .equals(content);
 
   void hasDocEndMarkers() => isNotNull()
@@ -24,27 +24,19 @@ extension PreScalarHelper on Subject<PreScalar?> {
   void indentDidChangeTo(int indent) => isNotNull()
     ..has((p) => p.indentDidChange, 'Indent Change Indicator').isTrue()
     ..has((p) => p.indentOnExit, 'Indent on Exit').equals(indent);
+}
 
-  void hasInferred<T>(
-    T Function(PreScalar scalar) extractor,
-    String name,
-    T expected,
-  ) => isNotNull().has(extractor, name).isA<T>().equals(expected);
+extension ScalarHelper on Subject<Scalar> {
+  void hasInferred<T>(String name, T expected) =>
+      isNotNull().has(_inferredValue, name).isA<T>().equals(expected);
 
-  void simpleInferredType<T>(String name, T expected) =>
-      hasInferred(_inferredValue, name, expected);
+  void hasParsedInteger(int number) => hasInferred('Parsed Integer', number);
 
-  void hasParsedInteger(int number, int radix) => hasInferred(
-    (p) => (p.inferredValue, p.radix),
-    'Parsed Integer',
-    (number, radix),
-  );
+  void inferredBool(bool value) => hasInferred('Boolean', value);
 
-  void inferredBool(bool value) => simpleInferredType('Boolean', value);
+  void inferredFloat(double value) => hasInferred('Float', value);
 
-  void inferredFloat(double value) => simpleInferredType('Float', value);
-
-  void inferredNull() => isNotNull().has(_inferredValue, 'Null').isNull();
+  void inferredNull() => has(_inferredValue, 'Null').isNull();
 }
 
 extension ParsedNodeHelper on Subject<ParsedYamlNode?> {
@@ -53,10 +45,10 @@ extension ParsedNodeHelper on Subject<ParsedYamlNode?> {
 
   void hasNoTag() => withTag().isNull();
 
-  void hasTag<T>(SpecificTag<T> tag, {String suffix = ''}) => withTag()
+  void hasTag<T>(SpecificTag<T> tag, {LocalTag? suffix}) => withTag()
       .isNotNull()
       .has((t) => t.verbatim, 'As verbatim')
-      .equals(ParsedTag(tag, suffix).verbatim);
+      .equals(NodeTag(tag, suffix).verbatim);
 
   void asSimpleString(String node) => isNotNull()
       .has((n) => n.toString(), 'Node as simple string')

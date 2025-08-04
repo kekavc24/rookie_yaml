@@ -170,7 +170,8 @@ $seqTag
       check(
         () => bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
       ).throwsAFormatException(
-        'Unrecognized secondary tag "$tag". Expected any of: $yamlTags',
+        'Unrecognized secondary tag "$tag". Expected any of: '
+        '$mappingTag, $sequenceTag, ${scalarTags.join(', ')}',
       );
     });
 
