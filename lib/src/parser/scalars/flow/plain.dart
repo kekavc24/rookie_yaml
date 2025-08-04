@@ -186,7 +186,8 @@ PreScalar? parsePlain(
   }
 
   return (
-    content: buffer.bufferedContent(),
+    // Cannot have leading and trailing whitespaces
+    content: buffer.bufferedContent().trim(),
     scalarStyle: _style,
     scalarIndent: indent,
     docMarkerType: docMarkerType,
