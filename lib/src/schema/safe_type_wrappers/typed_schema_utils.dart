@@ -62,7 +62,7 @@ Iterable<String> splitStringLazy(String string) sync* {
 }
 
 /// Regex for `null`
-final _nullRegex = RegExp(r'[null|Null|NULL|~]');
+final _nullRegex = RegExp(r'^(null|Null|NULL|~){1}$', multiLine: true);
 
 /// Prefix for a `YAML` octal
 const _octalPrefix = '0o';
@@ -131,7 +131,7 @@ _MaybeInferred<T> _inferDartType<T>(String content) {
 
 /// Infers a [ScalarValue] that is either `null` or not an [int]
 _MaybeScalarValue<T> _inferDartValue<T>(String content) {
-  if (_nullRegex.hasMatch(content)) {
+  if (content.isEmpty || _nullRegex.hasMatch(content)) {
     return (nullTag, NullView(content) as ScalarValue<T>);
   } else if (_inferDartType(content) case (LocalTag dartTag, T dartType)) {
     return (dartTag, DartValue(dartType));
