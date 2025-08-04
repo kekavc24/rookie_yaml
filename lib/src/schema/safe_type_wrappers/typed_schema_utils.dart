@@ -117,7 +117,7 @@ const _notInferred = (null, null);
 _MaybeInferred<T> _inferDartType<T>(String content) {
   if (double.tryParse(content) case double parsedFloat) {
     return (floatTag, parsedFloat as T);
-  } else if (Uri.tryParse(content) case Uri uri) {
+  } else if (Uri.tryParse(content) case Uri uri when uri.scheme.isNotEmpty) {
     return (uriTag, uri as T);
   } else if (bool.tryParse(content) case bool boolean) {
     /// - Just "true" and "false". Schema should be language specific but also
