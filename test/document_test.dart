@@ -84,7 +84,7 @@ $node
         ..isDocEndExplicit().isTrue()
         ..which(
           (d) => d.hasNode()
-            ..hasNoTag()
+            ..hasTag(yamlGlobalTag, suffix: stringTag)
             ..asSimpleString(node),
         );
     });
@@ -122,7 +122,7 @@ folded
         (d) => d
           ..isDocStartExplicit().isTrue()
           ..isDocEndExplicit().isFalse()
-          ..hasNode().which((n) => n.hasNoTag()),
+          ..hasNode().withTag().isNotNull(),
       );
     });
 

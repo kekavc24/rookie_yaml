@@ -91,7 +91,7 @@ $seqEntryTag plain
         ..which(
           // The last element's tag is given to the key
           (s) => s.last.isA<Mapping>()
-            ..hasNoTag()
+            ..hasTag(yamlGlobalTag, suffix: mappingTag)
             ..has(
               (e) => e.keys.firstOrNull,
               'Single key',
@@ -114,7 +114,7 @@ $kvTag key0: $kvTag value
       check(
           bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
         ).isA<Mapping>()
-        ..hasNoTag()
+        ..hasTag(yamlGlobalTag, suffix: mappingTag)
         ..has((m) => m.entries, 'Block Map Entries').every(
           (e) => e
             ..has((e) => e.key, 'Block Map Key').hasTag(kvTag)
@@ -160,7 +160,10 @@ $seqTag
           (e) => e.take(7),
           'First 7 entries',
         ).every((e) => e.hasTag(blockSeqTag))
-        ..has((s) => s.skip(7), 'Trailing elements').every((e) => e.hasNoTag());
+        ..has(
+          (s) => s.skip(7),
+          'Trailing elements',
+        ).every((e) => e.hasTag(yamlGlobalTag, suffix: mappingTag));
     });
 
     test('Throws when an unknown secondary tag is used', () {
