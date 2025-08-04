@@ -54,11 +54,14 @@ final class DocumentParser {
     ParserDelegate delegate,
     NodeProperties? properties,
   ) {
+    delegate.updateNodeProperties = properties;
+
     if (properties case NodeProperties(:final String anchor)) {
       _anchorNodes[anchor] = delegate.parsed();
+      return delegate;
     }
 
-    return delegate..updateNodeProperties = properties;
+    return delegate;
   }
 
   AliasDelegate _referenceAlias(
