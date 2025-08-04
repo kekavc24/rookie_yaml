@@ -5,27 +5,14 @@ final class ScalarBuffer {
   ScalarBuffer({required this.ensureIsSafe, StringBuffer? buffer})
     : _buffer = buffer ?? StringBuffer();
 
-  /// Tracks the lines within a formatted scalar
-  final _contentByLine = <String>[];
-
   /// Ensures the [ReadableChar] is printable before writing
   final bool ensureIsSafe;
 
   /// Actual buffer
   final StringBuffer _buffer;
 
-  /// Saves the current [_buffer] state as a complete line
-  void _flushBuffer() {
-    _contentByLine.add(_buffer.toString());
-    _buffer.clear();
-  }
-
   /// Writes a single [char] to the internal [StringBuffer].
   void writeChar(ReadableChar char) {
-    if (char is LineBreak) {
-      return _flushBuffer();
-    }
-
     _buffer.write(ensureIsSafe ? char.raw() : char.string);
   }
 
@@ -47,18 +34,8 @@ final class ScalarBuffer {
   /// Returns the length of the content
   int get length => _buffer.length;
 
-  /// Returns the lines in the formatted scalar.
-  ///
-  /// `NOTE:` This method should only be called once the scalar has been
-  /// parsed completely. By default, it assumes the last content buffered
-  /// once called is a separate line.
-  Iterable<String> viewAsLines() {
-    if (_buffer.isNotEmpty) {
-      _flushBuffer();
-    }
-
-    return _contentByLine;
-  }
+  /// Returns the buffered string
+  String bufferedContent() => _buffer.toString();
 
   @override
   String toString() =>

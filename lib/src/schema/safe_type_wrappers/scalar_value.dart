@@ -1,4 +1,3 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
@@ -29,14 +28,14 @@ sealed class ScalarValue<T> {
   /// based on its kind (valid Dart type) if [parsedTag] is `null` (no tag
   /// was parsed).
   factory ScalarValue.fromParsedScalar(
-    Iterable<String> content, {
+    String content, {
     required bool encounteredLineBreak,
     required LocalTag? parsedTag,
     required void Function(LocalTag inferred) ifParsedTagNull,
   }) {
     /// Anything spanning more than one line is a string and we cannot infer
     /// its type
-    if (!encounteredLineBreak && content.length <= 1) {
+    if (!encounteredLineBreak) {
       if (parsedTag != null) {
         return _schemaFromTag<T>(content, parsedTag);
       }
@@ -54,26 +53,20 @@ sealed class ScalarValue<T> {
   String toString() => value.toString();
 }
 
-/// Default schema type for most scalars that resolve to string.
-final class StringView extends ScalarValue<String> {
-  /// Lines of the string this view represents.
-  final Iterable<String> _lines;
-
-  StringView(this._lines);
-
-  @override
-  String get value => _lines.join(LineBreak.lf);
-
-  @override
-  Iterable<String> yamlSafe() => _lines;
-}
-
 /// Any `Dart` type that is not a [String]
-base class _InferredValue<T> extends ScalarValue<T> {
+abstract base class _InferredValue<T> extends ScalarValue<T> {
   _InferredValue(this.value);
 
   @override
   final T value;
+}
+
+/// Default schema type for most scalars that resolve to string.
+final class StringView extends _InferredValue<String> {
+  StringView(super.value);
+
+  @override
+  Iterable<String> yamlSafe() => splitStringLazy(value);
 }
 
 /// A safe representation of an integer parsed from a `YAML` source string.

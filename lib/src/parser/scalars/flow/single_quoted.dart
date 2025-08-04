@@ -84,7 +84,7 @@ PreScalar parseSingleQuoted(
   }
 
   return (
-    content: buffer.viewAsLines(),
+    content: buffer.bufferedContent(),
     scalarStyle: ScalarStyle.singleQuoted,
     scalarIndent: indent,
     docMarkerType: DocumentMarker.none,

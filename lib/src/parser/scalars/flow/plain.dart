@@ -59,7 +59,7 @@ PreScalar? parsePlain(
       if (firstChar == Indicator.mappingValue) {
         // TODO: Pass in null when refactoring scalar
         return (
-          content: Iterable<String>.empty(),
+          content: '',
           scalarStyle: _style,
           scalarIndent: indent,
           docMarkerType: DocumentMarker.none,
@@ -185,7 +185,7 @@ PreScalar? parsePlain(
   }
 
   return (
-    content: buffer.viewAsLines(),
+    content: buffer.bufferedContent(),
     scalarStyle: _style,
     scalarIndent: indent,
     docMarkerType: docMarkerType,

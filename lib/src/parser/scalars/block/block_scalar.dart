@@ -191,7 +191,7 @@ PreScalar parseBlockStyle(
   _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
 
   return (
-    content: buffer.viewAsLines(),
+    content: buffer.bufferedContent(),
     scalarStyle: style,
     scalarIndent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,

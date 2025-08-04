@@ -110,7 +110,7 @@ PreScalar parseDoubleQuoted(
   }
 
   return (
-    content: buffer.viewAsLines(),
+    content: buffer.bufferedContent(),
     scalarStyle: ScalarStyle.doubleQuoted,
     scalarIndent: indent,
     docMarkerType: DocumentMarker.none,

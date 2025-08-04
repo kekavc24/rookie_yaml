@@ -1,5 +1,66 @@
 part of 'scalar_value.dart';
 
+const _cr = 0x0D;
+const _lf = 0x0A;
+
+/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
+/// line breaks in YAML.
+///
+/// This function breaks the lines indiscriminately and does not track the
+/// dominant line break based on the platform unless the `\r\n` is seen.
+Iterable<String> splitStringLazy(String string) sync* {
+  final runeIterator = string.runes.iterator;
+
+  bool canIterate() => runeIterator.moveNext();
+
+  final buffer = StringBuffer();
+  int? previous; // Track trailing line breaks for preservation
+
+  splitter:
+  while (canIterate()) {
+    var current = runeIterator.current;
+
+    switch (current) {
+      case _cr:
+        {
+          // If just "\r", exit immediately without overwriting trailing "\r"
+          if (!canIterate()) {
+            yield buffer.toString();
+            buffer.clear();
+            break splitter;
+          }
+
+          current = runeIterator.current;
+          continue gen; // Let "lf" handle this.
+        }
+
+      gen:
+      case _lf:
+        {
+          yield buffer.toString();
+          buffer.clear();
+
+          // In case we got this char from the carriage return
+          if (current != _lf && current != -1) {
+            continue writer;
+          }
+        }
+
+      writer:
+      default:
+        buffer.writeCharCode(current);
+    }
+
+    previous = current;
+  }
+
+  /// Ensure we flush all buffered contents. A trailing line break signals
+  /// we need it preserved. Thus, emit an empty string too in this case.
+  if (buffer.isNotEmpty || previous == _cr || previous == _lf) {
+    yield buffer.toString();
+  }
+}
+
 /// Regex for `null`
 final _nullRegex = RegExp(r'[null|Null|NULL|~]');
 
@@ -47,7 +108,7 @@ typedef _MaybeInferred<T> = (LocalTag? tag, T? value);
 
 /// A record categorizing an inferred value to a scalar value and its
 /// associated tag in `YAML`
-typedef _InferredScalarValue<T> = _MaybeInferred<ScalarValue<T>>;
+typedef _MaybeScalarValue<T> = _MaybeInferred<ScalarValue<T>>;
 
 /// Value not inferred
 const _notInferred = (null, null);
@@ -69,7 +130,7 @@ _MaybeInferred<T> _inferDartType<T>(String content) {
 }
 
 /// Infers a [ScalarValue] that is either `null` or not an [int]
-_InferredScalarValue<T> _inferDartValue<T>(String content) {
+_MaybeScalarValue<T> _inferDartValue<T>(String content) {
   if (_nullRegex.hasMatch(content)) {
     return (nullTag, NullView(content) as ScalarValue<T>);
   } else if (_inferDartType(content) case (LocalTag dartTag, T dartType)) {
@@ -81,16 +142,14 @@ _InferredScalarValue<T> _inferDartValue<T>(String content) {
 
 /// Infers a `YAML` [LocalTag] and a [ScalarValue] if a tag was never parsed.
 ({LocalTag inferredTag, ScalarValue<T> schema}) _inferSchema<T>(
-  Iterable<String> content,
+  String content,
 ) {
-  final inlined = content.join();
-
-  if (_parseInt(inlined) case (:final radix, :final value)) {
+  if (_parseInt(content) case (:final radix, :final value)) {
     return (
       inferredTag: integerTag,
       schema: YamlSafeInt(value, radix) as ScalarValue<T>,
     );
-  } else if (_inferDartValue(inlined) case (
+  } else if (_inferDartValue(content) case (
     LocalTag normieTag,
     ScalarValue<T> normieSchema,
   )) {
@@ -107,9 +166,9 @@ _InferredScalarValue<T> _inferDartValue<T>(String content) {
 ///
 /// Internally calls [_inferSchema] and checks if the inferred tag matches
 /// the [parsedTag].
-ScalarValue<T> _schemaFromTag<T>(Iterable<String> content, LocalTag parsedTag) {
+ScalarValue<T> _schemaFromTag<T>(String content, LocalTag parsedTag) {
   /// Lazy implementation. Instead of duplicating code, just infer the type
-  /// (thought not performant, we have a limited number). Represent partially
+  /// (though not performant, we have a limited number). Represent partially
   /// as a string if the inferred tag doesn't match our parsed tag.
   if (_inferSchema<T>(content) case (
     :final inferredTag,

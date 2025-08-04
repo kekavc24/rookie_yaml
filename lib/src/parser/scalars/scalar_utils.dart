@@ -7,8 +7,8 @@ import 'package:source_span/source_span.dart';
 const seamlessIndentMarker = -2;
 
 typedef PreScalar = ({
-  /// Multiline view of the content
-  Iterable<String> content,
+  /// Buffered content
+  String content,
 
   /// [Scalar]'s scalarstyle
   ScalarStyle scalarStyle,
