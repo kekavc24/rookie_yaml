@@ -64,6 +64,7 @@ PreScalar? parsePlain(
           scalarIndent: indent,
           docMarkerType: DocumentMarker.none,
           hasLineBreak: false,
+          wroteLineBreak: false,
           indentDidChange: false,
           indentOnExit: seamlessIndentMarker,
           end: scanner.lineInfo().current,
@@ -191,6 +192,7 @@ PreScalar? parsePlain(
     docMarkerType: docMarkerType,
     indentOnExit: indentOnExit,
     hasLineBreak: foundLineBreak,
+    wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: indentOnExit != seamlessIndentMarker,
     end: end ?? scanner.lineInfo().current,
   );

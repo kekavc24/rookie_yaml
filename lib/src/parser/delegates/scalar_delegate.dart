@@ -48,12 +48,12 @@ final class ScalarDelegate extends ParserDelegate {
     final end = _end!;
 
     if (_prescalar != null) {
-      final PreScalar(:content, :scalarStyle) = _prescalar!;
+      final PreScalar(:content, :scalarStyle, :wroteLineBreak) = _prescalar!;
 
       return Scalar(
         ScalarValue.fromParsedScalar(
           content,
-          encounteredLineBreak: encounteredLineBreak,
+          contentHasLineBreak: wroteLineBreak,
           parsedTag: _tag?.suffix,
           ifParsedTagNull: (inferred) =>
               _tag = NodeTag(yamlGlobalTag, inferred),

@@ -115,6 +115,7 @@ PreScalar parseDoubleQuoted(
     scalarIndent: indent,
     docMarkerType: DocumentMarker.none,
     hasLineBreak: foundLineBreak,
+    wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: false,
     indentOnExit: seamlessIndentMarker,
     end: scanner.lineInfo().current,

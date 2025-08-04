@@ -35,12 +35,22 @@ typedef PreScalar = ({
   /// Document marker type encountered
   DocumentMarker docMarkerType,
 
-  /// Indicates whether the [parsedContent] has a line break.
+  /// Indicates whether any linebreak was ever seen while parsing.
   ///
   /// `NOTE`: This is a helper to prevent a redundant scan on the
   /// [parsedContent] as the line break may have already been seen while parsing
-  /// the content.
+  /// the content and folded
   bool hasLineBreak,
+
+  /// Indicates if the actual formatted content itself has a line break.
+  ///
+  /// Do not confuse this with `hasLineBreak`. Some scalars fold line breaks
+  /// which are never written to the buffer. Specifically,
+  /// [ScalarStyle.doubleQuoted] allow line breaks to be escaped. In this case,
+  /// the string may be concantenated without ever folding the line break to a
+  /// space. This information may be crucial to how we infer the kind
+  /// (Dart type) since most (, if not all,) types are inline.
+  bool wroteLineBreak,
 
   /// Returns `true` for block(-like) styles, that is, `plain`, `literal` and
   /// `folded` if an indent change triggered the end of its parsing

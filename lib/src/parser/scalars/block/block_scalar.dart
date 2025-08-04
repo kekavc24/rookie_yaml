@@ -198,6 +198,7 @@ PreScalar parseBlockStyle(
     indentDidChange: indentOnExit != seamlessIndentMarker,
     docMarkerType: docMarkerType,
     hasLineBreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
+    wroteLineBreak: buffer.wroteLineBreak,
     end: end ?? scanner.lineInfo().current,
   );
 }

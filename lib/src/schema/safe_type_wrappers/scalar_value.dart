@@ -1,4 +1,5 @@
 import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 part 'typed_schema_utils.dart';
@@ -17,9 +18,9 @@ sealed class ScalarValue<T> {
 
   /// Creates a wrapped [ScalarValue] for the parsed [content].
   ///
-  /// If [encounteredLineBreak] is `true` or the [content] spans more than
+  /// If [contentHasLineBreak] is `true` or the [content] spans more than
   /// 1 line, this defaults to a [StringView]. Otherwise, attempts to infer
-  /// to its kind based on available `Dart` types.
+  /// to its kind based on available `Dart` types. See [PreScalar]
   ///
   /// Similarly, if [parsedTag] is not `null` and it is a valid `YAML` tag,
   /// its type is inferred. Defaults to a [StringView] otherwise.
@@ -29,13 +30,13 @@ sealed class ScalarValue<T> {
   /// was parsed).
   factory ScalarValue.fromParsedScalar(
     String content, {
-    required bool encounteredLineBreak,
+    required bool contentHasLineBreak,
     required LocalTag? parsedTag,
     required void Function(LocalTag inferred) ifParsedTagNull,
   }) {
     /// Anything spanning more than one line is a string and we cannot infer
     /// its type
-    if (!encounteredLineBreak) {
+    if (!contentHasLineBreak) {
       if (parsedTag != null) {
         return _schemaFromTag<T>(content, parsedTag);
       }
