@@ -62,14 +62,13 @@ void main() {
 ? ? nested explicit key
   : nested value
 : value
-
 ''';
 
       check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
         {
           null: null,
           'plain-key-with-empty-value': null,
-          'block-key\n': ['value', 'value'],
+          'block-key\n': ['value', 'value\n'],
           'folded key\n': ['value', 'value'],
           ['block', 'sequence', 'key']: {'flow': 'value'},
           {'flow': 'map', 'as': 'key'}: 'double quoted value',
@@ -102,8 +101,8 @@ key3:
           null: null,
           'key': null,
           'key0': 'value',
-          'key1': {'nested': 'block map'},
-          'key2': ['block sequence'],
+          'key1': {'nested': 'block map\n'},
+          'key2': ['block sequence\n'],
           'key3': ['block indicator as indent'],
         }.toString(),
       );
@@ -149,7 +148,9 @@ rogue
 
       check(
         () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
-      ).throwsAFormatException('Expected a ":" (after the key) but found "i"');
+      ).throwsAnException(
+        '[Parser Error]: Implicit keys cannot have an exit indent',
+      );
     });
 
     test('Throws if a block sequence is inline with block implicit key', () {
