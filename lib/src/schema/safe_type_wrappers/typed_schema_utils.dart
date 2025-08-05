@@ -75,17 +75,22 @@ typedef _ParsedInt = ({int value, int radix});
 
 /// Parses an [int] and returns its value and radix.
 _ParsedInt? _parseInt(String normalized) {
-  int? radix;
+  var radix = 10; // Defaults to 10
+  var strToParse = normalized;
 
-  if (normalized.startsWith(_octalPrefix)) {
-    normalized = normalized.replaceFirst(_octalPrefix, '');
-    radix = 8;
+  void strip(String prefix) {
+    strToParse = strToParse.replaceFirst(prefix, '');
   }
 
-  // Check other bases used by YAML only if null
-  radix ??= normalized.startsWith(_hexPrefix) ? 16 : 10;
+  if (strToParse.startsWith(_octalPrefix)) {
+    strip(_octalPrefix);
+    radix = 8;
+  } else if (strToParse.startsWith(_hexPrefix)) {
+    strip(_hexPrefix);
+    radix = 16;
+  }
 
-  if (int.tryParse(normalized, radix: radix) case int parsedInt) {
+  if (int.tryParse(strToParse, radix: radix) case int parsedInt) {
     return (value: parsedInt, radix: radix);
   }
 
