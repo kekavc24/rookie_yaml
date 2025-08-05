@@ -1106,7 +1106,12 @@ final class DocumentParser {
         indentDidChange) {
       return (
         delegate: _trackAnchor(delegate, parsedProperties?.properties),
-        nodeInfo: (exitIndent: indentOnExit, docMarker: docMarkerType),
+        nodeInfo: (
+          exitIndent: indentOnExit == seamlessIndentMarker
+              ? _skipToParsableChar(_scanner, comments: _comments)
+              : indentOnExit,
+          docMarker: docMarkerType,
+        ),
       );
     }
 
@@ -2379,7 +2384,7 @@ final class DocumentParser {
     ParserDelegate? root;
     _BlockNodeInfo? rootInfo;
 
-    /// If we attempted to check for doc markers and found any
+    /// If we attempted to check for doc markers and found none
     if (_docMarkerGreedy != null) {
       final (:start, :greedChars) = _docMarkerGreedy!;
 
