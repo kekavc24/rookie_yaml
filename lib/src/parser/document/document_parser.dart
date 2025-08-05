@@ -1106,12 +1106,7 @@ final class DocumentParser {
         indentDidChange) {
       return (
         delegate: _trackAnchor(delegate, parsedProperties?.properties),
-        nodeInfo: (
-          exitIndent: indentOnExit == seamlessIndentMarker
-              ? _skipToParsableChar(_scanner, comments: _comments)
-              : indentOnExit,
-          docMarker: docMarkerType,
-        ),
+        nodeInfo: (exitIndent: indentOnExit, docMarker: docMarkerType),
       );
     }
 
@@ -1400,10 +1395,10 @@ final class DocumentParser {
     /// Make sure we have an accurate indent and not one indicating that
     /// our block(-like) scalar was not a result of anything else like a
     /// comment.
-    if (info.exitIndent == seamlessIndentMarker &&
-        !info.docMarker.stopIfParsingDoc &&
+    if (!info.docMarker.stopIfParsingDoc &&
         _scanner.canChunkMore &&
-        _scanner.charAtCursor == Indicator.comment) {
+        (_scanner.charAtCursor == Indicator.comment ||
+            info.exitIndent == seamlessIndentMarker)) {
       info = (
         exitIndent: _skipToParsableChar(_scanner, comments: _comments),
         docMarker: DocumentMarker.none,
@@ -2549,6 +2544,10 @@ final class DocumentParser {
           );
 
           if (!docMarker.stopIfParsingDoc) {
+            if (fauxBuffer.isEmpty) {
+              fauxBuffer.add(_scanner.charAtCursor?.string ?? 'null');
+            }
+
             throw FormatException(
               'Expected to find document end chars "..." or directive end chars'
               ' "---" but found ${fauxBuffer.join()}',
