@@ -67,3 +67,33 @@ typedef PreScalar = ({
   /// End offset of the scalar (exclusive)
   SourceLocation end,
 });
+
+const _whitespace = ' ';
+const _tab = '\t';
+
+bool _isYamlWhitespace(String char) => char == _whitespace || char == _tab;
+
+/// Trims YAML whitespace and not line breaks
+String trimYamlWhitespace(String content) {
+  if (content.isEmpty) return content;
+
+  var left = 0;
+  var right = content.length - 1;
+  var moved = true;
+
+  while (left < right && moved) {
+    moved = false;
+
+    if (_isYamlWhitespace(content[left])) {
+      ++left;
+      moved = true;
+    }
+
+    if (_isYamlWhitespace(content[right])) {
+      --right;
+      moved = true;
+    }
+  }
+
+  return content.substring(left, right + 1);
+}
