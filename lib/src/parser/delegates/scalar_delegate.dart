@@ -55,8 +55,12 @@ final class ScalarDelegate extends ParserDelegate {
           content,
           contentHasLineBreak: wroteLineBreak,
           parsedTag: _tag?.suffix,
-          ifParsedTagNull: (inferred) =>
-              _tag = NodeTag(yamlGlobalTag, inferred),
+          ifParsedTagNull: (inferred) {
+            /// Verbatim tags have no suffix. They are complete and in a
+            /// resolved state as they are
+            if (_tag is VerbatimTag) return;
+            _tag = NodeTag(yamlGlobalTag, inferred);
+          },
         ),
         scalarStyle: scalarStyle,
         tag: _tag,
