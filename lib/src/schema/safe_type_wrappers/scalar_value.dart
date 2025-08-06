@@ -18,9 +18,10 @@ sealed class ScalarValue<T> {
 
   /// Creates a wrapped [ScalarValue] for the parsed [content].
   ///
-  /// If [contentHasLineBreak] is `true` or the [content] spans more than
-  /// 1 line, this defaults to a [StringView]. Otherwise, attempts to infer
-  /// to its kind based on available `Dart` types. See [PreScalar]
+  /// If [defaultToString] is `true` (content spans more that 1 line or the
+  /// scalar has a [TypeResolverTag]), this defaults to a [StringView].
+  /// Otherwise, attempts to infer its kind based on available `Dart` types.
+  /// See [PreScalar]
   ///
   /// Similarly, if [parsedTag] is not `null` and it is a valid `YAML` tag,
   /// its type is inferred. Defaults to a [StringView] otherwise.
@@ -30,13 +31,13 @@ sealed class ScalarValue<T> {
   /// (no tag was parsed).
   factory ScalarValue.fromParsedScalar(
     String content, {
-    required bool contentHasLineBreak,
+    required bool defaultToString,
     required TagShorthand? parsedTag,
     required void Function(TagShorthand inferred) ifParsedTagNull,
   }) {
     /// Anything spanning more than one line is a string and we cannot infer
     /// its type
-    if (!contentHasLineBreak) {
+    if (!defaultToString) {
       if (parsedTag != null) {
         return _schemaFromTag<T>(content, parsedTag);
       }

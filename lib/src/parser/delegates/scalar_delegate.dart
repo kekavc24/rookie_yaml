@@ -53,12 +53,16 @@ final class ScalarDelegate extends ParserDelegate {
       return Scalar(
         ScalarValue.fromParsedScalar(
           content,
-          contentHasLineBreak: wroteLineBreak,
+          defaultToString: wroteLineBreak || _tag is TypeResolverTag,
           parsedTag: _tag?.suffix,
           ifParsedTagNull: (inferred) {
             /// Verbatim tags have no suffix. They are complete and in a
-            /// resolved state as they are
-            if (_tag is VerbatimTag) return;
+            /// resolved state as they are.
+            ///
+            /// Type resolver tags are somewhat qualified. They intentionally
+            /// hide the suffix of a resolved tag forcing the scalar to be in
+            /// its natural formatted form after parsing.
+            if (_tag case VerbatimTag _ || TypeResolverTag _) return;
             _tag = NodeTag(yamlGlobalTag, inferred);
           },
         ),
