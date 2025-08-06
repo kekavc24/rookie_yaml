@@ -157,11 +157,11 @@ final class DocumentParser {
   }
 
   /// Resolves a local tag to a global tag uri if present.
-  ResolvedTag _resolveTag(LocalTag localTag) {
-    final LocalTag(:tagHandle, :content) = localTag;
+  ResolvedTag _resolveTag(TagShorthand localTag) {
+    final TagShorthand(:tagHandle, :content) = localTag;
 
     SpecificTag prefix = localTag;
-    LocalTag? suffix; // Local tags have no suffixes
+    TagShorthand? suffix; // Local tags have no suffixes
 
     // Check if alias to global tag
     final globalTag = _globalTags[tagHandle];

@@ -4,7 +4,7 @@ part of 'directives.dart';
 ///
 /// [suffix] - must not be empty if a [GlobalTag] is provided.
 ///
-/// Example: the [LocalTag] `!!str` is normally resolved to [GlobalTag]
+/// Example: the [TagShorthand] `!!str` is normally resolved to [GlobalTag]
 /// `tag:yaml.org,2002:str` which in verbatim is represented as
 /// `!<tag:yaml.org,2002:str>`. Thus, `str` is the [suffix] in this case and
 /// `tag:yaml.org,2002` is the global tag prefix.
@@ -26,19 +26,19 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
   return _wrapAsVerbatim('$prepend$formattedSuffix');
 }
 
-/// Represents a [LocalTag] shorthand that has (not) been resolved to a
+/// Represents a [TagShorthand] shorthand that has (not) been resolved to a
 /// [GlobalTag] after it has been parsed.
 @immutable
 final class NodeTag<T> implements ResolvedTag {
-  NodeTag(this._resolvedTag, LocalTag? suffix)
+  NodeTag(this._resolvedTag, TagShorthand? suffix)
     : verbatim = _formatAsVerbatim(_resolvedTag, suffix?.content ?? ''),
-      suffix = suffix ?? _resolvedTag as LocalTag;
+      suffix = suffix ?? _resolvedTag as TagShorthand;
 
-  /// A [LocalTag] shorthand resolved to a [GlobalTag] or the tag itself.
+  /// A [TagShorthand] shorthand resolved to a [GlobalTag] or the tag itself.
   final SpecificTag<T> _resolvedTag;
 
   @override
-  final LocalTag suffix; // A parsed tag always has a suffix
+  final TagShorthand suffix; // A parsed tag always has a suffix
 
   @override
   String get prefix => _resolvedTag.prefix;

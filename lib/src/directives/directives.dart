@@ -9,7 +9,7 @@ import 'package:rookie_yaml/src/schema/nodes/node.dart';
 
 part 'directive_utils.dart';
 part 'global_tag.dart';
-part 'local_tag.dart';
+part 'tag_shorthand.dart';
 part 'node_tag.dart';
 part 'reserved_directive.dart';
 part 'resolver_tag.dart';

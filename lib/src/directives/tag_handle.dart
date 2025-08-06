@@ -4,7 +4,8 @@ const _tagIndicator = Indicator.tag;
 
 /// Types of a [TagHandle]
 enum TagHandleVariant {
-  /// Normally used as a prefix for most [LocalTag]s and [NonSpecificTag]s
+  /// Normally used as a prefix for most [TagShorthand]s and all non-specific
+  /// local tags
   primary('!'),
 
   /// Prefix for tags that resolve to `tag:yaml.org,2002:` unless overriden

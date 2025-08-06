@@ -17,13 +17,13 @@ final _defaultYamlHandle = TagHandle.secondary();
 final yamlGlobalTag = GlobalTag.fromTagUri(_defaultYamlHandle, _yamlPrefix);
 
 /// Generic [Map]
-final mappingTag = LocalTag.fromTagUri(_defaultYamlHandle, 'map');
+final mappingTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'map');
 
 /// Generic [List]
-final sequenceTag = LocalTag.fromTagUri(_defaultYamlHandle, 'seq');
+final sequenceTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'seq');
 
 /// Generic [String]
-final stringTag = LocalTag.fromTagUri(_defaultYamlHandle, 'str');
+final stringTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'str');
 
 //
 // ** JSON SCHEMA TAGS **
@@ -31,25 +31,25 @@ final stringTag = LocalTag.fromTagUri(_defaultYamlHandle, 'str');
 //
 
 /// `JSON` [null]
-final nullTag = LocalTag.fromTagUri(_defaultYamlHandle, 'null');
+final nullTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'null');
 
 /// `JSON` [bool]
-final booleanTag = LocalTag.fromTagUri(_defaultYamlHandle, 'bool');
+final booleanTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'bool');
 
 /// `JSON` [int]
-final integerTag = LocalTag.fromTagUri(_defaultYamlHandle, 'int');
+final integerTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'int');
 
 /// `JSON` [double]
-final floatTag = LocalTag.fromTagUri(_defaultYamlHandle, 'float');
+final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
 
 //
 // ** Dart Tags **
 //
 
 /// [Uri] tag
-final uriTag = LocalTag.fromTagUri(_defaultYamlHandle, 'uri');
+final uriTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'uri');
 
-/// Any [LocalTag] that resolves to a [Scalar]
+/// Any [TagShorthand] that resolves to a [Scalar]
 final scalarTags = {
   stringTag,
   nullTag,
@@ -61,5 +61,5 @@ final scalarTags = {
 
 /// Checks if a [tag] is valid tag in the yaml schema. A yaml tag uses the
 /// [TagHandleVariant.secondary] handle
-bool isYamlTag(LocalTag tag) =>
+bool isYamlTag(TagShorthand tag) =>
     tag == mappingTag || tag == sequenceTag || scalarTags.contains(tag);

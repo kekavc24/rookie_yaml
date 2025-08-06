@@ -16,8 +16,9 @@ const _globalTagDirective = 'TAG';
 final class GlobalTag<T> extends SpecificTag<T> implements Directive {
   GlobalTag._(super.tagHandle, super.suffix) : super.fromString();
 
-  /// Creates a global tag whose prefix is a [LocalTag].
-  GlobalTag.fromLocalTag(super.tagHandle, super.tag) : super.fromLocalTag();
+  /// Creates a global tag whose prefix is a [TagShorthand].
+  GlobalTag.fromTagShorthand(super.tagHandle, super.tag)
+    : super.fromTagShorthand();
 
   /// Creates a global tag whose prefix is a valid tag uri
   factory GlobalTag.fromTagUri(TagHandle handle, String uri) => GlobalTag._(
@@ -84,9 +85,9 @@ GlobalTag<dynamic> _parseGlobalTag(
         /// A global ga cannot be affected by flow indicators or the tag
         /// indicator as long we already removed the leading "!". A hack or
         /// just common sense.
-        return GlobalTag.fromLocalTag(
+        return GlobalTag.fromTagShorthand(
           tagHandle,
-          LocalTag._(
+          TagShorthand._(
             TagHandle.primary(),
             _parseTagUri(scanner, allowRestrictedIndicators: true),
           ),

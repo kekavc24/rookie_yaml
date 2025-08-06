@@ -28,7 +28,7 @@ final class VerbatimTag extends ResolvedTag {
   }
 
   /// Creates a verbatim tag from a local tag
-  factory VerbatimTag.fromLocalTag(LocalTag tag) {
+  factory VerbatimTag.fromTagShorthand(TagShorthand tag) {
     final uri = tag.toString().trim();
 
     if (tag.tagHandle.handleVariant != TagHandleVariant.primary) {

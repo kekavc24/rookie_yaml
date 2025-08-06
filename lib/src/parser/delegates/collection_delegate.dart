@@ -10,9 +10,10 @@ ScalarDelegate nullScalarDelegate({
   start: startOffset,
 );
 
-bool _isMapTag(LocalTag tag) => tag == sequenceTag || !scalarTags.contains(tag);
+bool _isMapTag(TagShorthand tag) =>
+    tag == sequenceTag || !scalarTags.contains(tag);
 
-NodeTag _defaultTo(LocalTag tag) => NodeTag(yamlGlobalTag, tag);
+NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, tag);
 
 /// A delegate that represents a single key-value pair within a flow/block
 /// [Sequence]

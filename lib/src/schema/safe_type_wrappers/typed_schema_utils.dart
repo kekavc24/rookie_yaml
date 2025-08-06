@@ -109,7 +109,7 @@ String _stringFromSafeInt(int value, int radix) {
 }
 
 /// A record for an inferred type [T]
-typedef _MaybeInferred<T> = (LocalTag? tag, T? value);
+typedef _MaybeInferred<T> = (TagShorthand? tag, T? value);
 
 /// A record categorizing an inferred value to a scalar value and its
 /// associated tag in `YAML`
@@ -138,15 +138,16 @@ _MaybeInferred<T> _inferDartType<T>(String content) {
 _MaybeScalarValue<T> _inferDartValue<T>(String content) {
   if (content.isEmpty || _nullRegex.hasMatch(content)) {
     return (nullTag, NullView(content) as ScalarValue<T>);
-  } else if (_inferDartType(content) case (LocalTag dartTag, T dartType)) {
+  } else if (_inferDartType(content) case (TagShorthand dartTag, T dartType)) {
     return (dartTag, DartValue(dartType));
   }
 
   return _notInferred;
 }
 
-/// Infers a `YAML` [LocalTag] and a [ScalarValue] if a tag was never parsed.
-({LocalTag inferredTag, ScalarValue<T> schema}) _inferSchema<T>(
+/// Infers a `YAML` [TagShorthand] and a [ScalarValue] if a tag was never
+/// parsed.
+({TagShorthand inferredTag, ScalarValue<T> schema}) _inferSchema<T>(
   String content,
 ) {
   if (_parseInt(content) case (:final radix, :final value)) {
@@ -155,7 +156,7 @@ _MaybeScalarValue<T> _inferDartValue<T>(String content) {
       schema: YamlSafeInt(value, radix) as ScalarValue<T>,
     );
   } else if (_inferDartValue(content) case (
-    LocalTag normieTag,
+    TagShorthand normieTag,
     ScalarValue<T> normieSchema,
   )) {
     return (inferredTag: normieTag, schema: normieSchema);
@@ -171,7 +172,7 @@ _MaybeScalarValue<T> _inferDartValue<T>(String content) {
 ///
 /// Internally calls [_inferSchema] and checks if the inferred tag matches
 /// the [parsedTag].
-ScalarValue<T> _schemaFromTag<T>(String content, LocalTag parsedTag) {
+ScalarValue<T> _schemaFromTag<T>(String content, TagShorthand parsedTag) {
   /// Lazy implementation. Instead of duplicating code, just infer the type
   /// (though not performant, we have a limited number). Represent partially
   /// as a string if the inferred tag doesn't match our parsed tag.

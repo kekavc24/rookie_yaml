@@ -2,7 +2,7 @@ part of 'directives.dart';
 
 /// A tag that wraps a [ResolvedTag] and defines a mapping function for any
 /// node annotated with the tag.
-final class TypeResolverTag<T> implements ResolvedTag {
+final class TypeResolverTag<T> extends ResolvedTag {
   TypeResolverTag(this._resolvedTag, {required this.resolver});
 
   /// Underlying [ResolvedTag]
@@ -16,9 +16,6 @@ final class TypeResolverTag<T> implements ResolvedTag {
 
   @override
   TagHandle get tagHandle => _resolvedTag.tagHandle;
-
-  @override
-  LocalTag? get suffix => _resolvedTag.suffix;
 
   @override
   String get verbatim => _resolvedTag.verbatim;

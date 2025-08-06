@@ -164,8 +164,8 @@ extension on NodeProperties {
 
 typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 
-/// Parses the node properties of a [Node] and resolves any [LocalTag] parsed
-/// using the [resolver]. A [VerbatimTag] is never resolved. All node
+/// Parses the node properties of a [Node] and resolves any [TagShorthand]
+/// parsed using the [resolver]. A [VerbatimTag] is never resolved. All node
 /// properties declared on a new line must have an indent equal to or greater
 /// than the [minIndent].
 ///
@@ -173,7 +173,7 @@ typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 _ParsedNodeProperties _parseNodeProperties(
   ChunkScanner scanner, {
   required int minIndent,
-  required ResolvedTag Function(LocalTag tag) resolver,
+  required ResolvedTag Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
 }) {
   String? anchor;
@@ -236,7 +236,7 @@ _ParsedNodeProperties _parseNodeProperties(
             ReadableChar next when next.string == verbatimStart.string =>
               parseVerbatimTag(scanner),
 
-            _ => resolver(parseLocalTag(scanner)),
+            _ => resolver(parseTagShorthand(scanner)),
           };
 
           notLineBreak();
@@ -307,7 +307,7 @@ typedef _FlowNodeProperties = ({
 _FlowNodeProperties _parseSimpleFlowProps(
   ChunkScanner scanner, {
   required int minIndent,
-  required ResolvedTag Function(LocalTag tag) resolver,
+  required ResolvedTag Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
   bool lastKeyWasJsonLike = false,
 }) {

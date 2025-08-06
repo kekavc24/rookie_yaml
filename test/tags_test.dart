@@ -104,9 +104,9 @@ void main() {
       check(
         parseDirectives(ChunkScanner.of(yaml)),
       ).has((d) => d.globalTags, 'Global Tag from tag uri').deepEquals({
-        handle: GlobalTag.fromLocalTag(
+        handle: GlobalTag.fromTagShorthand(
           handle,
-          LocalTag.fromTagUri(TagHandle.primary(), localTag),
+          TagShorthand.fromTagUri(TagHandle.primary(), localTag),
         ),
       });
     });
@@ -173,8 +173,8 @@ void main() {
       final yaml = '!$suffix "Not to be included"';
 
       check(
-        parseLocalTag(ChunkScanner.of(yaml)),
-      ).equals(LocalTag.fromTagUri(TagHandle.primary(), suffix));
+        parseTagShorthand(ChunkScanner.of(yaml)),
+      ).equals(TagShorthand.fromTagUri(TagHandle.primary(), suffix));
     });
 
     test('Parses a tag shorthand with secondary tag handle', () {
@@ -182,8 +182,8 @@ void main() {
       final yaml = '!!$suffix "Not to be included"';
 
       check(
-        parseLocalTag(ChunkScanner.of(yaml)),
-      ).equals(LocalTag.fromTagUri(TagHandle.secondary(), suffix));
+        parseTagShorthand(ChunkScanner.of(yaml)),
+      ).equals(TagShorthand.fromTagUri(TagHandle.secondary(), suffix));
     });
 
     test('Parses a tag shorthand with named tag handle', () {
@@ -191,8 +191,8 @@ void main() {
       final yaml = '!$suffix!$suffix "Not to be included"';
 
       check(
-        parseLocalTag(ChunkScanner.of(yaml)),
-      ).equals(LocalTag.fromTagUri(TagHandle.named(suffix), suffix));
+        parseTagShorthand(ChunkScanner.of(yaml)),
+      ).equals(TagShorthand.fromTagUri(TagHandle.named(suffix), suffix));
     });
 
     test(
@@ -216,8 +216,8 @@ void main() {
           final yaml = '!$tag $node';
 
           check(
-            parseLocalTag(ChunkScanner.of(yaml)),
-          ).equals(LocalTag.fromTagUri(TagHandle.primary(), tag));
+            parseTagShorthand(ChunkScanner.of(yaml)),
+          ).equals(TagShorthand.fromTagUri(TagHandle.primary(), tag));
         }
       },
     );
@@ -227,7 +227,7 @@ void main() {
       final yaml = '!local$offender';
 
       check(
-        () => parseLocalTag(ChunkScanner.of(yaml)),
+        () => parseTagShorthand(ChunkScanner.of(yaml)),
       ).throwsAFormatException('"$offender" is not a valid URI char');
     });
 
@@ -236,7 +236,7 @@ void main() {
 
       for (final ReadableChar(:string) in flowDelimiters) {
         check(
-          () => parseLocalTag(ChunkScanner.of('$yaml$string')),
+          () => parseTagShorthand(ChunkScanner.of('$yaml$string')),
         ).throwsAFormatException(
           'Expected "$string" to be escaped. Flow collection characters must be'
           ' escaped.',
@@ -249,7 +249,7 @@ void main() {
       final yaml = '!!tag-indicator-in-shorthand$offender';
 
       check(
-        () => parseLocalTag(ChunkScanner.of(yaml)),
+        () => parseTagShorthand(ChunkScanner.of(yaml)),
       ).throwsAFormatException(
         'Expected "$offender" to be escaped. The "$offender" character must be'
         ' escaped.',
@@ -260,7 +260,7 @@ void main() {
       const yaml = '!non-alpha-in-named*!ref';
 
       check(
-        () => parseLocalTag(ChunkScanner.of(yaml)),
+        () => parseTagShorthand(ChunkScanner.of(yaml)),
       ).throwsAFormatException(
         'A named tag can only have alphanumeric characters',
       );

@@ -2,14 +2,15 @@ part of 'directives.dart';
 
 /// A tag shorthand for a node that may (not) be resolved to a [GlobalTag]
 @immutable
-final class LocalTag extends SpecificTag<String> {
-  LocalTag._(super.tagHandle, super.suffix) : super.fromString();
+final class TagShorthand extends SpecificTag<String> {
+  TagShorthand._(super.tagHandle, super.suffix) : super.fromString();
 
   /// Creates a local tag from a valid tag uri without the leading `!`.
-  factory LocalTag.fromTagUri(TagHandle tagHandle, String suffix) => LocalTag._(
-    tagHandle,
-    _ensureIsTagUri(suffix, allowRestrictedIndicators: false),
-  );
+  factory TagShorthand.fromTagUri(TagHandle tagHandle, String suffix) =>
+      TagShorthand._(
+        tagHandle,
+        _ensureIsTagUri(suffix, allowRestrictedIndicators: false),
+      );
 
   @override
   String get prefix => tagHandle.handle;
@@ -25,14 +26,14 @@ final class LocalTag extends SpecificTag<String> {
 
   @override
   bool operator ==(Object other) =>
-      other is LocalTag && other.toString() == toString();
+      other is TagShorthand && other.toString() == toString();
 
   @override
   int get hashCode => toString().hashCode;
 }
 
-/// Parses a [LocalTag]
-LocalTag parseLocalTag(ChunkScanner scanner) {
+/// Parses a [TagShorthand]
+TagShorthand parseTagShorthand(ChunkScanner scanner) {
   var handle = TagHandle.primary();
   scanner.skipCharAtCursor(); // Ignore leading "!"
 
@@ -41,7 +42,7 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
   if (scanner.charAtCursor == _tagIndicator) {
     handle = TagHandle.secondary();
     scanner.skipCharAtCursor();
-    return LocalTag._(
+    return TagShorthand._(
       handle,
       _parseTagUri(scanner, allowRestrictedIndicators: false),
     );
@@ -83,7 +84,7 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
           /// The rest can be parsed as tag uri characters with strict
           /// escape requirements
           scanner.skipCharAtCursor();
-          return LocalTag._(
+          return TagShorthand._(
             TagHandle.named(buffer.toString()),
             _parseTagUri(scanner, allowRestrictedIndicators: false),
           );
@@ -124,5 +125,5 @@ LocalTag parseLocalTag(ChunkScanner scanner) {
   }
 
   // A local tag does not need to have a character i.e wildcard
-  return LocalTag._(handle, buffer.toString());
+  return TagShorthand._(handle, buffer.toString());
 }

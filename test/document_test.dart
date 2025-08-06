@@ -47,9 +47,9 @@ void main() {
     });
 
     test('Parses directive doc', () {
-      final globalWithLocal = GlobalTag.fromLocalTag(
+      final globalWithLocal = GlobalTag.fromTagShorthand(
         TagHandle.named('with-tag'),
-        LocalTag.fromTagUri(TagHandle.primary(), 'tag'),
+        TagShorthand.fromTagUri(TagHandle.primary(), 'tag'),
       );
 
       final globalWithUri = GlobalTag.fromTagUri(
@@ -162,7 +162,7 @@ folded
 
   group('Tags', () {
     test('Assigns shorthand as is if not resolved', () {
-      final tag = LocalTag.fromTagUri(TagHandle.primary(), 'not-resolved');
+      final tag = TagShorthand.fromTagUri(TagHandle.primary(), 'not-resolved');
 
       final yaml =
           '''
@@ -173,12 +173,12 @@ $tag yaml
     });
 
     test('Resolves shorthands with primary tag handles', () {
-      final globalTag = GlobalTag.fromLocalTag(
+      final globalTag = GlobalTag.fromTagShorthand(
         TagHandle.primary(),
-        LocalTag.fromTagUri(TagHandle.primary(), 'test-tag-for-'),
+        TagShorthand.fromTagUri(TagHandle.primary(), 'test-tag-for-'),
       );
 
-      final suffix = LocalTag.fromTagUri(
+      final suffix = TagShorthand.fromTagUri(
         TagHandle.primary(),
         'primary-handles',
       );
@@ -207,9 +207,9 @@ $suffix node
     );
 
     test('Redeclares secondary handle to use custom global tag', () {
-      final globalTag = GlobalTag.fromLocalTag(
+      final globalTag = GlobalTag.fromTagShorthand(
         TagHandle.secondary(),
-        LocalTag.fromTagUri(
+        TagShorthand.fromTagUri(
           TagHandle.primary(),
           'redeclared-for-secondary-handles',
         ),
@@ -230,12 +230,12 @@ $stringTag node
     test('Resolves named shorthands to custom declaration', () {
       final handle = TagHandle.named('named');
 
-      final globalTag = GlobalTag.fromLocalTag(
+      final globalTag = GlobalTag.fromTagShorthand(
         handle,
-        LocalTag.fromTagUri(TagHandle.primary(), 'tag'),
+        TagShorthand.fromTagUri(TagHandle.primary(), 'tag'),
       );
 
-      final suffix = LocalTag.fromTagUri(handle, 'suffix');
+      final suffix = TagShorthand.fromTagUri(handle, 'suffix');
 
       final yaml =
           '''
@@ -254,9 +254,9 @@ $suffix
       () {
         final telescope = TagHandle.primary();
 
-        final firstGlobal = GlobalTag.fromLocalTag(
+        final firstGlobal = GlobalTag.fromTagShorthand(
           telescope,
-          LocalTag.fromTagUri(TagHandle.primary(), 'primary-galaxy'),
+          TagShorthand.fromTagUri(TagHandle.primary(), 'primary-galaxy'),
         );
 
         final secondGlobal = GlobalTag.fromTagUri(
@@ -264,7 +264,7 @@ $suffix
           'secondary://galaxy',
         );
 
-        final star = LocalTag.fromTagUri(
+        final star = TagShorthand.fromTagUri(
           telescope,
           'same-star-different-galaxy',
         );
@@ -299,9 +299,9 @@ $star
 
   group('Exceptions', () {
     test('Throws exception when a named tag is used as global tag prefix', () {
-      final global = GlobalTag.fromLocalTag(
+      final global = GlobalTag.fromTagShorthand(
         TagHandle.named('okay'),
-        LocalTag.fromTagUri(TagHandle.named('not-okay'), 'tag'),
+        TagShorthand.fromTagUri(TagHandle.named('not-okay'), 'tag'),
       );
 
       final yaml =

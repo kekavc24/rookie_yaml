@@ -278,8 +278,8 @@ void main() {
   });
 
   test('Infers type but verbatim tags are not overriden', () {
-    final tag = VerbatimTag.fromLocalTag(
-      LocalTag.fromTagUri(TagHandle.primary(), 'verbatim'),
+    final tag = VerbatimTag.fromTagShorthand(
+      TagShorthand.fromTagUri(TagHandle.primary(), 'verbatim'),
     );
 
     final yaml = '$tag 24';

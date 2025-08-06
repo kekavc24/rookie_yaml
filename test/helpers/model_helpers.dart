@@ -13,9 +13,8 @@ extension PreScalarHelper on Subject<PreScalar?> {
   void hasIndent(int indent) =>
       isNotNull().has((p) => p.scalarIndent, 'Inferred indent').equals(indent);
 
-  void hasFormattedContent(String content) => isNotNull()
-      .has((p) => p.content, 'Canonical Content')
-      .equals(content);
+  void hasFormattedContent(String content) =>
+      isNotNull().has((p) => p.content, 'Canonical Content').equals(content);
 
   void hasDocEndMarkers() => isNotNull()
       .has((p) => p.docMarkerType.stopIfParsingDoc, 'Document End Markers')
@@ -45,7 +44,7 @@ extension ParsedNodeHelper on Subject<ParsedYamlNode?> {
 
   void hasNoTag() => withTag().isNull();
 
-  void hasTag<T>(SpecificTag<T> tag, {LocalTag? suffix}) => withTag()
+  void hasTag<T>(SpecificTag<T> tag, {TagShorthand? suffix}) => withTag()
       .isNotNull()
       .has((t) => t.verbatim, 'As verbatim')
       .equals(NodeTag(tag, suffix).verbatim);

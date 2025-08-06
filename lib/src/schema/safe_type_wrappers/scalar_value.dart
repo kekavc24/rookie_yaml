@@ -25,14 +25,14 @@ sealed class ScalarValue<T> {
   /// Similarly, if [parsedTag] is not `null` and it is a valid `YAML` tag,
   /// its type is inferred. Defaults to a [StringView] otherwise.
   ///
-  /// [ifParsedTagNull] is used to provide an inferred [LocalTag] to a scalar
-  /// based on its kind (valid Dart type) if [parsedTag] is `null` (no tag
-  /// was parsed).
+  /// [ifParsedTagNull] is used to provide an inferred [TagShorthand] to a
+  /// scalar based on its kind (valid Dart type) if [parsedTag] is `null`
+  /// (no tag was parsed).
   factory ScalarValue.fromParsedScalar(
     String content, {
     required bool contentHasLineBreak,
-    required LocalTag? parsedTag,
-    required void Function(LocalTag inferred) ifParsedTagNull,
+    required TagShorthand? parsedTag,
+    required void Function(TagShorthand inferred) ifParsedTagNull,
   }) {
     /// Anything spanning more than one line is a string and we cannot infer
     /// its type

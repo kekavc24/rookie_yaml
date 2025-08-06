@@ -11,7 +11,7 @@ import 'helpers/model_helpers.dart';
 void main() {
   group('Tag properties', () {
     test('Parses simple tags', () {
-      final tag = LocalTag.fromTagUri(TagHandle.primary(), 'test-tag');
+      final tag = TagShorthand.fromTagUri(TagHandle.primary(), 'test-tag');
       final yaml =
           '''
 $tag plain-scalar
@@ -37,8 +37,11 @@ $tag
     });
 
     test('Parses tags nested in flow map', () {
-      final entryTag = LocalTag.fromTagUri(TagHandle.primary(), 'simple-kv');
-      final mapTag = LocalTag.fromTagUri(TagHandle.primary(), 'flow-map');
+      final entryTag = TagShorthand.fromTagUri(
+        TagHandle.primary(),
+        'simple-kv',
+      );
+      final mapTag = TagShorthand.fromTagUri(TagHandle.primary(), 'flow-map');
 
       final yaml =
           '''
@@ -60,8 +63,11 @@ $entryTag key0: $entryTag value
     });
 
     test('Parses tags in flow sequence', () {
-      final seqEntryTag = LocalTag.fromTagUri(TagHandle.primary(), 'seq-entry');
-      final seqTag = LocalTag.fromTagUri(TagHandle.primary(), 'flow-seq');
+      final seqEntryTag = TagShorthand.fromTagUri(
+        TagHandle.primary(),
+        'seq-entry',
+      );
+      final seqTag = TagShorthand.fromTagUri(TagHandle.primary(), 'flow-seq');
 
       final yaml =
           '''
@@ -100,7 +106,7 @@ $seqEntryTag plain
     });
 
     test('Parses tags in a block map', () {
-      final kvTag = LocalTag.fromTagUri(TagHandle.primary(), 'block-kv');
+      final kvTag = TagShorthand.fromTagUri(TagHandle.primary(), 'block-kv');
 
       final yaml =
           '''
@@ -123,8 +129,11 @@ $kvTag key0: $kvTag value
     });
 
     test('Parses tags in block sequence', () {
-      final blockSeqTag = LocalTag.fromTagUri(TagHandle.primary(), 'block-seq');
-      final seqTag = LocalTag.fromTagUri(TagHandle.primary(), 'seq');
+      final blockSeqTag = TagShorthand.fromTagUri(
+        TagHandle.primary(),
+        'block-seq',
+      );
+      final seqTag = TagShorthand.fromTagUri(TagHandle.primary(), 'seq');
 
       final yaml =
           '''
