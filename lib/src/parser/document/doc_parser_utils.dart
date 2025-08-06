@@ -394,3 +394,45 @@ void _blockNodeEndOffset(
   // For both doc end chars and indent change. Reference start of line
   blockNode.updateEndOffset = scanner.lineInfo().start;
 }
+
+/// A function to easily create a [TypeResolverTag] on demand
+typedef _ResolverCreator = TypeResolverTag Function(NodeTag tag);
+
+
+/// A wrapper class used to define a `suffix` that nudges the parsed how to
+/// parse a [ParsedYamlNode] or [String] content from [Scalar] to valid output
+/// [O].
+final class PreResolvers<I, O> {
+  PreResolvers._(this.indexingSuffix, this._creator);
+
+  /// Suffix associated with a [TypeResolverTag]
+  final String indexingSuffix;
+
+  /// Function to create a [TypeResolverTag] once a matching suffix is
+  /// encountered
+  final _ResolverCreator _creator;
+
+  /// Creates a [ContentResolver] as its [TypeResolverTag]
+  PreResolvers.string(
+    String suffix, {
+    required O? Function(String input) contentResolver,
+    required String Function(O input) toYamlSafe,
+  }) : this._(
+         suffix,
+         (tag) =>
+             ContentResolver(
+                   tag,
+                   resolver: contentResolver,
+                   toYamlSafe: (s) => toYamlSafe(s as O),
+                 ),
+       );
+
+  /// Creates a [NodeResolver] as its [TypeResolverTag]
+  PreResolvers.node(
+    String suffix, {
+    required O Function(ParsedYamlNode input) resolver,
+  }) : this._(
+         suffix,
+         (tag) => NodeResolver(tag, resolver: resolver),
+       );
+}

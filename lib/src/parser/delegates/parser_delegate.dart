@@ -65,9 +65,12 @@ abstract interface class ParserDelegate {
     }
 
     final (:alias, :anchor, :tag) = properties;
-    _tag = tag != null
-        ? (tag is VerbatimTag ? tag : _checkResolvedTag(tag as NodeTag))
-        : null;
+
+    if (tag case TypeResolverTag(:var resolvedTag) || NodeTag resolvedTag) {
+      _checkResolvedTag(resolvedTag);
+    }
+
+    _tag = tag;
     _anchor = anchor;
     _alias = alias;
   }

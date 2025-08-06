@@ -2,11 +2,23 @@ part of 'yaml_document.dart';
 
 final _defaultGlobalTag = MapEntry(TagHandle.secondary(), yamlGlobalTag);
 
+/// A map with functions linked to a tag suffix
+typedef _Resolvers = Map<String, _ResolverCreator>;
+
+/// A [YamlDocument] parser.
 final class DocumentParser {
-  DocumentParser(this._scanner);
+  DocumentParser(this._scanner, [List<PreResolvers>? resolvers])
+    : _resolvers = (resolvers ?? []).fold({}, (p, c) {
+        final PreResolvers(:indexingSuffix, :_creator) = c;
+        p[indexingSuffix] = _creator;
+        return p;
+      });
 
   /// Scanner with source string
   final ChunkScanner _scanner;
+
+  /// Custom functions to resolve a node
+  final _Resolvers _resolvers;
 
   /// Global directives.
   ///
@@ -15,6 +27,9 @@ final class DocumentParser {
 
   /// Index of document being parsed
   int _currentIndex = -1;
+
+  /// Index of document being parsed
+  int get nextDocIndex => _currentIndex + 1;
 
   /// Char sequence that terminated the last document.
   ///
@@ -199,7 +214,13 @@ final class DocumentParser {
         }
     }
 
-    return NodeTag(prefix, suffix);
+    final nodeTag = NodeTag(prefix, suffix);
+
+    if (_resolvers[content] case _ResolverCreator function) {
+      return function(nodeTag);
+    }
+
+    return nodeTag;
   }
 
   /// Parses a [Scalar].

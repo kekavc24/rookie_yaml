@@ -50,22 +50,39 @@ final class ScalarDelegate extends ParserDelegate {
     if (_prescalar != null) {
       final PreScalar(:content, :scalarStyle, :wroteLineBreak) = _prescalar!;
 
+      ScalarValue<T>? value;
+
+      if (_tag case ContentResolver<T>(
+        :final resolver,
+        :final toYamlSafe,
+        :final acceptNullAsValue,
+      )) {
+        if (resolver(content) case T? resolved
+            when resolved != null || acceptNullAsValue) {
+          value =
+              CustomValue(resolved as T, toYamlSafe: toYamlSafe);
+        }
+      }
+
+      // Just infer our way if it cannot be resolved or it was never declared
+      value ??= ScalarValue.fromParsedScalar(
+        content,
+        defaultToString: wroteLineBreak || _tag is NodeResolver,
+        parsedTag: _tag?.suffix,
+        ifParsedTagNull: (inferred) {
+          /// Verbatim tags have no suffix. They are complete and in a
+          /// resolved state as they are.
+          ///
+          /// Type resolver tags are somewhat qualified. They intentionally
+          /// hide the suffix of a resolved tag forcing the scalar to be in
+          /// its natural formatted form after parsing.
+          if (_tag case VerbatimTag _ || TypeResolverTag _) return;
+          _tag = NodeTag(yamlGlobalTag, inferred);
+        },
+      );
+
       return Scalar(
-        ScalarValue.fromParsedScalar(
-          content,
-          defaultToString: wroteLineBreak || _tag is TypeResolverTag,
-          parsedTag: _tag?.suffix,
-          ifParsedTagNull: (inferred) {
-            /// Verbatim tags have no suffix. They are complete and in a
-            /// resolved state as they are.
-            ///
-            /// Type resolver tags are somewhat qualified. They intentionally
-            /// hide the suffix of a resolved tag forcing the scalar to be in
-            /// its natural formatted form after parsing.
-            if (_tag case VerbatimTag _ || TypeResolverTag _) return;
-            _tag = NodeTag(yamlGlobalTag, inferred);
-          },
-        ),
+        value,
         scalarStyle: scalarStyle,
         tag: _tag,
         anchor: _anchor,
