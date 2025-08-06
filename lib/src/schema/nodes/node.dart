@@ -49,6 +49,9 @@ sealed class ParsedYamlNode extends YamlNode {
 /// among its parsed tags.
 extension CustomResolved on ParsedYamlNode {
   /// Returns a custom resolved format if any [TypeResolverTag] is present.
+  ///
+  /// `NOTE:` Declaring a [TypeResolverTag] defaults a [Scalar]'s type to a
+  /// string.
   T? asCustomType<T>() => switch (tag) {
     TypeResolverTag<T>(:final resolver) => resolver(this),
     _ => null,

@@ -29,7 +29,7 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
 /// Represents a [TagShorthand] shorthand that has (not) been resolved to a
 /// [GlobalTag] after it has been parsed.
 @immutable
-final class NodeTag<T> implements ResolvedTag {
+final class NodeTag<T> extends ResolvedTag {
   NodeTag(this._resolvedTag, TagShorthand? suffix)
     : verbatim = _formatAsVerbatim(_resolvedTag, suffix?.content ?? ''),
       suffix = suffix ?? _resolvedTag as TagShorthand;
