@@ -109,3 +109,14 @@ final class NullView extends _InferredValue<String?> {
 final class DartValue<T> extends _InferredValue<T> {
   DartValue(super.value);
 }
+
+/// A value inferred using a custom [ContentResolver] tag.
+final class CustomValue<T> extends _InferredValue<T> {
+  CustomValue(super.value, {required this.toYamlSafe});
+
+  /// Maps the [T] object back to a dumpable string.
+  final String Function(T value) toYamlSafe;
+
+  @override
+  Iterable<String> yamlSafe() => splitStringLazy(toYamlSafe(value));
+}
