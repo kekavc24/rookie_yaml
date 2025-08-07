@@ -30,7 +30,7 @@ sealed class TypeResolverTag<I, O> extends ResolvedTag {
   String toString() => verbatim;
 }
 
-/// Resolves a [ParsedYamlNode] on demand at a later time.
+/// Resolves a [YamlSourceNode] on demand at a later time.
 ///
 /// A [NodeResolver] works best with [Mapping] and [Sequence] nodes that are
 /// a collection of values. For a [Scalar], the parsed content is left
@@ -42,7 +42,7 @@ sealed class TypeResolverTag<I, O> extends ResolvedTag {
 /// control and allows the parser to determine its type if your custom
 /// function cannot. Additionally, the value type will belong to the scalar
 /// rather than having to call `asCustomType` method for a later resolution.
-final class NodeResolver<O> extends TypeResolverTag<ParsedYamlNode, O> {
+final class NodeResolver<O> extends TypeResolverTag<YamlSourceNode, O> {
   NodeResolver(super.resolvedTag, {required super.resolver});
 }
 

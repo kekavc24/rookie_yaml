@@ -2,7 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 T _inferredValue<T>(Scalar<T> scalar) => scalar.value;
 
@@ -38,7 +38,7 @@ extension ScalarHelper on Subject<Scalar> {
   void inferredNull() => has(_inferredValue, 'Null').isNull();
 }
 
-extension ParsedNodeHelper on Subject<ParsedYamlNode?> {
+extension ParsedNodeHelper on Subject<YamlSourceNode?> {
   Subject<ResolvedTag?> withTag() =>
       isNotNull().has((n) => n.tag, 'Resolved tag');
 
@@ -72,7 +72,7 @@ extension ParsedDocHelper on Subject<YamlDocument> {
   Subject<bool> isDocStartExplicit() =>
       has((d) => d.hasExplicitStart, 'Has directive end markers');
 
-  Subject<ParsedYamlNode> hasNode() => has((d) => d.root, 'Root node');
+  Subject<YamlSourceNode> hasNode() => has((d) => d.root, 'Root node');
 
   void isDocOfType(YamlDocType docType) =>
       has((d) => d.docType, 'Document Type').equals(docType);

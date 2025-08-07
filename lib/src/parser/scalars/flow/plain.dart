@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:source_span/source_span.dart';
 
 /// Usually denotes end of a plain scalar if followed by a [WhiteSpace]

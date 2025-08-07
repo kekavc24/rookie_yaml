@@ -32,7 +32,7 @@ typedef _BlockMapEntry = ({ParserDelegate? key, ParserDelegate? value});
 
 typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
 
-/// Throws an exception if the prospective [ParsedYamlNode]
+/// Throws an exception if the prospective [YamlSourceNode]
 /// (a child of the root node or the root node itself) in the document being
 /// parsed did not have an explicit directives end marker (`---`) or the
 /// directives end marker (`---`) is present but no directives were parsed.
@@ -398,9 +398,8 @@ void _blockNodeEndOffset(
 /// A function to easily create a [TypeResolverTag] on demand
 typedef _ResolverCreator = TypeResolverTag Function(NodeTag tag);
 
-
 /// A wrapper class used to define a `suffix` that nudges the parsed how to
-/// parse a [ParsedYamlNode] or [String] content from [Scalar] to valid output
+/// parse a [YamlSourceNode] or [String] content from [Scalar] to valid output
 /// [O].
 final class PreResolvers<I, O> {
   PreResolvers._(this.indexingSuffix, this._creator);
@@ -419,18 +418,17 @@ final class PreResolvers<I, O> {
     required String Function(O input) toYamlSafe,
   }) : this._(
          suffix,
-         (tag) =>
-             ContentResolver(
-                   tag,
-                   resolver: contentResolver,
-                   toYamlSafe: (s) => toYamlSafe(s as O),
-                 ),
+         (tag) => ContentResolver(
+           tag,
+           resolver: contentResolver,
+           toYamlSafe: (s) => toYamlSafe(s as O),
+         ),
        );
 
   /// Creates a [NodeResolver] as its [TypeResolverTag]
   PreResolvers.node(
     String suffix, {
-    required O Function(ParsedYamlNode input) resolver,
+    required O Function(YamlSourceNode input) resolver,
   }) : this._(
          suffix,
          (tag) => NodeResolver(tag, resolver: resolver),

@@ -3,13 +3,13 @@ import 'dart:math';
 import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:source_span/source_span.dart';
 
-part 'scalar_delegate.dart';
 part 'collection_delegate.dart';
+part 'scalar_delegate.dart';
 
 /// A delegate that stores parser information when parsing nodes of the `YAML`
 /// tree.
@@ -103,13 +103,13 @@ abstract interface class ParserDelegate {
   set hasLineBreak(bool foundLineBreak) =>
       _hasLineBreak = _hasLineBreak || foundLineBreak;
 
-  ParsedYamlNode? _parsedNode;
+  YamlSourceNode? _parsedNode;
 
   /// Resolves a delegate's node
-  ParsedYamlNode _resolveNode<T>();
+  YamlSourceNode _resolveNode<T>();
 
   /// `YAML` node delegated to the parser.
-  ParsedYamlNode parsed() {
+  YamlSourceNode parsed() {
     assert(
       _end != null,
       'Call to [$runtimeType.parsed()] with start offset [$start] must have a '
@@ -155,7 +155,7 @@ final class AliasDelegate extends ParserDelegate {
   });
 
   /// Delegate resolving to the parsed node
-  final ParsedYamlNode _reference;
+  final YamlSourceNode _reference;
 
   @override
   AliasNode _resolveNode<T>() =>

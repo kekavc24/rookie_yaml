@@ -1,4 +1,4 @@
-part of 'node.dart';
+part of 'yaml_node.dart';
 
 /// Indicates how each [Node] is presented in the serialized yaml string.
 enum NodeStyle {

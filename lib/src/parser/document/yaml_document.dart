@@ -9,13 +9,13 @@ import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:source_span/source_span.dart';
 
-part 'document_parser.dart';
-part 'document_events.dart';
 part 'doc_parser_utils.dart';
+part 'document_events.dart';
+part 'document_parser.dart';
 
 /// Represents the type of YAML document based on the use of directives,
 /// directives end marker (`---`) and document end marker (`...`)
@@ -93,7 +93,7 @@ final class YamlDocument {
   final List<YamlComment> _comments;
 
   /// Node at the root of the document
-  final ParsedYamlNode root;
+  final YamlSourceNode root;
 
   /// Generic type of document based on the use of directives, directives end
   /// markers (`---`) and document end markers (`...`) as described by the

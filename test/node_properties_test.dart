@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';
 
@@ -57,7 +57,10 @@ $entryTag key0: $entryTag value
         ..hasTag(mapTag)
         ..has((m) => m.entries, 'Flow Map Entries').every(
           (e) => e
-            ..has((e) => e.key, 'Flow Map Key').hasTag(entryTag)
+            ..has(
+              (e) => e.key,
+              'Flow Map Key',
+            ).isA<YamlSourceNode>().hasTag(entryTag)
             ..has((e) => e.value, 'Flow Map Value').hasTag(entryTag),
         );
     });
@@ -101,7 +104,7 @@ $seqEntryTag plain
             ..has(
               (e) => e.keys.firstOrNull,
               'Single key',
-            ).isNotNull().hasTag(seqEntryTag),
+            ).isNotNull().isA<YamlSourceNode>().hasTag(seqEntryTag),
         );
     });
 
@@ -123,7 +126,10 @@ $kvTag key0: $kvTag value
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
         ..has((m) => m.entries, 'Block Map Entries').every(
           (e) => e
-            ..has((e) => e.key, 'Block Map Key').hasTag(kvTag)
+            ..has(
+              (e) => e.key,
+              'Block Map Key',
+            ).isA<YamlSourceNode>().hasTag(kvTag)
             ..has((e) => e.value, 'Block Map Value').hasTag(kvTag),
         );
     });

@@ -85,7 +85,7 @@ final class ScalarDelegate extends ParserDelegate {
         value,
         scalarStyle: scalarStyle,
         tag: _tag,
-        anchor: _anchor,
+        anchorOrAlias: _anchor,
         start: start,
         end: end,
       );
@@ -95,7 +95,7 @@ final class ScalarDelegate extends ParserDelegate {
       NullView('') as ScalarValue<T>,
       scalarStyle: ScalarStyle.plain,
       tag: _tag ?? _defaultTo(nullTag),
-      anchor: _anchor,
+      anchorOrAlias: _anchor,
       start: start,
       end: _end!,
     );

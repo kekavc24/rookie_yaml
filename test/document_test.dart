@@ -1,7 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';
 

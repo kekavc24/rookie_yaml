@@ -3,7 +3,7 @@ import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 const _doubleQuoteIndicator = Indicator.doubleQuote;
 

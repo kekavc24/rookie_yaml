@@ -61,7 +61,7 @@ final class MapEntryDelegate extends ParserDelegate {
     {keyDelegate.parsed(): _valueDelegate?.parsed()},
     nodeStyle: nodeStyle,
     tag: _tag ?? _defaultTo(mappingTag),
-    anchor: _anchor,
+    anchorOrAlias: _anchor,
     start: start,
     end: _end!,
   );
@@ -118,7 +118,7 @@ final class SequenceDelegate extends CollectionDelegate {
   });
 
   /// Node delegates that resolve to nodes that are elements of the sequence.
-  final List<ParsedYamlNode> _nodes = [];
+  final List<YamlSourceNode> _nodes = [];
 
   void pushEntry(ParserDelegate entry) {
     _firstEntry ??= entry;
@@ -132,7 +132,7 @@ final class SequenceDelegate extends CollectionDelegate {
     _nodes,
     nodeStyle: collectionStyle,
     tag: _tag ?? _defaultTo(sequenceTag),
-    anchor: _anchor,
+    anchorOrAlias: _anchor,
     start: start,
     end: _end!,
   );
@@ -159,7 +159,7 @@ final class MappingDelegate extends CollectionDelegate {
   });
 
   /// A map that is resolved as a key is added
-  final _map = <ParsedYamlNode, ParsedYamlNode?>{};
+  final _map = <YamlSourceNode, YamlSourceNode?>{};
 
   /// Returns `true` if the [entry] is added. Otherwise, `false`.
   bool pushEntry(ParserDelegate key, ParserDelegate? value) {
@@ -182,7 +182,7 @@ final class MappingDelegate extends CollectionDelegate {
     _map,
     nodeStyle: collectionStyle,
     tag: _tag ?? _defaultTo(mappingTag),
-    anchor: _anchor,
+    anchorOrAlias: _anchor,
     start: start,
     end: _end!,
   );

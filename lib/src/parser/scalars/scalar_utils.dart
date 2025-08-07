@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:source_span/source_span.dart';
 
 /// A non-existent indent level for block(-like) scalars (`plain`, `literal`,

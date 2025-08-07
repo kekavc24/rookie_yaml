@@ -1,13 +1,13 @@
-part of 'node.dart';
+part of 'yaml_node.dart';
 
 /// A read-only `YAML` [List]
-final class Sequence extends UnmodifiableListView<ParsedYamlNode>
-    implements ParsedYamlNode {
+final class Sequence extends UnmodifiableListView<YamlSourceNode>
+    implements YamlSourceNode {
   Sequence(
     super.source, {
     required this.nodeStyle,
     required this.tag,
-    required this.anchor,
+    required this.anchorOrAlias,
     required this.start,
     required this.end,
   });
@@ -19,7 +19,7 @@ final class Sequence extends UnmodifiableListView<ParsedYamlNode>
   final ResolvedTag? tag;
 
   @override
-  final String? anchor;
+  final String? anchorOrAlias;
 
   @override
   final SourceLocation start;
@@ -29,11 +29,8 @@ final class Sequence extends UnmodifiableListView<ParsedYamlNode>
 
   @override
   bool operator ==(Object other) =>
-      other is Sequence && tag == other.tag && _equality.equals(this, other);
+      other is List && _equality.equals(this, other);
 
   @override
-  int get hashCode => _equality.hash([tag, this]);
-
-  @override
-  ParsedYamlNode asDumpable() => this;
+  int get hashCode => _equality.hash(this);
 }

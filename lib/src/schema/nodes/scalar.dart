@@ -1,14 +1,17 @@
-part of 'node.dart';
+part of 'yaml_node.dart';
 
-/// Any value that is not a [Sequence] or [Mapping]
-final class Scalar<T> extends ParsedYamlNode {
+/// Any value that is not a [Sequence] or [Mapping].
+///
+/// For equality, a scalar uses the inferred value [T] for maximum
+/// compatibility with `Dart` objects that can be scalars.
+final class Scalar<T> extends YamlSourceNode {
   Scalar(
     this._type, {
     required this.scalarStyle,
     required this.tag,
-    required this.anchor,
-    required super.start,
-    required super.end,
+    required this.anchorOrAlias,
+    required this.start,
+    required this.end,
   });
 
   /// Type inferred from the scalar's content
@@ -25,17 +28,22 @@ final class Scalar<T> extends ParsedYamlNode {
   final ResolvedTag? tag;
 
   @override
-  final String? anchor;
+  final String? anchorOrAlias;
+
+  @override
+  final SourceLocation start;
+
+  @override
+  final SourceLocation end;
 
   @override
   NodeStyle get nodeStyle => scalarStyle._nodeStyle;
 
   @override
-  bool operator ==(Object other) =>
-      other is Scalar<T> && tag == other.tag && value == other.value;
+  bool operator ==(Object other) => other == value;
 
   @override
-  int get hashCode => _equality.hash([tag, value]);
+  int get hashCode => value.hashCode;
 
   @override
   String toString() => _type.toString();

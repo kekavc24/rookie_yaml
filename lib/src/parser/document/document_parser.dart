@@ -61,7 +61,7 @@ final class DocumentParser {
 
   ({SourceLocation start, String greedChars})? _docMarkerGreedy;
 
-  final _anchorNodes = <String, ParsedYamlNode>{};
+  final _anchorNodes = <String, YamlSourceNode>{};
 
   var _comments = <YamlComment>[];
 
@@ -87,7 +87,7 @@ final class DocumentParser {
   }) {
     final alias = properties.alias;
 
-    if (_anchorNodes[alias] case ParsedYamlNode node) {
+    if (_anchorNodes[alias] case YamlSourceNode node) {
       return AliasDelegate(
         node,
         indentLevel: indentLevel,
