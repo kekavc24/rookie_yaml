@@ -1,9 +1,11 @@
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/schema/nodes/node.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-DocumentParser bootstrapDocParser(String yaml) =>
-    DocumentParser(ChunkScanner.of(yaml));
+DocumentParser bootstrapDocParser(
+  String yaml, {
+  List<PreResolvers>? resolvers,
+}) => DocumentParser(ChunkScanner.of(yaml), resolvers);
 
 extension DocParserUtil on DocumentParser {
   Iterable<YamlDocument> parseDocs() sync* {
@@ -20,11 +22,11 @@ extension DocParserUtil on DocumentParser {
 extension YamlDocUtil on Iterable<YamlDocument> {
   String nodeAsSimpleString() => parseNodeSingle().toString();
 
-  ParsedYamlNode? parseNodeSingle() => parsedNodes().firstOrNull;
+  YamlSourceNode? parseNodeSingle() => parsedNodes().firstOrNull;
 
   YamlDocument parseSingle() => first;
 
-  Iterable<ParsedYamlNode> parsedNodes() => map((n) => n.root);
+  Iterable<YamlSourceNode> parsedNodes() => map((n) => n.root).toList();
 
   Iterable<String> nodesAsSimpleString() =>
       parsedNodes().map((e) => e.toString());
