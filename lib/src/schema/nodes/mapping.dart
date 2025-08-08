@@ -1,6 +1,5 @@
 part of 'yaml_node.dart';
 
-
 /// A read-only `YAML` [Map]. A mapping may allow a `null` key but it must be
 /// wrapped by a [Scalar].
 ///

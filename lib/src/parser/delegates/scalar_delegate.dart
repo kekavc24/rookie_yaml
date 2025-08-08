@@ -59,8 +59,7 @@ final class ScalarDelegate extends ParserDelegate {
       )) {
         if (resolver(content) case T? resolved
             when resolved != null || acceptNullAsValue) {
-          value =
-              CustomValue(resolved as T, toYamlSafe: toYamlSafe);
+          value = CustomValue(resolved as T, toYamlSafe: toYamlSafe);
         }
       }
 

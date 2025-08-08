@@ -51,7 +51,7 @@ void main() {
     final resolver = PreResolvers.node(
       suffix,
       resolver: (s) => String.fromCharCodes(
-        (s as Sequence).map((e) => (e as Scalar).value as int),
+        s.castTo<Sequence>().map((e) => (e as Scalar).value as int),
       ),
     );
 
@@ -78,9 +78,8 @@ $asciiTag { handle: primary, suffix: $suffix}
     final resolver = PreResolvers<Mapping, TagShorthand>.node(
       suffix,
       resolver: (m) {
-        final map = m as Mapping;
-        dynamic mapVal(dynamic key) =>
-            (map[DartNode(key)] as Scalar).value;
+        final map = m.castTo<Mapping>();
+        dynamic mapVal(dynamic key) => (map[DartNode(key)] as Scalar).value;
 
         return TagShorthand.fromTagUri(
           switch (mapVal('handle')) {

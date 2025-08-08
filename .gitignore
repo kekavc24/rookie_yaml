@@ -6,6 +6,9 @@
 # https://dart.dev/guides/libraries/private-files#pubspeclock.
 pubspec.lock
 
+#IDEs
+.vscode/
+
 # Local prototyping
 playground.dart
 todo.md

@@ -55,6 +55,9 @@ extension CustomResolved on YamlSourceNode {
     NodeResolver<T>(:final resolver) => resolver(this),
     _ => null,
   };
+
+  /// Casts a generic [YamlSourceNode] to a valid (and known) subtype
+  T castTo<T extends YamlSourceNode>() => this as T;
 }
 
 /// Checks if 2 [YamlSourceNode] are equal based on the `YAML` spec.
