@@ -20,15 +20,21 @@ final class YamlParser {
   final DocumentParser _documentParser;
 
   /// Parses all [YamlDocument] in the source string sequentially and on demand.
-  Iterable<YamlDocument> parseDocuments() sync* {
-    var doc = _documentParser.parseNext();
+  List<YamlDocument> parseDocuments() {
+    final docs = <YamlDocument>[];
 
-    while (doc != null) {
-      yield doc;
-      doc = _documentParser.parseNext();
-    }
+    do {
+      if (_documentParser.parseNext() case YamlDocument doc) {
+        docs.add(doc);
+        continue;
+      }
+
+      break;
+    } while (true);
+
+    return docs;
   }
 
-  /// Returns all [YamlSourceNode] from all [YamlDocument] parsed.
+  /// Returns all [YamlSourceNode]s from all [YamlDocument]s parsed.
   Iterable<YamlSourceNode> parseNodes() => parseDocuments().map((d) => d.root);
 }
