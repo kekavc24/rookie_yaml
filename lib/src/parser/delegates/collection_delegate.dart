@@ -58,7 +58,9 @@ final class MapEntryDelegate extends ParserDelegate {
   /// only a single value. A key must exist.
   @override
   Mapping _resolveNode<T>() => Mapping(
-    {keyDelegate.parsed(): _valueDelegate?.parsed()},
+    <YamlNode, YamlSourceNode?>{
+      keyDelegate.parsed(): _valueDelegate?.parsed(),
+    },
     nodeStyle: nodeStyle,
     tag: _tag ?? _defaultTo(mappingTag),
     anchorOrAlias: _anchor,
@@ -159,7 +161,7 @@ final class MappingDelegate extends CollectionDelegate {
   });
 
   /// A map that is resolved as a key is added
-  final _map = <YamlSourceNode, YamlSourceNode?>{};
+  final _map = <YamlNode, YamlSourceNode?>{};
 
   /// Returns `true` if the [entry] is added. Otherwise, `false`.
   bool pushEntry(ParserDelegate key, ParserDelegate? value) {

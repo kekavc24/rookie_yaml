@@ -9,7 +9,7 @@ part 'node_styles.dart';
 part 'scalar.dart';
 part 'sequence.dart';
 
-const _equality = DeepCollectionEquality.unordered();
+const _equality = DeepCollectionEquality();
 
 /// A node dumpable to a `YAML` source string
 sealed class YamlNode {
@@ -94,10 +94,10 @@ final class AliasNode extends YamlSourceNode {
   NodeStyle get nodeStyle => aliased.nodeStyle;
 
   @override
-  bool operator ==(Object other) => aliased == other;
+  bool operator ==(Object other) => _equality.equals(aliased, other);
 
   @override
-  int get hashCode => aliased.hashCode;
+  int get hashCode => _equality.hash(aliased);
 
   @override
   String toString() => aliased.toString();
