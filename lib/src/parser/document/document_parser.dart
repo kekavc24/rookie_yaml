@@ -1174,6 +1174,9 @@ final class DocumentParser {
       start: delegate.start, // Use offset of first key
     );
 
+    var isKeyProps = false;
+    NodeProperties? nodeProps;
+
     if (parsedProperties != null) {
       final _ParsedNodeProperties(:isMultiline, :parsedAny, :properties) =
           parsedProperties;
@@ -1185,10 +1188,22 @@ final class DocumentParser {
         );
       }
 
-      _trackAnchor(isMultiline ? map : delegate, properties);
+      isKeyProps = !isMultiline;
+      nodeProps = properties;
     }
 
-    return (delegate: map, nodeInfo: _parseBlockMap(map, delegate, null));
+    // Give key its properties. Prevent overwrite during inference
+    if (isKeyProps) {
+      _trackAnchor(delegate, nodeProps);
+    }
+
+    final mapInfo = _parseBlockMap(map, delegate, null);
+
+    if (!isKeyProps) {
+      _trackAnchor(map, nodeProps);
+    }
+
+    return (delegate: map, nodeInfo: mapInfo);
   }
 
   /// Parses a flow collection embedded within a block collection.
@@ -2389,11 +2404,6 @@ final class DocumentParser {
 
     const rootIndentLevel = 0;
 
-    _rootInMarkerLine = _docIsInMarkerLine(
-      _scanner,
-      isDocStartExplicit: _docStartExplicit,
-    );
-
     /// Why block info? YAML clearly has a favourite child and that is the
     /// block(-like) styles. They are indeed a human friendly format. Also, the
     /// doc end chars "..." and "---" exist in this format.
@@ -2411,7 +2421,7 @@ final class DocumentParser {
         fixedIndent: 0,
         indentLevel: rootIndentLevel,
         isInlined: false,
-        degenerateToImplicitMap: !_rootInMarkerLine,
+        degenerateToImplicitMap: true,
         parentEnforcedCompactness: false,
         parsedProperties: null,
         greedOnPlain: greedChars,
@@ -2420,6 +2430,11 @@ final class DocumentParser {
       root = delegate;
       rootInfo = nodeInfo;
     } else {
+      _rootInMarkerLine = _docIsInMarkerLine(
+        _scanner,
+        isDocStartExplicit: _docStartExplicit,
+      );
+
       var rootIndent = _skipToParsableChar(_scanner, comments: _comments);
       final rootStartOffset = _scanner.lineInfo().current;
 

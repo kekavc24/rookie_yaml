@@ -66,7 +66,9 @@ bool _docIsInMarkerLine(
 
   switch (scanner.charAtCursor) {
     case WhiteSpace _:
-      scanner.skipWhitespace(skipTabs: true);
+      scanner
+        ..skipWhitespace(skipTabs: true)
+        ..skipCharAtCursor();
       break;
 
     // When it is a line break or this is not the first doc and no
@@ -79,8 +81,7 @@ bool _docIsInMarkerLine(
       );
   }
 
-  if (scanner.charAtCursor is LineBreak?) {
-    scanner.skipCharAtCursor();
+  if (scanner.charAtCursor case LineBreak? _ || Indicator.comment) {
     return false;
   }
 
@@ -191,7 +192,7 @@ _ParsedNodeProperties _parseNodeProperties(
 
   int? skipAndTrackLF() {
     final indentOnExit = _skipToParsableChar(scanner, comments: comments);
-    ++lfCount;
+    if (indentOnExit != null) ++lfCount;
     return indentOnExit;
   }
 
