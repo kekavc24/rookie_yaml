@@ -3,14 +3,14 @@ part of 'yaml_document.dart';
 final _defaultGlobalTag = MapEntry(TagHandle.secondary(), yamlGlobalTag);
 
 /// A map with functions linked to a tag suffix
-typedef _Resolvers = Map<String, _ResolverCreator>;
+typedef _Resolvers = Map<TagShorthand, _ResolverCreator>;
 
 /// A [YamlDocument] parser.
 final class DocumentParser {
   DocumentParser(this._scanner, [List<PreResolvers>? resolvers])
     : _resolvers = (resolvers ?? []).fold({}, (p, c) {
-        final PreResolvers(:indexingSuffix, :_creator) = c;
-        p[indexingSuffix] = _creator;
+        final PreResolvers(:target, :_creator) = c;
+        p[target] = _creator;
         return p;
       });
 
@@ -216,7 +216,7 @@ final class DocumentParser {
 
     final nodeTag = NodeTag(prefix, suffix);
 
-    if (_resolvers[content] case _ResolverCreator function) {
+    if (_resolvers[localTag] case _ResolverCreator function) {
       return function(nodeTag);
     }
 
@@ -822,6 +822,8 @@ final class DocumentParser {
       /// If our key is null, it means no parsing occured. The
       /// [_parseFlowMapEntry] guarantees that it will return a wrapped null
       /// key when no key was parsed.
+      ///
+      /// TODO: Test if the key can be null if any props are present
       if (key == null) break;
 
       _trackAnchor(key, keyProps);
@@ -1420,8 +1422,8 @@ final class DocumentParser {
             start: startOffset,
           );
 
-          node = map;
           info = _parseBlockMap(map, null, null);
+          node = _trackAnchor(map, parsedProperties?.properties);
         }
 
       default:

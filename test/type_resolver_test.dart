@@ -17,7 +17,7 @@ void main() {
     final asciiString = asciiList.join(' ');
 
     final resolver = PreResolvers<String, String>.string(
-      suffix,
+      asciiTag,
       contentResolver: (s) => String.fromCharCodes(
         s.split(' ').map(int.parse).toList(),
       ),
@@ -49,7 +49,7 @@ void main() {
 
   test('Resolves flow sequence', () {
     final resolver = PreResolvers.node(
-      suffix,
+      asciiTag,
       resolver: (s) => String.fromCharCodes(
         s.castTo<Sequence>().map((e) => (e as Scalar).value as int),
       ),
@@ -76,7 +76,7 @@ $asciiTag { handle: primary, suffix: $suffix}
 ''';
 
     final resolver = PreResolvers<Mapping, TagShorthand>.node(
-      suffix,
+      asciiTag,
       resolver: (m) {
         final map = m.castTo<Mapping>();
         dynamic mapVal(dynamic key) => (map[DartNode(key)] as Scalar).value;

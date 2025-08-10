@@ -399,14 +399,14 @@ void _blockNodeEndOffset(
 /// A function to easily create a [TypeResolverTag] on demand
 typedef _ResolverCreator = TypeResolverTag Function(NodeTag tag);
 
-/// A wrapper class used to define a `suffix` that nudges the parsed how to
-/// parse a [YamlSourceNode] or [String] content from [Scalar] to valid output
-/// [O].
+/// A wrapper class used to define a [TagShorthand] that the parser associates
+/// with a [TypeResolverTag] to infer the kind for a [YamlSourceNode] or
+/// [String] content from [Scalar] to valid output [O].
 final class PreResolvers<I, O> {
-  PreResolvers._(this.indexingSuffix, this._creator);
+  PreResolvers._(this.target, this._creator);
 
   /// Suffix associated with a [TypeResolverTag]
-  final String indexingSuffix;
+  final TagShorthand target;
 
   /// Function to create a [TypeResolverTag] once a matching suffix is
   /// encountered
@@ -414,11 +414,11 @@ final class PreResolvers<I, O> {
 
   /// Creates a [ContentResolver] as its [TypeResolverTag]
   PreResolvers.string(
-    String suffix, {
+    TagShorthand tag, {
     required O? Function(String input) contentResolver,
     required String Function(O input) toYamlSafe,
   }) : this._(
-         suffix,
+         tag,
          (tag) => ContentResolver(
            tag,
            resolver: contentResolver,
@@ -428,10 +428,10 @@ final class PreResolvers<I, O> {
 
   /// Creates a [NodeResolver] as its [TypeResolverTag]
   PreResolvers.node(
-    String suffix, {
+    TagShorthand tag, {
     required O Function(YamlSourceNode input) resolver,
   }) : this._(
-         suffix,
+         tag,
          (tag) => NodeResolver(tag, resolver: resolver),
        );
 }
