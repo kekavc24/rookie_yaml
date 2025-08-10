@@ -8,17 +8,27 @@ part of 'directives.dart';
 /// `tag:yaml.org,2002:str` which in verbatim is represented as
 /// `!<tag:yaml.org,2002:str>`. Thus, `str` is the [suffix] in this case and
 /// `tag:yaml.org,2002` is the global tag prefix.
-String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
+String _formatAsVerbatim(
+  SpecificTag<dynamic> tag,
+  String suffix, {
+  required bool suffixIsNonSpecific,
+}) {
   var prepend = '';
   final formattedSuffix = suffix.trim();
 
   if (tag is GlobalTag) {
-    if (formattedSuffix.isEmpty) {
+    prepend = tag.prefix;
+
+    // Local tags can be empty if non-specific
+    if (!suffixIsNonSpecific && formattedSuffix.isEmpty) {
       throw const FormatException('A global tag must have a non-empty suffix');
     }
 
-    prepend = tag.prefix;
-    prepend += prepend.endsWith('/') || prepend.endsWith(':') ? '' : ':';
+    // Add ":" only if it is not a local tag prefix
+    if (!prepend.startsWith("!") &&
+        !(prepend.endsWith('/') || prepend.endsWith(':'))) {
+      prepend += ":";
+    }
   } else {
     prepend = tag.toString();
   }
@@ -31,7 +41,11 @@ String _formatAsVerbatim(SpecificTag<dynamic> tag, String suffix) {
 @immutable
 final class NodeTag<T> extends ResolvedTag {
   NodeTag(this._resolvedTag, TagShorthand? suffix)
-    : verbatim = _formatAsVerbatim(_resolvedTag, suffix?.content ?? ''),
+    : verbatim = _formatAsVerbatim(
+        _resolvedTag,
+        suffix?.content ?? '',
+        suffixIsNonSpecific: suffix?.isNonSpecific ?? false,
+      ),
       suffix = suffix ?? _resolvedTag as TagShorthand;
 
   /// A [TagShorthand] shorthand resolved to a [GlobalTag] or the tag itself.
