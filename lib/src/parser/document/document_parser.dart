@@ -7,9 +7,9 @@ typedef _Resolvers = Map<TagShorthand, _ResolverCreator>;
 
 /// A [YamlDocument] parser.
 final class DocumentParser {
-  DocumentParser(this._scanner, [List<PreResolvers>? resolvers])
+  DocumentParser(this._scanner, [List<PreResolver>? resolvers])
     : _resolvers = (resolvers ?? []).fold({}, (p, c) {
-        final PreResolvers(:target, :_creator) = c;
+        final PreResolver(:target, :_creator) = c;
         p[target] = _creator;
         return p;
       });

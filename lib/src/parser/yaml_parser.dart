@@ -13,7 +13,7 @@ final class YamlParser {
   /// calling its `asCustomType` method after parsing has been completed.
   YamlParser(
     String source, {
-    List<PreResolvers>? resolvers,
+    List<PreResolver>? resolvers,
   }) : _documentParser = DocumentParser(ChunkScanner.of(source), resolvers);
 
   /// Parser doing actual work

@@ -52,7 +52,7 @@ extension CustomResolved on YamlSourceNode {
   /// Returns a custom resolved format if any [NodeResolver] is present. The
   /// [YamlSourceNode] is formatted each time this method is called.
   T? asCustomType<T>() => switch (tag) {
-    NodeResolver<T>(:final resolver) => resolver(this),
+    NodeResolver(:final resolver) => resolver(this) as T,
     _ => null,
   };
 

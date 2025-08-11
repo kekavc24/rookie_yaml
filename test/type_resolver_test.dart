@@ -16,7 +16,7 @@ void main() {
   test('Resolves scalar', () {
     final asciiString = asciiList.join(' ');
 
-    final resolver = PreResolvers<String, String>.string(
+    final resolver = PreResolver<String, String>.string(
       asciiTag,
       contentResolver: (s) => String.fromCharCodes(
         s.split(' ').map(int.parse).toList(),
@@ -48,7 +48,7 @@ void main() {
   });
 
   test('Resolves flow sequence', () {
-    final resolver = PreResolvers.node(
+    final resolver = PreResolver.node(
       asciiTag,
       resolver: (s) => String.fromCharCodes(
         s.castTo<Sequence>().map((e) => (e as Scalar).value as int),
@@ -75,7 +75,7 @@ void main() {
 $asciiTag { handle: primary, suffix: $suffix}
 ''';
 
-    final resolver = PreResolvers<Mapping, TagShorthand>.node(
+    final resolver = PreResolver<Mapping, TagShorthand>.node(
       asciiTag,
       resolver: (m) {
         final map = m.castTo<Mapping>();
