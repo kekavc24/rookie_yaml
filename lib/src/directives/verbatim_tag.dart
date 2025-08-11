@@ -21,11 +21,12 @@ final class VerbatimTag extends ResolvedTag {
   VerbatimTag._(this.verbatim);
 
   /// Creates a verbatim tag from a valid tag uri
-  factory VerbatimTag.fromTagUri(String uri) {
-    return VerbatimTag._(
-      _wrapAsVerbatim(_ensureIsTagUri(uri, allowRestrictedIndicators: false)),
-    );
-  }
+  factory VerbatimTag.fromTagUri(String uri) => VerbatimTag._(
+    _wrapAsVerbatim(
+      '!'
+      '${_ensureIsTagUri(uri, allowRestrictedIndicators: false)}',
+    ),
+  );
 
   /// Creates a verbatim tag from a local tag
   factory VerbatimTag.fromTagShorthand(TagShorthand tag) {
