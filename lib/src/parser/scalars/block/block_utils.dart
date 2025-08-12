@@ -77,7 +77,7 @@ void _chompLineBreaks(
 
 /// Skips the carriage return `\r` in a `\r\n` combination and returns the
 /// line feed `\n`.
-LineBreak skipCrIfPossible(LineBreak char, {required ChunkScanner scanner}) {
+LineBreak skipCrIfPossible(LineBreak char, {required GraphemeScanner scanner}) {
   var maybeCR = char;
 
   if (maybeCR == LineBreak.carriageReturn &&
@@ -125,7 +125,7 @@ void _maybeFoldLF(
 /// be null if the line was empty, that is, no characters or all characters
 /// are just white space characters.
 ({int inferredIndent, bool isEmptyLine, bool startsWithTab}) _inferIndent(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required ScalarBuffer contentBuffer,
   required int scannedIndent,
   required void Function() callBeforeTabWrite,
@@ -245,7 +245,7 @@ const directiveEndSingle = Indicator.blockSequenceEntry;
 /// "
 /// ```
 DocumentMarker checkForDocumentMarkers(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required void Function(List<ReadableChar> buffered) onMissing,
 }) {
   var charAtCursor = scanner.charAtCursor;

@@ -33,7 +33,7 @@ final class TagShorthand extends SpecificTag<String> {
 }
 
 /// Parses a [TagShorthand]
-TagShorthand parseTagShorthand(ChunkScanner scanner) {
+TagShorthand parseTagShorthand(GraphemeScanner scanner) {
   var handle = TagHandle.primary();
   scanner.skipCharAtCursor(); // Ignore leading "!"
 

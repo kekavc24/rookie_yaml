@@ -15,7 +15,7 @@ final class DocumentParser {
       });
 
   /// Scanner with source string
-  final ChunkScanner _scanner;
+  final GraphemeScanner _scanner;
 
   /// Custom functions to resolve a node
   final _Resolvers _resolvers;

@@ -33,7 +33,7 @@ a line break''';
 
       check(
         parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted(value)),
+          GraphemeScanner.of(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -43,7 +43,7 @@ a line break''';
     test('Parses and folds double quoted scalar', () {
       check(
         parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted(defaultLineToFold)),
+          GraphemeScanner.of(doubleQuoted(defaultLineToFold)),
           indent: 0,
           isImplicit: false,
         ),
@@ -65,7 +65,7 @@ This line will have a line break between it and the period''';
 
       check(
         parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted(value)),
+          GraphemeScanner.of(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -115,7 +115,7 @@ Fun with escapes:
 
       check(
         parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted(value)),
+          GraphemeScanner.of(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -125,7 +125,7 @@ Fun with escapes:
     test('Throws if leading quote is missing', () {
       check(
         () => parseDoubleQuoted(
-          ChunkScanner.of('unquoted'),
+          GraphemeScanner.of('unquoted'),
           indent: 0,
           isImplicit: false,
         ),
@@ -137,7 +137,7 @@ Fun with escapes:
     test('Throws if trailing quote is missing', () {
       check(
         () => parseDoubleQuoted(
-          ChunkScanner.of('"unquoted'),
+          GraphemeScanner.of('"unquoted'),
           indent: 0,
           isImplicit: false,
         ),
@@ -147,7 +147,7 @@ Fun with escapes:
     test('Throws on premature exit if implicit and no quote', () {
       check(
         () => parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted('unquoted\n')),
+          GraphemeScanner.of(doubleQuoted('unquoted\n')),
           indent: 0,
           isImplicit: true,
         ),
@@ -157,7 +157,7 @@ Fun with escapes:
     test('Throws if unknown characters are escaped', () {
       check(
         () => parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted('Unknown escaped \\c')),
+          GraphemeScanner.of(doubleQuoted('Unknown escaped \\c')),
           indent: 0,
           isImplicit: true,
         ),
@@ -174,7 +174,7 @@ Fun with escapes:
 
       check(
         () => parseDoubleQuoted(
-          ChunkScanner.of(doubleQuoted(value)),
+          GraphemeScanner.of(doubleQuoted(value)),
           indent: 2,
           isImplicit: false,
         ),
@@ -190,7 +190,7 @@ Fun with escapes:
 
       check(
         parseSingleQuoted(
-          ChunkScanner.of(singleQuoted(value)),
+          GraphemeScanner.of(singleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -200,7 +200,7 @@ Fun with escapes:
     test('Parses and folds a single quoted scalar', () {
       check(
         parseSingleQuoted(
-          ChunkScanner.of(singleQuoted(defaultLineToFold)),
+          GraphemeScanner.of(singleQuoted(defaultLineToFold)),
           indent: 0,
           isImplicit: false,
         ),
@@ -214,7 +214,7 @@ Fun with escapes:
 
       check(
         parseSingleQuoted(
-          ChunkScanner.of(singleQuoted(value)),
+          GraphemeScanner.of(singleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -224,7 +224,7 @@ Fun with escapes:
     test('Throws if leading single quote is missing', () {
       check(
         () => parseSingleQuoted(
-          ChunkScanner.of('unquoted'),
+          GraphemeScanner.of('unquoted'),
           indent: 0,
           isImplicit: false,
         ),
@@ -234,7 +234,7 @@ Fun with escapes:
     test('Throws if trailing single quote is missing', () {
       check(
         () => parseSingleQuoted(
-          ChunkScanner.of("'unquoted"),
+          GraphemeScanner.of("'unquoted"),
           indent: 0,
           isImplicit: false,
         ),
@@ -244,7 +244,7 @@ Fun with escapes:
     test('Throws on premature exit if implicit and no quote', () {
       check(
         () => parseSingleQuoted(
-          ChunkScanner.of(singleQuoted('unquoted\n')),
+          GraphemeScanner.of(singleQuoted('unquoted\n')),
           indent: 0,
           isImplicit: true,
         ),
@@ -254,7 +254,7 @@ Fun with escapes:
     test('Throws if unprintable characters are used', () {
       check(
         () => parseSingleQuoted(
-          ChunkScanner.of(
+          GraphemeScanner.of(
             singleQuoted('unquoted with ${SpecialEscaped.bell.string}'),
           ),
           indent: 0,
@@ -275,7 +275,7 @@ Fun with escapes:
 
       check(
         () => parseSingleQuoted(
-          ChunkScanner.of(singleQuoted(value)),
+          GraphemeScanner.of(singleQuoted(value)),
           indent: 2,
           isImplicit: false,
         ),
@@ -291,7 +291,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          ChunkScanner.of(value),
+          GraphemeScanner.of(value),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -303,7 +303,7 @@ Fun with escapes:
     test('Parses and folds plain scalar', () {
       check(
         parsePlain(
-          ChunkScanner.of(defaultLineToFold),
+          GraphemeScanner.of(defaultLineToFold),
           indent: 0,
           isImplicit: false,
           charsOnGreedy: '',
@@ -318,7 +318,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          ChunkScanner.of('${Indicator.mappingKey.string} '),
+          GraphemeScanner.of('${Indicator.mappingKey.string} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -328,7 +328,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          ChunkScanner.of('${Indicator.blockSequenceEntry.string} '),
+          GraphemeScanner.of('${Indicator.blockSequenceEntry.string} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -339,7 +339,7 @@ Fun with escapes:
       // Assumes we have a missing key!
       check(
         parsePlain(
-          ChunkScanner.of('${Indicator.mappingValue.string} '),
+          GraphemeScanner.of('${Indicator.mappingValue.string} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -355,7 +355,7 @@ Fun with escapes:
       for (final ReadableChar(:string) in flowDelimiters) {
         check(
           parsePlain(
-            ChunkScanner.of('$prefix$string'),
+            GraphemeScanner.of('$prefix$string'),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -370,7 +370,7 @@ Fun with escapes:
 
         check(
           parsePlain(
-            ChunkScanner.of(curr),
+            GraphemeScanner.of(curr),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -392,7 +392,7 @@ Fun with escapes:
       for (final str in restricted) {
         check(
           parsePlain(
-            ChunkScanner.of('$yaml $str '),
+            GraphemeScanner.of('$yaml $str '),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -407,7 +407,7 @@ Fun with escapes:
 
         check(
           parsePlain(
-            ChunkScanner.of(complete),
+            GraphemeScanner.of(complete),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -430,7 +430,7 @@ Fun with escapes:
 
       check(
           parsePlain(
-            ChunkScanner.of(yaml),
+            GraphemeScanner.of(yaml),
             indent: 2,
             charsOnGreedy: '',
             isImplicit: false,
@@ -451,7 +451,7 @@ This will be ignored!
 
       check(
         parsePlain(
-          ChunkScanner.of(yaml),
+          GraphemeScanner.of(yaml),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: true,

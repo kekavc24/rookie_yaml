@@ -31,7 +31,7 @@ $indent
       for (final block in defaultBlockIndicators) {
         check(
           parseBlockStyle(
-            ChunkScanner.of('$block$trailing'),
+            GraphemeScanner.of('$block$trailing'),
             minimumIndent: 0,
             onParseComment: comments.add,
           ),
@@ -51,7 +51,7 @@ $indent
 
       for (final block in defaultBlockIndicators) {
         parseBlockStyle(
-          ChunkScanner.of('$block$trailing'),
+          GraphemeScanner.of('$block$trailing'),
           minimumIndent: 0,
           onParseComment: comments.add,
         );
@@ -65,7 +65,7 @@ $indent
       // 0 is a single digit. Will check range before throwing
       check(
         () => parseBlockStyle(
-          ChunkScanner.of('|0\n'),
+          GraphemeScanner.of('|0\n'),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -79,7 +79,7 @@ $indent
       /// We expect a chomping indicator
       check(
         () => parseBlockStyle(
-          ChunkScanner.of('|10\n'),
+          GraphemeScanner.of('|10\n'),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -95,7 +95,7 @@ $indent
 
       check(
         () => parseBlockStyle(
-          ChunkScanner.of(yaml),
+          GraphemeScanner.of(yaml),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -112,7 +112,7 @@ $indent
 
       check(
         () => parseBlockStyle(
-          ChunkScanner.of(yaml),
+          GraphemeScanner.of(yaml),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -132,7 +132,7 @@ $indent
       for (final str in defaultBlockIndicators) {
         check(
             parseBlockStyle(
-              ChunkScanner.of('$str$lessIndented'),
+              GraphemeScanner.of('$str$lessIndented'),
               minimumIndent: minIndent,
               onParseComment: comments.add,
             ),
@@ -151,7 +151,7 @@ $indent
       for (final str in defaultBlockIndicators) {
         check(
           () => parseBlockStyle(
-            ChunkScanner.of(
+            GraphemeScanner.of(
               '$str'
               '\n'
               '$emptyLineIsMoreIndented',
@@ -179,7 +179,7 @@ $indent
 
       check(
           parseBlockStyle(
-            ChunkScanner.of(scalar),
+            GraphemeScanner.of(scalar),
             minimumIndent: 0,
             onParseComment: comments.add,
           ),
@@ -204,7 +204,7 @@ $indent
 
       check(
           parseBlockStyle(
-            ChunkScanner.of(scalar),
+            GraphemeScanner.of(scalar),
             minimumIndent: 0,
             onParseComment: comments.add,
           ),
@@ -222,7 +222,7 @@ $indent
 
       check(
         parseBlockStyle(
-          ChunkScanner.of(scalar),
+          GraphemeScanner.of(scalar),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -238,7 +238,7 @@ $indent
 
       check(
         parseBlockStyle(
-          ChunkScanner.of(scalar),
+          GraphemeScanner.of(scalar),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -254,7 +254,7 @@ $indent
 
       check(
         parseBlockStyle(
-          ChunkScanner.of(scalar),
+          GraphemeScanner.of(scalar),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -274,7 +274,7 @@ $indent
 
       check(
           parseBlockStyle(
-            ChunkScanner.of(scalar),
+            GraphemeScanner.of(scalar),
             minimumIndent: 0,
             onParseComment: comments.add,
           ),
@@ -317,7 +317,7 @@ $indent
 
       check(
           parseBlockStyle(
-            ChunkScanner.of(scalar),
+            GraphemeScanner.of(scalar),
             minimumIndent: 0,
             onParseComment: comments.add,
           ),
@@ -335,7 +335,7 @@ $indent
 
       check(
         parseBlockStyle(
-          ChunkScanner.of(scalar),
+          GraphemeScanner.of(scalar),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -351,7 +351,7 @@ $indent
 
       check(
         parseBlockStyle(
-          ChunkScanner.of(scalar),
+          GraphemeScanner.of(scalar),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
@@ -367,7 +367,7 @@ $indent
 
       check(
         parseBlockStyle(
-          ChunkScanner.of(scalar),
+          GraphemeScanner.of(scalar),
           minimumIndent: 0,
           onParseComment: comments.add,
         ),

@@ -16,7 +16,7 @@ void main() {
 %WHY? Irriz warririz https://youtu.be/y9r_pZL4boE?si=IQyibJXzS1agg2GN
 ''';
 
-      check(parseDirectives(ChunkScanner.of('$yaml\n---')))
+      check(parseDirectives(GraphemeScanner.of('$yaml\n---')))
           .has(
             (d) => d.reservedDirectives.map((r) => r.toString()).join('\n'),
             'Reserved Directives',
@@ -28,7 +28,7 @@ void main() {
       final yaml = '%RESERVED ${SpecialEscaped.bell.string}';
 
       check(
-        () => parseDirectives(ChunkScanner.of(yaml)),
+        () => parseDirectives(GraphemeScanner.of(yaml)),
       ).throwsAFormatException(
         'Only printable characters are allowed in a parameter',
       );
@@ -41,7 +41,7 @@ void main() {
           '%YAML 2.2\n'
           '---';
 
-      check(parseDirectives(ChunkScanner.of(yaml)))
+      check(parseDirectives(GraphemeScanner.of(yaml)))
           .has(
             (d) => d.yamlDirective,
             'Yaml Directive',
@@ -70,7 +70,7 @@ void main() {
 ''';
 
       check(
-        () => parseDirectives(ChunkScanner.of(yaml)),
+        () => parseDirectives(GraphemeScanner.of(yaml)),
       ).throwsAFormatException(
         'A YAML directive can only be declared once per document',
       );
@@ -80,28 +80,28 @@ void main() {
       const prefix = 'Invalid YAML version format. ';
 
       check(
-        () => parseDirectives(ChunkScanner.of('%YAML ..1')),
+        () => parseDirectives(GraphemeScanner.of('%YAML ..1')),
       ).throwsAFormatException(
         '$prefix'
         'Version cannot start with a "."',
       );
 
       check(
-        () => parseDirectives(ChunkScanner.of('%YAML 1..1')),
+        () => parseDirectives(GraphemeScanner.of('%YAML 1..1')),
       ).throwsAFormatException(
         '$prefix'
         'Version cannot have consecutive "." characters',
       );
 
       check(
-        () => parseDirectives(ChunkScanner.of('%YAML 1.1.2')),
+        () => parseDirectives(GraphemeScanner.of('%YAML 1.1.2')),
       ).throwsAFormatException(
         '$prefix'
         'A YAML version must have only 2 integers separated by "."',
       );
 
       check(
-        () => parseDirectives(ChunkScanner.of('%YAML A.B')),
+        () => parseDirectives(GraphemeScanner.of('%YAML A.B')),
       ).throwsAFormatException(
         'Invalid "A" character in YAML version. '
         'Only digits separated by "."'

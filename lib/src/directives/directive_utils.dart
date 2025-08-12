@@ -18,7 +18,7 @@ String _dumpDirective(Directive directive) {
 /// Internally calls [_parseTagUri].
 String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
   return _parseTagUri(
-    ChunkScanner.of(uri),
+    GraphemeScanner.of(uri),
     allowRestrictedIndicators: allowRestrictedIndicators,
   );
 }
@@ -38,7 +38,7 @@ String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
 /// of an `alias` or `anchor` to/for a [Node] respectively. Defaults
 /// [isVerbatim] and [allowRestrictedIndicators] to `false`.
 String _parseTagUri(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required bool allowRestrictedIndicators,
   bool includeScheme = false,
   bool isVerbatim = false,
@@ -108,7 +108,7 @@ String _parseTagUri(
   return buffer.toString();
 }
 
-void _parseScheme(StringBuffer buffer, ChunkScanner scanner) {
+void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
   var lastChar = '';
   const schemeEnd = Indicator.mappingValue; // ":" char
 
@@ -138,7 +138,7 @@ void _parseScheme(StringBuffer buffer, ChunkScanner scanner) {
   scanner.skipCharAtCursor(); // Parsing can continue
 }
 
-void _parseHexInUri(ChunkScanner scanner, StringBuffer uriBuffer) {
+void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
   const hexCount = 2;
 
   final hexBuff = StringBuffer('0x');
@@ -159,7 +159,7 @@ void _parseHexInUri(ChunkScanner scanner, StringBuffer uriBuffer) {
 }
 
 /// Parses an alias or anchor name.
-String parseAnchorOrAlias(ChunkScanner scanner) => _parseTagUri(
+String parseAnchorOrAlias(GraphemeScanner scanner) => _parseTagUri(
   scanner,
   allowRestrictedIndicators: false,
   isVerbatim: false,

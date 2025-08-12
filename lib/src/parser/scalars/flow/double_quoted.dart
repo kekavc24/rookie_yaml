@@ -21,7 +21,7 @@ const _doubleQuoteException = FormatException(
 // TODO: Implicit
 /// Parses a `double quoted` scalar
 PreScalar parseDoubleQuoted(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required int indent,
   required bool isImplicit,
 }) {
@@ -125,7 +125,7 @@ PreScalar parseDoubleQuoted(
 /// Parses an escaped character in a double quoted scalar and returns `true`
 /// only if it is a line break.
 void _parseEscaped(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required ScalarBuffer buffer,
 }) {
   scanner.skipCharAtCursor();

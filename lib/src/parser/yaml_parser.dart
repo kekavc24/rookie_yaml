@@ -14,7 +14,7 @@ final class YamlParser {
   YamlParser(
     String source, {
     List<PreResolver>? resolvers,
-  }) : _documentParser = DocumentParser(ChunkScanner.of(source), resolvers);
+  }) : _documentParser = DocumentParser(GraphemeScanner.of(source), resolvers);
 
   /// Parser doing actual work
   final DocumentParser _documentParser;

@@ -71,7 +71,7 @@ List<int> _formatVersionParameter(String version) {
 }
 
 /// Parses a [YamlDirective]
-YamlDirective _parseYamlDirective(ChunkScanner scanner) {
+YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
   final versionBuffer = StringBuffer();
 
   final formattedVersion = <int>[];

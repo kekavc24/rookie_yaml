@@ -14,7 +14,7 @@ typedef FoldFlowInfo = ({
 });
 
 bool foldQuotedFlowScalar(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required ScalarBuffer scalarBuffer,
   required int minIndent,
   required bool isImplicit,
@@ -48,7 +48,7 @@ bool foldQuotedFlowScalar(
 /// [ScalarStyle.doubleQuoted] which allows `\n` to be escaped. See
 /// [parseDoubleQuoted]
 FoldFlowInfo foldFlowScalar(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required ScalarBuffer scalarBuffer,
   required int minIndent,
   required bool isImplicit,

@@ -64,7 +64,7 @@ final class VerbatimTag extends ResolvedTag {
 }
 
 /// Parses a [VerbatimTag]
-VerbatimTag parseVerbatimTag(ChunkScanner scanner) {
+VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
   var charAtCursor = scanner.charAtCursor;
 
   void skipAndMove() {

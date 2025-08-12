@@ -70,7 +70,7 @@ final class TagHandle {
 }
 
 /// Parses a [TagHandle]
-TagHandle parseTagHandle(ChunkScanner scanner) {
+TagHandle parseTagHandle(GraphemeScanner scanner) {
   final char = scanner.charAtCursor;
 
   final indicatorStr = _tagIndicator.string;

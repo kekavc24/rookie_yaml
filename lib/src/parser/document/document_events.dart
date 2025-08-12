@@ -101,7 +101,7 @@ enum FlowCollectionEvent implements ParserEvent {
 /// Infers a generalized [ParserEvent] that determines how the [DocumentParser]
 /// should parse the next collection of characters.
 ParserEvent _inferNextEvent(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required bool isBlockContext,
   required bool lastKeyWasJsonLike,
 }) {

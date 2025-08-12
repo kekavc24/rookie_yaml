@@ -6,7 +6,7 @@ import 'package:source_span/source_span.dart';
 part 'line_span.dart';
 
 /// Represents information returned after a call to `bufferChunk` method
-/// of the [ChunkScanner]
+/// of the [GraphemeScanner]
 ///
 /// `offset` - start to end of index in string source.
 ///
@@ -16,7 +16,7 @@ part 'line_span.dart';
 /// line feed was encountered.
 ///
 /// `charOnExit` - indicates the character that triggered the `bufferChunk`
-/// exit. Typically, the current character when `ChunkScanner.charAtCursor`
+/// exit. Typically, the current character when `GraphemeScanner.charAtCursor`
 /// is called.
 typedef ChunkInfo = ({
   //Offset offset,
@@ -27,9 +27,9 @@ typedef ChunkInfo = ({
 
 /// Represents a scanner that iterates over a source only when a chunk or a
 /// single character is requested
-final class ChunkScanner {
-  /// Initializes a [ChunkScanner] from a String [source].
-  ChunkScanner._(this.source)
+final class GraphemeScanner {
+  /// Initializes a [GraphemeScanner] from a String [source].
+  GraphemeScanner._(this.source)
     : _iterator = Characters(source).split(Characters(LineBreak.lf)).iterator {
     // We don't want chunks from empty lines
     if (source.isEmpty) return;
@@ -37,9 +37,9 @@ final class ChunkScanner {
     ++_currentOffset;
   }
 
-  /// Initializes a [ChunkScanner] and moves character to first character
-  factory ChunkScanner.of(String source) {
-    final scanner = ChunkScanner._(source);
+  /// Initializes a [GraphemeScanner] and moves character to first character
+  factory GraphemeScanner.of(String source) {
+    final scanner = GraphemeScanner._(source);
     scanner.skipCharAtCursor(); // Trigger a line fetch
     return scanner;
   }
@@ -117,7 +117,7 @@ final class ChunkScanner {
     return char;
   }
 
-  /// Skips the current character that has not been read by this [ChunkScanner]
+  /// Skips the current character that has not been read by this [GraphemeScanner]
   /// but may have been accessed via [peekCharAfterCursor].
   ///
   /// This call is similar to a [bufferChunk] but just moves the cursor forward

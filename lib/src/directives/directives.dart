@@ -9,12 +9,12 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 part 'directive_utils.dart';
 part 'global_tag.dart';
-part 'tag_shorthand.dart';
 part 'node_tag.dart';
 part 'reserved_directive.dart';
 part 'resolver_tag.dart';
 part 'tag.dart';
 part 'tag_handle.dart';
+part 'tag_shorthand.dart';
 part 'verbatim_tag.dart';
 part 'yaml_directive.dart';
 
@@ -49,7 +49,7 @@ sealed class Directive {
 
 /// Parses all [Directive](s) present before the start of a node in a
 /// `YAML` document.
-Directives parseDirectives(ChunkScanner scanner) {
+Directives parseDirectives(GraphemeScanner scanner) {
   /// Skips line breaks. Returns `true` if we continue parsing directives
   void skipLineBreaks() {
     var char = scanner.charAtCursor;

@@ -34,7 +34,7 @@ final class _ReservedImpl extends ReservedDirective {
 /// Parses a [ReservedDirective]
 ReservedDirective _parseReservedDirective(
   String name, {
-  required ChunkScanner scanner,
+  required GraphemeScanner scanner,
 }) {
   final params = <String>[];
   final buffer = StringBuffer();

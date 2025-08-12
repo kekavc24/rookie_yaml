@@ -37,7 +37,7 @@ final class YamlComment implements Comparable<YamlComment> {
 
 /// Parses a `YAML` comment
 ({ChunkInfo onExit, YamlComment comment}) parseComment(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   String? prepend,
 }) {
   final buffer = StringBuffer(prepend ?? '');

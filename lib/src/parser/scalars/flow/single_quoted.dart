@@ -14,7 +14,7 @@ const _printableException = FormatException(
 
 /// Parses a `single quoted` scalar
 PreScalar parseSingleQuoted(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required int indent,
   required bool isImplicit,
 }) {

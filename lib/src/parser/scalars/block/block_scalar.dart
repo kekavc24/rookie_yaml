@@ -17,7 +17,7 @@ part 'block_utils.dart';
 /// scalar with explicit indicators qualifying it as a block scalar. A plain
 /// and block scalar both use indentation to convey content information.
 PreScalar parseBlockStyle(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required int minimumIndent,
   required void Function(YamlComment comment) onParseComment,
 }) {

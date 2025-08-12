@@ -30,7 +30,7 @@ const _style = ScalarStyle.plain;
 
 /// Parses a `plain` scalar
 PreScalar? parsePlain(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required int indent,
   required String charsOnGreedy,
   required bool isImplicit,

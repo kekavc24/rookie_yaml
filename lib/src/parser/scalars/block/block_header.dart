@@ -4,7 +4,7 @@ part of 'block_scalar.dart';
 /// should only include the block and chomping indicators or a comment
 /// restricted to a single line.
 _BlockHeaderInfo _parseBlockHeader(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required void Function(YamlComment comment) onParseComment,
 }) {
   var current = scanner.charAtCursor;
@@ -78,7 +78,7 @@ const _indentationException = FormatException(
 );
 
 /// Parses block indentation and chomping indicators
-_IndicatorInfo _extractIndicators(ChunkScanner scanner) {
+_IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
   ChompingIndicator? chomping;
   int? indentIndicator;
 

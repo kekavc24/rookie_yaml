@@ -9,11 +9,13 @@ import 'helpers/exception_helpers.dart';
 void main() {
   group('Tag Handles', () {
     test('Parses primary tag handle', () {
-      check(parseTagHandle(ChunkScanner.of('!'))).equals(TagHandle.primary());
+      check(
+        parseTagHandle(GraphemeScanner.of('!')),
+      ).equals(TagHandle.primary());
     });
 
     test('Parses secondary tag handle, ignore chars ahead', () {
-      final scanner = ChunkScanner.of('!!ignored');
+      final scanner = GraphemeScanner.of('!!ignored');
 
       check(parseTagHandle(scanner)).equals(TagHandle.secondary());
       check(scanner.canChunkMore).isTrue();
@@ -23,19 +25,19 @@ void main() {
       const named = 'named';
 
       check(
-        parseTagHandle(ChunkScanner.of('!$named!')),
+        parseTagHandle(GraphemeScanner.of('!$named!')),
       ).equals(TagHandle.named(named));
     });
 
     test('Throws if leading char is not a tag indicator', () {
       check(
-        () => parseTagHandle(ChunkScanner.of('fake')),
+        () => parseTagHandle(GraphemeScanner.of('fake')),
       ).throwsAFormatException('Expected a "!" but found "f"');
     });
 
     test('Throws if primary tag has trailing chars and is not named', () {
       check(
-        () => parseTagHandle(ChunkScanner.of('!fake')),
+        () => parseTagHandle(GraphemeScanner.of('!fake')),
       ).throwsAFormatException(
         'Invalid/incomplete named tag handle. Expected a tag with alphanumeric'
         ' characters but found !fake<null>',
@@ -54,7 +56,7 @@ void main() {
 
       final handle = TagHandle.primary();
 
-      check(parseDirectives(ChunkScanner.of(yaml)))
+      check(parseDirectives(GraphemeScanner.of(yaml)))
           .has((d) => d.globalTags, 'Global Tag from tag uri')
           .deepEquals({handle: GlobalTag.fromTagUri(handle, uriPrefix)});
     });
@@ -69,7 +71,7 @@ void main() {
 
       final handle = TagHandle.secondary();
 
-      check(parseDirectives(ChunkScanner.of(yaml)))
+      check(parseDirectives(GraphemeScanner.of(yaml)))
           .has((d) => d.globalTags, 'Global Tag from tag uri')
           .deepEquals({handle: GlobalTag.fromTagUri(handle, uriPrefix)});
     });
@@ -85,7 +87,7 @@ void main() {
 
       final handle = TagHandle.named(named);
 
-      check(parseDirectives(ChunkScanner.of(yaml)))
+      check(parseDirectives(GraphemeScanner.of(yaml)))
           .has((d) => d.globalTags, 'Global Tag from tag uri')
           .deepEquals({handle: GlobalTag.fromTagUri(handle, uriPrefix)});
     });
@@ -102,7 +104,7 @@ void main() {
       final handle = TagHandle.named(name);
 
       check(
-        parseDirectives(ChunkScanner.of(yaml)),
+        parseDirectives(GraphemeScanner.of(yaml)),
       ).has((d) => d.globalTags, 'Global Tag from tag uri').deepEquals({
         handle: GlobalTag.fromTagShorthand(
           handle,
@@ -117,7 +119,7 @@ void main() {
 %TAG ! !foo''';
 
       check(
-        () => parseDirectives(ChunkScanner.of(yaml)),
+        () => parseDirectives(GraphemeScanner.of(yaml)),
       ).throwsAFormatException(
         'A global tag directive with the "!" has already '
         'been declared in this document',
@@ -131,7 +133,7 @@ void main() {
         final yaml = '%TAG !no-prefix-or-separation-after!';
 
         check(
-          () => parseDirectives(ChunkScanner.of(yaml)),
+          () => parseDirectives(GraphemeScanner.of(yaml)),
         ).throwsAFormatException(
           'A global tag must have a separation space after its handle',
         );
@@ -144,7 +146,7 @@ void main() {
         final yaml = '%TAG !no-uri-or-local-tag-prefix! ';
 
         check(
-          () => parseDirectives(ChunkScanner.of(yaml)),
+          () => parseDirectives(GraphemeScanner.of(yaml)),
         ).throwsAFormatException(
           'A global tag only accepts valid uri characters as a tag prefix',
         );
@@ -159,7 +161,7 @@ void main() {
             '${SpecialEscaped.bell.string}';
 
         check(
-          () => parseDirectives(ChunkScanner.of(yaml)),
+          () => parseDirectives(GraphemeScanner.of(yaml)),
         ).throwsAFormatException(
           'A global tag only accepts valid uri characters as a tag prefix',
         );
@@ -173,7 +175,7 @@ void main() {
       final yaml = '!$suffix "Not to be included"';
 
       check(
-        parseTagShorthand(ChunkScanner.of(yaml)),
+        parseTagShorthand(GraphemeScanner.of(yaml)),
       ).equals(TagShorthand.fromTagUri(TagHandle.primary(), suffix));
     });
 
@@ -182,7 +184,7 @@ void main() {
       final yaml = '!!$suffix "Not to be included"';
 
       check(
-        parseTagShorthand(ChunkScanner.of(yaml)),
+        parseTagShorthand(GraphemeScanner.of(yaml)),
       ).equals(TagShorthand.fromTagUri(TagHandle.secondary(), suffix));
     });
 
@@ -191,7 +193,7 @@ void main() {
       final yaml = '!$suffix!$suffix "Not to be included"';
 
       check(
-        parseTagShorthand(ChunkScanner.of(yaml)),
+        parseTagShorthand(GraphemeScanner.of(yaml)),
       ).equals(TagShorthand.fromTagUri(TagHandle.named(suffix), suffix));
     });
 
@@ -216,7 +218,7 @@ void main() {
           final yaml = '!$tag $node';
 
           check(
-            parseTagShorthand(ChunkScanner.of(yaml)),
+            parseTagShorthand(GraphemeScanner.of(yaml)),
           ).equals(TagShorthand.fromTagUri(TagHandle.primary(), tag));
         }
       },
@@ -227,7 +229,7 @@ void main() {
       final yaml = '!local$offender';
 
       check(
-        () => parseTagShorthand(ChunkScanner.of(yaml)),
+        () => parseTagShorthand(GraphemeScanner.of(yaml)),
       ).throwsAFormatException('"$offender" is not a valid URI char');
     });
 
@@ -236,7 +238,7 @@ void main() {
 
       for (final ReadableChar(:string) in flowDelimiters) {
         check(
-          () => parseTagShorthand(ChunkScanner.of('$yaml$string')),
+          () => parseTagShorthand(GraphemeScanner.of('$yaml$string')),
         ).throwsAFormatException(
           'Expected "$string" to be escaped. Flow collection characters must be'
           ' escaped.',
@@ -249,7 +251,7 @@ void main() {
       final yaml = '!!tag-indicator-in-shorthand$offender';
 
       check(
-        () => parseTagShorthand(ChunkScanner.of(yaml)),
+        () => parseTagShorthand(GraphemeScanner.of(yaml)),
       ).throwsAFormatException(
         'Expected "$offender" to be escaped. The "$offender" character must be'
         ' escaped.',
@@ -260,7 +262,7 @@ void main() {
       const yaml = '!non-alpha-in-named*!ref';
 
       check(
-        () => parseTagShorthand(ChunkScanner.of(yaml)),
+        () => parseTagShorthand(GraphemeScanner.of(yaml)),
       ).throwsAFormatException(
         'A named tag can only have alphanumeric characters',
       );
@@ -277,7 +279,7 @@ void main() {
 
         for (final tag in tags) {
           check(
-            parseVerbatimTag(ChunkScanner.of('$tag $ignored')).verbatim,
+            parseVerbatimTag(GraphemeScanner.of('$tag $ignored')).verbatim,
           ).equals(tag);
         }
       });
@@ -286,7 +288,7 @@ void main() {
         final node = '<!must-start-with-%21>';
 
         check(
-          () => parseVerbatimTag(ChunkScanner.of(node)),
+          () => parseVerbatimTag(GraphemeScanner.of(node)),
         ).throwsAFormatException('A verbatim tag must start with "!"');
       });
 
@@ -294,7 +296,7 @@ void main() {
         final node = '!!must-start-with-%3C>';
 
         check(
-          () => parseVerbatimTag(ChunkScanner.of(node)),
+          () => parseVerbatimTag(GraphemeScanner.of(node)),
         ).throwsAFormatException('Expected to find a "<" after "!"');
       });
 
@@ -302,7 +304,7 @@ void main() {
         final node = '!<!must-end-with-%3E';
 
         check(
-          () => parseVerbatimTag(ChunkScanner.of(node)),
+          () => parseVerbatimTag(GraphemeScanner.of(node)),
         ).throwsAFormatException(
           'Expected to find a ">" after parsing a verbatim tag',
         );
@@ -312,7 +314,7 @@ void main() {
         final node = '!<!>';
 
         check(
-          () => parseVerbatimTag(ChunkScanner.of(node)),
+          () => parseVerbatimTag(GraphemeScanner.of(node)),
         ).throwsAFormatException(
           'Verbatim tags are never resolved and should have a non-empty suffix',
         );

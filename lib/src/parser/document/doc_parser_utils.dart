@@ -59,7 +59,7 @@ void _throwIfUnsafeForDirectiveChar(
 /// `NOTE:` A document cannot start on the same line as document end marker
 /// (`...`).
 bool _docIsInMarkerLine(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required bool isDocStartExplicit,
 }) {
   if (!isDocStartExplicit) return false;
@@ -94,7 +94,7 @@ bool _docIsInMarkerLine(
 /// Leading white spaces when this function is called are ignored. This
 /// function treats them as separation space including tabs.
 int? _skipToParsableChar(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required List<YamlComment> comments,
 }) {
   int? indent;
@@ -172,7 +172,7 @@ typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 ///
 /// See [_skipToParsableChar] which adds any comments parsed to [comments].
 _ParsedNodeProperties _parseNodeProperties(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required int minIndent,
   required ResolvedTag Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
@@ -306,7 +306,7 @@ typedef _FlowNodeProperties = ({
 });
 
 _FlowNodeProperties _parseSimpleFlowProps(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required int minIndent,
   required ResolvedTag Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
@@ -359,7 +359,7 @@ _FlowNodeProperties _parseSimpleFlowProps(
 /// undestructured [info]
 void _blockNodeInfoEndOffset(
   ParserDelegate blockNode, {
-  required ChunkScanner scanner,
+  required GraphemeScanner scanner,
   required _BlockNodeInfo info,
 }) => _blockNodeEndOffset(
   blockNode,
@@ -374,7 +374,7 @@ void _blockNodeInfoEndOffset(
 /// document end markers (`---` or `...`) `+1`.
 void _blockNodeEndOffset(
   ParserDelegate blockNode, {
-  required ChunkScanner scanner,
+  required GraphemeScanner scanner,
   required bool hasDocEndMarkers,
   required int? indentOnExit,
 }) {

@@ -51,7 +51,7 @@ final class GlobalTag<T> extends SpecificTag<T> implements Directive {
 
 /// Parses a [GlobalTag].
 GlobalTag<dynamic> _parseGlobalTag(
-  ChunkScanner scanner, {
+  GraphemeScanner scanner, {
   required bool Function(TagHandle handle) isDuplicate,
 }) {
   // Must have a tag handle present

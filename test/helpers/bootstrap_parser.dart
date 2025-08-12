@@ -5,7 +5,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 DocumentParser bootstrapDocParser(
   String yaml, {
   List<PreResolver>? resolvers,
-}) => DocumentParser(ChunkScanner.of(yaml), resolvers);
+}) => DocumentParser(GraphemeScanner.of(yaml), resolvers);
 
 extension DocParserUtil on DocumentParser {
   Iterable<YamlDocument> parseDocs() sync* {
