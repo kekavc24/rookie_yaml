@@ -4,7 +4,6 @@ import 'package:source_span/source_span.dart';
 
 const _pattern = '# ';
 
-/// A comment within a `YAML` source string
 final class YamlComment implements Comparable<YamlComment> {
   YamlComment(this.comment, {required this.start, required this.end});
 
