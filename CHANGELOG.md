@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.0.4
+
+The parser is (fairly) stable and in a "black box" state (lexing and parsing are currently merged). You provide a source string and the parser just spits a `YamlDocument` or `YamlSourceNode` or `FormatException`. The parser cannot provide the event tree (or more contextual errors) at this time.
+
+- `refactor`: update API
+  - Make `PreScalar` a record. Type inference is now done when instantiating a `Scalar`.
+  - Rename `ParsedTag` to `NodeTag`. Some nodes get the default tags from the parser if they don't have any. The naming was confusing.
+  - Rename `LocalTag` to `TagShorthand`. This change brings the API closer to the spec. [See here](https://yaml.org/spec/1.2.2/#69-node-properties:~:text=tag%20starting%0A%20%20with%20%27!%27.-,Tag%20Shorthands,-A%20tag%20shorthand)
+  - Rename `ParsedYamlNode` to `YamlSourceNode`.
+  - Rename `NativeResolverTag` to `TypeResolverTag`.
+  - Expose the `TagShorthand` suffix present in the `NodeTag`. This allows a `TypeResolverTag` to bind itself to the suffix and resolve all `YamlSourceNode` that have the suffix.
+  - Enable parser to associate a suffix with a `TypeResolverTag`
+  - Rename `ChunkScanner` to `GraphemeScanner`
+
+- `feat`: Extended support for type inference
+  - Add a `ScalarValue` object that infers a `Scalar`'s type only when it is instantiated.
+  - Add a `uri` tag for `Dart` and infer `Uri` with schemes from the parsed content.
+  - Add `ContentResolver` as a subtype of a `TypeResolverTag` that can infer a type on behalf of the `Scalar`. The type is embedded within the scalar as a `ScalarValue`
+  - Add `NodeResolver` as a subtype of a `TypeResolverTag` that can resolve a parsed `YamlSourceNode` via its `asCustomType<T>` method.
+
+- `fix`:
+  - Trim only whitespace for plain scalars. Intentionally avoid trimming line breaks.
+  - Strip hex before parsing integers when using `int.tryParse` in Dart with a non-null radix
+  - Flow nodes with explicit indicators now return indent information to the parent block node after they have been parsed completely. Block map nodes can now eagerly throw an error when parsing implicit keys.
+  - Accurately track if a linebreak ended up in a scalar's content to ensure we can infer the type in one pass without scanning the source string once again.
+  - Ensure verbatim tags are formatted correctly when instantiating them for `Dart`
+
 ## 0.0.3
 
 - `feat(experimental)`: Richer offset information that uses `SourceLocation` from `package:source_span`

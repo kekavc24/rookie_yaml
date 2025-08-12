@@ -117,8 +117,8 @@ final class GraphemeScanner {
     return char;
   }
 
-  /// Skips the current character that has not been read by this [GraphemeScanner]
-  /// but may have been accessed via [peekCharAfterCursor].
+  /// Skips the current character that has not been read by this
+  /// [GraphemeScanner] but may have been accessed via [peekCharAfterCursor].
   ///
   /// This call is similar to a [bufferChunk] but just moves the cursor forward
   /// without accessing the value.

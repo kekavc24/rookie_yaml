@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="rookie_yaml API docs, for the Dart programming language.">
+  <title>rookie_yaml - Dart API docs</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="static-assets/github.css?v1">
+  <link rel="stylesheet" href="static-assets/styles.css?v1">
+  <link rel="icon" href="static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li class="self-crumb">rookie_yaml package</li>
+  </ol>
+  <div class="self-name">rookie_yaml</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div id="dartdoc-main-content" class="main-content">
+      
+<section class="desc markdown">
+  <h1 id="rookie_yaml">rookie_yaml</h1>
+<p>A (rookie) <code>Dart</code> YAML 1.2+ parser.</p>
+<div class="markdown-alert markdown-alert-warning">
+<p class="markdown-alert-title">Warning</p>
+<p>The parser is still in active development and has missing features/intermediate functionalities. Until a stable <code>1.0.0</code> is released, package API may have breaking changes on each version.</p>
+<p>Documentation is also limited to this README for now to provide a quick overview of the features this parser supports.</p>
+</div>
+<p>Despite the stick <code>YAML</code> gets, under all that complexity, is a highly configurable data format that you can bend to your will with the right tools. Most people blame the <a href="https://yaml.org/">spec</a>. Once you start reading, it's like going down a rabbit hole. Think <a href="https://en.wikipedia.org/wiki/Matryoshka_doll#As_metaphor">matryoshka doll</a> but each layer has a low chance of recurring with quantum branching. At the start, the spec looks inviting (as it should be). At the end, you end up having several ways of doing a single thing. All in all, <code>YAML</code> has potential.</p>
+<p>Main features of this parser include:</p>
+<ol>
+<li>Guarantees a <code>YamlSourceNode</code> and a <code>Dart</code> object equality if they are the same kind (type). For <code>Map</code> and <code>List</code>, they must have the same entries/elements respectively. The <code>==</code> operator can be used (This behaviour may change to require use of <code>DeepCollectionEquality</code> for it to evaluate to true).</li>
+<li>Preserves the parsed integer radix.</li>
+<li>Extensive node support and an expressive way to declare directives and tags that aligns with the <code>YAML</code> spec.</li>
+<li>Support for custom tags and their resolvers based on their <a href="https://yaml.org/spec/1.2.2/#69-node-properties:~:text=tag%20starting%0A%20%20with%20%27!%27.-,Tag%20Shorthands,-A%20tag%20shorthand">tag shorthand suffix</a>. There is no limitation (currently) if the <code>!</code> has no global tag as its prefix.</li>
+</ol>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
+<p>Verbatim tags have no suffix and are usually not resolved.</p>
+</div>
+<h2 id="parsing-documents">Parsing Documents</h2>
+<p>Based on the <a href="https://yaml.org/spec/1.2.2/#31-processes">process model</a>, the current parser provides a <code>YamlDocument</code> and <code>YamlSourceNode</code> that is an almagamation of the last two stages. Future changes may (not) separate these stages based on programmer (actual user) sentiment.</p>
+<ul>
+<li>Bare documents - Clean documents with no directives</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">  const yaml = '''
+
+# Okay if empty
+...
+
+Wow! Nice! This looks clean
+...
+''';
+
+final docs = YamlParser(yaml).parseDocuments();
+
+print(docs.length); // 2
+
+// True
+print(
+  docs.every(
+    (doc) =&gt;
+        doc.hasExplicitEnd &amp;&amp;
+        !doc.hasExplicitStart &amp;&amp;
+        doc.docType == YamlDocType.bare,
+  ),
+);
+</code></pre>
+<ul>
+<li>Explicit documents - Documents with  directive end markers (<code>---</code>) and optionally document end markers (<code>...</code>). Why optionally? The directive end markers signify the start of a document.</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">  const yaml = '''
+--- # Ends after the next comment
+    # LFG
+...
+
+---
+"This one has a double quoted scalar, but no doc end"
+
+---
+status: Started immediately the marker was seen.
+''';
+
+final docs = YamlParser(yaml).parseDocuments();
+
+print(docs.length); // 3
+
+// True
+print(
+  docs.every(
+    (doc) =&gt; doc.hasExplicitStart &amp;&amp; doc.docType == YamlDocType.explicit,
+  ),
+);
+</code></pre>
+<ul>
+<li>Directive documents - Documents with directives. The directives must always end with marker (<code>---</code>) even if the document is empty!</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">  const yaml = '''
+%YAML 1.1
+%SUPPORT on that version is limited
+%TAG !for-real! !yah-for-real
+---
+
+"You can just do this things. Do them with version 1.2+ features"
+''';
+
+final doc = YamlParser(yaml).parseDocuments().first;
+
+// True
+print(
+  doc.hasExplicitStart &amp;&amp;
+      doc.docType == YamlDocType.directiveDoc &amp;&amp;
+      doc.tagDirectives.isNotEmpty &amp;&amp;
+      doc.otherDirectives.isNotEmpty &amp;&amp;
+      doc.versionDirective == YamlDirective.ofVersion('1.1'),
+);
+</code></pre>
+<h2 id="parsing-nodes">Parsing Nodes</h2>
+<p>Declare <code>block</code> or <code>flow</code> nodes. You can use <code>flow</code> in <code>block</code> but not the other way around.</p>
+<ul>
+<li>Scalars</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">/// Do not use dynamic (anti-pattern in Dart).
+/// This is for demo purposes to showcase equality.
+dynamic value = 24;
+
+final node = YamlParser('$value').parseNodes().first.castTo&lt;Scalar&gt;();
+print(node == value); // True.
+</code></pre>
+<ul>
+<li>Sequences (Lists) - allows all node types</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">import 'package:collection/collection.dart';
+
+const yaml = '''
+- rookie_yaml. The
+- new kid
+- in town
+''';
+
+final node = YamlParser('$yaml').parseNodes().first.castTo&lt;Sequence&gt;();
+
+// True.
+print(
+  DeepCollectionEquality().equals(node, [
+    'rookie_yaml. The',
+    'new kid',
+    'in town',
+  ]),
+);
+
+/// For the skeptics, if you cheat the analyzer. Order is maintained!
+/// A Sequence is a direct subtype of a Dart List
+print((node as List) == ['rookie_yaml. The', 'new kid', 'in town']);
+</code></pre>
+<ul>
+<li>Mapping (Map) - allows all node types.</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">// Let's get funky.
+const funkyMap = {
+  'name': 'rookie_yaml',
+  'in_active_development': true,
+  'supports':  {
+    1: 'Full YAML spec',
+    2: 'Custom tags and resolvers',
+  }
+};
+
+// Native Dart objects as strings are just flow nodes in yaml
+final node = YamlParser(
+  funkyMap.toString(),
+).parseNodes().first.castTo&lt;Mapping&gt;();
+
+// True.
+print(DeepCollectionEquality().equals(node, funkyMap));
+
+/// Dart Analyzer: "unrelated type equality lint without casting?" Valid, but..
+/// "Just put my fries in the bag, bro"
+print((node as Map) == funkyMap);
+</code></pre>
+<div class="markdown-alert markdown-alert-caution">
+<p class="markdown-alert-title">Caution</p>
+<p>The parser does not restrict implicit keys to at most 1024 unicode character as instructed by <code>YAML</code> <a href="https://yaml.org/spec/1.2.2/#742-flow-mappings:~:text=If%20the%20%E2%80%9C%3F%E2%80%9D%20indicator%20is%20omitted%2C%20parsing%20needs%20to%20see%20past%20the%20implicit%20key%20to%20recognize%20it%20as%20such.%20To%20limit%20the%20amount%20of%20lookahead%20required%2C%20the%20%E2%80%9C%3A%E2%80%9D%20indicator%20must%20appear%20at%20most%201024%20Unicode%20characters%20beyond%20the%20start%20of%20the%20key.%20In%20addition%2C%20the%20key%20is%20restricted%20to%20a%20single%20line.">for flow</a> and <a href="https://yaml.org/spec/1.2.2/#822-block-mappings:~:text=If%20the%20%E2%80%9C%3F%E2%80%9D%20indicator%20is%20omitted%2C%20parsing%20needs%20to%20see%20past%20the%20implicit%20key%2C%20in%20the%20same%20way%20as%20in%20the%20single%20key/value%20pair%20flow%20mapping.%20Hence%2C%20such%20keys%20are%20subject%20to%20the%20same%20restrictions%3B%20they%20are%20limited%20to%20a%20single%20line%20and%20must%20not%20span%20more%20than%201024%20Unicode%20characters.">for block</a>. This may change in later versions.</p>
+</div>
+<h2 id="anchors--alias-in-nodes">Anchors &amp; Alias in Nodes</h2>
+<p>An <code>alias</code> acts as a reference to an <code>anchor</code>. Think <code>pointer</code>s in <code>C</code> and any language that has them and object references in <code>Dart</code> and any other language that is object oriented. You must declare an <code>anchor</code> before using it. Their characters must also be valid <a href="https://yaml.org/spec/1.2.2/#692-node-anchors">uri characters</a>.</p>
+<p>A node cannot have both an <code>anchor</code> and <code>alias</code>. <code>YAML</code> demands them to be mutually exclusive. This also disqualifies an <code>alias</code> from having a <code>tag</code> since it "borrows" its kind from the <code>anchor</code> node.</p>
+<ul>
+<li>Flow nodes - Anchors and aliases for flow nodes are straightforward</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">const yaml = '''
+# Indent is moot in flow styles
+# It used for readability
+
+{
+  "double quoted": &amp;ref-seq [
+    &amp;ref-single-quoted 'single quoted',
+    &amp;ref-plain plain,
+    &amp;ref-map {key: value}
+  ],
+
+  # Colon ":" is a valid uri char. Do not forget space
+  *ref-plain : *ref-single-quoted ,
+
+  # Use sequence as a key
+  *ref-seq : *ref-map
+}
+''';
+
+final expectedMap = {
+  'double quoted': [
+    'double quoted',
+    'single quoted',
+    'plain',
+    {'key': 'value'},
+  ],
+
+  'plain': 'single quoted',
+
+  [
+    'double quoted',
+    'single quoted',
+    'plain',
+    {'key': 'value'},
+  ]: {'key': 'value'}
+};
+
+final node = YamlParser(yaml).parseNodes().first.castTo&lt;Mapping&gt;();
+
+/// Currently aliases don't behave the same way as normal nodes do.
+/// Equality seems a bit off (will be fixed)
+/// The underlying node is still the same!
+print(node.toString() == expectedMap.toString()); // True
+
+// If we use the map without aliases
+final noAliasNode = YamlParser(
+  expectedMap.toString(),
+).parseNodes().first.castTo&lt;Mapping&gt;();
+
+// If we cast, equal.
+print((noAliasNode as Map) == expectedMap);
+</code></pre>
+<ul>
+<li>Block map nodes are somewhat unique in this aspect. You need to declare the entire node on a new line for properties to be assigned to the node if it degenerates to a map. However, in this case, the first node can never have properties. This is because the parser can never know if the first block scalar is an implicit key to a block map unless it sees the <code>": "</code> (colon + space combination).</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">// This goes to the entire map
+const yaml = '''
+&amp;map-anchor !!map
+key: value
+
+--- # Next document!
+
+&amp;key-anchor !!str key: value
+''';
+
+final docs = YamlParser(yaml).parseDocuments();
+
+// Anchor in first document goes to the root map
+print(docs[0].root.anchorOrAlias != null); // True
+
+// Anchor in second document goes to the first key
+print(docs[1].root.anchorOrAlias != null); // False
+</code></pre>
+<ul>
+<li>Block explicit keys and block sequences cannot have properties before their <code>?</code> and <code>-</code> indicators respectively. Their node content begins after these indicators. The parser currently allows you to declare such properties only if they are multiline and the block sequence entry or explicit key entry is the first entry in a block list and map respectively.</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">const yaml = '''
+# This is okay
+
+&amp;map-anchor !!map
+? key
+: value
+
+...
+
+# This is also okay
+
+&amp;list-anchor !!seq
+- entry
+- next
+''';
+
+final docs = YamlParser(yaml).parseDocuments();
+
+// True
+print(docs.every((d) =&gt; d.root.anchorOrAlias != null));
+
+/// All the yaml declared below will fail and also applies to block sequences.
+/// Rule of thumb:
+///   - If it is the first entry, okay if multiline
+///   - In all other cases, it is an error
+const mapErr = '''
+# Invalid use in block map
+
+key: value
+
+# Throws. This is the second key. We already know this is a map.
+# Even if it is multiline.
+
+&amp;anchor
+? next-key
+: value
+''';
+
+const anotherMapErr = '''
+# First key. Properties are inline. Error
+
+&amp;anchor ? key
+
+: value
+''';
+
+const listErr = '''
+# Invalid use in list map
+
+- value
+
+# Throws. This is the second entry. Even if it is multiline.
+
+&amp;anchor
+- anothervalue
+''';
+
+const anotherListErr = '''
+# First entry. Properties are inline. Error
+
+&amp;anchor - entry
+''';
+</code></pre>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
+<p>An <code>alias</code> cannot be recursive. The node must be parsed completely and resolved before an <code>anchor</code> can be used. In addition to those in the spec, the parser <em>CURRENTLY</em> abides by the following rules:</p>
+<ol>
+<li>A map groups its entries into map entry nodes. A key's <code>anchor</code> can only be referenced if the entire entry has been parsed and resolved. (This is a limitation. May be scrubbed to allow a key to be referenced before the entire entry is parsed)</li>
+<li>An <code>anchor</code> to a collection cannot be used by an entry in the same collection. In programming terms, you cannot use a variable before it has been declared or its value determined and assigned.</li>
+<li>An <code>anchor</code> can be redeclared to point to another node. Ergo, if rule <code>1</code> and <code>2</code> are satisfied and the <code>anchor</code> exists, an <code>alias</code> is valid.</li>
+</ol>
+</div>
+<h2 id="tags">Tags</h2>
+<p>Tags are also node properties declared in tandem with an <code>anchor</code> but never with an <code>alias</code>. The package has an expressive way to write tags in <code>Dart</code> (in line with the spec). They form the backbone of the custom resolvers this package allows. Do not skip this section (compacted version of the spec). You can use this as a reference to read the spec (Create an issue if there is an error).</p>
+<p>Every node tag begins with the <code>!</code> indicator. This signifies the start of a node tag's <code>tag handle</code>. There are 3 types of tag handles in <code>YAML</code>:</p>
+<ol>
+<li>
+<p>Primary - Has a single <code>!</code>. You can use this to declare your own tags without declaring a global tag to resolve them.</p>
+</li>
+<li>
+<p>Secondary - <code>!!</code>. Reserved to tags that instruct the parser on how these node's can be represented based on the <code>YAML</code> spec. To that effect, tags with this handle are restricted to those the spec recognizes and are always resolved to the official <code>YAML</code> global tag prefix, <code>tag:yaml.org,2002:</code>. This handle can be overriden by a custom global tag prefix. See <a href="#schema-tags">supported tags</a>.</p>
+</li>
+<li>
+<p>Named - Starts with a <code>!</code> + a custom name + <code>!</code> closing indicator. This handle must have a corresponding global tag (more on this later).</p>
+</li>
+</ol>
+<pre class="language-yaml"><code class="language-yaml">%TAG !example! !named-must-have-global
+---
+[
+  !my-tag scalar, # Custom primary tag
+
+  !!int 24, # Secondary tag supported by yaml
+
+  # Named tag resolved to "!named-must-have-global-tag"
+  !example!-tag just-a-value,
+]
+</code></pre>
+<p>Based on the tag's use, there are 4 ways you can declare a <code>YAML</code> tag:</p>
+<ul>
+<li>As a tag shorthand</li>
+<li>As a non-specific tag</li>
+<li>As a global tag</li>
+<li>As a verbatim tag</li>
+</ul>
+<h3 id="tag-shorthand">Tag shorthand</h3>
+<p>This represents a valid <code>tag handle</code> and non-empty <code>suffix</code>. This is the tag declared with(out) the <code>anchor</code>. Using the example in the tag handle paragraph:</p>
+<pre class="language-yaml"><code class="language-yaml">%TAG !example! !named-must-have-global
+---
+[
+  # Custom primary tag
+  #
+  # "!" - tag handle
+  # "my-tag" - suffix
+  #
+  !my-tag scalar,
+
+  # Secondary tag
+  #
+  # "!!" - tag handle
+  # "int" - suffix
+  #
+  !!int 24,
+
+  # Named tag
+  #
+  # "!example! - tag handle
+  # "-tag" - suffix
+  #
+  !example!-tag just-a-value,
+]
+</code></pre>
+<h3 id="non-specific-tag">Non-specific tag</h3>
+<p>This is a primary tag handle without a suffix which is, objectively, just a <a href="#tag-shorthand">tag shorthand</a> with an empty suffix.</p>
+<pre class="language-yaml"><code class="language-yaml">[
+  # Non-specific tag "!"
+  ! scalar,
+
+  ! 24,
+
+  ! just-a-value,
+]
+</code></pre>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
+<p>No other tag handle can be used as a non-specific tag. Only primary tag handles.</p>
+</div>
+<h3 id="global-tag">Global Tag</h3>
+<p>A global tag <em>MUST</em> be declared with other directives before the document is parsed. This is the only tag form that must be known ahead of time. It is restricted to a single line with three parts (separated by whitespace) in the following order:</p>
+<ol>
+<li>
+<p>Directive - <code>%TAG</code></p>
+</li>
+<li>
+<p>Handle - The <code>tag handle</code> this global is a prefix to.</p>
+</li>
+<li>
+<p>Prefix - a valid uri or <a href="#tag-shorthand">tag shorthand</a> that is the prefix to the handle. The uri must have a scheme.</p>
+</li>
+</ol>
+<p>Every <code>handle</code> can only have a single global tag per document. Every global tag is restricted to the document it was declared in. This means a handle in one <code>YamlDocument</code> cannot be the same in another <code>YamlDocument</code>. This can only be true if you explicitly declare that global tag for each document!</p>
+<p>By default, the secondary tag handle (<code>!!</code>) resolves to the <code>YAML</code> tag prefix, <code>tag:yaml.org,2002:</code>.</p>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
+<p>A named tag handle must have a corresponding global tag</p>
+</div>
+<pre class="language-yaml"><code class="language-yaml">%TAG ! !non-specific-looks-naked
+%TAG !! !no-yaml-uri-in-
+%TAG !meme! meme://look.at.me
+---
+[
+  # Resolved as: !non-specific-looks-naked
+  ! "I am so non-specific",
+
+  # Resolved as: !no-yaml-uri-in-int
+  !!int 24,
+
+  # Resolved as: !meme://look.at.me:iAmTheCaptainNow
+  !meme!iAmTheCaptainNow "Oh captain, my captain"
+]
+
+--- # This next document has no global tags.
+    # For the same node, the parser throws when it sees the named tag handle
+[
+  # Resolved as: !!str.
+  # Non-specific tags let the parser resolve it to a specific tag based in its
+  # kind (type)
+  ! "I am so non-specific",
+
+  # Resolved as: !!int
+  !!int 24,
+
+  # Parser throws here
+  !meme!iAmTheCaptainNow "Oh captain, my captain"
+]
+</code></pre>
+<h3 id="verbatim-tag">Verbatim tag</h3>
+<p>Every valid (un)resolved tag can be declared in "verbatim" based on its resolution status. Using the global tag example:</p>
+<pre class="language-yaml"><code class="language-yaml">%TAG ! !non-specific-looks-naked
+%TAG !! !no-yaml-uri-in-
+%TAG !meme! meme://look.at.me
+---
+[
+  # Resolved as: !non-specific-looks-naked
+  # Suffixes for non-specific tags are empty.
+  #
+  # Verbatim: !&lt;!non-specific-looks-naked&gt;
+  ! "I am so non-specific",
+
+  # Resolved as: !no-yaml-uri-in-int
+  #
+  # Verbatim: !&lt;!no-yaml-uri-in-int&gt;
+  !!int 24,
+
+  # Resolved as: !meme://look.at.me:iAmTheCaptainNow
+  #
+  # Verbatim: !&lt;!meme://look.at.me:iAmTheCaptainNow&gt;
+  !meme!iAmTheCaptainNow "Oh captain, my captain"
+]
+
+--- # This next document has no global tags.
+    # Global tags are never carried over
+[
+  # Inferred as: !!str. This is its kind. Verbatim uses the actual tag
+  #
+  # Verbatim: !&lt;!my-custom-tag&gt;
+  !my-custom-tag "I am so custom",
+
+  # Resolved as: !!int. Uses the global yaml prefix for handle "!!"
+  #
+  # Verbatim: !&lt;!tag:yaml.org,2002:int&gt;
+  !!int 24,
+]
+</code></pre>
+<div class="markdown-alert markdown-alert-warning">
+<p class="markdown-alert-title">Warning</p>
+<p>At this time, a non-specific tag <code>!</code> with no global tag prefix will be printed as <code>!&lt;!&gt;</code> which is invalid. This will be fixed in the next (breaking) version.</p>
+</div>
+<p>A verbatim tag is a node's tag declared in verbatim rather than as a <a href="#tag-shorthand">tag shorthand</a>. Such tags are handed off "as is" with no resolution to any <a href="#global-tag">global tag</a>.</p>
+<pre class="language-yaml"><code class="language-yaml">
+- !&lt;!my-custom-tag&gt; "I am so custom",
+
+- !&lt;!tag:yaml.org,2002:int&gt; 24,
+</code></pre>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
+<p>Tags only accept characters considered valid <code>uri</code> characters. Therefore:</p>
+<ol>
+<li>Any uri character that must be escaped as required by the <a href="https://datatracker.ietf.org/doc/html/rfc3986">URI RFC</a> must also be escaped.</li>
+<li>All collection flow indicators (<code>"{", "}", "[", "]" and ","</code>) must be escaped as hex using <code>%</code> indicator.</li>
+<li>The tag indicator <code>!</code> must be escaped if used within the tag suffix.</li>
+</ol>
+</div>
+<h3 id="tags-in-code">Tags in code</h3>
+<p>The package provides an expressive way to declare any <code>handle</code>, <code>tag</code> or <code>directive</code> which favours intent to minimize errors. Let's look at a few examples from earlier.</p>
+<ul>
+<li><a href="#tags">Tag handles</a></li>
+</ul>
+<pre class="language-dart"><code class="language-dart">print(TagHandle.primary()); // !
+print(TagHandle.secondary()); // !!
+print(TagHandle.named('example')); // !example!
+</code></pre>
+<ul>
+<li><a href="#tag-shorthand">Tag shorthands</a></li>
+</ul>
+<pre class="language-dart"><code class="language-dart">print(TagShorthand.fromTagUri(TagHandle.primary(), 'primary')); // !primary
+print(TagShorthand.fromTagUri(TagHandle.secondary(), 'int')); // !!int
+print(TagShorthand.fromTagUri(TagHandle.named('example'), 'named')); // !example!named
+</code></pre>
+<ul>
+<li><a href="#global-tag">Global tags</a></li>
+</ul>
+<pre class="language-dart"><code class="language-dart">// Global tags allow uri or tag shorthand prefixes
+
+/// %TAG !! !no-yaml-uri
+///
+/// Has 3 parts
+///   - %TAG - is implied in the type `GlobalTag`
+///   - !! - Secondary tag handle
+///   - !no-yaml-uri - tag shorthand with primary tag handle
+///
+/// The syntax matches the YAML format discussed earlier
+print(
+  GlobalTag.fromTagShorthand(
+    TagHandle.secondary(),
+    TagShorthand.fromTagUri(TagHandle.primary(), 'no-yaml-uri'),
+  ),
+);
+
+
+/// %TAG !meme! meme://look.at.me
+///
+/// Unlike the previous example, this is a URI.
+print(
+  GlobalTag.fromTagUri(
+    TagHandle.named('meme'),
+    'meme://look.at.me',
+  ),
+);
+
+// %TAG ! !non-specific-looks-naked
+print(
+  GlobalTag.fromTagShorthand(
+    TagHandle.primary(),
+    TagShorthand.fromTagUri(TagHandle.primary(), 'non-specific-looks-naked'),
+  ),
+);
+</code></pre>
+<ul>
+<li>Verbatim tags - verbatim tags are, well, verbatim. You are to provide the tag in its fully resolved verbatim form unless its a tag shorthand.</li>
+</ul>
+<pre class="language-dart"><code class="language-dart">/// Declaring !!int in verbatim:
+///
+/// 1. Has secondary tag handle. Use the "tag:yaml.org,2002" prefix
+/// 2. Kind is "int".
+/// 3. Use ":" or "/" as separator
+/// 4. However, since this is a uri. We need to escape the "," in the prefix
+///   as %2C
+///
+/// Final uri: "tag:yaml.org%2C2002:int". The object automatically wraps it for
+/// you to match yaml requirements.
+///
+/// In verbatim: !&lt;!tag:yaml.org,2002:int&gt;
+print(VerbatimTag.fromTagUri('tag:yaml.org%2C2002:int'));
+
+/// Tag shorthand: "!my-custom-tag"
+///
+/// In verbatim: !&lt;!my-custom-tag&gt;
+print(
+  VerbatimTag.fromTagShorthand(
+    TagShorthand.fromTagUri(TagHandle.primary(), 'my-custom-tag'),
+  ),
+);
+</code></pre>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
+<p>If you declared a tag shorthand in verbatim:</p>
+<ol>
+<li>It cannot have a named tag handle. All verbatim tags are resolved to their global tag prefixes</li>
+<li>It cannot be a <a href="#non-specific-tag">non-specific tag</a></li>
+</ol>
+</div>
+<h2 id="custom-resolvers">Custom Resolvers</h2>
+<p>Custom resolvers bind themselves to parsed <a href="#tag-shorthand">tag shorthands</a> and control how the parser resolves a node's kind (type). Currently, you can only declare a resolver in two ways:</p>
+<ol>
+<li>
+<p><code>NodeResolver</code> - resolves any <code>YamlSource</code> i.e. <code>Sequence</code>, <code>Mapping</code> or <code>Scalar</code> after the node has been fully parsed and instantiated. This is the safest option. The node is converted when the <code>asCustomType</code> method is called.</p>
+</li>
+<li>
+<p><code>ContentResolver</code> - as the name suggests, this resolver resolves the parsed content. This is limited to the <code>Scalar</code> type which is a wrapper around basic types inferred from the parsed yaml content. Unlike a <code>NodeResolver</code>, you must declare a function that converts the type back to <code>string</code>. This is because the type lives within the <code>Scalar</code> and a <code>ScalarValue</code> must declare a way to safely convert the type back to string.</p>
+</li>
+</ol>
+<p>You cannot declare these resolvers directly. Instead, you delegate this to the parser by creating a <code>PreResolver</code> which has helper constructors for both. Let's see a few examples.</p>
+<h3 id="simple-resolver">Simple Resolver</h3>
+<p><code>YAML</code> does not support a variety of modern encodings such as <code>base64</code> out of the box.</p>
+<p>In one swoop, let's decode a <code>base64</code> string to a Dart string using a <code>ContentResolver</code> and a sequence of code units to the same string using a <code>NodeResolver</code>.</p>
+<pre class="language-dart"><code class="language-dart">const string = 'I love Dart';
+
+final codeUnits = string.codeUnits;
+final encoded = base64Encode(codeUnits);
+
+final handle = TagHandle.primary();
+
+final utf16Tag = TagShorthand.fromTagUri(handle, 'utf16');
+final base64Tag = TagShorthand.fromTagUri(handle, 'base64');
+
+// A NodeResolver for the "codeUnits"
+final utf16Resolver = PreResolver.node(
+  utf16Tag,
+  resolver: (node) =&gt; String.fromCharCodes(
+    node.castTo&lt;Sequence&gt;().map((e) =&gt; e.castTo&lt;Scalar&gt;().value),
+  ),
+);
+
+// A ContentResolver for the "encoded" base64 string
+final base64Resolver = PreResolver.string(
+  base64Tag,
+  contentResolver: (string) =&gt; String.fromCharCodes(base64Decode(string)),
+  toYamlSafe: (string) =&gt; string.codeUnits.toString(),
+);
+
+final yaml =
+    '''
+- $base64Tag $encoded
+- $utf16Tag $codeUnits
+''';
+
+final node = YamlParser(
+  yaml,
+  resolvers: [utf16Resolver, base64Resolver],
+).parseNodes().first.castTo&lt;Sequence&gt;();
+
+/// base64 string decoded and embedded in Scalar
+/// Sequence values inferred as "int"
+print((node as List) == [string, codeUnits]);
+
+// Convert Sequence safely on demand
+print(node[1].asCustomType&lt;String&gt;());
+</code></pre>
+<div class="markdown-alert markdown-alert-tip">
+<p class="markdown-alert-title">Tip</p>
+<p>Avoid declaring callbacks that throw errors when defining a <code>ContentResolver</code>. Return <code>null</code> instead. The resolution process is an extension of the parsing capabilities. Allow the parser to infer a type (based on the ones available to it) to partially create the <code>Scalar</code>.</p>
+</div>
+<p>As an example, let's try decoding a <code>base64</code> string as <code>base32</code>.</p>
+<pre class="language-dart"><code class="language-dart">const radix = 32;
+
+String toYamlSafe(int value) =&gt; value.toRadixString(radix);
+
+final encoded = base64Encode('I love Dart'.codeUnits);
+final base32Tag = TagShorthand.fromTagUri(TagHandle.primary(), 'base32');
+
+final aggressiveResolver = PreResolver.string(
+  base32Tag,
+  contentResolver: (string) =&gt; int.parse(string, radix: radix),
+  toYamlSafe: toYamlSafe,
+);
+
+final safeResolver = PreResolver.string(
+  base32Tag,
+  contentResolver: (string) =&gt; int.tryParse(string, radix: radix),
+  toYamlSafe: toYamlSafe,
+);
+
+final yaml = '$base32Tag $encoded';
+
+// Defaults to string
+print(
+  YamlParser(
+    yaml,
+    resolvers: [safeResolver],
+  ).parseNodes().first,
+);
+
+// Throws
+print(
+  YamlParser(
+    yaml,
+    resolvers: [aggressiveResolver],
+  ).parseNodes().first,
+);
+</code></pre>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
+<p>The resolver functionality is optional.</p>
+<p>Additionally, the parser limits each <a href="#tag-shorthand">tag shorthand</a> to a single resolver since a node cannot exist as two kinds at the same.</p>
+</div>
+<h2 id="schema-tags">Schema Tags</h2>
+<p>The <a href="#tags">secondary tag handle <code>!!</code></a> is limited to tags below which all resolve to the YAML global tag prefix, <code>tag:yaml.org,2002</code>.</p>
+<ul>
+<li>
+<p><code>YAML</code> schema tags</p>
+<ul>
+<li><code>!!map</code> - <code>Map</code></li>
+<li><code>!!seq</code> - <code>List</code></li>
+<li><code>!!str</code> - <code>String</code></li>
+</ul>
+</li>
+<li>
+<p><code>JSON</code> schema tags</p>
+<ul>
+<li><code>!!null</code> - <code>null</code></li>
+<li><code>!!bool</code> - Boolean.</li>
+<li><code>!!int</code> - Integer. <code>hex</code>, <code>octal</code> and <code>base 10</code> should use this.</li>
+<li><code>!!float</code> - double.</li>
+</ul>
+</li>
+<li>
+<p><code>Dart</code>-specific schema tags (More will be supported)</p>
+<ul>
+<li><code>!!uri</code> - URI</li>
+</ul>
+</li>
+</ul>
+</section>
+
+
+      <section class="summary">
+          <h2>Libraries</h2>
+        <dl>
+          <dt id="rookie_yaml">
+  <span class="name"><a href="rookie_yaml/">rookie_yaml</a></span> 
+
+</dt>
+<dd>
+</dd>
+
+        </dl>
+      </section>
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li class="self-crumb">rookie_yaml package</li>
+</ol>
+
+    <h5 class="hidden-xs"><span class="package-name">rookie_yaml</span> <span class="package-kind">package</span></h5>
+    <ol>
+      <li class="section-title">Libraries</li>
+      <li><a href="rookie_yaml/">rookie_yaml</a></li>
+</ol>
+
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div>
+</main>
+<footer>
+  <span class="no-break">
+    rookie_yaml
+      0.0.4
+  </span>
+  
+</footer>
+
+
+<script src="static-assets/highlight.pack.js?v1"></script>
+<script src="static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

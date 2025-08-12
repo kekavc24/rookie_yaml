@@ -1,6 +1,10 @@
 name: rookie_yaml
-description: A (beginner's) YAML parser.
-version: 0.0.3
+description: A (rookie) YAML parser.
+version: 0.0.4
+repository: https://github.com/kekavc24/rookie_yaml
+issue_tracker: https://github.com/kekavc24/rookie_yaml/issues
+topics:
+  - yaml
 
 environment:
   sdk: ^3.8.0
@@ -14,4 +18,5 @@ dependencies:
 dev_dependencies:
   checks: ^0.3.0
   lints: ^6.0.0
+  path: ^1.9.1
   test: ^1.24.0

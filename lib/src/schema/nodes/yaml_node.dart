@@ -38,7 +38,7 @@ sealed class YamlSourceNode extends YamlNode {
   /// [Tag] directive describing how the node is represented natively.
   ///
   /// If a custom [NodeResolver] tag was parsed, the [YamlSourceNode] may be
-  /// viewed in a resolved format by calling [asCustomType] getter on the node.
+  /// viewed in a resolved format by calling `asCustomType` getter on the node.
   ResolvedTag? get tag => null;
 
   /// Anchor name that allow other nodes to reference this node or an alias

@@ -322,5 +322,6 @@ void main() {
     });
   });
 
-  // TODO: Add tests for nodes with resolved tags. Error if tag cannot be resolved
+  // TODO: Add tests for nodes with resolved tags. Error if tag cannot
+  // be resolved
 }

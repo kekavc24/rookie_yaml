@@ -30,7 +30,7 @@ final stringTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'str');
 // This schema is supported by YAML out of the box.
 //
 
-/// `JSON` [null]
+/// `JSON` `null`
 final nullTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'null');
 
 /// `JSON` [bool]
