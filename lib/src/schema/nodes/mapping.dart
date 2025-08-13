@@ -5,6 +5,8 @@ part of 'yaml_node.dart';
 ///
 /// For equality, it expects at least a Dart [Map]. However, it should be noted
 /// that the value of a key will always be a [YamlSourceNode].
+///
+/// See [DynamicMapping] for a "no-cost" [Mapping] type cast.
 final class Mapping extends UnmodifiableMapView<YamlNode, YamlSourceNode?>
     implements YamlSourceNode {
   Mapping(
@@ -37,4 +39,14 @@ final class Mapping extends UnmodifiableMapView<YamlNode, YamlSourceNode?>
 
   @override
   int get hashCode => _equality.hash(this);
+}
+
+/// A "no-cost" [Mapping] that allow arbitrary `Dart` values to be used as
+/// keys to a [Mapping] without losing any type safety.
+///
+/// Optionally cast to [Map] of type [T] if you are sure all the keys match the
+/// type. Values will still be [YamlSourceNode]s
+extension type DynamicMapping<T>(Mapping mapping) implements YamlSourceNode {
+  YamlSourceNode? operator [](T key) =>
+      mapping[key is YamlNode ? key : DartNode<T>(key)];
 }
