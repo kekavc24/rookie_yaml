@@ -380,6 +380,42 @@ implicit-2: is-an-error}
       );
     });
 
+    test('References flow key before entire entry is parsed', () {
+      const yaml = '''
+{
+  &flow-key key: *flow-key ,
+
+  &seq-key another: [
+    *flow-key ,
+
+    &multi-line-entry
+    key: *seq-key ,
+
+    *multi-line-entry ,
+
+    &for-key key: *for-key
+  ],
+
+  *multi-line-entry
+}
+''';
+
+      check(
+        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+      ).equals(
+        {
+          'key': 'key',
+          'another': [
+            'key',
+            {'key': 'another'},
+            {'key': 'another'},
+            {'key': 'key'},
+          ],
+          {'key': 'another'}: null,
+        }.toString(),
+      );
+    });
+    
     test('Throws when non-existent alias is used', () {
       const alias = 'value';
 
