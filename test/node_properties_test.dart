@@ -415,7 +415,22 @@ implicit-2: is-an-error}
         }.toString(),
       );
     });
-    
+
+    test('References block key before entire entry is parsed', () {
+      const yaml = '''
+&key key: *key
+
+? &another another
+: *another
+''';
+
+      check(
+        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+      ).equals(
+        {'key': 'key', 'another': 'another'}.toString(),
+      );
+    });
+
     test('Throws when non-existent alias is used', () {
       const alias = 'value';
 
