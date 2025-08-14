@@ -905,7 +905,9 @@ final class DocumentParser {
                   start: flowStartOffset,
                 )
                 case ParserDelegate entry) {
-              delegate.pushEntry(entry); // TODO: Test this
+              delegate.pushEntry(
+                entry..updateEndOffset = _scanner.lineInfo().current,
+              );
               break;
             }
 
