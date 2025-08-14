@@ -448,10 +448,7 @@ final class DocumentParser {
     return true;
   }
 
-  bool _continueToNextEntry(
-    int minIndent, {
-    required bool forceInline,
-  }) {
+  bool _continueToNextEntry(int minIndent, {required bool forceInline}) {
     _nextSafeLineInFlow(minIndent, forceInline: forceInline);
 
     if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
@@ -486,14 +483,32 @@ final class DocumentParser {
     required int minIndent,
     required bool forceInline,
     required Indicator exitIndicator,
+    required NodeProperties? keyProperties,
     SourceLocation? startOffset,
   }) {
     var parsedKey = key;
     ParserDelegate? value;
 
-    if (!_nextSafeLineInFlow(minIndent, forceInline: forceInline) ||
-        _scanner.charAtCursor == exitIndicator) {
-      return (key, value);
+    if (!_nextSafeLineInFlow(minIndent, forceInline: forceInline)) {
+      throw FormatException(
+        'Expected at least a $exitIndicator but found null',
+      );
+    } else if (_scanner.charAtCursor == exitIndicator) {
+      if (parsedKey ??
+              _nullOrAlias(
+                keyProperties,
+                indentLevel: indentLevel,
+                indent: minIndent,
+                start: startOffset ?? _scanner.lineInfo().current,
+              )
+          case ParserDelegate nonTerminated) {
+        parsedKey = _trackAnchor(
+          nonTerminated..updateEndOffset = _scanner.lineInfo().current,
+          keyProperties,
+        );
+      }
+
+      return (parsedKey, value);
     }
 
     /// You may notice an intentional syntax change to how nodes are being
@@ -538,6 +553,8 @@ final class DocumentParser {
 
     final valueOffset = _scanner.lineInfo().current;
     parsedKey.updateEndOffset = valueOffset;
+
+    _trackAnchor(parsedKey, keyProperties);
 
     // Check if this is the start of a flow value
     if (_inferNextEvent(
@@ -815,6 +832,7 @@ final class DocumentParser {
         /// adheres to the minimum indent set by block parent if in block
         /// context. If in flow context, let it "flow" and lay itself!
         minIndent: indent,
+        keyProperties: keyProps,
         forceInline: forceInline,
         exitIndicator: mapEnd,
       );
@@ -825,8 +843,6 @@ final class DocumentParser {
       ///
       /// TODO: Test if the key can be null if any props are present
       if (key == null) break;
-
-      _trackAnchor(key, keyProps);
 
       // Map already contains key
       if (!delegate.pushEntry(key, value)) {
