@@ -937,6 +937,7 @@ final class DocumentParser {
               null,
               indentLevel: indentLevel,
               minIndent: indent,
+              keyProperties: null,
               forceInline: forceInline,
               exitIndicator: seqEnd,
             );
@@ -957,16 +958,12 @@ final class DocumentParser {
 
         default:
           {
-            ParserDelegate? keyOrElement;
-
-            if (properties != null && properties.isAlias) {
-              keyOrElement = _referenceAlias(
-                properties,
-                indentLevel: indentLevel,
-                indent: indent,
-                start: flowStartOffset,
-              );
-            }
+            var keyOrElement = _aliasKeyOrNull(
+              properties,
+              indentLevel: indentLevel,
+              indent: indent,
+              keyStartOffset: flowStartOffset,
+            );
 
             // Handles all flow node types i.e map, sequence and scalars
             keyOrElement ??= _parseFlowNode(
@@ -1002,22 +999,31 @@ final class DocumentParser {
               break;
             }
 
+            // Give to entire entry if multiline
+            final (keyProps, entryProps) = switch (hasMultilineProps) {
+              true => (null, properties),
+              _ => (properties, null),
+            };
+
             // We have the key. No need for it!
             final (_, value) = _parseFlowMapEntry(
               keyOrElement,
               indentLevel: indentLevel,
               minIndent: indent,
+              keyProperties: keyProps,
               forceInline: forceInline,
               exitIndicator: seqEnd,
             );
 
-            final entry = MapEntryDelegate(
-              nodeStyle: NodeStyle.flow,
-              keyDelegate: keyOrElement,
-            )..updateValue = value;
-
-            _trackAnchor(hasMultilineProps ? entry : keyOrElement, properties);
-            delegate.pushEntry(entry);
+            delegate.pushEntry(
+              _trackAnchor(
+                MapEntryDelegate(
+                  nodeStyle: NodeStyle.flow,
+                  keyDelegate: keyOrElement,
+                )..updateValue = value,
+                entryProps,
+              ),
+            );
           }
       }
 
