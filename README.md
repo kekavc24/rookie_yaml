@@ -327,9 +327,8 @@ const anotherListErr = '''
 >
 > An `alias` cannot be recursive. The node must be parsed completely and resolved before an `anchor` can be used. In addition to those in the spec, the parser *CURRENTLY* abides by the following rules:
 >
->1. A map groups its entries into map entry nodes. A key's `anchor` can only be referenced if the entire entry has been parsed and resolved. (This is a limitation. May be scrubbed to allow a key to be referenced before the entire entry is parsed)
->2. An `anchor` to a collection cannot be used by an entry in the same collection. In programming terms, you cannot use a variable before it has been declared or its value determined and assigned.
->3. An `anchor` can be redeclared to point to another node. Ergo, if rule `1` and `2` are satisfied and the `anchor` exists, an `alias` is valid.
+>1. An `anchor` to a collection cannot be used by an entry in the same collection. In programming terms, you cannot use a variable before it has been declared or its value determined and assigned.
+>2. An `anchor` can be redeclared to point to another node. Ergo, if rule `1` and `2` are satisfied and the `anchor` exists, an `alias` is valid.
 
 ## Tags
 

@@ -290,4 +290,25 @@ void main() {
       ..withTag().equals(tag)
       ..hasParsedInteger(24);
   });
+
+  test('Dart types can be used as keys in DynamicMapping', () {
+    const string = 'key';
+    const integer = 24;
+
+    const yaml =
+        '''
+$string: $integer
+$integer: $string
+''';
+
+    check(bootstrapDocParser(yaml).parseDocs().parseNodeSingle())
+        .isNotNull()
+        .isA<Mapping>()
+        .has((m) => m.castTo<DynamicMapping>(), 'DynamicMapping cast')
+        .which(
+          (dm) => dm
+            ..has((v) => v[string], 'String key').isNotNull()
+            ..has((v) => v[integer], 'Integer key').isNotNull(),
+        );
+  });
 }

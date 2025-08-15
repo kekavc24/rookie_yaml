@@ -1,8 +1,7 @@
 name: rookie_yaml
-description: A (rookie) YAML parser.
-version: 0.0.4
+description: A customizable (rookie) YAML parser that can parse both json and yaml.
+version: 0.0.5
 repository: https://github.com/kekavc24/rookie_yaml
-issue_tracker: https://github.com/kekavc24/rookie_yaml/issues
 topics:
   - yaml
 

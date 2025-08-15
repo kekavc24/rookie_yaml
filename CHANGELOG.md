@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.5
+
+- `feat`:
+  - Add `DynamicMapping` extension type that allow `Dart` values to be used as keys.
+  - Allow `block` and `flow` key anchors to be used as aliases before the entire entry is parsed.
+
+- `fix`: Ensure the end offset in an alias used as a sequence entry is updated.
+
 ## 0.0.4
 
 The parser is (fairly) stable and in a "black box" state (lexing and parsing are currently merged). You provide a source string and the parser just spits a `YamlDocument` or `YamlSourceNode` or `FormatException`. The parser cannot provide the event tree (or more contextual errors) at this time.
