@@ -1,0 +1,75 @@
+name: Blocking Linear Merge
+
+on:
+  workflow_dispatch:
+
+  pull_request_target:
+    branches: [main]
+    types: [labeled]
+
+# We don't want race conditions. One branch at a time. This is intentional.
+# Next set of jobs may have to be triggered again if the current run is successful
+# main branch will have diverged!
+concurrency:
+  group: linear-merge
+  cancel-in-progress: false
+
+jobs:
+  merge_preflight:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'kekavc24' && contains(github.event.pull_request.labels.*.name, 'lgtm_bot_merge_lfg') }}
+    outputs:
+      validated_commit: ${{ steps.capture.outputs.head }}
+
+    steps:
+      # Capture commit before checking if PR is approved
+      # (may) Prevent actors?
+      - name: 🛄 Capture commit
+        id: capture
+        run: echo "head=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: 🛂 Validate PR status (non-admin)
+        if: ${{ github.event.pull_request.user.login != 'kekavc24' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo kekavc24/rookie_yaml  \
+            --json reviewDecision \
+            --jq '.reviewDecision')
+
+          if [ "$state" != "APPROVED" ]; then
+            exit 1;
+          fi
+
+  linear_merge:
+    needs: merge_preflight
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_KEY }}
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      # Let's do a clean fast-forward merge
+      - name: Check it
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.BOT_KEY }}
+        run: |
+          git config --global user.email "143215479+Kavisi-bot@users.noreply.github.com"
+          git config --global user.name "Kavisi-bot"
+          git remote show origin
+          dart pub get
+          cd scripts
+          pwd
+          dart linear_merge.dart \
+            -w ${{ github.workspace }} \
+            -p ${{ github.event.pull_request.number }} \
+            -s ${{ needs.merge_preflight.outputs.validated_commit }}
