@@ -18,14 +18,13 @@ const _doubleQuoteException = FormatException(
   'Expected to find a closing quote',
 );
 
-// TODO: Implicit
 /// Parses a `double quoted` scalar
 PreScalar parseDoubleQuoted(
   GraphemeScanner scanner, {
   required int indent,
   required bool isImplicit,
 }) {
-  final leadingChar = scanner.charAtCursor; // TODO: Use single variable?
+  final leadingChar = scanner.charAtCursor;
 
   if (leadingChar != _doubleQuoteIndicator) {
     throw FormatException(

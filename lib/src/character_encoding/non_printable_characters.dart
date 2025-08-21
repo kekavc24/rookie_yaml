@@ -97,6 +97,7 @@ enum SpecialEscaped implements ReadableChar {
     //
     if (char
         case SpecialEscaped.backSlash ||
+            SpecialEscaped.slash ||
             WhiteSpace.space ||
             Indicator.doubleQuote) {
       return char;
