@@ -152,6 +152,12 @@ PreScalar parseBlockStyle(
           }
         }
 
+      // Literal & folded restricted to printable charset
+      case _ when char == null || !isPrintable(char):
+        throw FormatException(
+          'Block scalar styles are restricted to the printable character set',
+        );
+
       default:
         {
           if (char is WhiteSpace) {
@@ -175,7 +181,7 @@ PreScalar parseBlockStyle(
             lastWasIndented = false;
           }
 
-          buffer.writeChar(char!);
+          buffer.writeChar(char);
 
           // Write the remaining line to the end without including line break
           final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
