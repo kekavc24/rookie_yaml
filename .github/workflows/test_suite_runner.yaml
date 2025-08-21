@@ -5,10 +5,7 @@ on:
 
   pull_request:
     branches: [main]
-    types: [opened, synchronize]
-
-  push:
-    branches: [main]
+    types: [opened, synchronize, closed]
 
 concurrency:
   group: test-suite
@@ -61,7 +58,8 @@ jobs:
   update_badge:
     needs: test_suite
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request'}}
+    # Flaky event merged > ==true
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true}}
 
     steps:
       - name: 🐎 Hello Git
@@ -85,7 +83,9 @@ jobs:
 
       - name: ♿ LFG
         run: |
-          if [ test -n "$(git status --porcelain)" ]; then
+          status=$(test -z "$(git status --porcelain)" && echo "clean" || echo "dirty")
+
+          if [ "$status" == "dirty" ]; then
             git add README.md
             git commit -m "Test Suite Update: ${{ needs.test_suite.outputs.pass_rate }}%"
             git push --force-with-lease origin main
