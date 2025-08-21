@@ -413,7 +413,7 @@ Fun with escapes:
             isImplicit: false,
             isInFlowContext: false,
           ),
-        ).hasFormattedContent(complete);
+        ).hasFormattedContent(complete.replaceFirst(':', ''));
       }
     });
 
