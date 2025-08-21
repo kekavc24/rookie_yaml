@@ -168,5 +168,8 @@ Current tip SHA: $commitID
     args: ['pr', 'review', '--approve', '$prNumber', '--repo', _repo],
   );
 
-  runCommand('git', args: ['push', 'origin', _defaultBranch]);
+  runCommand(
+    'git',
+    args: ['push', '--force-with-lease', 'origin', _defaultBranch],
+  );
 }

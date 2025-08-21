@@ -1,0 +1,94 @@
+name: YAML test suite
+
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+  push:
+    branches: [main]
+
+concurrency:
+  group: test-suite
+  cancel-in-progress: false
+
+jobs:
+  test_suite:
+    if: ${{ github.repository_owner == 'kekavc24' }}
+    runs-on: ubuntu-latest
+    outputs:
+      pass_rate: ${{ steps.runner.outputs.pass_rate }}
+
+    steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_KEY }}
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      - name: 🏃🏽 Run test suite
+        id: runner
+        run: |
+          dart pub get
+          cd test/yaml_matrix_tests
+          pass_rate=$(dart matrix_runner.dart --no-file-output)
+          echo "pass_rate=$pass_rate" >> "$GITHUB_OUTPUT"
+
+  pr_comment:
+    needs: test_suite
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+
+    steps:
+      - name: 💬 Add PR comment
+        env:
+          GH_TOKEN: ${{ secrets.BOT_KEY }}
+        run: |
+          echo -e "* Current pass rate ([YAML Test Suite](https://github.com/yaml/yaml-test-suite)): \
+            ${{ needs.test_suite.outputs.pass_rate }}%\n\
+          * Head Commit SHA: ${{ github.event.pull_request.head.sha }}" > body
+
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            -R kekavc24/rookie_yaml \
+            -F body
+
+  update_badge:
+    needs: test_suite
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request'}}
+
+    steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_KEY }}
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      - name: 🟥🟨🟩 Update Test Suite badge
+        run: |
+          git config --global user.email "143215479+Kavisi-bot@users.noreply.github.com"
+          git config --global user.name "Kavisi-bot"
+          git checkout main
+          dart pub get
+          cd scripts
+          dart update_pass_rate.dart -w ${{ github.workspace }} -i ${{ needs.test_suite.outputs.pass_rate }}
+
+      - name: ♿ LFG
+        run: |
+          git update-index --refresh
+
+          if [ git status --porcelain ]; then
+            git add README.md
+            git commit -m "Test Suite Update: ${{ needs.test_suite.outputs.pass_rate }}%"
+            git push --force-with-lease origin main
+          fi

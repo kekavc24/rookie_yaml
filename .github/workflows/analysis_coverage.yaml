@@ -3,7 +3,7 @@ name: Analysis & Coverage
 on:
   workflow_dispatch:
 
-  pull_request_target:
+  pull_request:
     branches: [main]
     types: [opened, synchronize]
 
@@ -39,10 +39,21 @@ jobs:
     needs: dart_analysis
 
     steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v4
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
       - name: 🧪 Run tests with coverage 📑
-        run: dart run coverage:test_with_coverage --scope-output lib/
+        run: |
+          dart pub get
+          dart run coverage:test_with_coverage --scope-output lib/
 
       - name: 🛫 Track coverage
         uses: coverallsapp/github-action@v2.3.6
         with:
           github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          file: "${{ github.workspace }}/coverage/lcov.info"
