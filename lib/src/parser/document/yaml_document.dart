@@ -118,4 +118,8 @@ final class YamlDocument {
   /// Any directive that is not a tag or version directive
   List<ReservedDirective> get otherDirectives =>
       UnmodifiableListView(_reservedDirectives);
+
+  /// An ordered view of the [YamlComment]s within the document as they were
+  /// extracted
+  List<YamlComment> get comments => UnmodifiableListView(_comments);
 }

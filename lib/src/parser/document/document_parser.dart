@@ -1000,6 +1000,8 @@ final class DocumentParser {
             }
 
             // Give to entire entry if multiline
+            /// TODO: Purge this with future changes
+            /// it seems compact flow map entries cannot node properties
             final (keyProps, entryProps) = switch (hasMultilineProps) {
               true => (null, properties),
               _ => (properties, null),

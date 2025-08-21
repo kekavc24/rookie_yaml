@@ -274,7 +274,10 @@ _ParsedNodeProperties _parseNodeProperties(
               anchor: null,
               tag: null,
             ),
-            indentOnExit: _skipToParsableChar(scanner, comments: comments),
+            indentOnExit: _skipToParsableChar(
+              scanner,
+              comments: comments,
+            ), // TODO: brooo this
             isMultiline: isMultiline(),
           );
         }
