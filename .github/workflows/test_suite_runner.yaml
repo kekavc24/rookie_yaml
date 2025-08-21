@@ -1,0 +1,47 @@
+name: YAML test suite
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+concurrency:
+  group: test-suite
+  cancel-in-progress: false
+
+jobs:
+  test_suite:
+    if: ${{ github.repository_owner == 'kekavc24' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BOT_KEY }}
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "stable"
+
+      - name: 🏃🏽 Run test suite
+        id: runner
+        run: |
+          dart pub get
+          cd test/yaml_matrix_tests
+          pass_rate=$(dart matrix_runner.dart --no-file-output)
+          echo "$pass_rate"
+          echo "pass_rate=$pass_rate" >> "$GITHUB_OUTPUT"
+
+      - name: 💬 Add PR comment
+        env:
+          GH_TOKEN: ${{ secrets.BOT_KEY }}
+        run: |
+          echo -e "* Current pass rate ([YAML Test Suite](https://github.com/yaml/yaml-test-suite)): \
+            ${{ steps.runner.outputs.pass_rate }}%\n\
+          * Head Commit SHA: ${{ github.event.pull_request.head.sha }}" > body
+
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            -R kekavc24/rookie_yaml \
+            -F body

@@ -2,9 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:path/path.dart' as path;
 
 const _repo = 'kekavc24/rookie_yaml';
 const _defaultBranch = 'main';
+
+final _regex = RegExp(r'(^!\[test_suite\].*$)', multiLine: true);
+
+const _label = '![test_suite]';
+const _urlPrefix = 'https://img.shields.io/badge/YAML_Test_Suite';
 
 final _argParser = ArgParser()
   ..addOption(
@@ -68,6 +74,22 @@ extension on int {
   bool get isSuccess => this == 0;
 }
 
+extension on double {
+  String get color => switch (this) {
+    < 50 => 'red',
+    >= 50 && < 75 => 'yellow',
+    _ => 'green',
+  };
+}
+
+void _updatePassRate(String directory, double passRate) {
+  final file = File(path.join(directory, 'README.md'));
+
+  final replacement = '$_label($_urlPrefix-$passRate%-${passRate.color})';
+  final updated = file.readAsStringSync().replaceFirst(_regex, replacement);
+  file.writeAsStringSync(updated);
+}
+
 void main(List<String> args) {
   final (:directory, :prNumber, :headSHA) = _argParser.parse(args).unpack();
 
@@ -82,11 +104,12 @@ void main(List<String> args) {
     required List<String> args,
     String? messageOnFail,
     T Function(String stdout)? mapper,
+    String? dirOverride,
   }) {
     final ProcessResult(:exitCode, :stdout, :stderr) = Process.runSync(
       command,
       args,
-      workingDirectory: directory,
+      workingDirectory: dirOverride ?? directory,
     );
 
     if (!exitCode.isSuccess) {
@@ -168,5 +191,29 @@ Current tip SHA: $commitID
     args: ['pr', 'review', '--approve', '$prNumber', '--repo', _repo],
   );
 
-  runCommand('git', args: ['push', 'origin', _defaultBranch]);
+  // Regenerate latest test suite pass rate before push
+  final passRate = runCommand(
+    'dart',
+    args: ['matrix_runner.dart', '--no-file-output'],
+    dirOverride: path.joinAll([directory, 'test', 'yaml_matrix_tests']),
+    mapper: (stdout) => double.parse(stdout.trim()),
+  );
+
+  // Update README
+  _updatePassRate(directory, passRate);
+
+  // Check if we can actually commit it
+  if (runCommand(
+    'git',
+    args: ['status', '--porcelain'],
+    mapper: (stdout) => stdout.trim(),
+  ).isNotEmpty) {
+    runCommand('git', args: ['add', 'README.md']);
+    runCommand('git', args: ['commit', '-m', 'Test Suite Update: $passRate%']);
+  }
+
+  runCommand(
+    'git',
+    args: ['push', '--force-with-lease', 'origin', _defaultBranch],
+  );
 }
