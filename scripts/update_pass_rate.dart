@@ -42,7 +42,7 @@ void main(List<String> args) {
 
   final file = File(path.join(directory, 'README.md'));
 
-  final replacement = '$_label$_urlPrefix-$passRate-${passRate.color}.svg';
+  final replacement = '$_label$_urlPrefix-$passRate%-${passRate.color}.svg';
   final updated = file.readAsStringSync().replaceFirst(_regex, replacement);
   file.writeAsStringSync(updated);
 }

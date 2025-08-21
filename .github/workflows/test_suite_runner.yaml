@@ -85,9 +85,7 @@ jobs:
 
       - name: ♿ LFG
         run: |
-          git update-index --refresh
-
-          if [ git status --porcelain ]; then
+          if [ test -n "$(git status --porcelain)" ]; then
             git add README.md
             git commit -m "Test Suite Update: ${{ needs.test_suite.outputs.pass_rate }}%"
             git push --force-with-lease origin main
