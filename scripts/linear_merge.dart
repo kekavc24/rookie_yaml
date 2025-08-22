@@ -85,7 +85,7 @@ extension on double {
 void _updatePassRate(String directory, double passRate) {
   final file = File(path.join(directory, 'README.md'));
 
-  final replacement = '$_label($_urlPrefix-$passRate%-${passRate.color})';
+  final replacement = '$_label($_urlPrefix-$passRate%25-${passRate.color})';
   final updated = file.readAsStringSync().replaceFirst(_regex, replacement);
   file.writeAsStringSync(updated);
 }
