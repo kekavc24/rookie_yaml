@@ -7,11 +7,13 @@ import 'package:path/path.dart' as path;
 const _repo = 'kekavc24/rookie_yaml';
 const _defaultBranch = 'main';
 
+/// Test suite badge uri regex
 final _regex = RegExp(r'(^!\[test_suite\].*$)', multiLine: true);
 
 const _label = '![test_suite]';
 const _urlPrefix = 'https://img.shields.io/badge/YAML_Test_Suite';
 
+/// Argument parser to validate args for this script
 final _argParser = ArgParser()
   ..addOption(
     'working-directory',
@@ -33,6 +35,11 @@ final _argParser = ArgParser()
   );
 
 extension on ArgResults {
+  /// Unpacks the arguments passed and returns:
+  ///   - A directory where the current workflow is running
+  ///   - PR number of PR that triggered the merging worflow
+  ///   - SHA signature of the commit at the tip of the PR branch. This ensures
+  ///     we merge branches in the state they were approved.
   ({String directory, int prNumber, String headSHA}) unpack() => (
     //token: this['token'],
     directory: this['working-directory'],
@@ -41,6 +48,7 @@ extension on ArgResults {
   );
 }
 
+/// Contributor information
 typedef _ContributorInfo = ({
   String contributor,
   String repo,
@@ -49,6 +57,7 @@ typedef _ContributorInfo = ({
 });
 
 extension on String {
+  /// Parses the PR info of the branch to be merged
   _ContributorInfo parseContributorInfo() {
     final parsed = json.decode(this);
 
@@ -82,6 +91,9 @@ extension on double {
   };
 }
 
+/// Update the `YAML` test suite [passRate] in the README.
+///
+/// [directory] refers to path of the directory with the README.
 void _updatePassRate(String directory, double passRate) {
   final file = File(path.join(directory, 'README.md'));
 

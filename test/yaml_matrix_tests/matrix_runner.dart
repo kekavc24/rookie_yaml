@@ -71,10 +71,12 @@ final class MatrixRunner {
   }
 }
 
+String _footer(int headerLength) => '<${'-' * (headerLength - 2)}>';
+
 void main(List<String> args) async {
   final runner = MatrixRunner(loadTests(fetchTestData()));
 
-  const pad = '\t';
+  const pad = '  ';
 
   var testCount = 0;
   var success = 0;
@@ -85,14 +87,15 @@ void main(List<String> args) async {
     ++testCount;
 
     if (resultType == MatrixResultType.invalidPass) {
-      final padded = messages.map((e) => '$pad$e');
+      final header = '<++++ ${metaInfo.trim()} ++++>';
 
-      fails.add(
-        '$metaInfo\n'
-        'Failed with the following messages:\n'
-        '${padded.join('\n')}\n'
-        '<----------------------------------------------->',
-      );
+      fails.add('''
+$header
+
+Failed with the following messages:
+${messages.map((e) => '$pad$e').join('\n')},
+
+${_footer(header.length)}''');
     } else {
       ++success;
     }
@@ -109,6 +112,7 @@ void main(List<String> args) async {
       '''
 Test Info: $success/$testCount tests
 Test Success Rate: ${passRate.toStringAsFixed(2)}%
+
 ${fails.join('\n\n')}
 ''',
     );
