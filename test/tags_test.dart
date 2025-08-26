@@ -56,7 +56,7 @@ void main() {
 
       final handle = TagHandle.primary();
 
-      check(parseDirectives(GraphemeScanner.of(yaml)))
+      check(vanillaDirectives(yaml))
           .has((d) => d.globalTags, 'Global Tag from tag uri')
           .deepEquals({handle: GlobalTag.fromTagUri(handle, uriPrefix)});
     });
@@ -71,7 +71,7 @@ void main() {
 
       final handle = TagHandle.secondary();
 
-      check(parseDirectives(GraphemeScanner.of(yaml)))
+      check(vanillaDirectives(yaml))
           .has((d) => d.globalTags, 'Global Tag from tag uri')
           .deepEquals({handle: GlobalTag.fromTagUri(handle, uriPrefix)});
     });
@@ -87,7 +87,7 @@ void main() {
 
       final handle = TagHandle.named(named);
 
-      check(parseDirectives(GraphemeScanner.of(yaml)))
+      check(vanillaDirectives(yaml))
           .has((d) => d.globalTags, 'Global Tag from tag uri')
           .deepEquals({handle: GlobalTag.fromTagUri(handle, uriPrefix)});
     });
@@ -104,7 +104,7 @@ void main() {
       final handle = TagHandle.named(name);
 
       check(
-        parseDirectives(GraphemeScanner.of(yaml)),
+        vanillaDirectives(yaml),
       ).has((d) => d.globalTags, 'Global Tag from tag uri').deepEquals({
         handle: GlobalTag.fromTagShorthand(
           handle,
@@ -118,9 +118,7 @@ void main() {
 %TAG ! !foo
 %TAG ! !foo''';
 
-      check(
-        () => parseDirectives(GraphemeScanner.of(yaml)),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives(yaml)).throwsAFormatException(
         'A global tag directive with the "!" has already '
         'been declared in this document',
       );
@@ -132,9 +130,7 @@ void main() {
       () {
         final yaml = '%TAG !no-prefix-or-separation-after!';
 
-        check(
-          () => parseDirectives(GraphemeScanner.of(yaml)),
-        ).throwsAFormatException(
+        check(() => vanillaDirectives(yaml)).throwsAFormatException(
           'A global tag must have a separation space after its handle',
         );
       },
@@ -145,9 +141,7 @@ void main() {
       () {
         final yaml = '%TAG !no-uri-or-local-tag-prefix! ';
 
-        check(
-          () => parseDirectives(GraphemeScanner.of(yaml)),
-        ).throwsAFormatException(
+        check(() => vanillaDirectives(yaml)).throwsAFormatException(
           'A global tag only accepts valid uri characters as a tag prefix',
         );
       },
@@ -160,9 +154,7 @@ void main() {
             '%TAG !no-uri-or-local-tag-prefix! '
             '${bell.asString()}';
 
-        check(
-          () => parseDirectives(GraphemeScanner.of(yaml)),
-        ).throwsAFormatException(
+        check(() => vanillaDirectives(yaml)).throwsAFormatException(
           'A global tag only accepts valid uri characters as a tag prefix',
         );
       },

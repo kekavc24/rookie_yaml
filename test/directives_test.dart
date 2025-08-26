@@ -1,10 +1,12 @@
 import 'package:checks/checks.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
 import 'helpers/exception_helpers.dart';
+import 'helpers/model_helpers.dart';
 
 void main() {
   group('Reserved directives', () {
@@ -15,7 +17,7 @@ void main() {
 %WHY? Irriz warririz https://youtu.be/y9r_pZL4boE?si=IQyibJXzS1agg2GN
 ''';
 
-      check(parseDirectives(GraphemeScanner.of('$yaml\n---')))
+      check(vanillaDirectives('$yaml\n---'))
           .has(
             (d) => d.reservedDirectives.map((r) => r.toString()).join('\n'),
             'Reserved Directives',
@@ -26,9 +28,7 @@ void main() {
     test('Throws if non-printable character are used', () {
       final yaml = '%RESERVED ${bell.asString()}';
 
-      check(
-        () => parseDirectives(GraphemeScanner.of(yaml)),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives(yaml)).throwsAFormatException(
         'Only printable characters are allowed in a parameter',
       );
     });
@@ -40,11 +40,8 @@ void main() {
           '%YAML 2.2\n'
           '---';
 
-      check(parseDirectives(GraphemeScanner.of(yaml)))
-          .has(
-            (d) => d.yamlDirective,
-            'Yaml Directive',
-          )
+      check(vanillaDirectives(yaml))
+          .has((d) => d.yamlDirective, 'Yaml Directive')
           .equals(YamlDirective.ofVersion('2.2'));
     });
 
@@ -68,9 +65,7 @@ void main() {
 %YAML 2.2
 ''';
 
-      check(
-        () => parseDirectives(GraphemeScanner.of(yaml)),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives(yaml)).throwsAFormatException(
         'A YAML directive can only be declared once per document',
       );
     });
@@ -78,30 +73,22 @@ void main() {
     test('Throws if version is specified incorrectly', () {
       const prefix = 'Invalid YAML version format. ';
 
-      check(
-        () => parseDirectives(GraphemeScanner.of('%YAML ..1')),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives('%YAML ..1')).throwsAFormatException(
         '$prefix'
         'Version cannot start with a "."',
       );
 
-      check(
-        () => parseDirectives(GraphemeScanner.of('%YAML 1..1')),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives('%YAML 1..1')).throwsAFormatException(
         '$prefix'
         'Version cannot have consecutive "." characters',
       );
 
-      check(
-        () => parseDirectives(GraphemeScanner.of('%YAML 1.1.2')),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives('%YAML 1.1.2')).throwsAFormatException(
         '$prefix'
         'A YAML version must have only 2 integers separated by "."',
       );
 
-      check(
-        () => parseDirectives(GraphemeScanner.of('%YAML A.B')),
-      ).throwsAFormatException(
+      check(() => vanillaDirectives('%YAML A.B')).throwsAFormatException(
         'Invalid "A" character in YAML version. '
         'Only digits separated by "."'
         ' characters are allowed.',
@@ -110,6 +97,43 @@ void main() {
   });
 
   group('General directives', () {
+    test('Comments in directives', () {
+      final comments = <YamlComment>[];
+
+      const yaml = '''
+%YAML 1.2 # We only support YAML
+          # version 1.2+
+
+%WHY Earlier features are buggy # It goes without saying
+    # without them we would not have 1.2
+
+%TAG !okay! !make-sense # Thanks
+  # for
+      # understanding
+        # and
+          # not
+            # getting
+              # mad
+---
+      ''';
+
+      parseDirectives(GraphemeScanner.of(yaml), onParseComment: comments.add);
+
+      check(comments.map((e) => e.comment)).deepEquals([
+        'We only support YAML',
+        'version 1.2+',
+        'It goes without saying',
+        'without them we would not have 1.2',
+        'Thanks',
+        'for',
+        'understanding',
+        'and',
+        'not',
+        'getting',
+        'mad',
+      ]);
+    });
+
     test('Throws if directive end markers are absent', () {
       check(
         () => bootstrapDocParser(
