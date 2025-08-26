@@ -2411,6 +2411,7 @@ final class DocumentParser {
         :hasDirectiveEnd,
       ) = parseDirectives(
         _scanner,
+        onParseComment: _comments.add,
       );
 
       _hasDirectives =

@@ -48,15 +48,29 @@ ReservedDirective _parseReservedDirective(
 
   var current = scanner.charAtCursor;
 
-  // TODO: Include comments in directive
+  /// Reserved directives are prone to endless grouped token consumption between
+  /// with whitespace . YAML allows comments in directives (tricky).
+  /// The condition below may seem unorthodox. It's simple.
+  /// Exit if:
+  ///   1. If we have no more tokens and the char at cursor is not null
+  ///   2. If (1) stands, capture the non-null [current] and check if we reached
+  ///      the end of the line.
+  ///   3. If (2) stands, check if the captured non-null [current] is a comment
+  ///      only if the char before was non-null and a separation space
+  ///      (tab/space).
   while (scanner.canChunkMore &&
-      current.isNotNullAnd((c) => !c.isLineBreak())) {
+      current.isNotNullAnd(
+        (cursor) =>
+            !cursor.isLineBreak() &&
+            !(cursor == comment &&
+                scanner.charBeforeCursor.isNotNullAnd((c) => c.isWhiteSpace())),
+      )) {
     // Intentional switch case use!
     switch (current) {
-      /// Skip separation lines. Includes tabs. Save current parameter.
+      // Skip separation lines. Includes tabs. Save current parameter.
       case space || tab:
         {
-          scanner.skipWhitespace(skipTabs: true); // preemptive
+          scanner.skipWhitespace(skipTabs: true);
           flushBuffer();
         }
 

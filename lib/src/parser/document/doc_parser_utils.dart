@@ -93,12 +93,23 @@ bool _docIsInMarkerLine(
 ///
 /// Leading white spaces when this function is called are ignored. This
 /// function treats them as separation space including tabs.
+///
+/// You must provide either [comments] or an [onParseComment] [Function]
 int? skipToParsableChar(
   GraphemeScanner scanner, {
-  required List<YamlComment> comments,
+  List<YamlComment>? comments,
+  void Function(YamlComment comment)? onParseComment,
 }) {
+  assert(
+    comments != null || onParseComment != null,
+    'Missing handler/buffer to use when a comment is parsed',
+  );
+
   int? indent;
   var isLeading = true;
+
+  void addComment(YamlComment comment) =>
+      comments != null ? comments.add(comment) : onParseComment!(comment);
 
   while (scanner.canChunkMore) {
     switch (scanner.charAtCursor) {
@@ -124,7 +135,7 @@ int? skipToParsableChar(
       case comment:
         {
           final (:onExit, :comment) = parseComment(scanner);
-          comments.add(comment);
+          addComment(comment);
 
           if (onExit.sourceEnded) return null;
           indent = null; // Guarantees a recheck to indent

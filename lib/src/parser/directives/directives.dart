@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 part 'directive_utils.dart';
 part 'global_tag.dart';
@@ -49,17 +51,10 @@ sealed class Directive {
 
 /// Parses all [Directive](s) present before the start of a node in a
 /// `YAML` document.
-Directives parseDirectives(GraphemeScanner scanner) {
-  /// Skips line breaks. Returns `true` if we continue parsing directives
-  void skipLineBreaks() {
-    var char = scanner.charAtCursor;
-
-    while (char.isNotNullAnd((c) => c.isLineBreak())) {
-      scanner.skipCharAtCursor();
-      char = scanner.charAtCursor;
-    }
-  }
-
+Directives parseDirectives(
+  GraphemeScanner scanner, {
+  required void Function(YamlComment comment) onParseComment,
+}) {
   void throwIfNotSeparation(int? char) {
     if (char != null && !char.isWhiteSpace()) {
       throw FormatException(
@@ -86,9 +81,23 @@ Directives parseDirectives(GraphemeScanner scanner) {
 
       switch (char) {
         /// Skip line breaks greedily
-        /// TODO: Comments in directives >> hug left side?
-        case lineFeed || carriageReturn:
-          skipLineBreaks();
+        case lineFeed || carriageReturn || comment:
+          {
+            final indent = skipToParsableChar(
+              scanner,
+              onParseComment: onParseComment,
+            );
+
+            if (indent case null || 0) break;
+
+            /// Directives must start with "%". Never indented.
+            /// [skipToParsableChar] will ensure all comments and empty lines
+            /// are skipped
+            throw FormatException(
+              'Expected a non-indented directive line with directives or the '
+              'directive end marker but found one with "$indent" indent spaces',
+            );
+          }
 
         // Extract directive
         case _directiveIndicator
@@ -148,8 +157,8 @@ Directives parseDirectives(GraphemeScanner scanner) {
 
             char = scanner.charAtCursor;
 
-            // Expect either a line break or whitespace or null
-            if (char != null && !char.isLineBreak()) {
+            // Expect either a line break or whitespace or null or a comment
+            if (char != null && !char.isLineBreak() && char != comment) {
               throwIfNotSeparation(char);
             }
 

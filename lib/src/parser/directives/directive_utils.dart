@@ -90,7 +90,6 @@ String _parseTagUri(
 
       /// Tag indicators must be escaped when parsing tags
       case tag when !isAnchorOrAlias:
-
         throw FormatException(
           'Expected "!" to be escaped. The "!" character must be escaped.',
         );
