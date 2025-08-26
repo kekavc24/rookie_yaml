@@ -12,7 +12,7 @@ We are open for contributions from any human irrespective of your skill level, a
 
 ## How to contribute
 
-1. Identify an open issue. If the issues don't scratch your itch, run the official `YAML` Test Suite using the [guide](./test/yaml_matrix_tests/README.md) and help us bring this parser closer to the spec!
+1. Identify an open issue. If the issues don't scratch your itch, run the official `YAML` Test Suite using the [guide](./test/yaml_matrix_tests/README.md) and create an issue. Help us bring this parser closer to the spec!
 
 2. Fork this repo. Create a branch. Fix issue, commit using the [commit behaviour guide](#commit-behaviour) and create a PR.
 
@@ -32,5 +32,6 @@ Let's say you want to fix `X` issue. Upon investigation, you realise `Y` and `Z`
 1. Both `Y` and `Z` only affect `X` and nothing else. You could:
     - Make atomic commits for both `Y` and `Z`. Fix `X` and commit. Rebase and squash `Y` and `Z` into `X`.
     - Work on it and commit as `X`.
+    - If `Y` or `Z` is like `X`, make them standalone.
 
-2. If `X` depends on `Y` but `Y` can be independent and affects other components as well. Create a separate PR for both `Y` and `X` and explicitly indicate this. Both will be reviewed.
+2. If `X` depends on `Y` but `Y` can be independent and affects other components as well. Create a separate PR for both `Y` and `X` and explicitly indicate this. Both will be reviewed and merged if successful.

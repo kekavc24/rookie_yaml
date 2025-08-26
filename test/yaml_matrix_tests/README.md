@@ -10,7 +10,7 @@ dart matrix_runner.dart --no-file-output
 
 ```
 
-Running the command above outputs the current pass rate. If you need a file with the captured errors, omit the `--no-file-output` flag. In this case, the script will also create a `test.rate` file in the current `yaml_matrix_tests` directory that is not tracked by version control.
+Running the command above prints the current pass rate. If you need a file with the captured errors, omit the `--no-file-output` flag. In this case, the script will also create a `test.rate` file in the current `yaml_matrix_tests` directory that is not tracked by version control.
 
 ## `test.rate` format
 
