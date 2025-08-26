@@ -167,7 +167,7 @@ final class DocumentParser {
     if (_scanner.charAtCursor case int char
         when (char.isWhiteSpace() || char.isLineBreak() || char == comment) &&
             _docEndExplicit) {
-      _skipToParsableChar(_scanner, comments: _comments);
+      skipToParsableChar(_scanner, comments: _comments);
     }
   }
 
@@ -420,7 +420,7 @@ final class DocumentParser {
   /// indicator/character must be indented at least [minIndent] spaces. Throws
   /// otherwise.
   bool _nextSafeLineInFlow(int minIndent, {required bool forceInline}) {
-    final indent = _skipToParsableChar(_scanner, comments: _comments);
+    final indent = skipToParsableChar(_scanner, comments: _comments);
 
     if (indent != null) {
       // Must not have line breaks
@@ -462,7 +462,7 @@ final class DocumentParser {
 
   /// Throws if the current char doesn't match the flow collection [delimiter]
   void _throwIfNotFlowDelimiter(int delimiter) {
-    _skipToParsableChar(_scanner, comments: _comments);
+    skipToParsableChar(_scanner, comments: _comments);
 
     final char = _scanner.charAtCursor;
 
@@ -1159,7 +1159,7 @@ final class DocumentParser {
     if (event == ScalarEvent.startFlowDoubleQuoted ||
         event == ScalarEvent.startFlowSingleQuoted ||
         charAtCursor != mappingValue) {
-      final greedyIndent = _skipToParsableChar(_scanner, comments: _comments);
+      final greedyIndent = skipToParsableChar(_scanner, comments: _comments);
 
       // The indent must be null. This must be an inlined key.
       if (greedyIndent != null || !_scanner.canChunkMore) {
@@ -1342,7 +1342,7 @@ final class DocumentParser {
 
           info = (
             docMarker: DocumentMarker.none,
-            exitIndent: _skipToParsableChar(_scanner, comments: _comments),
+            exitIndent: skipToParsableChar(_scanner, comments: _comments),
           );
         }
 
@@ -1459,7 +1459,7 @@ final class DocumentParser {
         (_scanner.charAtCursor == comment ||
             info.exitIndent == seamlessIndentMarker)) {
       info = (
-        exitIndent: _skipToParsableChar(_scanner, comments: _comments),
+        exitIndent: skipToParsableChar(_scanner, comments: _comments),
         docMarker: DocumentMarker.none,
       );
     }
@@ -1819,7 +1819,7 @@ final class DocumentParser {
     }
 
     // Must declare ":" on the same line
-    if (_skipToParsableChar(_scanner, comments: _comments) != null ||
+    if (skipToParsableChar(_scanner, comments: _comments) != null ||
         nextEvent() != BlockCollectionEvent.startEntryValue) {
       throw FormatException(
         'Expected a ":" (after the key) but found '
@@ -1839,7 +1839,7 @@ final class DocumentParser {
     _trackAnchor(implicitKey, keyProperties);
 
     _scanner.skipCharAtCursor(); // Skip ":"
-    var indentOrSeparation = _skipToParsableChar(_scanner, comments: _comments);
+    var indentOrSeparation = skipToParsableChar(_scanner, comments: _comments);
 
     final minValueIndent = parentIndent + 1;
     final valueIndentLevel = parentIndentLevel + 1;
@@ -1989,7 +1989,7 @@ final class DocumentParser {
         when _scanner.canChunkMore &&
             !marker.stopIfParsingDoc &&
             indentOnExit == seamlessIndentMarker) {
-      indentOnExit = _skipToParsableChar(_scanner, comments: _comments);
+      indentOnExit = skipToParsableChar(_scanner, comments: _comments);
     }
 
     return (
@@ -2205,8 +2205,7 @@ final class DocumentParser {
         ///
         /// TODO: Remove zero indent for doc end chars? Mulling 🤔
         /// TODO: Should doc end chars hug left or just have any indent?
-        case blockSequenceEntry || period
-            when indent == 0 && charAfter == char:
+        case blockSequenceEntry || period when indent == 0 && charAfter == char:
           {
             if (checkForDocumentMarkers(_scanner, onMissing: (_) {})
                 case DocumentMarker docType when docType.stopIfParsingDoc) {
@@ -2482,7 +2481,7 @@ final class DocumentParser {
         isDocStartExplicit: _docStartExplicit,
       );
 
-      var rootIndent = _skipToParsableChar(_scanner, comments: _comments);
+      var rootIndent = skipToParsableChar(_scanner, comments: _comments);
       final rootStartOffset = _scanner.lineInfo().current;
 
       _throwIfUnsafeForDirectiveChar(
@@ -2539,7 +2538,7 @@ final class DocumentParser {
         /// Also implicit maps cannot start on "---" line
         if (!_rootInMarkerLine &&
             !key.encounteredLineBreak &&
-            _skipToParsableChar(
+            skipToParsableChar(
                   _scanner,
                   comments: _comments,
                 ) ==
@@ -2616,7 +2615,7 @@ final class DocumentParser {
       /// We must see document end chars and don't care how they are laid within
       /// the document. At this point the document is or should be complete
       if (rootInfo == null || !rootInfo.docMarker.stopIfParsingDoc) {
-        _skipToParsableChar(_scanner, comments: _comments);
+        skipToParsableChar(_scanner, comments: _comments);
 
         final fauxBuffer = <String>[];
 

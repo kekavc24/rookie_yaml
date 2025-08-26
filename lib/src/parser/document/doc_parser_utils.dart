@@ -93,7 +93,7 @@ bool _docIsInMarkerLine(
 ///
 /// Leading white spaces when this function is called are ignored. This
 /// function treats them as separation space including tabs.
-int? _skipToParsableChar(
+int? skipToParsableChar(
   GraphemeScanner scanner, {
   required List<YamlComment> comments,
 }) {
@@ -170,7 +170,7 @@ typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 /// properties declared on a new line must have an indent equal to or greater
 /// than the [minIndent].
 ///
-/// See [_skipToParsableChar] which adds any comments parsed to [comments].
+/// See [skipToParsableChar] which adds any comments parsed to [comments].
 _ParsedNodeProperties _parseNodeProperties(
   GraphemeScanner scanner, {
   required int minIndent,
@@ -191,7 +191,7 @@ _ParsedNodeProperties _parseNodeProperties(
   bool isMultiline() => lfCount > 0;
 
   int? skipAndTrackLF() {
-    final indentOnExit = _skipToParsableChar(scanner, comments: comments);
+    final indentOnExit = skipToParsableChar(scanner, comments: comments);
     if (indentOnExit != null) ++lfCount;
     return indentOnExit;
   }
@@ -272,7 +272,7 @@ _ParsedNodeProperties _parseNodeProperties(
               anchor: null,
               tag: null,
             ),
-            indentOnExit: _skipToParsableChar(
+            indentOnExit: skipToParsableChar(
               scanner,
               comments: comments,
             ), // TODO: brooo this
@@ -320,7 +320,7 @@ _FlowNodeProperties _parseSimpleFlowProps(
     );
   }
 
-  if (_skipToParsableChar(scanner, comments: comments) case int indent
+  if (skipToParsableChar(scanner, comments: comments) case int indent
       when indent < minIndent) {
     throwHasLessIndent(indent);
   }

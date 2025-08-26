@@ -2,8 +2,7 @@ import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 
 /// A [StringBuffer] wrapper for buffering scalars.
 final class ScalarBuffer {
-  ScalarBuffer([StringBuffer? buffer])
-    : _buffer = buffer ?? StringBuffer();
+  ScalarBuffer([StringBuffer? buffer]) : _buffer = buffer ?? StringBuffer();
 
   /// Actual buffer
   final StringBuffer _buffer;
