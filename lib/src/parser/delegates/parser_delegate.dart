@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';

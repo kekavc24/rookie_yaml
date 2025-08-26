@@ -1,8 +1,19 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+
+final flowDelimiters = Iterable.withIterator(
+  () => [
+    mappingStart,
+    mappingEnd,
+    flowSequenceStart,
+    flowSequenceEnd,
+    flowEntryEnd,
+  ].map((e) => e.asString()).iterator,
+);
 
 T _inferredValue<T>(Scalar<T> scalar) => scalar.value;
 

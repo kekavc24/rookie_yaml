@@ -164,9 +164,9 @@ final class DocumentParser {
     _lastWasDocEndChars = marker.indicator;
     _docEndExplicit = marker == DocumentMarker.documentEnd;
 
-    if (_scanner.charAtCursor
-        case LineBreak _ || WhiteSpace _ || Indicator.comment
-        when _docEndExplicit) {
+    if (_scanner.charAtCursor case int char
+        when (char.isWhiteSpace() || char.isLineBreak() || char == comment) &&
+            _docEndExplicit) {
       _skipToParsableChar(_scanner, comments: _comments);
     }
   }
@@ -451,7 +451,7 @@ final class DocumentParser {
   bool _continueToNextEntry(int minIndent, {required bool forceInline}) {
     _nextSafeLineInFlow(minIndent, forceInline: forceInline);
 
-    if (_scanner.charAtCursor case Indicator.flowEntryEnd) {
+    if (_scanner.charAtCursor == flowEntryEnd) {
       _scanner.skipCharAtCursor();
       _nextSafeLineInFlow(minIndent, forceInline: forceInline);
       return true;
@@ -461,15 +461,15 @@ final class DocumentParser {
   }
 
   /// Throws if the current char doesn't match the flow collection [delimiter]
-  void _throwIfNotFlowDelimiter(Indicator delimiter) {
+  void _throwIfNotFlowDelimiter(int delimiter) {
     _skipToParsableChar(_scanner, comments: _comments);
 
     final char = _scanner.charAtCursor;
 
     if (char != delimiter) {
       throw FormatException(
-        'Expected the flow delimiter: $delimiter "${delimiter.string}" but'
-        ' found: "${char?.string ?? 'nothing'}"',
+        'Expected the flow delimiter: "${delimiter.asString()}" but'
+        ' found: "${char?.asString() ?? 'nothing'}"',
       );
     }
 
@@ -482,7 +482,7 @@ final class DocumentParser {
     required int indentLevel,
     required int minIndent,
     required bool forceInline,
-    required Indicator exitIndicator,
+    required int exitIndicator,
     required NodeProperties? keyProperties,
     SourceLocation? startOffset,
   }) {
@@ -515,7 +515,7 @@ final class DocumentParser {
     /// parsed, that is, limited use of [ParserEvent]. This is because the
     /// scope is limited when actual parsing is being done. We don't need
     /// events here to know what fine grained action we need to do.
-    if (_scanner.charAtCursor case Indicator.flowEntryEnd when key == null) {
+    if (_scanner.charAtCursor case flowEntryEnd when key == null) {
       throw FormatException(
         'Expected at least a key in the flow map entry but found ","',
       );
@@ -537,7 +537,7 @@ final class DocumentParser {
 
     final expectedCharErr = FormatException(
       'Expected a next flow entry indicator "," or a map value indicator ":" '
-      'or a terminating delimiter "${exitIndicator.string}"',
+      'or a terminating delimiter "${exitIndicator.asString()}"',
     );
 
     if (!_nextSafeLineInFlow(minIndent, forceInline: forceInline)) {
@@ -545,11 +545,8 @@ final class DocumentParser {
     }
 
     /// Checks if we should parse a value or ignore it
-    bool ignoreValue(ReadableChar? char) {
-      return char == null ||
-          char == Indicator.flowEntryEnd ||
-          char == exitIndicator;
-    }
+    bool ignoreValue(int? char) =>
+        char == null || char == flowEntryEnd || char == exitIndicator;
 
     final valueOffset = _scanner.lineInfo().current;
     parsedKey.updateEndOffset = valueOffset;
@@ -637,7 +634,7 @@ final class DocumentParser {
     required bool forceInline,
     required bool isExplicitKey,
     required bool keyIsJsonLike,
-    required Indicator collectionDelimiter,
+    required int collectionDelimiter,
     bool isBlockContext = false, // Block styles should override
     ParserEvent? inferredEvent,
     SourceLocation? startOffset,
@@ -684,7 +681,7 @@ final class DocumentParser {
 
           final char = _scanner.charAtCursor;
 
-          if (char == Indicator.flowEntryEnd || char == collectionDelimiter) {
+          if (char == flowEntryEnd || char == collectionDelimiter) {
             return nullScalarDelegate(
               indentLevel: currentIndentLevel,
               indent: minIndent,
@@ -794,10 +791,9 @@ final class DocumentParser {
   /// If [forceInline] is `true`, the map must be declared on the same line
   /// with no line breaks and throws if otherwise.
   void _parseFlowMap(MappingDelegate delegate, {required bool forceInline}) {
-    _throwIfNotFlowDelimiter(Indicator.mappingStart);
+    _throwIfNotFlowDelimiter(mappingStart);
 
     final MappingDelegate(:indent, :indentLevel) = delegate;
-    const mapEnd = Indicator.mappingEnd;
 
     /// We need to ensure we don't unintentionally make the first key's
     /// property's multiline if implicit and declared inline. This may happen
@@ -834,7 +830,7 @@ final class DocumentParser {
         minIndent: indent,
         keyProperties: keyProps,
         forceInline: forceInline,
-        exitIndicator: mapEnd,
+        exitIndicator: mappingEnd,
       );
 
       /// If our key is null, it means no parsing occured. The
@@ -859,7 +855,7 @@ final class DocumentParser {
       }
     }
 
-    _throwIfNotFlowDelimiter(mapEnd);
+    _throwIfNotFlowDelimiter(mappingEnd);
     delegate.updateEndOffset = _scanner.lineInfo().current;
   }
 
@@ -871,10 +867,9 @@ final class DocumentParser {
     SequenceDelegate delegate, {
     required bool forceInline,
   }) {
-    _throwIfNotFlowDelimiter(Indicator.flowSequenceStart);
+    _throwIfNotFlowDelimiter(flowSequenceStart);
 
     final SequenceDelegate(:indent, :indentLevel) = delegate;
-    const seqEnd = Indicator.flowSequenceEnd;
 
     /// Similar to flow map, move this to the first parsable char. This has
     /// little effect for other sequence entries but may be crucial to
@@ -939,7 +934,7 @@ final class DocumentParser {
               minIndent: indent,
               keyProperties: null,
               forceInline: forceInline,
-              exitIndicator: seqEnd,
+              exitIndicator: flowSequenceEnd,
             );
 
             /// The key cannot be null since we know it is explicit.
@@ -974,7 +969,7 @@ final class DocumentParser {
               isExplicitKey: false,
               keyIsJsonLike: false,
               startOffset: flowStartOffset,
-              collectionDelimiter: seqEnd,
+              collectionDelimiter: flowSequenceEnd,
             );
 
             // Go to the next parsable char
@@ -1014,7 +1009,7 @@ final class DocumentParser {
               minIndent: indent,
               keyProperties: keyProps,
               forceInline: forceInline,
-              exitIndicator: seqEnd,
+              exitIndicator: flowSequenceEnd,
             );
 
             delegate.pushEntry(
@@ -1034,7 +1029,7 @@ final class DocumentParser {
       }
     }
 
-    _throwIfNotFlowDelimiter(seqEnd);
+    _throwIfNotFlowDelimiter(flowSequenceEnd);
     delegate.updateEndOffset = _scanner.lineInfo().current;
   }
 
@@ -1163,7 +1158,7 @@ final class DocumentParser {
 
     if (event == ScalarEvent.startFlowDoubleQuoted ||
         event == ScalarEvent.startFlowSingleQuoted ||
-        charAtCursor != Indicator.mappingValue) {
+        charAtCursor != mappingValue) {
       final greedyIndent = _skipToParsableChar(_scanner, comments: _comments);
 
       // The indent must be null. This must be an inlined key.
@@ -1188,7 +1183,7 @@ final class DocumentParser {
         ) !=
         BlockCollectionEvent.startEntryValue) {
       throw FormatException(
-        'Expected a ": " but found ${charAtCursor?.string}',
+        'Expected a ": " but found ${charAtCursor?.asString()}',
       );
     }
 
@@ -1263,7 +1258,7 @@ final class DocumentParser {
 
     /// Faux value. Never used. Block explicit keys are intercepted by the
     /// [_parseExplicitBlockEntry] function.
-    collectionDelimiter: Indicator.reservedAtSign,
+    collectionDelimiter: reservedAtSign,
     startOffset: startOffset,
   );
 
@@ -1461,7 +1456,7 @@ final class DocumentParser {
     /// comment.
     if (!info.docMarker.stopIfParsingDoc &&
         _scanner.canChunkMore &&
-        (_scanner.charAtCursor == Indicator.comment ||
+        (_scanner.charAtCursor == comment ||
             info.exitIndent == seamlessIndentMarker)) {
       info = (
         exitIndent: _skipToParsableChar(_scanner, comments: _comments),
@@ -1644,7 +1639,8 @@ final class DocumentParser {
         ) !=
         BlockCollectionEvent.startExplicitKey) {
       throw Exception(
-        'Expected an explicit key but found ${_scanner.charAtCursor?.string}',
+        'Expected an explicit key but found '
+        '${_scanner.charAtCursor?.asString()}',
       );
     }
 
@@ -1827,7 +1823,7 @@ final class DocumentParser {
         nextEvent() != BlockCollectionEvent.startEntryValue) {
       throw FormatException(
         'Expected a ":" (after the key) but found '
-        '"${_scanner.charAtCursor?.string}"',
+        '"${_scanner.charAtCursor?.asString()}"',
       );
     }
 
@@ -1989,7 +1985,7 @@ final class DocumentParser {
     /// it. However, the block parent (map) needs to have the correct indent
     /// info to prevent any premature termination before subsequent nodes can
     /// be parsed.
-    if (_scanner.charAtCursor case LineBreak _ || WhiteSpace _
+    if (_scanner.charAtCursor case lineFeed || carriageReturn || space || tab
         when _scanner.canChunkMore &&
             !marker.stopIfParsingDoc &&
             indentOnExit == seamlessIndentMarker) {
@@ -2198,7 +2194,6 @@ final class DocumentParser {
 
   /// Parses a block sequence.
   _BlockNodeInfo _parseBlockSequence(SequenceDelegate sequence) {
-    const indicator = Indicator.blockSequenceEntry;
     final SequenceDelegate(:indent, :indentLevel) = sequence;
 
     DocumentMarker? exitOrThrowIfNotBlock() {
@@ -2210,7 +2205,7 @@ final class DocumentParser {
         ///
         /// TODO: Remove zero indent for doc end chars? Mulling 🤔
         /// TODO: Should doc end chars hug left or just have any indent?
-        case indicator || Indicator.period
+        case blockSequenceEntry || period
             when indent == 0 && charAfter == char:
           {
             if (checkForDocumentMarkers(_scanner, onMissing: (_) {})
@@ -2222,17 +2217,15 @@ final class DocumentParser {
           }
 
         // Normal "- " combination for block list
-        case indicator
-            when charAfter == null ||
-                charAfter is WhiteSpace ||
-                charAfter is LineBreak:
+        case blockSequenceEntry
+            when charAfter.isNullOr((c) => c.isWhiteSpace() || c.isLineBreak()):
           return null;
 
         invalid:
         default:
           throw FormatException(
-            'Expected a "- " while parsing sequence but found "${char?.string}'
-            '${charAfter?.string}"',
+            'Expected a "- " while parsing sequence but found '
+            '"${char?.asString()}${charAfter?.asString()}"',
           );
       }
     }
@@ -2336,7 +2329,7 @@ final class DocumentParser {
         if (_scanner.canChunkMore) {
           throw FormatException(
             'Invalid block list entry found at'
-            ' ${_scanner.charAtCursor?.string}. Expected ',
+            ' ${_scanner.charAtCursor?.asString()}. Expected ',
           );
         }
 
@@ -2429,8 +2422,8 @@ final class DocumentParser {
       /// When directives are absent, we may see dangling "---". Just to be
       /// sure, confirm this wasn't the case.
       if (!hasDirectiveEnd &&
-          _scanner.charAtCursor == Indicator.blockSequenceEntry &&
-          _scanner.peekCharAfterCursor() == Indicator.blockSequenceEntry) {
+          _scanner.charAtCursor == blockSequenceEntry &&
+          _scanner.peekCharAfterCursor() == blockSequenceEntry) {
         final startOnMissing = _scanner.lineInfo().current;
 
         _docStartExplicit =
@@ -2439,7 +2432,7 @@ final class DocumentParser {
               onMissing: (c) {
                 _docMarkerGreedy = (
                   start: startOnMissing,
-                  greedChars: c.map((e) => e.string).join(),
+                  greedChars: c.map((e) => e.asString()).join(),
                 );
               },
             ) ==
@@ -2631,12 +2624,12 @@ final class DocumentParser {
         if (_scanner.canChunkMore) {
           docMarker = checkForDocumentMarkers(
             _scanner,
-            onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.string)),
+            onMissing: (b) => fauxBuffer.addAll(b.map((e) => e.asString())),
           );
 
           if (!docMarker.stopIfParsingDoc) {
             if (fauxBuffer.isEmpty) {
-              fauxBuffer.add(_scanner.charAtCursor?.string ?? 'null');
+              fauxBuffer.add(_scanner.charAtCursor.asString());
             }
 
             throw FormatException(

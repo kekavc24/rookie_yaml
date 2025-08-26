@@ -5,14 +5,17 @@ const _onNonEmptyVerbatimUri =
     'have a non-empty suffix';
 
 /// Start of verbatim tag declaration
-final verbatimStart = ReadableChar.scanned('<');
+const verbatimStart = 0x3C;
 
 /// End of verbatim tag declaration
-const _verbatimEnd = Indicator.folded;
+const _verbatimEnd = folded;
 
 /// Wraps a valid tag uri in verbatim
 String _wrapAsVerbatim(String uri) =>
-    '${_tagIndicator.string}$verbatimStart$uri${_verbatimEnd.string}';
+    '${tag.asString()}'
+    '${verbatimStart.asString()}'
+    '$uri'
+    '${_verbatimEnd.asString()}';
 
 /// Represents a tag explicitly declared in its raw form. Never resolved to
 /// [GlobalTag]
@@ -74,37 +77,37 @@ VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
 
   final buffer = StringBuffer();
 
-  void isNotNullOrMatches({
-    required bool Function(ReadableChar char) matcher,
+  void isNotNullNorMatches({
+    required bool Function(int char) matcher,
     required String errorOnMismatch,
   }) {
-    if (charAtCursor == null || !matcher(charAtCursor!)) {
+    if (charAtCursor.isNullOr(matcher)) {
       throw FormatException(errorOnMismatch);
     }
 
-    buffer.write(charAtCursor!.string);
+    buffer.writeCharCode(charAtCursor!);
   }
 
   // Must start with a leading "!"
-  isNotNullOrMatches(
-    matcher: (char) => char == _tagIndicator,
+  isNotNullNorMatches(
+    matcher: (char) => char != tag,
     errorOnMismatch: 'A verbatim tag must start with "!"',
   );
   skipAndMove();
 
-  final ReadableChar(string: vStart, unicode: vsCode) = verbatimStart;
-
   // Must be followed by an opening bracket "<"
-  isNotNullOrMatches(
-    matcher: (char) => char.unicode == vsCode,
-    errorOnMismatch: 'Expected to find a "$vStart" after "!"',
+  isNotNullNorMatches(
+    matcher: (char) => char != verbatimStart,
+    errorOnMismatch:
+        'Expected to find a "${verbatimStart.asString()}"'
+        ' after "!"',
   );
   skipAndMove();
 
   // This may be a local tag instead of a global one
-  if (charAtCursor == _tagIndicator) {
+  if (charAtCursor == tag) {
     skipAndMove();
-    buffer.write(_tagIndicator.string);
+    buffer.writeCharCode(tag);
   }
 
   // We can safely extract the remaining as uri characters
@@ -121,11 +124,11 @@ VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
   charAtCursor = scanner.charAtCursor;
   buffer.write(uri);
 
-  final ReadableChar(string: vEnd, unicode: veCode) = _verbatimEnd;
-
-  isNotNullOrMatches(
-    matcher: (char) => char == _verbatimEnd,
-    errorOnMismatch: 'Expected to find a "$vEnd" after parsing a verbatim tag',
+  isNotNullNorMatches(
+    matcher: (char) => char != _verbatimEnd,
+    errorOnMismatch:
+        'Expected to find a "${_verbatimEnd.asString()}"'
+        ' after parsing a verbatim tag',
   );
   skipAndMove();
 

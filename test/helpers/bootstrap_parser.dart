@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 DocumentParser bootstrapDocParser(

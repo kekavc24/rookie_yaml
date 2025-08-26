@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:source_span/source_span.dart';
 

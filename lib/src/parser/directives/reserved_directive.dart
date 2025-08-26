@@ -48,11 +48,13 @@ ReservedDirective _parseReservedDirective(
 
   var current = scanner.charAtCursor;
 
-  while (scanner.canChunkMore && current is! LineBreak?) {
+  // TODO: Include comments in directive
+  while (scanner.canChunkMore &&
+      current.isNotNullAnd((c) => !c.isLineBreak())) {
     // Intentional switch case use!
     switch (current) {
       /// Skip separation lines. Includes tabs. Save current parameter.
-      case WhiteSpace _:
+      case space || tab:
         {
           scanner.skipWhitespace(skipTabs: true); // preemptive
           flushBuffer();
@@ -61,13 +63,13 @@ ReservedDirective _parseReservedDirective(
       default:
         {
           // Parameters only allow alpha-numeric characters. Cannot be null here
-          if (!isPrintable(current)) {
+          if (!current!.isPrintable()) {
             throw const FormatException(
               'Only printable characters are allowed in a parameter',
             );
           }
 
-          buffer.write(current.string);
+          buffer.writeCharCode(current);
         }
     }
 

@@ -13,7 +13,7 @@ final class LineSpan {
   ///
   /// [lineIndex] represent current index of the line.
   ///
-  /// [hasLineBreak] indicates if a [LineBreak] should be emitted after all
+  /// [hasLineBreak] indicates if a `linefeed` should be emitted after all
   /// characters of the line have been read. TYpically `true` for any line that
   /// is not the last.
   ///
@@ -39,12 +39,7 @@ final class LineSpan {
     }
 
     _charQueue = characters
-        .mapIndexed(
-          (index, char) => LineSpanChar._(
-            ReadableChar.scanned(char),
-            index,
-          ),
-        )
+        .mapIndexed((index, char) => LineSpanChar._(char.runes.first, index))
         .iterator;
     _hasNextChar = _charQueue.moveNext();
   }
@@ -153,18 +148,17 @@ final class LineSpanChar with _LineColumnIntrinsics {
   const LineSpanChar._(this.character, this.columnIndex);
 
   /// Last character of the line.
-  const LineSpanChar._terminal(int index) : this._(LineBreak.lineFeed, index);
+  const LineSpanChar._terminal(int index) : this._(lineFeed, index);
 
   /// A single character within a line.
-  final ReadableChar character;
+  final int character;
 
   @override
   final int columnIndex;
 
   @override
-  bool get isLastChar =>
-      character is LineBreak && character == LineBreak.lineFeed;
+  bool get isLastChar => character == lineFeed;
 
   @override
-  String toString() => character.string;
+  String toString() => String.fromCharCode(character);
 }

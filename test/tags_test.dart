@@ -1,10 +1,10 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
+import 'helpers/model_helpers.dart';
 
 void main() {
   group('Tag Handles', () {
@@ -158,7 +158,7 @@ void main() {
       () {
         final yaml =
             '%TAG !no-uri-or-local-tag-prefix! '
-            '${SpecialEscaped.bell.string}';
+            '${bell.asString()}';
 
         check(
           () => parseDirectives(GraphemeScanner.of(yaml)),
@@ -225,7 +225,7 @@ void main() {
     );
 
     test('Throws if a non-uri char is used in tag', () {
-      final offender = SpecialEscaped.bell.string;
+      final offender = bell.asString();
       final yaml = '!local$offender';
 
       check(
@@ -236,7 +236,7 @@ void main() {
     test('Throws if a flow indicator is not escaped', () {
       const yaml = '!!flow-indicator-in-shorthand';
 
-      for (final ReadableChar(:string) in flowDelimiters) {
+      for (final string in flowDelimiters) {
         check(
           () => parseTagShorthand(GraphemeScanner.of('$yaml$string')),
         ).throwsAFormatException(
@@ -247,7 +247,7 @@ void main() {
     });
 
     test('Throws if a tag indicator is not escaped', () {
-      final offender = Indicator.tag.string;
+      final offender = tag.asString();
       final yaml = '!!tag-indicator-in-shorthand$offender';
 
       check(

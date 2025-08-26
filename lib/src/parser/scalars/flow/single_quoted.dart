@@ -1,11 +1,8 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-
-const _singleQuote = Indicator.singleQuote;
 
 const _exception = FormatException('Expected a single quote');
 const _printableException = FormatException(
@@ -18,13 +15,13 @@ PreScalar parseSingleQuoted(
   required int indent,
   required bool isImplicit,
 }) {
-  if (scanner.charAtCursor != _singleQuote) {
+  if (scanner.charAtCursor != singleQuote) {
     throw _exception;
   }
 
   scanner.skipCharAtCursor();
 
-  final buffer = ScalarBuffer(ensureIsSafe: false);
+  final buffer = ScalarBuffer();
   var quoteCount = 1;
   var foundLineBreak = false;
 
@@ -37,11 +34,11 @@ PreScalar parseSingleQuoted(
     }
 
     switch (possibleChar) {
-      case _singleQuote:
+      case singleQuote:
         {
           // Single quotes can also be a form of escaping.
-          if (scanner.peekCharAfterCursor() == _singleQuote) {
-            buffer.writeChar(_singleQuote);
+          if (scanner.peekCharAfterCursor() == singleQuote) {
+            buffer.writeChar(singleQuote);
             scanner.skipCharAtCursor(); // Skip the quote escaping it
           } else {
             ++quoteCount;
@@ -50,11 +47,11 @@ PreScalar parseSingleQuoted(
           scanner.skipCharAtCursor(); // Skip quote normally
         }
 
-      case LineBreak _ when isImplicit:
+      case carriageReturn || lineFeed when isImplicit:
         break sQuotedLoop;
 
       // Fold without any restrictions by default
-      case WhiteSpace _ || LineBreak _:
+      case space || tab || carriageReturn || lineFeed:
         {
           foundLineBreak =
               foldQuotedFlowScalar(
@@ -69,7 +66,7 @@ PreScalar parseSingleQuoted(
       // Single quoted style is restricted to printable characters.
       default:
         {
-          if (!isPrintable(possibleChar)) {
+          if (!possibleChar.isPrintable()) {
             throw _printableException;
           }
 

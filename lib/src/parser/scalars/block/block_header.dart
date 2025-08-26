@@ -12,7 +12,7 @@ _BlockHeaderInfo _parseBlockHeader(
 
   if (isLiteral == null) {
     throw FormatException(
-      '${current?.string ?? ''} is not a valid block style indicator',
+      '${current.asString()} is not a valid block style indicator',
     );
   }
 
@@ -24,6 +24,9 @@ _BlockHeaderInfo _parseBlockHeader(
   }
 
   void skipChar() => functionDelegate(scanner.skipCharAtCursor);
+
+  bool isWhitespace([int? char]) =>
+      (char ?? current).isNotNullAnd((c) => c.isWhiteSpace());
 
   // Skip literal indicator
   skipChar();
@@ -42,28 +45,28 @@ _BlockHeaderInfo _parseBlockHeader(
   );
 
   // Skip whitespace
-  if (current is WhiteSpace) {
+  if (isWhitespace()) {
     functionDelegate(() => scanner.skipWhitespace(skipTabs: true));
     skipChar(); // Must always skip char at cursor. We peek ahead.
   }
 
   // Extract any comments
-  if (current == Indicator.comment) {
-    if (scanner.charBeforeCursor is! WhiteSpace) {
+  if (current == comment) {
+    if (!isWhitespace(scanner.charBeforeCursor)) {
       throw FormatException(
         'Expected a whitespace character before the start of the comment',
       );
     }
 
     functionDelegate(() => onParseComment(parseComment(scanner).comment));
-  } else if (current == LineBreak.carriageReturn &&
-      scanner.peekCharAfterCursor() == LineBreak.lineFeed) {
+  } else if (current == carriageReturn &&
+      scanner.peekCharAfterCursor() == lineFeed) {
     skipChar();
   }
 
   // TODO: Should block headers terminate with line break at all times?
-  if (current != null && current != LineBreak.lineFeed) {
-    throw _charNotAllowedException(current!.string);
+  if (!current.isNotNullAnd((c) => c.isLineBreak())) {
+    throw _charNotAllowedException(current.asString());
   }
 
   return (
@@ -86,17 +89,15 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
   for (var count = 0; count < 2; count++) {
     final char = scanner.charAtCursor;
 
-    if (char case null || LineBreak _ || WhiteSpace _) break;
+    if (char.isNullOr((c) => c.isLineBreak() || c.isWhiteSpace())) break;
 
-    final ReadableChar(string: charAsStr) = char;
-
-    if (isDigit(char)) {
+    if (char!.isDigit()) {
       // Allows only a single digit between 1 - 9
       if (indentIndicator != null) {
         throw _indentationException;
       }
 
-      indentIndicator = int.parse(charAsStr);
+      indentIndicator = char - asciiZero;
 
       RangeError.checkValueInInterval(
         indentIndicator,
@@ -110,7 +111,7 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
       if (chomping != null) {
         throw FormatException(
           'Duplicate chomping indicators not allowed! Already declared'
-          ' "$chomping" but found "$charAsStr"',
+          ' "$chomping" but found "${char.asString()}"',
         );
       }
 
@@ -119,9 +120,9 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
       if (chomping == null) {
         /// Break once we see comment. Let it bubble up and be handled by the
         /// function parsing the block header
-        if (charAsStr == '#') break;
+        if (char == comment) break;
 
-        throw _charNotAllowedException(charAsStr);
+        throw _charNotAllowedException(char.asString());
       }
     }
 

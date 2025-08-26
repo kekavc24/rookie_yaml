@@ -101,8 +101,7 @@ void main() {
       check(
         () => bootstrapDocParser('{').parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
-        'Expected the flow delimiter: Indicator.mappingEnd "}" but found: '
-        '"nothing"',
+        'Expected the flow delimiter: "}" but found: "nothing"',
       );
     });
 
@@ -196,8 +195,7 @@ implicit: pair,
         check(
           () => bootstrapDocParser('[').parseDocs().nodeAsSimpleString(),
         ).throwsAFormatException(
-          'Expected the flow delimiter: Indicator.flowSequenceEnd "]" but '
-          'found: "nothing"',
+          'Expected the flow delimiter: "]" but found: "nothing"',
         );
       },
     );

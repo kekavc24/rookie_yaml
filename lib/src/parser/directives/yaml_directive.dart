@@ -1,13 +1,13 @@
 part of 'directives.dart';
 
-final _versionSeparator = Indicator.period.string;
+const _versionSeparator = period;
 
 /// `YAML` version that is used to implement the current `YamlParser` version.
 ///
 /// Must support this and all lower versions.
 const _version = [1, 2];
 final parserVersion = YamlDirective._(
-  version: _version.join(_versionSeparator),
+  version: _version.join(_versionSeparator.asString()),
   formatted: _version,
 );
 
@@ -49,13 +49,13 @@ List<int> _formatVersionParameter(String version) {
     throw FormatException('Expected an integer but found "$message"');
   }
 
-  final formatted = version.split(_versionSeparator);
+  final formatted = version.split(_versionSeparator.asString());
 
   if (formatted.length != 2) {
     throw FormatException(
       'Invalid YAML version format. '
       'The version must have only 2 integers separated by a '
-      '"$_versionSeparator"',
+      '"${_versionSeparator.asString()}"',
     );
   }
 
@@ -70,7 +70,7 @@ List<int> _formatVersionParameter(String version) {
   }).toList();
 }
 
-/// Parses a [YamlDirective]
+/// Parses a [YamlDirective] version number
 YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
   final versionBuffer = StringBuffer();
 
@@ -79,7 +79,7 @@ YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
   // Track state of converting string to number
   const versionReset = -1;
 
-  var lastChar = '';
+  int? lastChar;
   var version = versionReset;
 
   const prefix = 'Invalid YAML version format. ';
@@ -87,27 +87,27 @@ YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
   versionBuilder:
   while (scanner.canChunkMore) {
     final char = scanner.charAtCursor!;
-    final ReadableChar(:string, :unicode) = char;
 
     switch (char) {
-      case LineBreak _ || WhiteSpace _:
+      case lineFeed || carriageReturn || space || tab:
         break versionBuilder;
 
-      case _ when isDigit(char):
-        version = (max(version, 0) * 10) + (unicode - asciiZero);
+      case _ when char.isDigit():
+        version = (max(version, 0) * 10) + (char - asciiZero);
 
-      case _ when string == _versionSeparator:
+      case _versionSeparator:
         {
           // We must not see the separator if we have no integers
-          if (lastChar.isEmpty) {
+          if (lastChar == null) {
             throw FormatException(
               '$prefix'
-              'Version cannot start with a "$_versionSeparator"',
+              'Version cannot start with a "${_versionSeparator.asString()}"',
             );
           } else if (lastChar == _versionSeparator) {
             throw FormatException(
               '$prefix'
-              'Version cannot have consecutive "$_versionSeparator" characters',
+              'Version cannot have consecutive '
+              '"${_versionSeparator.asString()}" characters',
             );
           }
 
@@ -117,14 +117,14 @@ YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
 
       default:
         throw FormatException(
-          'Invalid "$string" character in YAML version. '
-          'Only digits separated by "$_versionSeparator"'
+          'Invalid "${char.asString()}" character in YAML version. '
+          'Only digits separated by "${_versionSeparator.asString()}"'
           ' characters are allowed.',
         );
     }
 
-    versionBuffer.write(string);
-    lastChar = string;
+    versionBuffer.writeCharCode(char);
+    lastChar = char;
     scanner.skipCharAtCursor();
   }
 
@@ -136,7 +136,7 @@ YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
     throw FormatException(
       '$prefix'
       'A YAML version must have only 2 integers separated by '
-      '"$_versionSeparator"',
+      '"${_versionSeparator.asString()}"',
     );
   }
 

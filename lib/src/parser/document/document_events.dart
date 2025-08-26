@@ -110,44 +110,47 @@ ParserEvent _inferNextEvent(
   /// Can be allowed after map like indicator such as:
   ///   - "?" -> an explicit key indicator
   ///   - ":" -> indicates start of a value
-  final canBeSeparation = charAfter is LineBreak? || charAfter is WhiteSpace?;
+  final canBeSeparation = charAfter.isNullOr(
+    (c) => c.isWhiteSpace() || c.isLineBreak(),
+  );
 
   return switch (scanner.charAtCursor) {
-    Indicator.doubleQuote => ScalarEvent.startFlowDoubleQuoted,
-    Indicator.singleQuote => ScalarEvent.startFlowSingleQuoted,
-    Indicator.literal => ScalarEvent.startBlockLiteral,
-    Indicator.folded => ScalarEvent.startBlockFolded,
+    doubleQuote => ScalarEvent.startFlowDoubleQuoted,
+    singleQuote => ScalarEvent.startFlowSingleQuoted,
+    literal => ScalarEvent.startBlockLiteral,
+    folded => ScalarEvent.startBlockFolded,
 
-    Indicator.mappingValue when isBlockContext && canBeSeparation =>
+    mappingValue when isBlockContext && canBeSeparation =>
       BlockCollectionEvent.startEntryValue,
 
     // Flow node doesn't need the space when key is json-like (double quoted)
-    Indicator.mappingValue
+    mappingValue
         when !isBlockContext && (canBeSeparation || lastKeyWasJsonLike) =>
       FlowCollectionEvent.startEntryValue,
 
-    Indicator.blockSequenceEntry when canBeSeparation && isBlockContext =>
+    blockSequenceEntry when canBeSeparation && isBlockContext =>
       BlockCollectionEvent.startBlockListEntry,
 
-    Indicator.mappingKey when isBlockContext && canBeSeparation =>
+    mappingKey when isBlockContext && canBeSeparation =>
       BlockCollectionEvent.startExplicitKey,
 
-    /// In flow collections, it is allow to occur separately without any key
-    /// beside a "," or "{" or "}" or "[" or "]"
-    Indicator.mappingKey
+    /// In flow collections, it is allow a "?" to occur separately without any
+    /// key beside a "," or "{" or "}" or "[" or "]"
+    mappingKey
         when !isBlockContext &&
-            (canBeSeparation || flowDelimiters.contains(charAfter)) =>
+            (canBeSeparation ||
+                charAfter.isNotNullAnd((c) => c.isFlowDelimiter())) =>
       FlowCollectionEvent.startExplicitKey,
 
-    Indicator.flowSequenceStart => FlowCollectionEvent.startFlowSequence,
-    Indicator.flowSequenceEnd => FlowCollectionEvent.endFlowSequence,
-    Indicator.flowEntryEnd => FlowCollectionEvent.nextFlowEntry,
-    Indicator.mappingStart => FlowCollectionEvent.startFlowMap,
-    Indicator.mappingEnd => FlowCollectionEvent.endFlowMap,
+    flowSequenceStart => FlowCollectionEvent.startFlowSequence,
+    flowSequenceEnd => FlowCollectionEvent.endFlowSequence,
+    flowEntryEnd => FlowCollectionEvent.nextFlowEntry,
+    mappingStart => FlowCollectionEvent.startFlowMap,
+    mappingEnd => FlowCollectionEvent.endFlowMap,
 
-    Indicator.anchor => NodePropertyEvent.startAnchor,
-    Indicator.alias => NodePropertyEvent.startAlias,
-    Indicator.tag =>
+    anchor => NodePropertyEvent.startAnchor,
+    alias => NodePropertyEvent.startAlias,
+    tag =>
       charAfter == verbatimStart
           ? NodePropertyEvent.startVerbatimTag
           : NodePropertyEvent.startTag,

@@ -1,7 +1,5 @@
 part of 'directives.dart';
 
-const _tagIndicator = Indicator.tag;
-
 /// Types of a [TagHandle]
 enum TagHandleVariant {
   /// Normally used as a prefix for most [TagShorthand]s and all non-specific
@@ -38,15 +36,15 @@ final class TagHandle {
   factory TagHandle.named(String name) {
     assert(name.isNotEmpty, 'Name cannot be empty!');
 
-    for (final (index, char) in name.split('').indexed) {
-      if (!isAlphaNumeric(ReadableChar.scanned(char))) {
+    for (final (index, char) in Characters(name).indexed) {
+      if (char.runes.firstOrNull.isNullOr((c) => !c.isAlphaNumeric())) {
         throw FormatException(
           'Found a non-alphanumeric char "$char" at index "$index"',
         );
       }
     }
 
-    final prefix = _tagIndicator.string;
+    final prefix = tag.asString();
     return TagHandle._(TagHandleVariant.named, '$prefix$name$prefix');
   }
 
@@ -71,15 +69,10 @@ final class TagHandle {
 
 /// Parses a [TagHandle]
 TagHandle parseTagHandle(GraphemeScanner scanner) {
-  final char = scanner.charAtCursor;
-
-  final indicatorStr = _tagIndicator.string;
-
   // All tag handles must start with the indicator
-  if (char == null || char != _tagIndicator) {
+  if (scanner.charAtCursor case var char when char != tag) {
     throw FormatException(
-      'Expected a "$indicatorStr" but found '
-      '"${char?.string ?? 'nothing'}"',
+      'Expected a "${tag.asString()}" but found "${char.asString()}"',
     );
   }
 
@@ -87,7 +80,7 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
 
   switch (scanner.peekCharAfterCursor()) {
     // Just a single `!`
-    case WhiteSpace? _:
+    case null || space || tab:
       tagHandle = TagHandle.primary();
 
     /// For secondary tags, parse as secondary. Let caller handle the "mess" or
@@ -95,7 +88,7 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
     ///
     /// "Success" -> whitespace
     /// "Mess" -> throw if not whitespace
-    case _tagIndicator:
+    case tag:
       scanner.skipCharAtCursor(); // Present in tag handle object
       tagHandle = TagHandle.secondary();
 
@@ -107,9 +100,9 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
         scanner
           ..takeUntil(
             includeCharAtCursor: true, // Prefer setting the leading "!"
-            mapper: (c) => c.string,
+            mapper: (c) => c.asString(),
             onMapped: (c) => namedBuffer.write(c),
-            stopIf: (_, n) => !isAlphaNumeric(n),
+            stopIf: (_, n) => !n.isAlphaNumeric(),
           )
           ..skipCharAtCursor();
 
@@ -117,15 +110,17 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
 
         /// The named tag must not degenerate to a "!" or "!!". "!" is not
         /// alphanumeric
-        if (current != _tagIndicator || namedBuffer.length <= 1) {
+        if (current != tag || namedBuffer.length <= 1) {
+          final str = current.asString();
+
           throw FormatException(
             'Invalid/incomplete named tag handle. Expected a tag with '
             'alphanumeric characters but found $namedBuffer'
-            '<${current?.string}>',
+            '${current == null ? str : '<$str>'}',
           );
         }
 
-        namedBuffer.write(indicatorStr); // Trailing "!"
+        namedBuffer.writeCharCode(tag); // Trailing "!"
         tagHandle = TagHandle._(TagHandleVariant.named, namedBuffer.toString());
       }
   }

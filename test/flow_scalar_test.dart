@@ -1,9 +1,8 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
@@ -96,19 +95,19 @@ Fun with escapes:\n
       final parsed =
           '''
 Fun with escapes:
-1. ${SpecialEscaped.backSlash.string} - backslash
+1. ${backSlash.asString()} - backslash
 2. " - double quoted
-3. ${LineBreak.lf} - Line feed
-4. ${LineBreak.carriageReturn.string} - Carriage return
-5. ${WhiteSpace.tab.string} - tab
-6. ${SpecialEscaped.verticalTab.string} - vertical tab
-7. ${SpecialEscaped.unicodeNull.string} - ascii null
-8. ${SpecialEscaped.nbsp.string} - nonbreaking space
-9. ${SpecialEscaped.nextLine.string} - nextline
-10. ${SpecialEscaped.paragraphSeparator.string} - paragraph separator
-11. ${SpecialEscaped.bell.string} - ascii bell
-12. ${SpecialEscaped.backspace.string} - backspace
-13. ${SpecialEscaped.asciiEscape.string} - escape
+3. \n - Line feed
+4. \r - Carriage return
+5. \t - tab
+6. \v - vertical tab
+7. ${unicodeNull.asString()} - ascii null
+8. ${nbsp.asString()} - nonbreaking space
+9. ${nextLine.asString()} - nextline
+10. ${paragraphSeparator.asString()} - paragraph separator
+11. ${bell.asString()} - ascii bell
+12. ${backspace.asString()} - backspace
+13. ${asciiEscape.asString()} - escape
 14. A - UTF8 A
 15. A - UTF16 A
 16. A - UTF32 A''';
@@ -255,7 +254,7 @@ Fun with escapes:
       check(
         () => parseSingleQuoted(
           GraphemeScanner.of(
-            singleQuoted('unquoted with ${SpecialEscaped.bell.string}'),
+            singleQuoted('unquoted with ${bell.asString()}'),
           ),
           indent: 0,
           isImplicit: false,
@@ -314,11 +313,11 @@ Fun with escapes:
 
     test('Exits gracefully if leading char is restricted', () {
       /// Never starts with "?<space>" or "-<space>" or ":<space>" combinations
-      /// Intentional with enums
+      /// Intentional with "consts"
 
       check(
         parsePlain(
-          GraphemeScanner.of('${Indicator.mappingKey.string} '),
+          GraphemeScanner.of('${mappingKey.asString()} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -328,7 +327,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          GraphemeScanner.of('${Indicator.blockSequenceEntry.string} '),
+          GraphemeScanner.of('${blockSequenceEntry.asString()} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -339,7 +338,7 @@ Fun with escapes:
       // Assumes we have a missing key!
       check(
         parsePlain(
-          GraphemeScanner.of('${Indicator.mappingValue.string} '),
+          GraphemeScanner.of('${mappingValue.asString()} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -352,7 +351,7 @@ Fun with escapes:
       const prefix = 'Exit or not';
 
       // When in flow context. Exits immediately as delimiter is found
-      for (final ReadableChar(:string) in flowDelimiters) {
+      for (final string in flowDelimiters) {
         check(
           parsePlain(
             GraphemeScanner.of('$prefix$string'),
@@ -365,7 +364,7 @@ Fun with escapes:
       }
 
       // When not in flow context
-      for (final ReadableChar(:string) in flowDelimiters) {
+      for (final string in flowDelimiters) {
         final curr = '$prefix$string'; // Parsed "as-is" completely as valid
 
         check(
@@ -381,10 +380,9 @@ Fun with escapes:
     });
 
     test('Exits gracefully if disallowed character combinations are found', () {
-      final restricted = [
-        Indicator.comment.string,
-        Indicator.mappingValue.string,
-      ];
+      final restricted = Iterable.withIterator(
+        () => [comment, mappingValue].map((e) => e.asString()).iterator,
+      );
 
       const yaml = 'Plain';
 

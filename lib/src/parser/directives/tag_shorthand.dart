@@ -39,7 +39,7 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
 
   /// Quickly extract the remaining shorthand characters as valid uri chars
   /// that must be escaped since this is a secondary tag
-  if (scanner.charAtCursor == _tagIndicator) {
+  if (scanner.charAtCursor == tag) {
     handle = TagHandle.secondary();
     scanner.skipCharAtCursor();
     return TagShorthand._(
@@ -55,14 +55,13 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
   localTagChunker:
   while (scanner.canChunkMore) {
     final char = scanner.charAtCursor!;
-    final ReadableChar(:string) = char;
 
     switch (char) {
-      case LineBreak _ || WhiteSpace _:
+      case lineFeed || carriageReturn || space || tab:
         break localTagChunker;
 
       // We have to convert to named tag handle
-      case _tagIndicator:
+      case tag:
         {
           // A named handle must have at least a character
           if (buffer.isEmpty) {
@@ -94,7 +93,7 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
       /// a primary tag handle. Cannot be named as named tag handles only
       /// accept alphanumeric chars
       ///   -> !tag%21
-      case Indicator.directive:
+      case directive:
         {
           _parseTagUri(
             scanner,
@@ -106,19 +105,19 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
         }
 
       // Normal alphanumeric
-      case _ when isAlphaNumeric(char):
-        buffer.write(string);
+      case _ when char.isAlphaNumeric():
+        buffer.writeCharCode(char);
 
       /// Any character that is not alphanumeric. This ensures we do not
       /// include non-alphanumeric uri char in a named handle.
       case _ when isUriChar(char):
         {
-          buffer.write(string);
+          buffer.writeCharCode(char);
           hasNonAlphaNumChar = true;
         }
 
       default:
-        throw FormatException('"$string" is not a valid URI char');
+        throw FormatException('"${char.asString()}" is not a valid URI char');
     }
 
     scanner.skipCharAtCursor();

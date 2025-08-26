@@ -2,14 +2,15 @@ part of 'directives.dart';
 
 /// Returns a full `YAML` string representation of [YamlDirective]
 String _dumpDirective(Directive directive) {
-  final space = WhiteSpace.space.string;
+  final separation = String.fromCharCode(space);
 
   final Directive(:name, :parameters) = directive;
 
-  final buffer = StringBuffer(_directiveIndicator.string)
+  final buffer = StringBuffer()
+    ..writeCharCode(_directiveIndicator)
     ..write(name)
-    ..write(space)
-    ..write(parameters.join(space));
+    ..write(separation)
+    ..write(parameters.join(separation));
   return buffer.toString();
 }
 
@@ -57,10 +58,9 @@ String _parseTagUri(
   tagParser:
   while (scanner.canChunkMore) {
     final char = scanner.charAtCursor!;
-    final ReadableChar(:string) = char;
 
     switch (char) {
-      case LineBreak _ || WhiteSpace _:
+      case lineFeed || carriageReturn || space || tab:
         break tagParser;
 
       // Parse as escaped hex %
@@ -68,13 +68,13 @@ String _parseTagUri(
         _parseHexInUri(scanner, buffer);
 
       // A verbatim tag ends immediately a ">" is seen
-      case _ when string == _verbatimEnd.string && isVerbatimUri:
+      case _verbatimEnd when isVerbatimUri:
         break tagParser;
 
       /// Flow indicators must be escaped with `%` if parsing a tag uri.
       ///
       /// Alias/anchor names does not allow them.
-      case _ when !allowFlowIndicators && flowDelimiters.contains(char):
+      case _ when !allowFlowIndicators && char.isFlowDelimiter():
         {
           if (isAnchorOrAlias) {
             throw FormatException(
@@ -83,23 +83,23 @@ String _parseTagUri(
           }
 
           throw FormatException(
-            'Expected "${char.string}" to be escaped. '
+            'Expected "${char.asString()}" to be escaped. '
             'Flow collection characters must be escaped.',
           );
         }
 
       /// Tag indicators must be escaped when parsing tags
-      case _ when !isAnchorOrAlias && char == _tagIndicator:
+      case tag when !isAnchorOrAlias:
+
         throw FormatException(
-          'Expected "${char.string}" to be escaped. '
-          'The "${_tagIndicator.string}" character must be escaped.',
+          'Expected "!" to be escaped. The "!" character must be escaped.',
         );
 
       case _ when isUriChar(char):
-        buffer.write(string);
+        buffer.writeCharCode(char);
 
       default:
-        throw FormatException('"$string" is not a valid URI char');
+        throw FormatException('"${char.asString()}" is not a valid URI char');
     }
 
     scanner.skipCharAtCursor();
@@ -109,29 +109,28 @@ String _parseTagUri(
 }
 
 void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
-  var lastChar = '';
-  const schemeEnd = Indicator.mappingValue; // ":" char
+  int? lastChar;
+  const schemeEnd = mappingValue; // ":" char
 
   scanner.takeUntil(
     includeCharAtCursor: true,
-    mapper: (c) => c.string,
+    mapper: (c) => c,
     onMapped: (s) {
       lastChar = s;
-      buffer.write(s);
+      buffer.writeCharCode(s);
     },
     stopIf: (_, c) {
-      return !isUriChar(c) || scanner.charAtCursor == schemeEnd;
+      return scanner.charAtCursor == schemeEnd || !isUriChar(c);
     },
   );
 
   // We must have a ":" as the last char
-  if (lastChar != schemeEnd.string) {
+  if (lastChar != schemeEnd) {
     throw FormatException('Invalid URI scheme in tag uri');
   }
 
   /// Ensure we return in a state where a tag uri can be parsed further
-  if (scanner.peekCharAfterCursor() case ReadableChar? char
-      when char == null || !isUriChar(char)) {
+  if (scanner.peekCharAfterCursor().isNullOr((c) => !isUriChar(c))) {
     throw FormatException('Expected at least a uri character after the scheme');
   }
 
@@ -145,11 +144,9 @@ void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
 
   if (scanner.takeUntil(
         includeCharAtCursor: false,
-        mapper: (char) => char.string,
+        mapper: (char) => char.asString(),
         onMapped: (mapped) => hexBuff.write(mapped),
-        stopIf: (count, next) {
-          return !isHexDigit(next) || count == hexCount;
-        },
+        stopIf: (count, next) => !next.isHexDigit() || count == hexCount,
       ) !=
       hexCount) {
     throw FormatException('Invalid escaped hex found in tag URI => "$hexBuff"');

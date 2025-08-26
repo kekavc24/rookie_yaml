@@ -1,14 +1,13 @@
 import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:source_span/source_span.dart';
 
 part 'line_span.dart';
+part 'character_encoding.dart';
+part 'encoding_utils.dart';
 
 /// Represents information returned after a call to `bufferChunk` method
 /// of the [GraphemeScanner]
-///
-/// `offset` - start to end of index in string source.
 ///
 /// `sourceEnded` - indicates if the entire string source was scanned.
 ///
@@ -18,19 +17,16 @@ part 'line_span.dart';
 /// `charOnExit` - indicates the character that triggered the `bufferChunk`
 /// exit. Typically, the current character when `GraphemeScanner.charAtCursor`
 /// is called.
-typedef ChunkInfo = ({
-  //Offset offset,
-  bool sourceEnded,
-  bool lineEnded,
-  ReadableChar? charOnExit,
-});
+typedef ChunkInfo = ({bool sourceEnded, bool lineEnded, int? charOnExit});
 
 /// Represents a scanner that iterates over a source only when a chunk or a
 /// single character is requested
 final class GraphemeScanner {
   /// Initializes a [GraphemeScanner] from a String [source].
   GraphemeScanner._(this.source)
-    : _iterator = Characters(source).split(Characters(LineBreak.lf)).iterator {
+    : _iterator = Characters(
+        source,
+      ).split(Characters(String.fromCharCode(lineFeed))).iterator {
     // We don't want chunks from empty lines
     if (source.isEmpty) return;
     _hasMoreLines = _iterator.moveNext();
@@ -73,10 +69,10 @@ final class GraphemeScanner {
   LineSpan? _currentLine;
 
   /// Character before the cursor
-  ReadableChar? _charBeforeExit;
+  int? _charBeforeExit;
 
   /// Character at the cursor
-  ReadableChar? _charOnLastExit;
+  int? _charOnLastExit;
 
   ///
   LineRangeInfo lineInfo() {
@@ -97,14 +93,14 @@ final class GraphemeScanner {
   ///
   /// If called after [skipCharAtCursor], then this is the last character
   /// the cursor pointed to before skipping.
-  ReadableChar? get charBeforeCursor => _charBeforeExit;
+  int? get charBeforeCursor => _charBeforeExit;
 
   /// Returns the current character at the cursor
-  ReadableChar? get charAtCursor => _charOnLastExit;
+  int? get charAtCursor => _charOnLastExit;
 
   /// Peeks the next char after the character present at [charAtCursor]
-  ReadableChar? peekCharAfterCursor() {
-    ReadableChar? next() => _currentLine?.peekNextChar?.character;
+  int? peekCharAfterCursor() {
+    int? next() => _currentLine?.peekNextChar?.character;
 
     var char = next();
 
@@ -124,10 +120,10 @@ final class GraphemeScanner {
   /// without accessing the value.
   ///
   /// Returns `true` if a character was skipped. Otherwise, `false`.
-  (bool didSkip, ReadableChar? oldCharAtCursor) skipCharAtCursor() {
+  (bool didSkip, int? oldCharAtCursor) skipCharAtCursor() {
     var didSkip = false;
 
-    if (peekCharAfterCursor() case final ReadableChar maybeNext) {
+    if (peekCharAfterCursor() case final int maybeNext) {
       _charBeforeExit = _charOnLastExit;
       _charOnLastExit = maybeNext;
       ++_currentOffset;
@@ -154,25 +150,22 @@ final class GraphemeScanner {
   /// [skipTabs] is `true`, then tabs `\t` will also be skipped.
   ///
   /// [previouslyRead] must be mutable.
-  List<ReadableChar> skipWhitespace({
+  List<int> skipWhitespace({
     bool skipTabs = false,
     int? max,
-    List<WhiteSpace>? previouslyRead,
+    List<int>? previouslyRead,
   }) {
     final buffer = previouslyRead ?? [];
     final hasMax = max != null;
 
-    ReadableChar? char;
+    var char = peekCharAfterCursor();
 
-    while ((char = peekCharAfterCursor()) != null) {
-      if (char is! WhiteSpace ||
-          (hasMax && buffer.length >= max) ||
-          (!skipTabs && char == WhiteSpace.tab)) {
-        break;
-      }
+    bool isMatch(int char) => skipTabs ? char.isWhiteSpace() : char.isIndent();
 
+    while (char != null && !(hasMax && buffer.length >= max) && isMatch(char)) {
       buffer.add(char);
       skipCharAtCursor();
+      char = peekCharAfterCursor();
     }
 
     return buffer;
@@ -186,9 +179,9 @@ final class GraphemeScanner {
   /// [mapper] function is applied and value made available using [onMapped].
   int takeUntil<T>({
     required bool includeCharAtCursor,
-    required T Function(ReadableChar char) mapper,
+    required T Function(int char) mapper,
     required void Function(T mapped) onMapped,
-    required bool Function(int count, ReadableChar possibleNext) stopIf,
+    required bool Function(int count, int possibleNext) stopIf,
   }) {
     var taken = 0;
 
@@ -226,8 +219,8 @@ final class GraphemeScanner {
   ///
   /// See [ChunkInfo].
   ChunkInfo bufferChunk(
-    void Function(ReadableChar char) buffer, {
-    required bool Function(ReadableChar? previous, ReadableChar current) exitIf,
+    void Function(int char) buffer, {
+    required bool Function(int? previous, int current) exitIf,
   }) {
     // Fetch next line if not present
     if (_currentLine == null) {
@@ -245,7 +238,7 @@ final class GraphemeScanner {
     }
 
     LineSpanChar? lastSpanChar;
-    ReadableChar? maybeCharOnExit;
+    int? maybeCharOnExit;
 
     final nonNullLine = _currentLine!; // Not null at this point.
     var evalChatArCursor = false;

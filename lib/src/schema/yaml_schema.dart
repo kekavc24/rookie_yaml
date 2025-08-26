@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Default `YAML` uri prefix

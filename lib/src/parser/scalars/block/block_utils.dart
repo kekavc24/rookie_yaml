@@ -16,20 +16,20 @@ typedef _BlockHeaderInfo = ({
 typedef _IndicatorInfo = (ChompingIndicator chomping, int? indentIndicator);
 
 /// Checks the block's scalar style.
-bool? _isLiteralIndicator(ReadableChar? char) {
+bool? _isLiteralIndicator(int? char) {
   return switch (char) {
-    Indicator.folded => false,
-    Indicator.literal => true,
+    folded => false,
+    literal => true,
     _ => null,
   };
 }
 
 /// Checks the block scalar's chomping indicator. Intentionally returns `null`
 /// if the [ReadableChar] is not a [ChompingIndicator].
-ChompingIndicator? _resolveChompingIndicator(ReadableChar char) {
-  return switch (char.string) {
-    '+' => ChompingIndicator.keep,
-    '-' => ChompingIndicator.strip,
+ChompingIndicator? _resolveChompingIndicator(int char) {
+  return switch (char) {
+    0x2B => ChompingIndicator.keep,
+    0x2D => ChompingIndicator.strip,
     _ => null,
   };
 }
@@ -49,7 +49,7 @@ FormatException _charNotAllowedException(String char) =>
 void _chompLineBreaks(
   ChompingIndicator indicator, {
   required ScalarBuffer contentBuffer,
-  required List<LineBreak> lineBreaks,
+  required List<int> lineBreaks,
 }) {
   // Exclude line breaks from content by default
   if (lineBreaks.isEmpty || indicator == ChompingIndicator.strip) return;
@@ -77,12 +77,11 @@ void _chompLineBreaks(
 
 /// Skips the carriage return `\r` in a `\r\n` combination and returns the
 /// line feed `\n`.
-LineBreak skipCrIfPossible(LineBreak char, {required GraphemeScanner scanner}) {
-  var maybeCR = char;
+int skipCrIfPossible(int lineBreak, {required GraphemeScanner scanner}) {
+  var maybeCR = lineBreak;
 
-  if (maybeCR == LineBreak.carriageReturn &&
-      scanner.peekCharAfterCursor() == LineBreak.lineFeed) {
-    maybeCR = LineBreak.lineFeed;
+  if (maybeCR == carriageReturn && scanner.peekCharAfterCursor() == lineFeed) {
+    maybeCR = lineFeed;
     scanner.skipCharAtCursor();
   }
 
@@ -95,11 +94,11 @@ void _maybeFoldLF(
   ScalarBuffer contentBuffer, {
   required bool isLiteral,
   required bool lastNonEmptyWasIndented,
-  required List<LineBreak> lineBreaks,
+  required List<int> lineBreaks,
 }) {
   if (lineBreaks.isEmpty) return;
 
-  Iterable<ReadableChar> toWrite = lineBreaks;
+  Iterable<int> toWrite = lineBreaks;
 
   // Fold only if not literal and last non-empty line was not indented.
   if (!isLiteral && !lastNonEmptyWasIndented) {
@@ -113,7 +112,7 @@ void _maybeFoldLF(
     /// However, if followed by a `\n`, `YAML` implies it should be folded from
     /// the docs.
     toWrite = lineBreaks.length == 1
-        ? [if (contentBuffer.isNotEmpty) WhiteSpace.space]
+        ? [if (contentBuffer.isNotEmpty) space]
         : lineBreaks.skip(1);
   }
 
@@ -138,7 +137,7 @@ void _maybeFoldLF(
   /// We have to be sure that is not empty.
   ///
   /// See: https://yaml.org/spec/1.2.2/#empty-lines
-  if (charAfter is LineBreak) {
+  if (charAfter.isNotNullAnd((c) => c.isLineBreak())) {
     return (
       inferredIndent: canBeIndent,
       isEmptyLine: true,
@@ -150,17 +149,17 @@ void _maybeFoldLF(
   /// line.
   ///
   /// See: https://yaml.org/spec/1.2.2/#62-separation-spaces
-  if (charAfter == WhiteSpace.tab) {
+  if (charAfter == tab) {
     callBeforeTabWrite();
     scanner.takeUntil(
       includeCharAtCursor: false,
       mapper: (rc) => rc,
       onMapped: contentBuffer.writeChar,
-      stopIf: (_, possibleNext) => possibleNext is! WhiteSpace,
+      stopIf: (_, possibleNext) => !possibleNext.isWhiteSpace(),
     );
 
     // This line cannot be used to determine the
-    if (scanner.peekCharAfterCursor() is LineBreak) {
+    if (scanner.peekCharAfterCursor().isNotNullAnd((c) => c.isLineBreak())) {
       return (
         inferredIndent: canBeIndent,
         isEmptyLine: true,
@@ -178,8 +177,6 @@ void _maybeFoldLF(
   );
 }
 
-const _whitespace = WhiteSpace.space;
-
 // TODO: Use join function here on list. Return string?
 /// Preserves line breaks in two ways in `folded` scalar style (line breaks in
 /// `literal` style are always preserved):
@@ -189,10 +186,10 @@ const _whitespace = WhiteSpace.space;
 /// empty line(s) before the last non-empty indented line, a space character is
 /// added to indicate that despite this line being empty it signifies content
 /// and was never `folded`.
-Iterable<ReadableChar> _preserveEmptyIndented({
+Iterable<int> _preserveEmptyIndented({
   required bool isLiteral,
   required bool lastWasIndented,
-  required List<LineBreak> lineBreaks,
+  required List<int> lineBreaks,
 }) {
   ///
   /// All buffered line breaks are written by default in both `literal`.
@@ -204,19 +201,19 @@ Iterable<ReadableChar> _preserveEmptyIndented({
   /// See: https://yaml.org/spec/1.2.2/#813-folded-style:~:text=Lines%20starting%20with%20white%20space%20characters%20(more%2Dindented%20lines)%20are%20not%20folded.
   return isLiteral || !lastWasIndented || lineBreaks.isEmpty
       ? lineBreaks
-      : <ReadableChar>[lineBreaks.first].followedBy(
+      : [lineBreaks.first].followedBy(
           lineBreaks.skip(1).expand((value) sync* {
-            yield _whitespace;
+            yield space;
             yield value;
           }),
         );
 }
 
 /// Single char for document end marker, `...`
-const docEndSingle = Indicator.period;
+const docEndSingle = period;
 
 /// Single char for directives end marker, `---`
-const directiveEndSingle = Indicator.blockSequenceEntry;
+const directiveEndSingle = blockSequenceEntry;
 
 /// Checks and returns if the next sequence of characters are valid
 /// [DocumentMarker]. Defaults to [DocumentMarker.none] if not true.
@@ -246,10 +243,10 @@ const directiveEndSingle = Indicator.blockSequenceEntry;
 /// ```
 DocumentMarker checkForDocumentMarkers(
   GraphemeScanner scanner, {
-  required void Function(List<ReadableChar> buffered) onMissing,
+  required void Function(List<int> buffered) onMissing,
 }) {
   var charAtCursor = scanner.charAtCursor;
-  final markers = <ReadableChar>[];
+  final markers = <int>[];
 
   void pointToNext() {
     scanner.skipCharAtCursor();
@@ -265,14 +262,14 @@ DocumentMarker checkForDocumentMarkers(
   /// far along the parsing this is called.
   if (charAtCursor case docEndSingle || directiveEndSingle) {
     const expectedCount = 3;
-    final str = charAtCursor!.string;
+    final match = charAtCursor;
 
     final skipped = scanner.takeUntil(
       includeCharAtCursor: true,
       mapper: (v) => v,
       onMapped: (v) => markers.add(v),
       stopIf: (count, possibleNext) {
-        return count == expectedCount || possibleNext.string != str;
+        return count == expectedCount || possibleNext != match;
       },
     );
 
@@ -281,24 +278,24 @@ DocumentMarker checkForDocumentMarkers(
     if (skipped == expectedCount) {
       /// YAML insists document markers should not have any characters
       /// after unless its just whitespace or comments.
-      if (str == docEndSingle.string) {
-        if (charAtCursor is WhiteSpace) {
+      if (match == docEndSingle) {
+        if (charAtCursor.isNotNullAnd((c) => c.isWhiteSpace())) {
           scanner.skipWhitespace(skipTabs: true);
           pointToNext();
         }
 
-        if (charAtCursor case LineBreak? _ || Indicator.comment) {
+        if (charAtCursor.isNullOr((c) => c.isLineBreak() || c == comment)) {
           return DocumentMarker.documentEnd;
         }
 
         throw FormatException(
           'Document end markers "..." can only have whitespace/comments '
-          'after but found: ${charAtCursor?.string ?? ''}',
+          'after but found: ${charAtCursor.asString()}',
         );
       }
 
       // Directives end markers can have either
-      if (charAtCursor case LineBreak? _ || WhiteSpace? _) {
+      if (charAtCursor.isNullOr((c) => c.isLineBreak() || c.isWhiteSpace())) {
         return DocumentMarker.directiveEnd;
       }
     }

@@ -1,9 +1,8 @@
 import 'dart:math';
 
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:source_span/source_span.dart';
@@ -39,12 +38,12 @@ PreScalar parseBlockStyle(
 
   var char = scanner.charAtCursor;
 
-  final lineBreaks = <LineBreak>[
-    if (!isLiteral && char is LineBreak)
-      skipCrIfPossible(char, scanner: scanner),
+  final lineBreaks = <int>[
+    if (!isLiteral && char.isNotNullAnd((c) => c.isLineBreak()))
+      skipCrIfPossible(char!, scanner: scanner),
   ];
 
-  final buffer = ScalarBuffer(ensureIsSafe: true);
+  final buffer = ScalarBuffer();
 
   var lastWasIndented = false;
   var didRun = false;
@@ -59,10 +58,10 @@ PreScalar parseBlockStyle(
   blockParser:
   while (scanner.canChunkMore) {
     final indent = trueIndent ?? minimumIndent;
-    char = scanner.charAtCursor;
+    char = scanner.charAtCursor!;
 
     switch (char) {
-      case LineBreak _:
+      case carriageReturn || lineFeed:
         {
           char = skipCrIfPossible(char, scanner: scanner);
 
@@ -72,10 +71,9 @@ PreScalar parseBlockStyle(
 
           final scannedIndent = scanner.skipWhitespace(max: indent).length;
           final charAfter = scanner.peekCharAfterCursor();
+          final hasCharAfter = charAfter != null;
 
-          if (charAfter is! LineBreak) {
-            final hasCharAfter = charAfter != null;
-
+          if (charAfter != carriageReturn && charAfter != lineFeed) {
             /// While `YAML` suggested we parse the comment thereafter, it is
             /// better to exit and allow the `root` parser to determine how to
             /// parse it.
@@ -135,8 +133,7 @@ PreScalar parseBlockStyle(
           didRun = true;
         }
 
-      case Indicator.blockSequenceEntry || Indicator.period
-          when trueIndent == 0:
+      case blockSequenceEntry || period when trueIndent == 0:
         {
           // Ends when we see first "-" of "---" or "." of "..."
           final maybeEnd = scanner.lineInfo().current;
@@ -153,14 +150,14 @@ PreScalar parseBlockStyle(
         }
 
       // Literal & folded restricted to printable charset
-      case _ when char == null || !isPrintable(char):
+      case _ when !char.isPrintable():
         throw FormatException(
           'Block scalar styles are restricted to the printable character set',
         );
 
       default:
         {
-          if (char is WhiteSpace) {
+          if (char.isWhiteSpace()) {
             buffer.writeAll(
               _preserveEmptyIndented(
                 isLiteral: isLiteral,
@@ -186,7 +183,7 @@ PreScalar parseBlockStyle(
           // Write the remaining line to the end without including line break
           final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
             buffer.writeChar,
-            exitIf: (_, curr) => curr is LineBreak,
+            exitIf: (_, curr) => curr.isLineBreak(),
           );
 
           if (sourceEnded) break blockParser;

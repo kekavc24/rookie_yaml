@@ -1,29 +1,27 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:source_span/source_span.dart';
 
-/// Usually denotes end of a plain scalar if followed by a [WhiteSpace]
-const _kvColon = Indicator.mappingValue;
-
 /// Characters that must not be parsed as the first character in a plain scalar
-final _mustNotBeFirst = <ReadableChar>{
-  Indicator.mappingKey,
-  _kvColon,
-  Indicator.blockSequenceEntry,
+final _mustNotBeFirst = <int>{
+  mappingKey,
+  mappingValue,
+  blockSequenceEntry,
 };
 
 /// Characters that disrupt normal buffering of characters that have no
 /// meaning in/affect a plain scalar.
-final _delimiters = <ReadableChar>{
-  ...LineBreak.values,
-  ...WhiteSpace.values,
-  _kvColon,
-  Indicator.comment,
+final _delimiters = <int>{
+  lineFeed,
+  carriageReturn,
+  space,
+  tab,
+  mappingValue,
+  comment,
 };
 
 const _style = ScalarStyle.plain;
@@ -54,9 +52,9 @@ PreScalar? parsePlain(
   final firstChar = scanner.charAtCursor;
 
   if (greedyChars.isEmpty && _mustNotBeFirst.contains(firstChar)) {
-    if (scanner.peekCharAfterCursor() is WhiteSpace) {
+    if (scanner.peekCharAfterCursor() case space || tab) {
       // Intentionally expressive with if statement! We eval once.
-      if (firstChar == Indicator.mappingValue) {
+      if (firstChar == mappingValue) {
         // TODO: Pass in null when refactoring scalar
         return (
           content: '',
@@ -76,10 +74,7 @@ PreScalar? parsePlain(
     }
   }
 
-  final buffer = ScalarBuffer(
-    ensureIsSafe: true,
-    buffer: StringBuffer(greedyChars),
-  );
+  final buffer = ScalarBuffer(StringBuffer(greedyChars));
 
   var docMarkerType = DocumentMarker.none;
   var foundLineBreak = false;
@@ -98,8 +93,10 @@ PreScalar? parsePlain(
 
     switch (char) {
       /// Check for the document end markers first always
-      case Indicator.blockSequenceEntry || Indicator.period
-          when indent == 0 && charBefore is LineBreak && charAfter == char:
+      case blockSequenceEntry || period
+          when indent == 0 &&
+              charBefore.isNotNullAnd((c) => c.isLineBreak()) &&
+              charAfter == char:
         {
           final maybeEnd = scanner.lineInfo().current;
 
@@ -116,32 +113,34 @@ PreScalar? parsePlain(
 
       /// A mapping key can never be followed by a whitespace. Exit regardless
       /// of whether we folded this scalar before.
-      case _kvColon when charAfter is WhiteSpace? || charAfter is LineBreak?:
+      case mappingValue
+          when charAfter.isNullOr((c) => c.isWhiteSpace() || c.isLineBreak()):
         break chunker;
 
       /// A look behind condition if encountered while folding the scalar.
-      case Indicator.comment
-          when charBefore is WhiteSpace || charBefore is LineBreak:
+      case comment
+          when charBefore.isNotNullAnd(
+            (c) => c.isWhiteSpace() || c.isLineBreak(),
+          ):
         break chunker;
 
       /// A lookahead condition of the rule above before folding the scalar
-      case WhiteSpace _ when charAfter == Indicator.comment:
+      case space || tab when charAfter == comment:
         break chunker;
 
       /// Restricted to a single line when implicit. Instead of throwing,
       /// exit and allow parser to determine next course of action
-      case LineBreak _ when isImplicit:
+      case carriageReturn || lineFeed when isImplicit:
         break chunker;
 
       /// Attempt to fold by default anytime we see a line break or white space
-      case WhiteSpace _ || LineBreak _:
+      case space || tab || carriageReturn || lineFeed:
         {
           final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
             scanner,
             scalarBuffer: buffer,
             minIndent: indent,
             isImplicit: isImplicit,
-            onExitResumeIf: (_, _) => false,
           );
 
           if (indentDidChange) {
@@ -153,8 +152,7 @@ PreScalar? parsePlain(
           foundLineBreak = foundLineBreak || hasLineBreak;
         }
 
-      case _
-          when (isImplicit || isInFlowContext) && flowDelimiters.contains(char):
+      case _ when (isImplicit || isInFlowContext) && char.isFlowDelimiter():
         break chunker;
 
       default:
@@ -173,10 +171,8 @@ PreScalar? parsePlain(
 
           final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
             buffer.writeChar,
-            exitIf: (_, curr) {
-              return _delimiters.contains(curr) ||
-                  flowDelimiters.contains(curr);
-            },
+            exitIf: (_, curr) =>
+                _delimiters.contains(curr) || curr.isFlowDelimiter(),
           );
 
           if (sourceEnded) break chunker;

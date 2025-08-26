@@ -65,7 +65,7 @@ GlobalTag<dynamic> _parseGlobalTag(
     );
   }
 
-  if (scanner.charAtCursor is! WhiteSpace) {
+  if (scanner.charAtCursor.isNullOr((c) => !c.isWhiteSpace())) {
     throw FormatException(
       'A global tag must have a separation space after its handle',
     );
@@ -78,7 +78,7 @@ GlobalTag<dynamic> _parseGlobalTag(
 
   switch (scanner.charAtCursor) {
     // A prefix represented by a local tag
-    case _tagIndicator:
+    case tag:
       {
         scanner.skipCharAtCursor();
 
@@ -95,7 +95,7 @@ GlobalTag<dynamic> _parseGlobalTag(
       }
 
     // A normal non-empty/null uri character
-    case final ReadableChar char when isUriChar(char):
+    case int char when isUriChar(char):
       {
         return GlobalTag._(
           tagHandle,

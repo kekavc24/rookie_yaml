@@ -1,6 +1,6 @@
 library;
 
-export 'src/directives/directives.dart'
+export 'src/parser/directives/directives.dart'
     hide
         parseAnchorOrAlias,
         parseDirectives,

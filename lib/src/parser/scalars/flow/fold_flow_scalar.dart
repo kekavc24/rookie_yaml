@@ -1,11 +1,8 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-
-// TODO: Simplify line break etc. etc.
 
 typedef FoldFlowInfo = ({
   bool indentDidChange,
@@ -18,16 +15,14 @@ bool foldQuotedFlowScalar(
   required ScalarBuffer scalarBuffer,
   required int minIndent,
   required bool isImplicit,
-  bool Function(ReadableChar current, ReadableChar? next)? onExitResumeIf,
+  bool resumeOnEscapedLineBreak = false,
 }) {
-  final shouldResume = onExitResumeIf ?? (_, _) => false;
-
   final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
     scanner,
     scalarBuffer: scalarBuffer,
     minIndent: minIndent,
     isImplicit: isImplicit,
-    onExitResumeIf: shouldResume,
+    resumeOnEscapedLineBreak: resumeOnEscapedLineBreak,
   );
 
   // Quoted scalar never allow an indent change before seeing closing quote
@@ -44,18 +39,17 @@ bool foldQuotedFlowScalar(
 /// Folds a flow scalar(`plain`, `double quoted` and `single quoted`) that
 /// spans more than 1 line.
 ///
-/// [onExitResumeIf] should only be provided when parsing a [Scalar] with
-/// [ScalarStyle.doubleQuoted] which allows `\n` to be escaped. See
+/// [resumeOnEscapedLineBreak] should only be provided when parsing a [Scalar]
+/// with [ScalarStyle.doubleQuoted] which allows `\n` to be escaped. See
 /// [parseDoubleQuoted]
 FoldFlowInfo foldFlowScalar(
   GraphemeScanner scanner, {
   required ScalarBuffer scalarBuffer,
   required int minIndent,
   required bool isImplicit,
-  required bool Function(ReadableChar current, ReadableChar? next)
-  onExitResumeIf,
+  bool resumeOnEscapedLineBreak = false,
 }) {
-  final bufferedWhitespace = <WhiteSpace>[];
+  final bufferedWhitespace = <int>[];
 
   var linebreakWasEscaped = false; // Whether we escaped in the current run
   var didFold = false;
@@ -65,17 +59,14 @@ FoldFlowInfo foldFlowScalar(
     var current = scanner.charAtCursor;
 
     switch (current) {
-      case LineBreak _ when !isImplicit:
+      case carriageReturn || lineFeed when !isImplicit:
         {
           didFold = true;
-          const space = WhiteSpace.space;
-          const lf = LineBreak.lineFeed;
-
           var lastWasLineBreak = false;
 
-          void foldCurrent(LineBreak? current) {
+          void foldCurrent(int? current) {
             scalarBuffer.writeChar(
-              lastWasLineBreak || current != null ? lf : space,
+              lastWasLineBreak || current != null ? lineFeed : space,
             );
 
             bufferedWhitespace.clear(); // Just to be safe!
@@ -94,7 +85,7 @@ FoldFlowInfo foldFlowScalar(
 
           /// Fold continuously until we encounter a char that is not a
           /// linebreak or whitespace.
-          while (current is LineBreak) {
+          while (current != null && current.isLineBreak()) {
             current = skipCrIfPossible(current, scanner: scanner);
 
             // Ensure we fold cautiously. Skip indent first
@@ -107,7 +98,9 @@ FoldFlowInfo foldFlowScalar(
 
             /// We don't want to impede on the next scalar by consuming its
             /// content
-            if (current is WhiteSpace && !isDifferentScalar) {
+            if (current != null &&
+                current.isWhiteSpace() &&
+                !isDifferentScalar) {
               bufferedWhitespace.add(current);
 
               scanner
@@ -125,7 +118,8 @@ FoldFlowInfo foldFlowScalar(
             ///
             /// It doesn't matter if the line break was escaped. Resume the
             /// folding.
-            if (current is LineBreak) {
+            if (current != null && current.isLineBreak()) {
+              current = skipCrIfPossible(current, scanner: scanner);
               foldCurrent(current);
               linebreakWasEscaped = false;
               lastWasLineBreak = true;
@@ -153,16 +147,19 @@ FoldFlowInfo foldFlowScalar(
           cleanUpFolding();
         }
 
-      case WhiteSpace whiteSpace:
-        bufferedWhitespace.add(whiteSpace);
+      case space || tab:
+        bufferedWhitespace.add(current!);
         scanner.skipCharAtCursor();
 
       default:
         {
           /// Reserved for double quoted scalar where the linebreak can be
           /// escaped. All other flow styles should return false!
-          if (current != null &&
-              onExitResumeIf(current, scanner.peekCharAfterCursor())) {
+          if (resumeOnEscapedLineBreak &&
+              current == backSlash &&
+              scanner.peekCharAfterCursor().isNotNullAnd(
+                (c) => c.isLineBreak(),
+              )) {
             scalarBuffer.writeAll(bufferedWhitespace);
             bufferedWhitespace.clear();
 

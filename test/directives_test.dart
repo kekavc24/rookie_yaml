@@ -1,7 +1,6 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
@@ -25,7 +24,7 @@ void main() {
     });
 
     test('Throws if non-printable character are used', () {
-      final yaml = '%RESERVED ${SpecialEscaped.bell.string}';
+      final yaml = '%RESERVED ${bell.asString()}';
 
       check(
         () => parseDirectives(GraphemeScanner.of(yaml)),

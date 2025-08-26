@@ -1,18 +1,8 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
-import 'package:rookie_yaml/src/parser/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-
-const _doubleQuoteIndicator = Indicator.doubleQuote;
-
-final _doubleQuoteDelimiters = <ReadableChar>{
-  _doubleQuoteIndicator,
-  SpecialEscaped.backSlash,
-  ...WhiteSpace.values,
-  ...LineBreak.values,
-};
 
 const _doubleQuoteException = FormatException(
   'Expected to find a closing quote',
@@ -26,17 +16,17 @@ PreScalar parseDoubleQuoted(
 }) {
   final leadingChar = scanner.charAtCursor;
 
-  if (leadingChar != _doubleQuoteIndicator) {
+  if (leadingChar != doubleQuote) {
     throw FormatException(
       'Expected an opening double quote (") but found'
-      ' "${leadingChar?.string}"',
+      ' "${leadingChar?.asString()}"',
     );
   }
 
   var quoteCount = 1;
   scanner.skipCharAtCursor();
 
-  final buffer = ScalarBuffer(ensureIsSafe: false);
+  final buffer = ScalarBuffer();
   var foundLineBreak = false;
 
   /// Code reusability in loop
@@ -47,11 +37,7 @@ PreScalar parseDoubleQuoted(
           scalarBuffer: buffer,
           minIndent: indent,
           isImplicit: isImplicit,
-
-          // Can only escape line breaks
-          onExitResumeIf: (curr, next) {
-            return curr == SpecialEscaped.backSlash && next is LineBreak;
-          },
+          resumeOnEscapedLineBreak: true,
         ) ||
         foundLineBreak;
   }
@@ -65,18 +51,20 @@ PreScalar parseDoubleQuoted(
 
     switch (current) {
       // Tracks number of times we saw an unescaped `double quote`
-      case _doubleQuoteIndicator:
+      case doubleQuote:
         ++quoteCount;
         scanner.skipCharAtCursor();
 
       // Implicit keys are restricted to a single line
-      case LineBreak _ when isImplicit:
+      case carriageReturn || lineFeed when isImplicit:
         break dQuotedLoop;
 
       // Attempt to fold or parsed escaped
-      case SpecialEscaped.backSlash:
+      case backSlash:
         {
-          if (scanner.peekCharAfterCursor() is LineBreak) {
+          if (scanner.peekCharAfterCursor().isNotNullAnd(
+            (c) => c.isLineBreak(),
+          )) {
             foldDoubleQuoted();
             break;
           }
@@ -85,7 +73,7 @@ PreScalar parseDoubleQuoted(
         }
 
       // Always fold by default if not escaped
-      case WhiteSpace _ || LineBreak _:
+      case space || tab || carriageReturn || lineFeed:
         foldDoubleQuoted();
 
       default:
@@ -94,7 +82,11 @@ PreScalar parseDoubleQuoted(
 
           final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
             buffer.writeChar,
-            exitIf: (_, current) => _doubleQuoteDelimiters.contains(current),
+            exitIf: (_, current) =>
+                current.isWhiteSpace() ||
+                current.isLineBreak() ||
+                current == doubleQuote ||
+                current == backSlash,
           );
 
           if (sourceEnded) {
@@ -136,8 +128,7 @@ void _parseEscaped(
   }
 
   // Attempt to resolve as an hex
-  if (SpecialEscaped.checkHexWidth(charAfterEscape) case var hexToRead
-      when hexToRead != 0) {
+  if (checkHexWidth(charAfterEscape) case int hexToRead) {
     int? hexCode;
 
     void convertRollingHex(String digit) {
@@ -145,7 +136,7 @@ void _parseEscaped(
 
       hexCode = hexCode == null
           ? binary
-          : (hexCode! << 4) ^ binary; // Shift 4 bits at a ime
+          : (hexCode! << 4) ^ binary; // Shift 4 bits at a time
     }
 
     scanner.skipCharAtCursor(); // Point the hex character
@@ -162,20 +153,20 @@ void _parseEscaped(
         );
       }
 
-      if (!isHexDigit(hexChar)) {
+      if (!hexChar.isHexDigit()) {
         throw const FormatException('Invalid hex digit found!');
       }
 
       --hexToRead;
-      convertRollingHex(hexChar.string);
+      convertRollingHex(hexChar.asString());
       scanner.skipCharAtCursor();
     }
 
-    if (hexToRead > 0 || hexCode == null) {
+    if (hexCode == null || hexToRead > 0) {
       throw FormatException('$hexToRead hex digit(s) are missing.');
     }
 
-    buffer.writeChar(GraphemeChar.fromUnicode(hexCode!));
+    buffer.writeChar(hexCode!);
     return;
   }
 
@@ -187,14 +178,13 @@ void _parseEscaped(
   /// characters with their expected `unicode` representations.
   ///
   /// TODO: May need more work. For now, just throw.
-  if (SpecialEscaped.resolveUnrecognized(charAfterEscape)
-      case ReadableChar escaped) {
+  if (resolveDoubleQuotedEscaped(charAfterEscape) case int escaped) {
     buffer.writeChar(escaped);
     scanner.skipCharAtCursor();
     return;
   }
 
   throw FormatException(
-    'Unknown escaped character found: "${charAfterEscape.string}"',
+    'Unknown escaped character found: "${charAfterEscape.asString()}"',
   );
 }

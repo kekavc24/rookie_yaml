@@ -39,11 +39,11 @@ typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
 ///
 /// This method is only works for [ScalarStyle.plain]. Any other style is safe.
 void _throwIfUnsafeForDirectiveChar(
-  ReadableChar? char, {
+  int? char, {
   required int indent,
   required bool hasDirectives,
 }) {
-  if (indent == 0 && char == Indicator.directive && !hasDirectives) {
+  if (char == directive && indent == 0 && !hasDirectives) {
     throw FormatException(
       '"%" cannot be used as the first non-whitespace character in a non-empty'
       ' content line',
@@ -65,14 +65,14 @@ bool _docIsInMarkerLine(
   if (!isDocStartExplicit) return false;
 
   switch (scanner.charAtCursor) {
-    case WhiteSpace _:
+    // Document
+    case null || lineFeed || carriageReturn:
+      break;
+
+    case space || tab:
       scanner
         ..skipWhitespace(skipTabs: true)
         ..skipCharAtCursor();
-      break;
-
-    // When it is a line break or this is not the first doc and no
-    case LineBreak? _:
       break;
 
     default:
@@ -81,11 +81,11 @@ bool _docIsInMarkerLine(
       );
   }
 
-  if (scanner.charAtCursor case LineBreak? _ || Indicator.comment) {
-    return false;
-  }
-
-  return true;
+  /// A comment spans the entire line to the end. It's just a line break in
+  /// YAML with more steps
+  return scanner.charAtCursor.isNotNullAnd(
+    (c) => !c.isLineBreak() && c != comment,
+  );
 }
 
 /// Skips any comments and linebreaks until a character that can be parsed
@@ -104,16 +104,16 @@ int? _skipToParsableChar(
     switch (scanner.charAtCursor) {
       /// If the first character is a leading whitespace, ignore. There
       /// is no need treating it as indent
-      case WhiteSpace _ when isLeading:
+      case space || tab when isLeading:
         {
           scanner.skipWhitespace(skipTabs: true);
           scanner.skipCharAtCursor();
         }
 
       // Each line break triggers implicit indent inference
-      case LineBreak lineBreak:
+      case int char when char.isLineBreak():
         {
-          skipCrIfPossible(lineBreak, scanner: scanner);
+          skipCrIfPossible(char, scanner: scanner);
 
           // Only spaces. Tabs are not considered indent
           indent = scanner.skipWhitespace().length;
@@ -121,7 +121,7 @@ int? _skipToParsableChar(
           isLeading = false;
         }
 
-      case Indicator.comment:
+      case comment:
         {
           final (:onExit, :comment) = parseComment(scanner);
           comments.add(comment);
@@ -177,9 +177,9 @@ _ParsedNodeProperties _parseNodeProperties(
   required ResolvedTag Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
 }) {
-  String? anchor;
-  ResolvedTag? tag;
-  String? alias;
+  String? nodeAnchor;
+  ResolvedTag? nodeTag;
+  String? nodeAlias;
   int? indentOnExit;
 
   var lfCount = 0;
@@ -201,9 +201,9 @@ _ParsedNodeProperties _parseNodeProperties(
   ///   - Alias only
   ///
   /// The two options above are mutually exclusive.
-  while (scanner.canChunkMore && (tag == null || anchor == null)) {
+  while (scanner.canChunkMore && (nodeTag == null || nodeAnchor == null)) {
     switch (scanner.charAtCursor) {
-      case WhiteSpace _:
+      case space || tab:
         {
           scanner
             ..skipWhitespace(skipTabs: true) // Separation space
@@ -212,13 +212,13 @@ _ParsedNodeProperties _parseNodeProperties(
           notLineBreak();
         }
 
-      case LineBreak _ || Indicator.comment:
+      case lineFeed || carriageReturn || comment:
         {
           indentOnExit = skipAndTrackLF();
 
           if (indentOnExit == null || indentOnExit < minIndent) {
             return (
-              properties: (alias: alias, anchor: anchor, tag: tag),
+              properties: (alias: nodeAlias, anchor: nodeAnchor, tag: nodeTag),
               indentOnExit: indentOnExit,
               isMultiline: true, // We know it is. Comments included ;)
             );
@@ -227,39 +227,37 @@ _ParsedNodeProperties _parseNodeProperties(
           lastWasLineBreak = true;
         }
 
-      case Indicator.tag:
+      case tag:
         {
-          if (tag != null) {
+          if (nodeTag != null) {
             throw FormatException('A node can only have a single tag property');
           }
 
-          tag = switch (scanner.peekCharAfterCursor()) {
-            ReadableChar next when next.string == verbatimStart.string =>
-              parseVerbatimTag(scanner),
-
+          nodeTag = switch (scanner.peekCharAfterCursor()) {
+            verbatimStart => parseVerbatimTag(scanner),
             _ => resolver(parseTagShorthand(scanner)),
           };
 
           notLineBreak();
         }
 
-      case Indicator.anchor:
+      case anchor:
         {
-          if (anchor != null) {
+          if (nodeAnchor != null) {
             throw FormatException(
               'A node can only have a single anchor property',
             );
           }
 
           scanner.skipCharAtCursor();
-          anchor = parseAnchorOrAlias(scanner); // URI chars preceded by "&"
+          nodeAnchor = parseAnchorOrAlias(scanner); // URI chars preceded by "&"
 
           notLineBreak();
         }
 
-      case Indicator.alias:
+      case alias:
         {
-          if (tag != null || anchor != null) {
+          if (nodeTag != null || nodeAnchor != null) {
             throw FormatException(
               'Alias nodes cannot have an anchor or tag property',
             );
@@ -285,7 +283,7 @@ _ParsedNodeProperties _parseNodeProperties(
       // Exit immediately since we reached char that isn't a node property
       default:
         return (
-          properties: (alias: alias, anchor: anchor, tag: tag),
+          properties: (alias: nodeAlias, anchor: nodeAnchor, tag: nodeTag),
           indentOnExit: lastWasLineBreak ? indentOnExit : null,
           isMultiline: isMultiline(),
         );
@@ -293,7 +291,7 @@ _ParsedNodeProperties _parseNodeProperties(
   }
 
   return (
-    properties: (alias: alias, anchor: anchor, tag: tag),
+    properties: (alias: nodeAlias, anchor: nodeAnchor, tag: nodeTag),
 
     /// Prefer having accurate indent info. Parsing only reaches here if we
     /// managed to parse both the tag and anchor.

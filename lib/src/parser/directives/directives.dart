@@ -1,10 +1,10 @@
 import 'dart:math';
 
+import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/parser/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 part 'directive_utils.dart';
@@ -29,7 +29,7 @@ typedef Directives = ({
 });
 
 /// `%` character
-const _directiveIndicator = Indicator.directive;
+const _directiveIndicator = directive;
 
 const _noDirectives = (
   yamlDirective: null,
@@ -54,22 +54,22 @@ Directives parseDirectives(GraphemeScanner scanner) {
   void skipLineBreaks() {
     var char = scanner.charAtCursor;
 
-    while (char is LineBreak) {
+    while (char.isNotNullAnd((c) => c.isLineBreak())) {
       scanner.skipCharAtCursor();
       char = scanner.charAtCursor;
     }
   }
 
-  void throwIfNotSeparation(ReadableChar? char) {
-    if (char != null && char is! WhiteSpace) {
+  void throwIfNotSeparation(int? char) {
+    if (char != null && !char.isWhiteSpace()) {
       throw FormatException(
-        'Expected a separation space but found ${char.string}'
+        'Expected a separation space but found ${char.asString()}'
         ' after parsing the directive name',
       );
     }
 
     scanner.skipWhitespace(skipTabs: true);
-    if (scanner.charAtCursor is WhiteSpace) {
+    if (scanner.charAtCursor case space || tab) {
       scanner.skipCharAtCursor();
     }
   }
@@ -86,19 +86,21 @@ Directives parseDirectives(GraphemeScanner scanner) {
 
       switch (char) {
         /// Skip line breaks greedily
-        case LineBreak _:
+        /// TODO: Comments in directives >> hug left side?
+        case lineFeed || carriageReturn:
           skipLineBreaks();
 
         // Extract directive
-        case _directiveIndicator when scanner.charBeforeCursor is LineBreak?:
+        case _directiveIndicator
+            when scanner.charBeforeCursor.isNullOr((c) => c.isLineBreak()):
           {
             // Buffer
             final ChunkInfo(:charOnExit) = scanner.bufferChunk(
-              (c) => directiveBuffer.write(c.string),
+              (c) => directiveBuffer.writeCharCode(c),
               exitIf: (_, curr) =>
-                  curr is WhiteSpace ||
-                  curr is LineBreak ||
-                  !isPrintable(char!),
+                  curr.isWhiteSpace() ||
+                  curr.isLineBreak() ||
+                  !curr.isPrintable(),
             );
 
             if (directiveBuffer.isEmpty) {
@@ -136,7 +138,7 @@ Directives parseDirectives(GraphemeScanner scanner) {
               default:
                 {
                   // Reserved directives can have empty parameters
-                  if (charOnExit is! LineBreak?) {
+                  if (charOnExit != null && !charOnExit.isLineBreak()) {
                     throwIfNotSeparation(charOnExit);
                   }
 
@@ -147,7 +149,7 @@ Directives parseDirectives(GraphemeScanner scanner) {
             char = scanner.charAtCursor;
 
             // Expect either a line break or whitespace or null
-            if (char is! LineBreak?) {
+            if (char != null && !char.isLineBreak()) {
               throwIfNotSeparation(char);
             }
 
@@ -158,7 +160,7 @@ Directives parseDirectives(GraphemeScanner scanner) {
         default:
           {
             // Force a "---" check and not "..."
-            if (char == Indicator.blockSequenceEntry &&
+            if (char == blockSequenceEntry &&
                 checkForDocumentMarkers(scanner, onMissing: (_) {}) ==
                     DocumentMarker.directiveEnd) {
               return (
@@ -178,7 +180,8 @@ Directives parseDirectives(GraphemeScanner scanner) {
     /// the "---" marker
     throw FormatException(
       'Expected a directive end marker but found '
-      '"${scanner.charAtCursor?.string}${scanner.peekCharAfterCursor()?.string}'
+      '"${scanner.charAtCursor?.asString()}'
+      '${scanner.peekCharAfterCursor()?.asString()}'
       '.." as the first two characters',
     );
   }

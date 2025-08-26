@@ -1,12 +1,9 @@
-import 'package:rookie_yaml/src/character_encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 
 /// A [StringBuffer] wrapper for buffering scalars.
 final class ScalarBuffer {
-  ScalarBuffer({required this.ensureIsSafe, StringBuffer? buffer})
+  ScalarBuffer([StringBuffer? buffer])
     : _buffer = buffer ?? StringBuffer();
-
-  /// Ensures the [ReadableChar] is printable before writing
-  final bool ensureIsSafe;
 
   /// Actual buffer
   final StringBuffer _buffer;
@@ -15,15 +12,15 @@ final class ScalarBuffer {
   bool _wroteLineBreak = false;
 
   /// Writes a single [char] to the internal [StringBuffer].
-  void writeChar(ReadableChar char) {
-    _buffer.write(ensureIsSafe ? char.raw() : char.string);
-    _wroteLineBreak = _wroteLineBreak || char is LineBreak;
+  void writeChar(int char) {
+    _buffer.writeCharCode(char);
+    _wroteLineBreak = _wroteLineBreak || char.isLineBreak();
   }
 
   /// Writes an iterable with an unknown sequence of [ReadableChar].
   ///
   /// See [writeChar].
-  void writeAll(Iterable<ReadableChar> chars) {
+  void writeAll(Iterable<int> chars) {
     for (final char in chars) {
       writeChar(char);
     }
