@@ -259,58 +259,111 @@ void main() {
         'A named tag can only have alphanumeric characters',
       );
     });
+  });
 
-    group('Verbatim Tag', () {
-      test('Parses a verbatim tag', () {
-        final tags = [
-          '!<tag:yaml.org,2002:str>', // Global Unresolvable uri
-          '!<!local>',
-        ];
+  group('Verbatim Tag', () {
+    test('Parses a verbatim tag', () {
+      final tags = [
+        '!<tag:yaml.org,2002:str>', // Global Unresolvable uri
+        '!<!local>',
+      ];
 
-        const ignored = 'Not to be parsed';
+      const ignored = 'Not to be parsed';
 
-        for (final tag in tags) {
-          check(
-            parseVerbatimTag(GraphemeScanner.of('$tag $ignored')).verbatim,
-          ).equals(tag);
-        }
-      });
-
-      test("Throws if verbatim tag doesn't start with tag indicator", () {
-        final node = '<!must-start-with-%21>';
-
+      for (final tag in tags) {
         check(
-          () => parseVerbatimTag(GraphemeScanner.of(node)),
-        ).throwsAFormatException('A verbatim tag must start with "!"');
-      });
+          parseVerbatimTag(GraphemeScanner.of('$tag $ignored')).verbatim,
+        ).equals(tag);
+      }
+    });
 
-      test("Throws if verbatim start indicator is missing (<)", () {
-        final node = '!!must-start-with-%3C>';
+    test("Throws if verbatim tag doesn't start with tag indicator", () {
+      final node = '<!must-start-with-%21>';
 
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException('A verbatim tag must start with "!"');
+    });
+
+    test("Throws if verbatim start indicator is missing (<)", () {
+      final node = '!!must-start-with-%3C>';
+
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException('Expected to find a "<" after "!"');
+    });
+
+    test("Throws if verbatim end indicator is missing (>)", () {
+      final node = '!<!must-end-with-%3E';
+
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException(
+        'Expected to find a ">" after parsing a verbatim tag',
+      );
+    });
+
+    test("Throws if a non-specific tag shorthand is declared verbatim", () {
+      final node = '!<!>';
+
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException(
+        'Verbatim tags are never resolved and should have a non-empty suffix',
+      );
+    });
+  });
+
+  group('Verbatim Tag', () {
+    test('Parses a verbatim tag', () {
+      final tags = [
+        '!<tag:yaml.org,2002:str>', // Global Unresolvable uri
+        '!<!local>',
+      ];
+
+      const ignored = 'Not to be parsed';
+
+      for (final tag in tags) {
         check(
-          () => parseVerbatimTag(GraphemeScanner.of(node)),
-        ).throwsAFormatException('Expected to find a "<" after "!"');
-      });
+          parseVerbatimTag(GraphemeScanner.of('$tag $ignored')).verbatim,
+        ).equals(tag);
+      }
+    });
 
-      test("Throws if verbatim end indicator is missing (>)", () {
-        final node = '!<!must-end-with-%3E';
+    test("Throws if verbatim tag doesn't start with tag indicator", () {
+      final node = '<!must-start-with-%21>';
 
-        check(
-          () => parseVerbatimTag(GraphemeScanner.of(node)),
-        ).throwsAFormatException(
-          'Expected to find a ">" after parsing a verbatim tag',
-        );
-      });
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException('A verbatim tag must start with "!"');
+    });
 
-      test("Throws if a non-specific tag shorthand is declared verbatim", () {
-        final node = '!<!>';
+    test("Throws if verbatim start indicator is missing (<)", () {
+      final node = '!!must-start-with-%3C>';
 
-        check(
-          () => parseVerbatimTag(GraphemeScanner.of(node)),
-        ).throwsAFormatException(
-          'Verbatim tags are never resolved and should have a non-empty suffix',
-        );
-      });
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException('Expected to find a "<" after "!"');
+    });
+
+    test("Throws if verbatim end indicator is missing (>)", () {
+      final node = '!<!must-end-with-%3E';
+
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException(
+        'Expected to find a ">" after parsing a verbatim tag',
+      );
+    });
+
+    test("Throws if a non-specific tag shorthand is declared verbatim", () {
+      final node = '!<!>';
+
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of(node)),
+      ).throwsAFormatException(
+        'Verbatim tags are never resolved and should have a non-empty suffix',
+      );
     });
   });
 

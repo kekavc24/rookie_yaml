@@ -1,7 +1,9 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';
 
@@ -295,6 +297,27 @@ $star
         check(docs[2]).hasTag(star);
       },
     );
+
+    test('Resolves non-specific tags based on kind', () {
+      check(
+          bootstrapDocParser(
+            '! { ! [], ! scalar }',
+          ).parseDocs().parseNodeSingle(),
+        ).isNotNull().isA<Mapping>()
+        ..hasTag(yamlGlobalTag, suffix: mappingTag)
+        ..has((map) => map.keys, 'Keys').which(
+          (keys) => keys
+            ..has((k) => k.firstOrNull, 'First element').which(
+              (e) => e.isA<Sequence>().hasTag(
+                yamlGlobalTag,
+                suffix: sequenceTag,
+              ),
+            )
+            ..has((k) => k.lastOrNull, 'Last element').which(
+              (e) => e.isA<Scalar>().hasTag(yamlGlobalTag, suffix: stringTag),
+            ),
+        );
+    });
   });
 
   group('Exceptions', () {
@@ -351,5 +374,49 @@ First document
         );
       },
     );
+  });
+
+  group('Utility methods', () {
+    test('Skips to the next parsable char', () {
+      const yaml = '''
+
+
+My node starts here
+''';
+
+      final scanner = GraphemeScanner.of(yaml);
+
+      check(skipToParsableChar(scanner, onParseComment: (_) {})).equals(0);
+      check(scanner.charAtCursor.asString()).equals('M');
+    });
+
+    test('Skips leading whitespace as', () {
+      const yaml = ' My node starts here';
+
+      final scanner = GraphemeScanner.of(yaml);
+
+      check(skipToParsableChar(scanner, onParseComment: (_) {})).isNull();
+      check(scanner.charAtCursor.asString()).equals('M');
+    });
+
+    test('Skips to the next parsable char even with comments', () {
+      const yaml = '''
+# This is a comment
+# This is another
+
+My node starts here
+''';
+
+      final comments = <YamlComment>[];
+
+      final scanner = GraphemeScanner.of(yaml);
+
+      check(skipToParsableChar(scanner, comments: comments)).equals(0);
+      check(scanner.charAtCursor.asString()).equals('M');
+      check(comments.map((e) => e.comment)).deepEquals([
+        'This is a comment',
+        'This is another',
+      ]);
+    });
   });
 }
