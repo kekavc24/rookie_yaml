@@ -13,7 +13,7 @@ final class YamlParser {
   /// calling its `asCustomType` method after parsing has been completed.
   YamlParser(
     String source, {
-    List<PreResolver>? resolvers,
+    List<Resolver>? resolvers,
   }) : _documentParser = DocumentParser(GraphemeScanner.of(source), resolvers);
 
   /// Parser doing actual work

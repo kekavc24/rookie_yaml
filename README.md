@@ -627,7 +627,7 @@ Custom resolvers bind themselves to parsed [tag shorthands](#tag-shorthand) and 
 
 2. `ContentResolver` - as the name suggests, this resolver resolves the parsed content. This is limited to the `Scalar` type which is a wrapper around basic types inferred from the parsed yaml content. Unlike a `NodeResolver`, you must declare a function that converts the type back to `string`. This is because the type lives within the `Scalar` and a `ScalarValue` must declare a way to safely convert the type back to string.
 
-You cannot declare these resolvers directly. Instead, you delegate this to the parser by creating a `PreResolver` which has helper constructors for both. Let's see a few examples.
+You cannot declare these resolvers directly. Instead, you delegate this to the parser by creating a `Resolver` which has helper constructors for both. Let's see a few examples.
 
 ### Simple Resolver
 
@@ -647,7 +647,7 @@ final utf16Tag = TagShorthand.fromTagUri(handle, 'utf16');
 final base64Tag = TagShorthand.fromTagUri(handle, 'base64');
 
 // A NodeResolver for the "codeUnits"
-final utf16Resolver = PreResolver.node(
+final utf16Resolver = Resolver.node(
   utf16Tag,
   resolver: (node) => String.fromCharCodes(
     node.castTo<Sequence>().map((e) => e.castTo<Scalar>().value),
@@ -655,7 +655,7 @@ final utf16Resolver = PreResolver.node(
 );
 
 // A ContentResolver for the "encoded" base64 string
-final base64Resolver = PreResolver.string(
+final base64Resolver = Resolver.content(
   base64Tag,
   contentResolver: (string) => String.fromCharCodes(base64Decode(string)),
   toYamlSafe: (string) => string.codeUnits.toString(),
@@ -693,13 +693,13 @@ String toYamlSafe(int value) => value.toRadixString(radix);
 final encoded = base64Encode('I love Dart'.codeUnits);
 final base32Tag = TagShorthand.fromTagUri(TagHandle.primary(), 'base32');
 
-final aggressiveResolver = PreResolver.string(
+final aggressiveResolver = Resolver.content(
   base32Tag,
   contentResolver: (string) => int.parse(string, radix: radix),
   toYamlSafe: toYamlSafe,
 );
 
-final safeResolver = PreResolver.string(
+final safeResolver = Resolver.content
   base32Tag,
   contentResolver: (string) => int.tryParse(string, radix: radix),
   toYamlSafe: toYamlSafe,

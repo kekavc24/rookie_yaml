@@ -414,8 +414,8 @@ typedef _ResolverCreator = TypeResolverTag Function(NodeTag tag);
 /// A wrapper class used to define a [TagShorthand] that the parser associates
 /// with a [TypeResolverTag] to infer the kind for a [YamlSourceNode] or
 /// [String] content from [Scalar] to valid output [O].
-final class PreResolver<I, O> {
-  PreResolver._(this.target, this._creator);
+final class Resolver<I, O> {
+  Resolver._(this.target, this._creator);
 
   /// Suffix associated with a [TypeResolverTag]
   final TagShorthand target;
@@ -425,7 +425,7 @@ final class PreResolver<I, O> {
   final _ResolverCreator _creator;
 
   /// Creates a [ContentResolver] as its [TypeResolverTag]
-  PreResolver.string(
+  Resolver.content(
     TagShorthand tag, {
     required O? Function(String input) contentResolver,
     required String Function(O input) toYamlSafe,
@@ -439,7 +439,7 @@ final class PreResolver<I, O> {
        );
 
   /// Creates a [NodeResolver] as its [TypeResolverTag]
-  PreResolver.node(
+  Resolver.node(
     TagShorthand tag, {
     required O Function(YamlSourceNode input) resolver,
   }) : this._(

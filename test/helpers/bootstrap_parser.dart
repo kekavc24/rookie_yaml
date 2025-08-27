@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 DocumentParser bootstrapDocParser(
   String yaml, {
-  List<PreResolver>? resolvers,
+  List<Resolver>? resolvers,
 }) => DocumentParser(GraphemeScanner.of(yaml), resolvers);
 
 extension DocParserUtil on DocumentParser {
