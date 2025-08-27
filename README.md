@@ -507,9 +507,6 @@ Every valid (un)resolved tag can be declared in "verbatim" based on its resoluti
 ]
 ```
 
-> [!WARNING]
-> At this time, a non-specific tag `!` with no global tag prefix will be printed as `!<!>` which is invalid. This will be fixed in the next (breaking) version.
-
 A verbatim tag is a node's tag declared in verbatim rather than as a [tag shorthand](#tag-shorthand). Such tags are handed off "as is" with no resolution to any [global tag](#global-tag).
 
 ```yaml

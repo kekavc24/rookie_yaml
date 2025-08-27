@@ -185,7 +185,7 @@ typedef NodeProperties = ({String? anchor, ResolvedTag? tag, String? alias});
 _ParsedNodeProperties _parseNodeProperties(
   GraphemeScanner scanner, {
   required int minIndent,
-  required ResolvedTag Function(TagShorthand tag) resolver,
+  required ResolvedTag? Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
 }) {
   String? nodeAnchor;
@@ -320,7 +320,7 @@ typedef _FlowNodeProperties = ({
 _FlowNodeProperties _parseSimpleFlowProps(
   GraphemeScanner scanner, {
   required int minIndent,
-  required ResolvedTag Function(TagShorthand tag) resolver,
+  required ResolvedTag? Function(TagShorthand tag) resolver,
   required List<YamlComment> comments,
   bool lastKeyWasJsonLike = false,
 }) {

@@ -197,8 +197,8 @@ final class DocumentParser {
   ///
   /// If any [Resolver] matching the [localTag] is found, a
   /// [TypeResolverTag] is returned.
-  ResolvedTag _resolveTag(TagShorthand localTag) {
-    final TagShorthand(:tagHandle, :content) = localTag;
+  ResolvedTag? _resolveTag(TagShorthand localTag) {
+    final TagShorthand(:tagHandle, :content, :isNonSpecific) = localTag;
 
     SpecificTag prefix = localTag;
     TagShorthand? suffix; // Local tags have no suffixes
@@ -241,11 +241,17 @@ final class DocumentParser {
 
     final nodeTag = NodeTag(prefix, suffix);
 
+    /// Check if any resolvers were created. This conveniently allows
+    /// non-specific tags to be captured for custom resolution before they are
+    /// dropped.
     if (_resolvers[localTag] case _ResolverCreator function) {
       return function(nodeTag);
     }
 
-    return nodeTag;
+    /// Explicitly ignore non-specific tag shorthands if no global tag was
+    /// declared as a prefix. When the [YamlSourceNode] is constructed, it will
+    /// be assigned a default secondary tag based on the node's kind.
+    return !hasGlobalTag && isNonSpecific ? null : nodeTag;
   }
 
   /// Parses a [Scalar].
