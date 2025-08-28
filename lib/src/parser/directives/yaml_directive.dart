@@ -2,78 +2,77 @@ part of 'directives.dart';
 
 const _versionSeparator = period;
 
+const _pinnedMajor = 1;
+
 /// `YAML` version that is used to implement the current `YamlParser` version.
 ///
 /// Must support this and all lower versions.
-const _version = [1, 2];
-final parserVersion = YamlDirective._(
-  version: _version.join(_versionSeparator.asString()),
-  formatted: _version,
-);
+final parserVersion = YamlDirective.ofVersion(_pinnedMajor, 2);
 
 /// `YAML` version directive
 const _yamlDirective = 'YAML';
 
 /// Specifies the version a `YAML` document conforms to.
 final class YamlDirective extends ReservedDirective {
-  YamlDirective._({required String version, required List<int> formatted})
-    : _formatted = formatted,
-      super(name: _yamlDirective, parameters: [version]);
+  YamlDirective._(this.major, this.minor, String version)
+    : super(name: _yamlDirective, parameters: [version]);
 
-  /// Creates a directive from a version.
+  YamlDirective.ofVersion(int major, int minor)
+    : this._(major, minor, '$major.$minor');
+
+  /// `YAML` major version
+  final int major;
+
+  /// `YAML` minor version
+  final int minor;
+
+  /// Returns `true` if the current [major] version is supported by the
+  /// parser.
   ///
-  /// [version] should be 2 integers separated by a `.`
-  YamlDirective.ofVersion(String version)
-    : this._(version: version, formatted: _formatVersionParameter(version));
+  /// Differing [minor] versions of the same [major] version may be supported
+  /// based on the `YAML` features used. Lower versions may have unsupported
+  /// features. Higher versions may introduce new or modify existing behaviour.
+  bool get isSupported => _pinnedMajor >= major;
 
-  final List<int> _formatted;
+  /// Returns the actual version
+  String get version => parameters.first;
 }
 
-/// Checks if the current version is supported by our parser.
-({bool isSupported, bool shouldWarn}) checkVersion(YamlDirective directive) {
-  final [currentMajor, currentMin] = parserVersion._formatted;
-  final [parsedMajor, parsedMin] = directive._formatted;
+/// Returns a [YamlDirective] after verifying if the [parsedMajor] and
+/// [parsedMinor] are supported by the current [parserVersion].
+YamlDirective _verifyYamlVersion(
+  int parsedMajor,
+  int parsedMinor,
+  void Function(String message) logger,
+) {
+  final sourceVersion = '$parsedMajor.$parsedMinor';
+  final YamlDirective(:minor, :version) = parserVersion;
 
-  final isSupported = currentMajor >= parsedMajor;
-
-  return (
-    isSupported: isSupported,
-    shouldWarn: !isSupported || (isSupported && parsedMin > currentMin),
-  );
-}
-
-/// Formats a version to individual integers denoting the version
-List<int> _formatVersionParameter(String version) {
-  void throwException(String violator) {
-    final message = violator.isEmpty ? 'nothing' : violator;
-    throw FormatException('Expected an integer but found "$message"');
-  }
-
-  final formatted = version.split(_versionSeparator.asString());
-
-  if (formatted.length != 2) {
+  /// Major versions are incompatible
+  /// https://yaml.org/spec/1.2.2/#681-yaml-directives
+  if (parsedMajor != _pinnedMajor) {
     throw FormatException(
-      'Invalid YAML version format. '
-      'The version must have only 2 integers separated by a '
-      '"${_versionSeparator.asString()}"',
+      'Unsupported YAML version requested.\n'
+      '\tSource string version: $sourceVersion\n'
+      '\tParser version: $version',
     );
   }
 
-  return formatted.map((v) {
-    final parsed = int.tryParse(v);
+  if (parsedMinor != minor) {
+    logger(
+      'YamlParser only supports YAML version "$version". Found YAML version '
+      '"$sourceVersion" which may have unsupported features.',
+    );
+  }
 
-    if (parsed == null) {
-      throwException(v);
-    }
-
-    return parsed!;
-  }).toList();
+  return YamlDirective._(parsedMajor, parsedMinor, sourceVersion);
 }
 
 /// Parses a [YamlDirective] version number
-YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
-  final versionBuffer = StringBuffer();
-
+YamlDirective _parseYamlDirective(
+  GraphemeScanner scanner,
+  void Function(String message) logger,
+) {
   final formattedVersion = <int>[];
 
   // Track state of converting string to number
@@ -123,7 +122,6 @@ YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
         );
     }
 
-    versionBuffer.writeCharCode(char);
     lastChar = char;
     scanner.skipCharAtCursor();
   }
@@ -136,12 +134,10 @@ YamlDirective _parseYamlDirective(GraphemeScanner scanner) {
     throw FormatException(
       '$prefix'
       'A YAML version must have only 2 integers separated by '
-      '"${_versionSeparator.asString()}"',
+      '"${_versionSeparator.asString()}" but found: %YAML '
+      '${formattedVersion.join('.')}',
     );
   }
 
-  return YamlDirective._(
-    version: versionBuffer.toString(),
-    formatted: formattedVersion,
-  );
+  return _verifyYamlVersion(formattedVersion[0], formattedVersion[1], logger);
 }

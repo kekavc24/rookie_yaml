@@ -54,6 +54,7 @@ sealed class Directive {
 Directives parseDirectives(
   GraphemeScanner scanner, {
   required void Function(YamlComment comment) onParseComment,
+  required void Function(String message) warningLogger,
 }) {
   void throwIfNotSeparation(int? char) {
     if (char != null && !char.isWhiteSpace()) {
@@ -131,7 +132,7 @@ Directives parseDirectives(
                   }
 
                   throwIfNotSeparation(charOnExit);
-                  directive = _parseYamlDirective(scanner);
+                  directive = _parseYamlDirective(scanner, warningLogger);
                 }
 
               case _globalTagDirective:
