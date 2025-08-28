@@ -1,7 +1,10 @@
+import 'package:logging/logging.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+
+final _logger = Logger('rookie_yaml');
 
 /// An intuitive top level `YAML` parser
 final class YamlParser {
@@ -11,10 +14,27 @@ final class YamlParser {
   /// to directly manipulate parsed content before instantiating a [Scalar]
   /// and/or [NodeResolver] to manipulate a parsed [YamlSourceNode] later by
   /// calling its `asCustomType` method after parsing has been completed.
+  ///
+  /// If [throwOnMapDuplicates] is `true`, the parser exits immediately a
+  /// duplicate key is parsed within a map. Otherwise, the parser logs the
+  /// warning and continues parsing the next entry. The existing value will
+  /// not be overwritten.
   YamlParser(
     String source, {
     List<Resolver>? resolvers,
-  }) : _documentParser = DocumentParser(GraphemeScanner.of(source), resolvers);
+    bool throwOnMapDuplicates = true,
+    void Function(bool isInfo, String message)? logger,
+  }) : _documentParser = DocumentParser(
+         GraphemeScanner.of(source),
+         resolvers: resolvers,
+         onMapDuplicate: (message) => throwOnMapDuplicates
+             ? throw FormatException(message)
+             : _logger.info(message),
+         logger:
+             logger ??
+             (bool isInfo, String message) =>
+                 isInfo ? _logger.info(message) : _logger.warning(message),
+       );
 
   /// Parser doing actual work
   final DocumentParser _documentParser;

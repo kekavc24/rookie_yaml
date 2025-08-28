@@ -7,18 +7,30 @@ typedef _Resolvers = Map<TagShorthand, _ResolverCreator>;
 
 /// A [YamlDocument] parser.
 final class DocumentParser {
-  DocumentParser(this._scanner, [List<Resolver>? resolvers])
-    : _resolvers = (resolvers ?? []).fold({}, (p, c) {
-        final Resolver(:target, :_creator) = c;
-        p[target] = _creator;
-        return p;
-      });
+  DocumentParser(
+    this._scanner, {
+    required void Function(bool isInfo, String message) logger,
+    required void Function(String message) onMapDuplicate,
+    List<Resolver>? resolvers,
+  }) : _logger = logger,
+       _onMapDuplicate = onMapDuplicate,
+       _resolvers = (resolvers ?? []).fold({}, (p, c) {
+         final Resolver(:target, :_creator) = c;
+         p[target] = _creator;
+         return p;
+       });
 
   /// Scanner with source string
   final GraphemeScanner _scanner;
 
   /// Custom functions to resolve a node
   final _Resolvers _resolvers;
+
+  /// Logging function for warnings and info
+  final void Function(bool isInfo, String message) _logger;
+
+  /// Callback used to report keys that are duplicates in flow/block maps
+  final void Function(String message) _onMapDuplicate;
 
   /// Global directives.
   ///
@@ -893,7 +905,7 @@ final class DocumentParser {
       if (!delegate.pushEntry(key, value)) {
         // TODO: Show next key to help user know which key!
         // TODO: Inline the key if too long
-        throw FormatException(
+        _onMapDuplicate(
           'Flow map cannot contain duplicate entries by the same key',
         );
       }
@@ -2190,7 +2202,7 @@ final class DocumentParser {
       }
 
       if (!map.pushEntry(key, value)) {
-        throw FormatException(
+        _onMapDuplicate(
           'Block map cannot contain entries sharing the same key',
         );
       }
@@ -2461,6 +2473,7 @@ final class DocumentParser {
       ) = parseDirectives(
         _scanner,
         onParseComment: _comments.add,
+        warningLogger: (message) => _logger(false, message),
       );
 
       _hasDirectives =
