@@ -109,7 +109,10 @@ void main() {
       const yaml = '{key: value, key: value}';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(
+          yaml,
+          onMapDuplicate: (mes) => throw FormatException(mes),
+        ).parseDocs().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Flow map cannot contain duplicate entries by the same key',
       );

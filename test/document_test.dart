@@ -61,7 +61,7 @@ void main() {
 
       const reserved = '%RESERVED directive is restricted';
 
-      final yamlDirective = YamlDirective.ofVersion('1.0');
+      final yamlDirective = YamlDirective.ofVersion(1, 0);
 
       const node = 'simple node';
 

@@ -37,26 +37,39 @@ void main() {
   group('YAML directive', () {
     test('Parse yaml directive', () {
       final yaml =
-          '%YAML 2.2\n'
+          '%YAML 1.2\n'
           '---';
 
       check(vanillaDirectives(yaml))
           .has((d) => d.yamlDirective, 'Yaml Directive')
-          .equals(YamlDirective.ofVersion('2.2'));
+          .equals(YamlDirective.ofVersion(1, 2));
+    });
+
+    test('Logs warning of an unsupported but parsable version', () {
+      final directive = YamlDirective.ofVersion(1, 3);
+
+      final logs = <String>[];
+      check(
+        parseDirectives(
+          GraphemeScanner.of('$directive\n---'),
+          onParseComment: (_) {},
+          warningLogger: (m) => logs.add(m),
+        ).yamlDirective,
+      ).isNotNull().equals(directive);
+
+      check(logs).deepEquals(
+        [
+          'YamlParser only supports YAML version "${parserVersion.version}". '
+              'Found YAML version "${directive.version}" which may have'
+              ' unsupported features.',
+        ],
+      );
     });
 
     test('Supported YAML version can be ascertained', () {
-      check(
-        checkVersion(YamlDirective.ofVersion('1.0')),
-      ).equals((isSupported: true, shouldWarn: false));
-
-      check(
-        checkVersion(YamlDirective.ofVersion('1.3')),
-      ).equals((isSupported: true, shouldWarn: true));
-
-      check(
-        checkVersion(YamlDirective.ofVersion('2.0')),
-      ).equals((isSupported: false, shouldWarn: true));
+      check(YamlDirective.ofVersion(1, 0).isSupported).isTrue();
+      check(YamlDirective.ofVersion(1, 3).isSupported).isTrue();
+      check(YamlDirective.ofVersion(2, 0).isSupported).isFalse();
     });
 
     test('Throws if duplicate version directives are declared', () {
@@ -73,6 +86,12 @@ void main() {
     test('Throws if version is specified incorrectly', () {
       const prefix = 'Invalid YAML version format. ';
 
+      check(() => vanillaDirectives('%YAML 10.0')).throwsAFormatException(
+        'Unsupported YAML version requested.\n'
+        '\tSource string version: 10.0\n'
+        '\tParser version: ${parserVersion.version}',
+      );
+
       check(() => vanillaDirectives('%YAML ..1')).throwsAFormatException(
         '$prefix'
         'Version cannot start with a "."',
@@ -85,7 +104,8 @@ void main() {
 
       check(() => vanillaDirectives('%YAML 1.1.2')).throwsAFormatException(
         '$prefix'
-        'A YAML version must have only 2 integers separated by "."',
+        'A YAML version must have only 2 integers separated by "." but found: '
+        '%YAML 1.1.2',
       );
 
       check(() => vanillaDirectives('%YAML A.B')).throwsAFormatException(
@@ -117,7 +137,11 @@ void main() {
 ---
       ''';
 
-      parseDirectives(GraphemeScanner.of(yaml), onParseComment: comments.add);
+      parseDirectives(
+        GraphemeScanner.of(yaml),
+        onParseComment: comments.add,
+        warningLogger: (_) {},
+      );
 
       check(comments.map((e) => e.comment)).deepEquals([
         'We only support YAML',

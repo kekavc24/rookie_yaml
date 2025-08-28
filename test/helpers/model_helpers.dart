@@ -15,8 +15,11 @@ final flowDelimiters = Iterable.withIterator(
   ].map((e) => e.asString()).iterator,
 );
 
-Directives vanillaDirectives(String yaml) =>
-    parseDirectives(GraphemeScanner.of(yaml), onParseComment: (_) {});
+Directives vanillaDirectives(String yaml) => parseDirectives(
+  GraphemeScanner.of(yaml),
+  onParseComment: (_) {},
+  warningLogger: (_) {},
+);
 
 T _inferredValue<T>(Scalar<T> scalar) => scalar.value;
 
