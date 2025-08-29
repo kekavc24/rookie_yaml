@@ -1,10 +1,10 @@
-import 'package:logging/logging.dart';
+import 'package:logger/logger.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-final _logger = Logger('rookie_yaml');
+final _logger = Logger(level: Level.all);
 
 /// An intuitive top level `YAML` parser
 final class YamlParser {
@@ -29,11 +29,11 @@ final class YamlParser {
          resolvers: resolvers,
          onMapDuplicate: (message) => throwOnMapDuplicates
              ? throw FormatException(message)
-             : _logger.info(message),
+             : _logger.i(message),
          logger:
              logger ??
              (bool isInfo, String message) =>
-                 isInfo ? _logger.info(message) : _logger.warning(message),
+                 isInfo ? _logger.i(message) : _logger.w(message),
        );
 
   /// Parser doing actual work

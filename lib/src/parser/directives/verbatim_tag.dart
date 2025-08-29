@@ -19,7 +19,6 @@ String _wrapAsVerbatim(String uri) =>
 
 /// Represents a tag explicitly declared in its raw form. Never resolved to
 /// [GlobalTag]
-@immutable
 final class VerbatimTag extends ResolvedTag {
   VerbatimTag._(this.verbatim);
 

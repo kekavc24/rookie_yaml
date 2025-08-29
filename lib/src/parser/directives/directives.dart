@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
-import 'package:meta/meta.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';

@@ -20,7 +20,6 @@ enum TagHandleVariant {
 }
 
 /// Represents a prefix for any [Tag] declared in `YAML`
-@immutable
 final class TagHandle {
   TagHandle._(this.handleVariant, String? handle)
     : handle = handle ?? handleVariant._handle;
