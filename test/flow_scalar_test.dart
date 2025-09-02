@@ -54,13 +54,13 @@ a line break''';
 value will preserve the spaces ->  \t\\
 since the line break is escaped.\\
 
-This line will have a line break between it and the period''';
+This line will have a space before after folding''';
 
       // Space never emitted if line break is escaped
       final folded =
           'value will preserve the spaces ->  \t'
-          'since the line break is escaped.\nThis line will have a line break'
-          ' between it and the period';
+          'since the line break is escaped. This line will have a space before '
+          'after folding';
 
       check(
         parseDoubleQuoted(
@@ -69,6 +69,51 @@ This line will have a line break between it and the period''';
           isImplicit: false,
         ),
       ).hasFormattedContent(folded);
+    });
+
+    test('Never fold when all linebreaks are escaped', () {
+      const string = r'''
+This string will be inline. \
+It's like in bash where \
+lines \
+can \
+be escaped. Or even \
+C with code.''';
+
+      check(
+        parseDoubleQuoted(
+          GraphemeScanner.of(doubleQuoted(string)),
+          indent: 0,
+          isImplicit: false,
+        ),
+      ).hasFormattedContent(
+        "This string will be inline. It's like in bash where lines can be "
+        'escaped. Or even C with code.',
+      );
+    });
+
+    test('Never folds when string is fill of whitespace', () {
+      const string = '''
+\t\\
+\\   \\
+
+
+\\t <- that tab is in its raw form,
+\\
+<- Whitespace before this space was consumed.''';
+
+      check(
+        parseDoubleQuoted(
+          GraphemeScanner.of(doubleQuoted(string)),
+          indent: 0,
+          isImplicit: false,
+        ),
+      ).hasFormattedContent(
+        '\t   '
+        '\n'
+        '\t <- that tab is in its raw form, '
+        '<- Whitespace before this space was consumed.',
+      );
     });
 
     test('Parses escaped characters in double quoted', () {
