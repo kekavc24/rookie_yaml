@@ -10,6 +10,57 @@ typedef FoldFlowInfo = ({
   bool hasLineBreak,
 });
 
+/// Ignores an escaped line break and excludes it from content in
+/// [ScalarStyle.doubleQuoted].
+///
+/// See [escaped linebreak](https://yaml.org/spec/1.2.2/#731-double-quoted-style:~:text=In%20a%20multi,at%20arbitrary%20positions.)
+({bool indentDidChange, int indentOnExit, bool exit}) _ignoreEscapedLineBreak(
+  GraphemeScanner scanner, {
+  required ScalarBuffer buffer,
+  required List<int> bufferedWhitespace,
+  required int minIndent,
+}) {
+  do {
+    buffer.writeAll(bufferedWhitespace);
+    bufferedWhitespace.clear();
+
+    // Skip to linebreak.
+    scanner.skipCharAtCursor();
+    skipCrIfPossible(scanner.charAtCursor!, scanner: scanner);
+
+    if (!scanner.canChunkMore) break;
+
+    // Determine indent
+    final indent = scanner.skipWhitespace(max: minIndent).length;
+    scanner.skipCharAtCursor();
+
+    if (indent < minIndent) {
+      return (indentDidChange: true, indentOnExit: indent, exit: true);
+    }
+
+    // Capture whitespace incase the next char combination is "\" + linebreak.
+    if (scanner.charAtCursor case int char when char == space || char == tab) {
+      bufferedWhitespace.add(char);
+      scanner
+        ..skipWhitespace(skipTabs: true, previouslyRead: bufferedWhitespace)
+        ..skipCharAtCursor();
+    }
+  } while (scanner.charAtCursor == slash &&
+      scanner.peekCharAfterCursor().isNotNullAnd((c) => c.isLineBreak()));
+
+  bufferedWhitespace.clear(); // Also escaped.
+
+  return (
+    indentDidChange: false,
+    indentOnExit: seamlessIndentMarker,
+    exit: scanner.charAtCursor.isNullOr(
+      (c) => !c.isWhiteSpace() || !c.isLineBreak(),
+    ),
+  );
+}
+
+/// Folds a [ScalarStyle.singleQuoted] or [ScalarStyle.doubleQuoted] flow
+/// scalar.
 bool foldQuotedFlowScalar(
   GraphemeScanner scanner, {
   required ScalarBuffer scalarBuffer,
@@ -51,7 +102,6 @@ FoldFlowInfo foldFlowScalar(
 }) {
   final bufferedWhitespace = <int>[];
 
-  var linebreakWasEscaped = false; // Whether we escaped in the current run
   var didFold = false;
 
   folding:
@@ -69,12 +119,12 @@ FoldFlowInfo foldFlowScalar(
               lastWasLineBreak || current != null ? lineFeed : space,
             );
 
-            bufferedWhitespace.clear(); // Just to be safe!
+            bufferedWhitespace.clear();
           }
 
           void cleanUpFolding() {
             // The linebreak is excluded from folding if it was escaped.
-            if (!linebreakWasEscaped && !lastWasLineBreak) {
+            if (!lastWasLineBreak) {
               foldCurrent(null);
             } else {
               /// Never apply dangling whitespace if the new line was
@@ -87,6 +137,7 @@ FoldFlowInfo foldFlowScalar(
           /// linebreak or whitespace.
           while (current != null && current.isLineBreak()) {
             current = skipCrIfPossible(current, scanner: scanner);
+            bufferedWhitespace.clear();
 
             // Ensure we fold cautiously. Skip indent first
             final indent = scanner.skipWhitespace(max: minIndent).length;
@@ -121,7 +172,6 @@ FoldFlowInfo foldFlowScalar(
             if (current != null && current.isLineBreak()) {
               current = skipCrIfPossible(current, scanner: scanner);
               foldCurrent(current);
-              linebreakWasEscaped = false;
               lastWasLineBreak = true;
               continue;
             }
@@ -160,16 +210,26 @@ FoldFlowInfo foldFlowScalar(
               scanner.peekCharAfterCursor().isNotNullAnd(
                 (c) => c.isLineBreak(),
               )) {
-            scalarBuffer.writeAll(bufferedWhitespace);
-            bufferedWhitespace.clear();
+            final (
+              :indentDidChange,
+              :indentOnExit,
+              :exit,
+            ) = _ignoreEscapedLineBreak(
+              scanner,
+              buffer: scalarBuffer,
+              bufferedWhitespace: bufferedWhitespace,
+              minIndent: minIndent,
+            );
 
-            scanner.skipCharAtCursor();
-
-            // Continue folding only if not implicit
-            if (!isImplicit) {
-              linebreakWasEscaped = true;
-              break;
+            if (exit || indentDidChange) {
+              return (
+                indentDidChange: indentDidChange,
+                foldIndent: indentOnExit,
+                hasLineBreak: false, // Excluded from content
+              );
             }
+
+            break;
           }
 
           scalarBuffer.writeAll(bufferedWhitespace);
