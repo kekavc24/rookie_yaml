@@ -1,5 +1,6 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 part 'typed_schema_utils.dart';
@@ -11,10 +12,6 @@ sealed class ScalarValue<T> {
 
   /// Inferred value
   T get value;
-
-  /// A sequential view of the string split at `\n`. This is useful when
-  /// dumping the scalar
-  Iterable<String> yamlSafe() => [toString()];
 
   /// Creates a wrapped [ScalarValue] for the parsed [content].
   ///
@@ -48,27 +45,19 @@ sealed class ScalarValue<T> {
     }
 
     if (parsedTag == null) ifParsedTagNull(stringTag);
-    return StringView(content) as ScalarValue<T>;
+    return DartValue(content) as ScalarValue<T>;
   }
 
   @override
   String toString() => value.toString();
 }
 
-/// Any `Dart` type that is not a [String]
+/// Any `Dart` type abstraction.
 abstract base class _InferredValue<T> extends ScalarValue<T> {
   _InferredValue(this.value);
 
   @override
   final T value;
-}
-
-/// Default schema type for most scalars that resolve to string.
-final class StringView extends _InferredValue<String> {
-  StringView(super.value);
-
-  @override
-  Iterable<String> yamlSafe() => splitStringLazy(value);
 }
 
 /// A safe representation of an integer parsed from a `YAML` source string.
@@ -81,9 +70,7 @@ final class YamlSafeInt extends _InferredValue<int> {
   final int radix;
 
   @override
-  Iterable<String> yamlSafe() sync* {
-    yield _stringFromSafeInt(value, radix);
-  }
+  String toString() => _stringFromSafeInt(value, radix);
 }
 
 /// A wrapper class for `null`. While it may seem counterintuitive, some
@@ -100,12 +87,10 @@ final class NullView extends _InferredValue<String?> {
   final bool isVirtual;
 
   @override
-  Iterable<String> yamlSafe() sync* {
-    yield _null;
-  }
+  String toString() => _null;
 }
 
-/// Any `Dart` value that is not an [int], [null], or [String].
+/// Any `Dart` value that is not an [int] or [null]
 final class DartValue<T> extends _InferredValue<T> {
   DartValue(super.value);
 }
@@ -118,5 +103,5 @@ final class CustomValue<T> extends _InferredValue<T> {
   final String Function(T value) toYamlSafe;
 
   @override
-  Iterable<String> yamlSafe() => splitStringLazy(toYamlSafe(value));
+  String toString() => toYamlSafe(value);
 }

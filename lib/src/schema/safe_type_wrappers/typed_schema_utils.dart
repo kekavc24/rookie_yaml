@@ -164,7 +164,7 @@ _MaybeScalarValue<T> _inferDartValue<T>(String content) {
 
   return (
     inferredTag: stringTag,
-    schema: StringView(content) as ScalarValue<T>,
+    schema: DartValue(content) as ScalarValue<T>,
   );
 }
 
@@ -183,5 +183,5 @@ ScalarValue<T> _schemaFromTag<T>(String content, TagShorthand parsedTag) {
     return schema;
   }
 
-  return StringView(content) as ScalarValue<T>;
+  return DartValue(content) as ScalarValue<T>;
 }
