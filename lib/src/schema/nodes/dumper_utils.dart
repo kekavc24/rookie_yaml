@@ -15,6 +15,83 @@ enum DumpingStyle {
   compact,
 }
 
+extension on int {
+  /// Normalizes all character that can be escaped.
+  ///
+  /// If [includeTab] is `true`, then `\t` is also normalized. If
+  /// [includeLineBreaks] is `true`, both `\n` and `\r` are normalized. If
+  /// [includeSlashes] is `true`, backslash `\` and slash `/` are escaped. If
+  /// [includeDoubleQuote] is `true`, the double quote is escaped.
+  Iterable<int> normalizeEscapedChars({
+    required bool includeTab,
+    required bool includeLineBreaks,
+    bool includeSlashes = true,
+    bool includeDoubleQuote = true,
+  }) sync* {
+    int? leader = backSlash;
+    var trailer = this;
+
+    switch (this) {
+      case unicodeNull:
+        trailer = 0x30;
+
+      case bell:
+        trailer = 0x61;
+
+      case asciiEscape:
+        trailer = 0x65;
+
+      case nextLine:
+        trailer = 0x4E;
+
+      case nbsp:
+        trailer = 0x5F;
+
+      case lineSeparator:
+        trailer = 0x4C;
+
+      case paragraphSeparator:
+        trailer = 0x50;
+
+      case backspace:
+        trailer = 0x62;
+
+      case tab when includeTab:
+        trailer = 0x74;
+
+      case lineFeed when includeLineBreaks:
+        trailer = 0x6E;
+
+      case verticalTab:
+        trailer = 0x76;
+
+      case formFeed:
+        trailer = 0x66;
+
+      case carriageReturn when includeLineBreaks:
+        trailer = 0x66;
+
+      case backSlash || slash:
+        {
+          if (includeSlashes) break;
+          leader = null;
+        }
+
+      case doubleQuote:
+        {
+          if (includeDoubleQuote) break;
+          leader = null;
+        }
+
+      default:
+        leader = null; // Remove nerf by default
+    }
+
+    if (leader != null) yield leader;
+    yield trailer;
+  }
+}
+
 const _empty = '';
 const _slash = r'\';
 const _nerfedTab =
@@ -41,9 +118,12 @@ const _nerfedTab =
 /// See [unfoldNormal] for other [ScalarStyle]s.
 Iterable<String> _coreUnfolding(
   Iterable<String> lines, {
-  required String Function(bool isFirst, bool hasNext, String line) preflight,
-  required bool Function(String previous, String current) isFolded,
+  String Function(bool isFirst, bool hasNext, String line)? preflight,
+  bool Function(String previous, String current)? isFolded,
 }) sync* {
+  final canUnfold = isFolded ?? (_, _) => true;
+  final yielder = preflight ?? (_, _, line) => line;
+
   final iterator = lines.iterator;
   var hasNext = false;
 
@@ -78,13 +158,13 @@ Iterable<String> _coreUnfolding(
   var previous = iterator.current;
 
   moveCursor();
-  yield preflight(true, hasNext, previous); // Emit first line always
+  yield yielder(true, hasNext, previous); // Emit first line always
 
   while (hasNext) {
     var current = iterator.current;
 
     // Eval with the last non-empty line if present
-    final hasFoldTarget = isFolded(previous, current);
+    final hasFoldTarget = canUnfold(previous, current);
 
     if (current.isEmpty) {
       final (curr, buffered) = skipEmpty(current);
@@ -105,24 +185,13 @@ Iterable<String> _coreUnfolding(
 
     moveCursor();
 
-    yield preflight(false, hasNext, current);
+    yield yielder(false, hasNext, current);
     previous = current;
   }
 }
 
-/// Unfolds a previously folded string without modifying the state of the
-/// current line being evaluated.
-///
-/// See [unfoldBlockFolded], [unfoldNormal].
-Iterable<String> _unfoldNoPreflight(
-  Iterable<String> lines, {
-  required bool Function(String previous, String current) isFolded,
-}) => _coreUnfolding(lines, preflight: (_, _, c) => c, isFolded: isFolded);
-
 /// Unfolds [lines] to be encoded as [ScalarStyle.folded].
-Iterable<String> unfoldBlockFolded(
-  Iterable<String> lines,
-) => _unfoldNoPreflight(
+Iterable<String> unfoldBlockFolded(Iterable<String> lines) => _coreUnfolding(
   lines,
 
   // Indented lines cannot be unfolded.
@@ -133,17 +202,14 @@ Iterable<String> unfoldBlockFolded(
 /// Unfolds [lines] to be encoded as [ScalarStyle.plain] and
 /// [ScalarStyle.singleQuoted]. These styles are usually folded without any
 /// restrictions.
-Iterable<String> unfoldNormal(Iterable<String> lines) => _unfoldNoPreflight(
-  lines,
-  isFolded: (_, _) => true,
-);
+Iterable<String> unfoldNormal(Iterable<String> lines) => _coreUnfolding(lines);
 
 /// Unfolds [lines] to be encoded as [ScalarStyle.doubleQuoted].
 ///
 /// `YAML` allows linebreaks to be escaped in [ScalarStyle.doubleQuoted] if
 /// you need trailing whitespace to be preserved. Leading whitespace can be
-/// preserved if you escape the whitespace itself. A leading tab is
-/// preserved in its raw form of `\` and `t`.
+/// preserved if you escape the whitespace itself. A leading tab is preserved
+/// in its raw form of `\` and `t`.
 Iterable<String> unfoldDoubleQuoted(Iterable<String> lines) => _coreUnfolding(
   lines,
   preflight: (isFirst, hasNext, current) {
@@ -168,9 +234,42 @@ Iterable<String> unfoldDoubleQuoted(Iterable<String> lines) => _coreUnfolding(
     }
 
     // Escape the linebreak itself for trailing whitespace
-    return hasNext && current.endsWith(' ') || current.endsWith('\t')
+    return hasNext && (current.endsWith(' ') || current.endsWith('\t'))
         ? '$string$_slash\n'
         : string;
   },
-  isFolded: (_, _) => true,
+);
+
+/// Joins [lines] of a scalar being dumped by applying the specified [indent]
+/// to each line. If [includeFirst] is `true`, the first line is also indented.
+(String joinIndent, String joined) _joinScalar(
+  Iterable<String> lines, {
+  required int indent,
+  bool includeFirst = false,
+}) {
+  final joinIndent = ' ' * indent;
+  return (
+    joinIndent,
+    lines
+        .mapIndexed((i, l) => includeFirst || i != 0 ? '$joinIndent$l' : l)
+        .join('\n'),
+  );
+}
+
+/// Splits [blockContent] for a scalar to be encoded as [ScalarStyle.folded] or
+/// [ScalarStyle.literal].
+Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
+  blockContent,
+  replacer: (index, char) sync* {
+    if (!char.isPrintable()) {
+      throw FormatException(
+        'Non-printable character cannot be encoded as literal/folded',
+        blockContent,
+        index,
+      );
+    }
+
+    yield char;
+  },
+  lineOnSplit: () {},
 );
