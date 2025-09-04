@@ -1,14 +1,43 @@
 part of 'scalar_value.dart';
 
-const _cr = 0x0D;
-const _lf = 0x0A;
+/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
+/// line breaks in YAML.
+///
+/// Unlike [splitStringLazy], this function allows you to declare a [replacer]
+/// for [Runes] being iterated. [lineOnSplit] callback is triggered everytime a
+/// line is split after a `\r` or `\n` or `\r\n`. May be inaccurate.
+Iterable<String> splitLazyChecked(
+  String string, {
+  required Iterable<int> Function(int offset, int charCode) replacer,
+  required void Function() lineOnSplit,
+}) => _coreLazySplit(string, replacer: replacer, lineOnSplit: lineOnSplit);
 
 /// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
 /// line breaks in YAML.
 ///
 /// This function breaks the lines indiscriminately and does not track the
 /// dominant line break based on the platform unless the `\r\n` is seen.
-Iterable<String> splitStringLazy(String string) sync* {
+Iterable<String> splitStringLazy(String string) => _coreLazySplit(string);
+
+/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
+/// line breaks in YAML.
+///
+/// Unlike [splitStringLazy], this function allows you to declare a [replacer]
+/// for [Runes] being iterated. [lineOnSplit] callback is triggered everytime a
+/// line is split after a `\r` or `\n` or `\r\n`. May be inaccurate.
+Iterable<String> _coreLazySplit(
+  String string, {
+  Iterable<int> Function(int offset, int charCode)? replacer,
+  void Function()? lineOnSplit,
+}) sync* {
+  final subchecker =
+      replacer ??
+      (_, c) sync* {
+        yield c;
+      };
+
+  final splitCallback = lineOnSplit ?? () {};
+
   final runeIterator = string.runes.iterator;
 
   bool canIterate() => runeIterator.moveNext();
@@ -21,8 +50,10 @@ Iterable<String> splitStringLazy(String string) sync* {
     var current = runeIterator.current;
 
     switch (current) {
-      case _cr:
+      case carriageReturn:
         {
+          splitCallback();
+
           // If just "\r", exit immediately without overwriting trailing "\r"
           if (!canIterate()) {
             yield buffer.toString();
@@ -35,20 +66,24 @@ Iterable<String> splitStringLazy(String string) sync* {
         }
 
       gen:
-      case _lf:
+      case lineFeed:
         {
+          splitCallback();
+
           yield buffer.toString();
           buffer.clear();
 
           // In case we got this char from the carriage return
-          if (current != _lf && current != -1) {
+          if (current != lineFeed && current != -1) {
             continue writer;
           }
         }
 
       writer:
       default:
-        buffer.writeCharCode(current);
+        for (final char in subchecker(runeIterator.rawIndex, current)) {
+          buffer.writeCharCode(char);
+        }
     }
 
     previous = current;
@@ -56,7 +91,7 @@ Iterable<String> splitStringLazy(String string) sync* {
 
   /// Ensure we flush all buffered contents. A trailing line break signals
   /// we need it preserved. Thus, emit an empty string too in this case.
-  if (buffer.isNotEmpty || previous == _cr || previous == _lf) {
+  if (buffer.isNotEmpty || previous == carriageReturn || previous == lineFeed) {
     yield buffer.toString();
   }
 }
