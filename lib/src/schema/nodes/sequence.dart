@@ -90,9 +90,9 @@ String _encodeBlockSequence<T>(
   nodeStyle: NodeStyle.block,
 
   /// Applies "- " and trailing line break for all except the last
-  onEntryEncoded: (hasNext, entry) =>
-      '$indentation- $entry'
-      '${hasNext && !entry.endsWith('\n') ? '\n' : ''}',
+  onEntryEncoded: (_, entry) =>
+      '$indentation- ${_replaceIfEmpty(entry)}'
+      '${entry.endsWith('\n') ? '' : '\n'}',
 );
 
 /// Encodes [Sequence] or [List] to a `YAML` [NodeStyle.flow] sequence. If
@@ -105,7 +105,7 @@ String _encodeFlowSequence<T>(
 }) {
   final sequenceIndent = ' ' * indent;
   final entryIndent = '$sequenceIndent '; // +1 level, +1 indent
-  final nextEntry = flowEntryEnd.asString();
+  final nextEntry = '${flowEntryEnd.asString()}\n';
 
   return _encodeSequence(
     flowList,
@@ -113,12 +113,13 @@ String _encodeFlowSequence<T>(
     isJsonCompatible: isJsonCompatible,
     nodeStyle: NodeStyle.flow,
     onEntryEncoded: (hasNext, entry) =>
-        '$entryIndent$entry'
+        '$entryIndent${_replaceIfEmpty(entry)}'
         // ignore: lines_longer_than_80_chars
         '${hasNext ? '${(entry.endsWith('\n') ? entryIndent : '')}$nextEntry' : ''}',
     onCompleted: (encoded) =>
-        '[$encoded'
-        '${encoded.endsWith('\n') ? sequenceIndent : ''}'
+        '[\n'
+        '$encoded'
+        '${encoded.endsWith('\n') ? '' : '\n'}$sequenceIndent'
         ']',
   );
 }
