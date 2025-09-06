@@ -273,3 +273,64 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
   },
   lineOnSplit: () {},
 );
+
+/// Encodes any [object] to valid `YAML` source string. If [jsonCompatible] is
+/// `true`, the object is encoded as valid json with collections defaulting to
+/// [NodeStyle.flow] and scalars encoded with [ScalarStyle.doubleQuoted].
+///
+/// In addition to encoding the [object], it returns if the source string can
+/// be an explicit key in a `YAML` [Mapping] and if the [object] was a
+/// collection.
+///
+/// The [object] is always an explicit key if it is a collection or was
+/// [Scalar]-like and span multiple lines.
+({bool explicitIfKey, String encoded}) _encodeObject<T>(
+  T object, {
+  required int indent,
+  required bool jsonCompatible,
+  required NodeStyle nodeStyle,
+}) {
+  final encodable = switch (object) {
+    AliasNode(:final aliased) => aliased,
+    _ => object,
+  };
+
+  switch (encodable) {
+    case List list:
+      return (
+        explicitIfKey: true,
+        encoded: dumpSequence(
+          list,
+          indent: indent,
+          collectionNodeStyle: nodeStyle,
+          jsonCompatible: jsonCompatible,
+        ),
+      );
+
+    case Map map:
+      return (
+        explicitIfKey: true,
+        encoded: dumpMapping(
+          map,
+          indent: indent,
+          collectionNodeStyle: nodeStyle,
+          jsonCompatible: jsonCompatible,
+        ),
+      );
+
+    default:
+      {
+        final (:explicitIfKey, :encodedScalar) = dumpScalar(
+          encodable,
+          indent: indent,
+          jsonCompatible: jsonCompatible,
+          parentNodeStyle: nodeStyle,
+        );
+
+        return (
+          explicitIfKey: explicitIfKey,
+          encoded: encodedScalar,
+        );
+      }
+  }
+}

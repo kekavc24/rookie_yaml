@@ -64,21 +64,12 @@ String _encodeSequence<T>(
 
   // List never empty
   do {
-    final encoded = switch (iterator.current) {
-      List list => dumpSequence(
-        list,
-        indent: childIndent,
-        collectionNodeStyle: nodeStyle,
-        jsonCompatible: isJsonCompatible,
-      ),
-      Map _ => '{}',
-      T value => dumpScalar(
-        value,
-        indent: childIndent,
-        jsonCompatible: isJsonCompatible,
-        parentNodeStyle: nodeStyle,
-      ).encodedScalar,
-    };
+    final encoded = _encodeObject(
+      iterator.current,
+      indent: childIndent,
+      jsonCompatible: isJsonCompatible,
+      nodeStyle: nodeStyle,
+    ).encoded;
 
     hasNext = iterator.moveNext();
     buffer.write(onEntryEncoded(hasNext, encoded));
