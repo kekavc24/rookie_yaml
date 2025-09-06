@@ -334,3 +334,6 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
       }
   }
 }
+
+/// Replaces an empty [string] with an explicit `null`.
+String _replaceIfEmpty(String string) => string.isEmpty ? 'null' : string;
