@@ -121,7 +121,7 @@ const lineSeparator = 0x2028;
 const paragraphSeparator = 0x2029;
 
 /// `\e`
-const asciiEscape = 0x20;
+const asciiEscape = 0x1B;
 
 /// `\/`
 const slash = 0x2F;
