@@ -118,6 +118,7 @@ const _nerfedTab =
 /// See [unfoldNormal] for other [ScalarStyle]s.
 Iterable<String> _coreUnfolding(
   Iterable<String> lines, {
+  bool isBlockUnfolding = false,
   String Function(bool isFirst, bool hasNext, String line)? preflight,
   bool Function(String previous, String current)? isFolded,
 }) sync* {
@@ -131,26 +132,28 @@ Iterable<String> _coreUnfolding(
 
   /// Skips empty lines. This is a utility nested closure.
   /// `TIP`: Collapse it.
-  (String? currentLine, List<String> buffered) skipEmpty(String current) {
-    final buffer = [current];
+  Iterable<String> skipEmpty(
+    String current, {
+    required void Function(String? current) onComplete,
+  }) sync* {
     String? onExit;
 
+    yield current;
     moveCursor();
 
     while (hasNext) {
       final line = iterator.current;
 
-      if (line.isEmpty) {
-        buffer.add(line);
-        moveCursor();
-        continue;
+      if (line.isNotEmpty) {
+        onExit = line;
+        break;
       }
 
-      onExit = line;
-      break;
+      yield line;
+      moveCursor();
     }
 
-    return (onExit, buffer);
+    onComplete(onExit);
   }
 
   moveCursor(); // Start.
@@ -161,22 +164,20 @@ Iterable<String> _coreUnfolding(
   yield yielder(true, hasNext, previous); // Emit first line always
 
   while (hasNext) {
-    var current = iterator.current;
+    String? current = iterator.current;
 
     // Eval with the last non-empty line if present
     final hasFoldTarget = canUnfold(previous, current);
 
     if (current.isEmpty) {
-      final (curr, buffered) = skipEmpty(current);
+      yield* skipEmpty(current, onComplete: (line) => current = line);
 
-      yield* buffered;
-
-      if (curr == null) {
-        if (hasFoldTarget) yield _empty;
+      if (current == null) {
+        /// Trailing line breaks are never folded, just chomped in block folded
+        /// scalars
+        if (!isBlockUnfolding && hasFoldTarget) yield _empty;
         break;
       }
-
-      current = curr;
     }
 
     if (hasFoldTarget) {
@@ -185,14 +186,15 @@ Iterable<String> _coreUnfolding(
 
     moveCursor();
 
-    yield yielder(false, hasNext, current);
-    previous = current;
+    yield yielder(false, hasNext, current!);
+    previous = current!;
   }
 }
 
 /// Unfolds [lines] to be encoded as [ScalarStyle.folded].
 Iterable<String> unfoldBlockFolded(Iterable<String> lines) => _coreUnfolding(
   lines,
+  isBlockUnfolding: true,
 
   // Indented lines cannot be unfolded.
   isFolded: (previous, current) =>
