@@ -27,13 +27,10 @@ enum ScalarStyle {
   /// A quoted `flow` style that uses `"`.
   doubleQuoted(NodeStyle.flow);
 
-  const ScalarStyle(this._nodeStyle);
+  const ScalarStyle(this.nodeStyle);
 
   /// A basic [NodeStyle] used by the [YamlScalar]
-  final NodeStyle _nodeStyle;
-
-  /// Returns `true` if the scalar is serialized as [NodeStyle.block]
-  bool get isBlockStyle => _nodeStyle == NodeStyle.block;
+  final NodeStyle nodeStyle;
 }
 
 /// Controls how final line breaks and trailing empty lines are interpreted.

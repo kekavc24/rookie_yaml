@@ -1,4 +1,12 @@
-part of 'yaml_node.dart';
+import 'package:collection/collection.dart';
+import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
+import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
+
+part 'dump_scalar.dart';
+part 'dump_mapping.dart';
+part 'dump_sequence.dart';
 
 /// Represents a way to describe the amount of information to include in the
 /// `YAML` source string.
@@ -286,7 +294,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
 ///
 /// The [object] is always an explicit key if it is a collection or was
 /// [Scalar]-like and span multiple lines.
-({bool explicitIfKey, String encoded}) _encodeObject<T>(
+({bool explicitIfKey, bool isCollection, String encoded}) _encodeObject<T>(
   T object, {
   required int indent,
   required bool jsonCompatible,
@@ -301,7 +309,8 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
     case List list:
       return (
         explicitIfKey: true,
-        encoded: dumpSequence(
+        isCollection: true,
+        encoded: _dumpSequence(
           list,
           indent: indent,
           collectionNodeStyle: nodeStyle,
@@ -312,7 +321,8 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
     case Map map:
       return (
         explicitIfKey: true,
-        encoded: dumpMapping(
+        isCollection: true,
+        encoded: _dumpMapping(
           map,
           indent: indent,
           collectionNodeStyle: nodeStyle,
@@ -322,7 +332,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
 
     default:
       {
-        final (:explicitIfKey, :encodedScalar) = dumpScalar(
+        final (:explicitIfKey, :encodedScalar) = _dumpScalar(
           encodable,
           indent: indent,
           jsonCompatible: jsonCompatible,
@@ -331,6 +341,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
 
         return (
           explicitIfKey: explicitIfKey,
+          isCollection: false,
           encoded: encodedScalar,
         );
       }
@@ -339,3 +350,70 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
 
 /// Replaces an empty [string] with an explicit `null`.
 String _replaceIfEmpty(String string) => string.isEmpty ? 'null' : string;
+
+/// Dumps a [Scalar] or any `Dart` object by calling its `toString` method.
+///
+/// [dumpingStyle] will always default to [ScalarStyle.doubleQuoted] if
+/// [jsonCompatible] is `true`. In this case, the string is normalized and any
+/// escaped characters are "nerfed".
+///
+/// If the [scalar] is an actual [Scalar] object, its [ScalarStyle] takes
+/// precedence. Otherwise, defaults to [dumpingStyle]. However, the
+/// [dumpingStyle]'s [NodeStyle] must be compatible with the [parentNodeStyle]
+/// if present, that is, [NodeStyle.block] accepts both `block` and `flow`
+/// styles while [NodeStyle.flow] accepts only `flow` styles. If incompatible,
+/// [dumpingStyle] defaults to YAML's [ScalarStyle.doubleQuoted].
+///
+/// If multiline, each line (excluding the leading line) is padded with the
+/// [indent] provided.
+String dumpScalar<T>(
+  T scalar, {
+  required int indent,
+  bool jsonCompatible = false,
+  ScalarStyle dumpingStyle = ScalarStyle.doubleQuoted,
+}) =>
+    ' ' * indent +
+    _dumpScalar(
+      scalar,
+      indent: indent,
+      jsonCompatible: jsonCompatible,
+      dumpingStyle: dumpingStyle,
+    ).encodedScalar;
+
+/// Dumps a [sequence] which must be a [Sequence] or `Dart` [List].
+///
+/// [collectionNodeStyle] defaults to [NodeStyle.flow] if [jsonCompatible] is
+/// `true`. If `null` and the [sequence] is an actual [Sequence] object, its
+/// [NodeStyle] is used. Otherwise, [collectionNodeStyle] defaults to
+/// [NodeStyle.flow].
+String dumpSequence<L extends Iterable>(
+  L sequence, {
+  required int indent,
+  bool jsonCompatible = false,
+  NodeStyle? collectionNodeStyle,
+}) => _dumpSequence(
+  sequence,
+  indent: indent,
+  isRoot: true,
+  collectionNodeStyle: collectionNodeStyle,
+  jsonCompatible: jsonCompatible,
+);
+
+/// Dumps a [mapping] which must be a [Mapping] or `Dart` [Map].
+///
+/// [collectionNodeStyle] defaults to [NodeStyle.flow] if [jsonCompatible] is
+/// `true`. If `null` and the [mapping] is an actual [Mapping] object, its
+/// [NodeStyle] is used. Otherwise, [collectionNodeStyle] defaults to
+/// [NodeStyle.flow].
+String dumpMapping<M extends Map>(
+  M mapping, {
+  required int indent,
+  bool jsonCompatible = false,
+  NodeStyle? collectionNodeStyle,
+}) => _dumpMapping(
+  mapping,
+  indent: indent,
+  isRoot: true,
+  collectionNodeStyle: collectionNodeStyle,
+  jsonCompatible: jsonCompatible,
+);
