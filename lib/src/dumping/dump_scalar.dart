@@ -2,6 +2,41 @@ part of 'dumping.dart';
 
 const _maxImplicitLength = 1024;
 
+bool _useNodeStyleDefault(ScalarStyle? style, String content) =>
+    style == null ||
+    style == ScalarStyle.plain && content.trim().length != content.length;
+
+/// Returns a [ScalarStyle] that is valid and can be used to encode a scalar.
+///
+/// [parentNodeStyle] defaults to [NodeStyle.flow] when `null`.
+///
+/// If [current] is `null`, [parentNodeStyle] is used to determine the
+/// [ScalarStyle]. Defaults to [ScalarStyle.doubleQuoted] in [NodeStyle.flow]
+/// and [ScalarStyle.literal] in [NodeStyle.block].
+///
+/// If current is [ScalarStyle.plain], the [ScalarStyle] defaults to the
+/// [parentNodeStyle] if it has leading or trailing whitespaces (line breaks
+/// included).
+ScalarStyle _defaultStyle(
+  ScalarStyle? current, {
+  required NodeStyle? parentNodeStyle,
+  required String content,
+}) {
+  final useDefault = _useNodeStyleDefault(current, content);
+
+  /// Ensure global style matches the scalar style. Block styles are never
+  /// used in flow styles but the opposite is possible. YAML prefers plain style
+  /// but double quoted guarantees compatibility.
+  ///
+  /// Plain styles never have any leading/trailing whitespaces.
+  if ((parentNodeStyle ?? current?.nodeStyle ?? NodeStyle.flow) ==
+      NodeStyle.flow) {
+    return useDefault ? ScalarStyle.doubleQuoted : current!;
+  }
+
+  return useDefault ? ScalarStyle.literal : current!;
+}
+
 /// Dumps a [Scalar] or any `Dart` object by calling its `toString` method.
 ///
 /// [dumpingStyle] will always default to [ScalarStyle.doubleQuoted] if
@@ -21,9 +56,15 @@ const _maxImplicitLength = 1024;
   T scalar, {
   required int indent,
   bool jsonCompatible = false,
-  ScalarStyle dumpingStyle = ScalarStyle.doubleQuoted,
+  ScalarStyle? dumpingStyle,
   NodeStyle? parentNodeStyle,
 }) {
+  assert(
+    dumpingStyle != null || parentNodeStyle != null,
+    'Unable to dump a node with no style. Expected a ScalarStyle or NodeStyle '
+    'to be provided',
+  );
+
   var content = scalar.toString(); // Scalars are always strings
 
   /// Default to double quoted for json compatibility and normalize all
@@ -47,22 +88,14 @@ const _maxImplicitLength = 1024;
   }
 
   // TODO: Register tag information
-  var style = switch (scalar) {
-    Scalar(:final scalarStyle) => scalarStyle,
-    _ => dumpingStyle,
-  };
-
-  /// Ensure global style matches the scalar style. Block styles are never
-  /// used in flow styles but the opposite is possible. YAML prefers plain style
-  /// but double quoted guarantees compatibility.
-  ///
-  /// Plain styles never have any leading/trailing whitespaces.
-  style =
-      (parentNodeStyle != null && style.nodeStyle != parentNodeStyle) ||
-          (style == ScalarStyle.plain &&
-              trimYamlWhitespace(content).length != content.length)
-      ? ScalarStyle.doubleQuoted
-      : style;
+  final style = _defaultStyle(
+    switch (scalar) {
+      Scalar(:final scalarStyle) => scalarStyle,
+      _ => dumpingStyle,
+    },
+    parentNodeStyle: parentNodeStyle,
+    content: content,
+  );
 
   var preferExplicit = false;
 

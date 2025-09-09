@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
@@ -299,6 +298,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
   required int indent,
   required bool jsonCompatible,
   required NodeStyle nodeStyle,
+  required ScalarStyle? preferredScalarStyle,
 }) {
   final encodable = switch (object) {
     AliasNode(:final aliased) => aliased,
@@ -315,6 +315,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
           indent: indent,
           collectionNodeStyle: nodeStyle,
           jsonCompatible: jsonCompatible,
+          preferredScalarStyle: preferredScalarStyle,
         ),
       );
 
@@ -327,6 +328,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
           indent: indent,
           collectionNodeStyle: nodeStyle,
           jsonCompatible: jsonCompatible,
+          preferredScalarStyle: preferredScalarStyle,
         ),
       );
 
@@ -337,6 +339,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
           indent: indent,
           jsonCompatible: jsonCompatible,
           parentNodeStyle: nodeStyle,
+          dumpingStyle: preferredScalarStyle,
         );
 
         return (
@@ -356,19 +359,9 @@ String _replaceIfEmpty(String string) => string.isEmpty ? 'null' : string;
 /// [dumpingStyle] will always default to [ScalarStyle.doubleQuoted] if
 /// [jsonCompatible] is `true`. In this case, the string is normalized and any
 /// escaped characters are "nerfed".
-///
-/// If the [scalar] is an actual [Scalar] object, its [ScalarStyle] takes
-/// precedence. Otherwise, defaults to [dumpingStyle]. However, the
-/// [dumpingStyle]'s [NodeStyle] must be compatible with the [parentNodeStyle]
-/// if present, that is, [NodeStyle.block] accepts both `block` and `flow`
-/// styles while [NodeStyle.flow] accepts only `flow` styles. If incompatible,
-/// [dumpingStyle] defaults to YAML's [ScalarStyle.doubleQuoted].
-///
-/// If multiline, each line (excluding the leading line) is padded with the
-/// [indent] provided.
 String dumpScalar<T>(
   T scalar, {
-  required int indent,
+  int indent = 0,
   bool jsonCompatible = false,
   ScalarStyle dumpingStyle = ScalarStyle.doubleQuoted,
 }) =>
@@ -386,17 +379,33 @@ String dumpScalar<T>(
 /// `true`. If `null` and the [sequence] is an actual [Sequence] object, its
 /// [NodeStyle] is used. Otherwise, [collectionNodeStyle] defaults to
 /// [NodeStyle.flow].
+///
+/// [preferredScalarStyle] is a hint on the preferred [ScalarStyle] for
+/// scalars in your [sequence]. If the `scalar` is an actual [Scalar] object,
+/// its [ScalarStyle] takes precedence. Otherwise, defaults to
+/// [preferredScalarStyle]. Furthermore, the [preferredScalarStyle]'s
+/// [NodeStyle] must be compatible with the [collectionNodeStyle] if present,
+/// that is, [NodeStyle.block] accepts both `block` and `flow` styles while
+/// [NodeStyle.flow] accepts only `flow` styles. If incompatible,
+/// [preferredScalarStyle] is ignored and defaults to [ScalarStyle.doubleQuoted]
+/// in [NodeStyle.flow] and [ScalarStyle.literal] in [NodeStyle.block].
+///
+/// If [preferredScalarStyle] is [ScalarStyle.plain] and has leading or
+/// trailing whitespaces (line breaks included), the [ScalarStyle] defaults
+/// to the [collectionNodeStyle]'s default.
 String dumpSequence<L extends Iterable>(
   L sequence, {
-  required int indent,
+  int indent = 0,
   bool jsonCompatible = false,
   NodeStyle? collectionNodeStyle,
+  ScalarStyle? preferredScalarStyle,
 }) => _dumpSequence(
   sequence,
   indent: indent,
   isRoot: true,
   collectionNodeStyle: collectionNodeStyle,
   jsonCompatible: jsonCompatible,
+  preferredScalarStyle: preferredScalarStyle,
 );
 
 /// Dumps a [mapping] which must be a [Mapping] or `Dart` [Map].
@@ -405,15 +414,31 @@ String dumpSequence<L extends Iterable>(
 /// `true`. If `null` and the [mapping] is an actual [Mapping] object, its
 /// [NodeStyle] is used. Otherwise, [collectionNodeStyle] defaults to
 /// [NodeStyle.flow].
+///
+/// [preferredScalarStyle] is a hint on the preferred [ScalarStyle] for
+/// scalars in your [mapping]. If the `scalar` is an actual [Scalar] object,
+/// its [ScalarStyle] takes precedence. Otherwise, defaults to
+/// [preferredScalarStyle]. Furthermore, the [preferredScalarStyle]'s
+/// [NodeStyle] must be compatible with the [collectionNodeStyle] if present,
+/// that is, [NodeStyle.block] accepts both `block` and `flow` styles while
+/// [NodeStyle.flow] accepts only `flow` styles. If incompatible,
+/// [preferredScalarStyle] is ignored and defaults to [ScalarStyle.doubleQuoted]
+/// in [NodeStyle.flow] and [ScalarStyle.literal] in [NodeStyle.block].
+///
+/// If [preferredScalarStyle] is [ScalarStyle.plain] and has leading or
+/// trailing whitespaces (line breaks included), the [ScalarStyle] defaults
+/// to the [collectionNodeStyle]'s default.
 String dumpMapping<M extends Map>(
   M mapping, {
-  required int indent,
+  int indent = 0,
   bool jsonCompatible = false,
   NodeStyle? collectionNodeStyle,
+  ScalarStyle? preferredScalarStyle,
 }) => _dumpMapping(
   mapping,
-  indent: indent,
+  indent: 0,
   isRoot: true,
   collectionNodeStyle: collectionNodeStyle,
   jsonCompatible: jsonCompatible,
+  preferredScalarStyle: preferredScalarStyle,
 );

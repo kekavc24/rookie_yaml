@@ -14,7 +14,7 @@ part of 'dumping.dart';
 String _encodeSequence<T>(
   Iterable<T> sequence, {
   required int childIndent,
-  bool blockIsNested = false,
+  required ScalarStyle? preferredScalarStyle,
   required bool isJsonCompatible,
   required NodeStyle nodeStyle,
   required String Function(bool isFirst, bool hasNext, String entry)
@@ -36,6 +36,7 @@ String _encodeSequence<T>(
       indent: childIndent,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
+      preferredScalarStyle: preferredScalarStyle,
     ).encoded;
 
     hasNext = iterator.moveNext();
@@ -51,10 +52,12 @@ String _encodeBlockSequence<T>(
   Iterable<T> blockList, {
   required int indent,
   required String indentation,
+  required ScalarStyle? preferredScalarStyle,
   required bool isRoot,
 }) => _encodeSequence(
   blockList,
   childIndent: indent + 2, // "-" + space
+  preferredScalarStyle: preferredScalarStyle,
   isJsonCompatible: false,
   nodeStyle: NodeStyle.block,
 
@@ -72,6 +75,7 @@ String _encodeBlockSequence<T>(
 String _encodeFlowSequence<T>(
   Iterable<T> flowList, {
   required int indent,
+  required ScalarStyle? preferredScalarStyle,
   required bool isJsonCompatible,
   required bool isRoot,
 }) {
@@ -82,6 +86,7 @@ String _encodeFlowSequence<T>(
   return _encodeSequence(
     flowList,
     childIndent: indent + 1,
+    preferredScalarStyle: preferredScalarStyle,
     isJsonCompatible: isJsonCompatible,
     nodeStyle: NodeStyle.flow,
     onEntryEncoded: (_, hasNext, entry) =>
@@ -106,8 +111,9 @@ String _encodeFlowSequence<T>(
 String _dumpSequence<L extends Iterable>(
   L sequence, {
   required int indent,
+  required ScalarStyle? preferredScalarStyle,
+  required bool jsonCompatible,
   bool isRoot = false,
-  bool jsonCompatible = false,
   NodeStyle? collectionNodeStyle,
 }) => sequence.isEmpty
     ? '[]'
@@ -121,12 +127,14 @@ String _dumpSequence<L extends Iterable>(
     ? _encodeFlowSequence(
         sequence,
         indent: indent,
+        preferredScalarStyle: preferredScalarStyle,
         isJsonCompatible: jsonCompatible,
         isRoot: isRoot,
       )
     : _encodeBlockSequence(
         sequence,
         indent: indent,
+        preferredScalarStyle: preferredScalarStyle,
         indentation: ' ' * indent,
         isRoot: isRoot,
       );

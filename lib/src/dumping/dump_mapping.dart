@@ -16,6 +16,7 @@ String _encodeMapping<K, V>(
   Map<K, V> mapping, {
   required int keyIndent,
   required int valueIndent,
+  required ScalarStyle? preferredScalarStyle,
   required bool isJsonCompatible,
   required NodeStyle nodeStyle,
   required String Function(bool isFirst, bool isExplicit, String key)
@@ -42,6 +43,7 @@ String _encodeMapping<K, V>(
     final (:explicitIfKey, isCollection: _, :encoded) = _encodeObject(
       key,
       indent: keyIndent,
+      preferredScalarStyle: preferredScalarStyle,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
     );
@@ -55,6 +57,7 @@ String _encodeMapping<K, V>(
 
     final (:isCollection, encoded: object, explicitIfKey: _) = _encodeObject(
       value,
+      preferredScalarStyle: preferredScalarStyle,
       indent: valueIndent,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
@@ -79,6 +82,7 @@ String _encodeMapping<K, V>(
 String _encodeBlockMap<K, V>(
   Map<K, V> mapping, {
   required int indent,
+  required ScalarStyle? preferredScalarStyle,
   required bool isRoot,
 }) {
   final mapIndent = ' ' * indent;
@@ -89,6 +93,7 @@ String _encodeBlockMap<K, V>(
     mapping,
     keyIndent: explicitIndent,
     valueIndent: explicitIndent,
+    preferredScalarStyle: preferredScalarStyle,
     isJsonCompatible: false,
     nodeStyle: NodeStyle.block,
     onEncodedKey: (isFirst, isExplicit, key) {
@@ -139,6 +144,7 @@ String _encodeBlockMap<K, V>(
 String _encodeFlowMap<K, V>(
   Map<K, V> mapping, {
   required int indent,
+  required ScalarStyle? preferredScalarStyle,
   required bool jsonCompatible,
   required bool isRoot,
 }) {
@@ -153,6 +159,7 @@ String _encodeFlowMap<K, V>(
     mapping,
     keyIndent: keyIndent,
     valueIndent: valueIndent,
+    preferredScalarStyle: preferredScalarStyle,
     isJsonCompatible: jsonCompatible,
     nodeStyle: NodeStyle.flow,
 
@@ -191,8 +198,9 @@ String _encodeFlowMap<K, V>(
 String _dumpMapping<M extends Map>(
   M mapping, {
   required int indent,
+  required ScalarStyle? preferredScalarStyle,
+  required bool jsonCompatible,
   bool isRoot = false,
-  bool jsonCompatible = false,
   NodeStyle? collectionNodeStyle,
 }) => mapping.isEmpty
     ? '{}'
@@ -208,5 +216,11 @@ String _dumpMapping<M extends Map>(
         isRoot: isRoot,
         indent: indent,
         jsonCompatible: jsonCompatible,
+        preferredScalarStyle: preferredScalarStyle,
       )
-    : _encodeBlockMap(mapping, indent: indent, isRoot: isRoot);
+    : _encodeBlockMap(
+        mapping,
+        indent: indent,
+        isRoot: isRoot,
+        preferredScalarStyle: preferredScalarStyle,
+      );
