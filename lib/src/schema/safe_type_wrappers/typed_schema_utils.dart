@@ -52,10 +52,9 @@ Iterable<String> _coreLazySplit(
     switch (current) {
       case carriageReturn:
         {
-          splitCallback();
-
           // If just "\r", exit immediately without overwriting trailing "\r"
           if (!canIterate()) {
+            splitCallback();
             yield buffer.toString();
             buffer.clear();
             break splitter;
