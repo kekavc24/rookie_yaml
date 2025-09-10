@@ -1,7 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:source_span/source_span.dart';
 
@@ -10,7 +8,6 @@ part 'mapping.dart';
 part 'node_styles.dart';
 part 'scalar.dart';
 part 'sequence.dart';
-part 'dumper_utils.dart';
 
 const _equality = DeepCollectionEquality();
 
