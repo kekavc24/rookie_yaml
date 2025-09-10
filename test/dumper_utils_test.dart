@@ -79,7 +79,10 @@ multiline string.
     test('Unfolds a string normally (folded block style)', () {
       final unfolded = unfoldBlockFolded(defaultStringSplit).join('\n');
 
-      check(unfolded).equals(defaultUnfolded);
+      // Trailing line breaks are chomped not folded
+      check(
+        unfolded,
+      ).equals(defaultUnfolded.substring(0, defaultUnfolded.length - 1));
 
       parserMatches(
         parseBlockStyle(
@@ -167,7 +170,7 @@ multiline string.
           '  * list\n'
           '  * lines'
           '\n\n' // Not unfolded. Last non-empty line was indented!
-          'last line\n\n';
+          'last line\n'; // Trailing line breaks are chomped not folded
 
       final unfolded = unfoldBlockFolded(
         splitStringLazy(foldTarget),
