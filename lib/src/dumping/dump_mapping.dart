@@ -112,7 +112,7 @@ String _encodeBlockMap<K, V>(
       /// value is present/absent.
       return '$leading$key'
           '${key.startsWith('*') ? ' ' : ''}' // Aliases accept ":"
-          ': ';
+          ':';
     },
     onEncodedValue: (value, _, keyIsExplicit, keyHasTrailingLF, isCollection) {
       final valueTrailer = value.endsWith('\n') ? '' : '\n';
@@ -128,7 +128,7 @@ String _encodeBlockMap<K, V>(
       final leading =
           isCollection && (value.startsWith('- ') || value.startsWith('? '))
           ? '\n$mapIndent  '
-          : '';
+          : ' ';
 
       // Readability's sake
       return '$leading'
