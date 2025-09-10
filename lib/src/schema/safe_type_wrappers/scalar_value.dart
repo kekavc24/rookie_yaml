@@ -79,12 +79,11 @@ final class YamlSafeInt extends _InferredValue<int> {
 ///   - Missing key from a flow/block map
 ///   - Missing value from a block list
 final class NullView extends _InferredValue<String?> {
-  NullView(this._null) : isVirtual = _null.isEmpty, super(null);
+  NullView(String nullStr)
+    : _null = nullStr.isEmpty ? 'null' : nullStr,
+      super(null);
 
   final String _null;
-
-  /// Indicates if a `null` is non-existent
-  final bool isVirtual;
 
   @override
   String toString() => _null;
