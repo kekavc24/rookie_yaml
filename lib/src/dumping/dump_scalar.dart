@@ -4,7 +4,11 @@ const _maxImplicitLength = 1024;
 
 bool _useNodeStyleDefault(ScalarStyle? style, String content) =>
     style == null ||
-    style == ScalarStyle.plain && content.trim().length != content.length;
+    // Intentionally avoided treated escaped chars as whitespace
+    style == ScalarStyle.plain &&
+        (content.startsWith('\n') ||
+            content.endsWith('\n') ||
+            trimYamlWhitespace(content).length != content.length);
 
 /// Returns a [ScalarStyle] that is valid and can be used to encode a scalar.
 ///
@@ -22,7 +26,7 @@ ScalarStyle _defaultStyle(
   required NodeStyle? parentNodeStyle,
   required String content,
 }) {
-  final useDefault = _useNodeStyleDefault(current, content);
+  var useDefault = _useNodeStyleDefault(current, content);
 
   /// Ensure global style matches the scalar style. Block styles are never
   /// used in flow styles but the opposite is possible. YAML prefers plain style
@@ -31,7 +35,9 @@ ScalarStyle _defaultStyle(
   /// Plain styles never have any leading/trailing whitespaces.
   if ((parentNodeStyle ?? current?.nodeStyle ?? NodeStyle.flow) ==
       NodeStyle.flow) {
-    return useDefault ? ScalarStyle.doubleQuoted : current!;
+    return (current?.nodeStyle != NodeStyle.flow || useDefault)
+        ? ScalarStyle.doubleQuoted
+        : current!;
   }
 
   return useDefault ? ScalarStyle.literal : current!;
