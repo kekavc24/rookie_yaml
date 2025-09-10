@@ -10,13 +10,14 @@ part of 'dumping.dart';
 ///
 /// [onEncodedKey] is called once for every key before a value is encoded while
 /// [onEncodedValue] is called once for every value before the next entry is
-/// encoded. [onCompleted] is called once after the entire [mapping] has been
+/// encoded. [completer] is called once after the entire [mapping] has been
 /// encoded.
 String _encodeMapping<K, V>(
   Map<K, V> mapping, {
   required int keyIndent,
   required int valueIndent,
-  required ScalarStyle? preferredScalarStyle,
+  required ScalarStyle? keyScalarStyle,
+  required ScalarStyle? valueScalarStyle,
   required bool isJsonCompatible,
   required NodeStyle nodeStyle,
   required String Function(bool isFirst, bool isExplicit, String key)
@@ -43,7 +44,9 @@ String _encodeMapping<K, V>(
     final (:explicitIfKey, isCollection: _, :encoded) = _encodeObject(
       key,
       indent: keyIndent,
-      preferredScalarStyle: preferredScalarStyle,
+      currentScalarStyle: keyScalarStyle,
+      mapKeyScalarStyle: keyScalarStyle,
+      mapValueScalarStyle: valueScalarStyle,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
     );
@@ -57,7 +60,9 @@ String _encodeMapping<K, V>(
 
     final (:isCollection, encoded: object, explicitIfKey: _) = _encodeObject(
       value,
-      preferredScalarStyle: preferredScalarStyle,
+      currentScalarStyle: valueScalarStyle,
+      mapKeyScalarStyle: keyScalarStyle,
+      mapValueScalarStyle: valueScalarStyle,
       indent: valueIndent,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
@@ -82,7 +87,8 @@ String _encodeMapping<K, V>(
 String _encodeBlockMap<K, V>(
   Map<K, V> mapping, {
   required int indent,
-  required ScalarStyle? preferredScalarStyle,
+  required ScalarStyle? keyScalarStyle,
+  required ScalarStyle? valueScalarStyle,
   required bool isRoot,
 }) {
   final mapIndent = ' ' * indent;
@@ -93,7 +99,8 @@ String _encodeBlockMap<K, V>(
     mapping,
     keyIndent: explicitIndent,
     valueIndent: explicitIndent,
-    preferredScalarStyle: preferredScalarStyle,
+    keyScalarStyle: keyScalarStyle,
+    valueScalarStyle: valueScalarStyle,
     isJsonCompatible: false,
     nodeStyle: NodeStyle.block,
     onEncodedKey: (isFirst, isExplicit, key) {
@@ -144,7 +151,8 @@ String _encodeBlockMap<K, V>(
 String _encodeFlowMap<K, V>(
   Map<K, V> mapping, {
   required int indent,
-  required ScalarStyle? preferredScalarStyle,
+  required ScalarStyle? keyScalarStyle,
+  required ScalarStyle? valueScalarStyle,
   required bool jsonCompatible,
   required bool isRoot,
 }) {
@@ -159,7 +167,8 @@ String _encodeFlowMap<K, V>(
     mapping,
     keyIndent: keyIndent,
     valueIndent: valueIndent,
-    preferredScalarStyle: preferredScalarStyle,
+    keyScalarStyle: keyScalarStyle,
+    valueScalarStyle: valueScalarStyle,
     isJsonCompatible: jsonCompatible,
     nodeStyle: NodeStyle.flow,
 
@@ -198,7 +207,8 @@ String _encodeFlowMap<K, V>(
 String _dumpMapping<M extends Map>(
   M mapping, {
   required int indent,
-  required ScalarStyle? preferredScalarStyle,
+  required ScalarStyle? keyScalarStyle,
+  required ScalarStyle? valueScalarStyle,
   required bool jsonCompatible,
   bool isRoot = false,
   NodeStyle? collectionNodeStyle,
@@ -216,11 +226,13 @@ String _dumpMapping<M extends Map>(
         isRoot: isRoot,
         indent: indent,
         jsonCompatible: jsonCompatible,
-        preferredScalarStyle: preferredScalarStyle,
+        keyScalarStyle: keyScalarStyle,
+        valueScalarStyle: valueScalarStyle,
       )
     : _encodeBlockMap(
         mapping,
         indent: indent,
         isRoot: isRoot,
-        preferredScalarStyle: preferredScalarStyle,
+        keyScalarStyle: keyScalarStyle,
+        valueScalarStyle: valueScalarStyle,
       );

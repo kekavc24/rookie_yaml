@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
@@ -286,6 +287,12 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
   lineOnSplit: () {},
 );
 
+typedef _DumpedObjectInfo = ({
+  bool explicitIfKey,
+  bool isCollection,
+  String encoded,
+});
+
 /// Encodes any [object] to valid `YAML` source string. If [jsonCompatible] is
 /// `true`, the object is encoded as valid json with collections defaulting to
 /// [NodeStyle.flow] and scalars encoded with [ScalarStyle.doubleQuoted].
@@ -296,12 +303,14 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
 ///
 /// The [object] is always an explicit key if it is a collection or was
 /// [Scalar]-like and span multiple lines.
-({bool explicitIfKey, bool isCollection, String encoded}) _encodeObject<T>(
+_DumpedObjectInfo _encodeObject<T>(
   T object, {
   required int indent,
   required bool jsonCompatible,
   required NodeStyle nodeStyle,
-  required ScalarStyle? preferredScalarStyle,
+  required ScalarStyle? currentScalarStyle,
+  ScalarStyle? mapKeyScalarStyle,
+  ScalarStyle? mapValueScalarStyle,
 }) {
   final encodable = switch (object) {
     AliasNode(:final aliased) => aliased,
@@ -318,7 +327,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
           indent: indent,
           collectionNodeStyle: nodeStyle,
           jsonCompatible: jsonCompatible,
-          preferredScalarStyle: preferredScalarStyle,
+          preferredScalarStyle: currentScalarStyle,
         ),
       );
 
@@ -331,7 +340,8 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
           indent: indent,
           collectionNodeStyle: nodeStyle,
           jsonCompatible: jsonCompatible,
-          preferredScalarStyle: preferredScalarStyle,
+          keyScalarStyle: mapKeyScalarStyle,
+          valueScalarStyle: mapValueScalarStyle,
         ),
       );
 
@@ -342,7 +352,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
           indent: indent,
           jsonCompatible: jsonCompatible,
           parentNodeStyle: nodeStyle,
-          dumpingStyle: preferredScalarStyle,
+          dumpingStyle: currentScalarStyle,
         );
 
         return (
@@ -353,6 +363,22 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
       }
   }
 }
+
+_DumpedObjectInfo _dumpListEntry<T>(
+  T object, {
+  required int indent,
+  required bool jsonCompatible,
+  required NodeStyle nodeStyle,
+  required ScalarStyle? currentScalarStyle,
+}) => _encodeObject(
+  object,
+  indent: indent,
+  jsonCompatible: jsonCompatible,
+  nodeStyle: nodeStyle,
+  currentScalarStyle: currentScalarStyle,
+  mapKeyScalarStyle: currentScalarStyle,
+  mapValueScalarStyle: currentScalarStyle,
+);
 
 /// Replaces an empty [string] with an explicit `null`.
 String _replaceIfEmpty(String string) => string.isEmpty ? 'null' : string;
@@ -384,14 +410,15 @@ String dumpScalar<T>(
 /// [NodeStyle.flow].
 ///
 /// [preferredScalarStyle] is a hint on the preferred [ScalarStyle] for
-/// scalars in your [sequence]. If the `scalar` is an actual [Scalar] object,
-/// its [ScalarStyle] takes precedence. Otherwise, defaults to
-/// [preferredScalarStyle]. Furthermore, the [preferredScalarStyle]'s
-/// [NodeStyle] must be compatible with the [collectionNodeStyle] if present,
-/// that is, [NodeStyle.block] accepts both `block` and `flow` styles while
-/// [NodeStyle.flow] accepts only `flow` styles. If incompatible,
-/// [preferredScalarStyle] is ignored and defaults to [ScalarStyle.doubleQuoted]
-/// in [NodeStyle.flow] and [ScalarStyle.literal] in [NodeStyle.block].
+/// all scalars in your [sequence] (even map keys and values). If the `scalar`
+/// is an actual [Scalar] object, its [ScalarStyle] takes precedence. Otherwise,
+/// defaults to [preferredScalarStyle]. Furthermore, the
+/// [preferredScalarStyle]'s [NodeStyle] must be compatible with the
+/// [collectionNodeStyle] if present, that is, [NodeStyle.block] accepts both
+/// `block` and `flow` styles while [NodeStyle.flow] accepts only `flow` styles.
+/// If incompatible, [preferredScalarStyle] is ignored and defaults to
+/// [ScalarStyle.doubleQuoted] in [NodeStyle.flow] and [ScalarStyle.literal] in
+/// [NodeStyle.block].
 ///
 /// If [preferredScalarStyle] is [ScalarStyle.plain] and has leading or
 /// trailing whitespaces (line breaks included), the [ScalarStyle] defaults
@@ -418,15 +445,16 @@ String dumpSequence<L extends Iterable>(
 /// [NodeStyle] is used. Otherwise, [collectionNodeStyle] defaults to
 /// [NodeStyle.flow].
 ///
-/// [preferredScalarStyle] is a hint on the preferred [ScalarStyle] for
+/// [keyScalarStyle] is a hint on the preferred [ScalarStyle] for
 /// scalars in your [mapping]. If the `scalar` is an actual [Scalar] object,
 /// its [ScalarStyle] takes precedence. Otherwise, defaults to
-/// [preferredScalarStyle]. Furthermore, the [preferredScalarStyle]'s
+/// [keyScalarStyle]. Furthermore, the [keyScalarStyle]'s
 /// [NodeStyle] must be compatible with the [collectionNodeStyle] if present,
 /// that is, [NodeStyle.block] accepts both `block` and `flow` styles while
 /// [NodeStyle.flow] accepts only `flow` styles. If incompatible,
-/// [preferredScalarStyle] is ignored and defaults to [ScalarStyle.doubleQuoted]
-/// in [NodeStyle.flow] and [ScalarStyle.literal] in [NodeStyle.block].
+/// [keyScalarStyle] is ignored and defaults to [ScalarStyle.doubleQuoted]
+/// in [NodeStyle.flow] and [ScalarStyle.literal] in [NodeStyle.block]. This
+/// also applies to [valueScalarStyle] too.
 ///
 /// If [preferredScalarStyle] is [ScalarStyle.plain] and has leading or
 /// trailing whitespaces (line breaks included), the [ScalarStyle] defaults
@@ -436,12 +464,14 @@ String dumpMapping<M extends Map>(
   int indent = 0,
   bool jsonCompatible = false,
   NodeStyle? collectionNodeStyle,
-  ScalarStyle? preferredScalarStyle,
+  ScalarStyle? keyScalarStyle,
+  ScalarStyle? valueScalarStyle,
 }) => _dumpMapping(
   mapping,
   indent: 0,
   isRoot: true,
   collectionNodeStyle: collectionNodeStyle,
   jsonCompatible: jsonCompatible,
-  preferredScalarStyle: preferredScalarStyle,
+  keyScalarStyle: keyScalarStyle,
+  valueScalarStyle: valueScalarStyle,
 );

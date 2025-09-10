@@ -8,7 +8,7 @@ part of 'dumping.dart';
 /// or nested [List] and/or [Map].
 ///
 /// [onEntryEncoded] is called after an entry has been encoded to a string and
-/// [onCompleted] is called once after the entire [sequence] has been encoded.
+/// [completer] is called once after the entire [sequence] has been encoded.
 ///
 /// See [_encodeBlockSequence] and [_encodeFlowSequence].
 String _encodeSequence<T>(
@@ -31,12 +31,12 @@ String _encodeSequence<T>(
 
   // List never empty
   do {
-    final encoded = _encodeObject(
+    final encoded = _dumpListEntry(
       iterator.current,
       indent: childIndent,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
-      preferredScalarStyle: preferredScalarStyle,
+      currentScalarStyle: preferredScalarStyle,
     ).encoded;
 
     hasNext = iterator.moveNext();
