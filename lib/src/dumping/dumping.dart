@@ -260,7 +260,10 @@ Iterable<String> unfoldDoubleQuoted(Iterable<String> lines) => _coreUnfolding(
   return (
     joinIndent,
     lines
-        .mapIndexed((i, l) => includeFirst || i != 0 ? '$joinIndent$l' : l)
+        .mapIndexed(
+          (i, l) =>
+              (includeFirst || i != 0) && l.isNotEmpty ? '$joinIndent$l' : l,
+        )
         .join('\n'),
   );
 }
