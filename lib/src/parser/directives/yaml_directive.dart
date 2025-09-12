@@ -17,6 +17,8 @@ final class YamlDirective extends ReservedDirective {
   YamlDirective._(this.major, this.minor, String version)
     : super(name: _yamlDirective, parameters: [version]);
 
+  /// Creates a yaml directive from the [major] and [minor] versions joined
+  /// with a period.
   YamlDirective.ofVersion(int major, int minor)
     : this._(major, minor, '$major.$minor');
 

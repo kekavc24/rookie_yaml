@@ -1,6 +1,6 @@
 part of 'yaml_node.dart';
 
-/// Represents an object that be used as a wrapper for any data class.
+/// Represents an object that can be used as a wrapper for any data class.
 final class JsonNodeToYaml<T> extends YamlNode {
   JsonNodeToYaml._(this.generator, {NodeStyle? style})
     : nodeStyle = style ?? NodeStyle.flow;
