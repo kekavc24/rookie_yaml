@@ -57,13 +57,11 @@ final class MapEntryDelegate extends ParserDelegate {
   /// This will rarely be called, but if so, this must a return a mapping with
   /// only a single value. A key must exist.
   @override
-  Mapping _resolveNode<T>() => Mapping(
-    <YamlNode, YamlSourceNode?>{
-      keyDelegate.parsed(): _valueDelegate?.parsed(),
-    },
+  Mapping _resolveNode<T>() => Mapping.strict(
+    {keyDelegate.parsed(): _valueDelegate?.parsed()},
     nodeStyle: nodeStyle,
     tag: _tag ?? _defaultTo(mappingTag),
-    anchorOrAlias: _anchor,
+    anchor: _anchor,
     start: start,
     end: _end!,
   );
@@ -134,7 +132,7 @@ final class SequenceDelegate extends CollectionDelegate {
     _nodes,
     nodeStyle: collectionStyle,
     tag: _tag ?? _defaultTo(sequenceTag),
-    anchorOrAlias: _anchor,
+    anchor: _anchor,
     start: start,
     end: _end!,
   );
@@ -161,7 +159,7 @@ final class MappingDelegate extends CollectionDelegate {
   });
 
   /// A map that is resolved as a key is added
-  final _map = <YamlNode, YamlSourceNode?>{};
+  final _map = <YamlSourceNode, YamlSourceNode?>{};
 
   /// Returns `true` if the [entry] is added. Otherwise, `false`.
   bool pushEntry(ParserDelegate key, ParserDelegate? value) {
@@ -180,11 +178,11 @@ final class MappingDelegate extends CollectionDelegate {
 
   /// Returns a [Mapping].
   @override
-  Mapping _resolveNode<T>() => Mapping(
+  Mapping _resolveNode<T>() => Mapping.strict(
     _map,
     nodeStyle: collectionStyle,
     tag: _tag ?? _defaultTo(mappingTag),
-    anchorOrAlias: _anchor,
+    anchor: _anchor,
     start: start,
     end: _end!,
   );
