@@ -13,7 +13,7 @@ final class Mapping extends UnmodifiableMapView<YamlNode, YamlSourceNode?>
     super.source, {
     required this.nodeStyle,
     required this.tag,
-    required this.anchorOrAlias,
+    required this.anchor,
     required this.start,
     required this.end,
   });
@@ -25,7 +25,7 @@ final class Mapping extends UnmodifiableMapView<YamlNode, YamlSourceNode?>
   final ResolvedTag? tag;
 
   @override
-  final String? anchorOrAlias;
+  final String? anchor;
 
   @override
   final SourceLocation start;
@@ -39,6 +39,9 @@ final class Mapping extends UnmodifiableMapView<YamlNode, YamlSourceNode?>
 
   @override
   int get hashCode => _equality.hash(this);
+
+  @override
+  String? get alias => null;
 }
 
 /// A "no-cost" [Mapping] that allow arbitrary `Dart` values to be used as

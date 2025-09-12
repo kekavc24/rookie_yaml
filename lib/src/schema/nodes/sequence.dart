@@ -7,7 +7,7 @@ final class Sequence extends UnmodifiableListView<YamlSourceNode>
     super.source, {
     required this.nodeStyle,
     required this.tag,
-    required this.anchorOrAlias,
+    required this.anchor,
     required this.start,
     required this.end,
   });
@@ -19,7 +19,7 @@ final class Sequence extends UnmodifiableListView<YamlSourceNode>
   final ResolvedTag? tag;
 
   @override
-  final String? anchorOrAlias;
+  final String? anchor;
 
   @override
   final SourceLocation start;
@@ -33,4 +33,7 @@ final class Sequence extends UnmodifiableListView<YamlSourceNode>
 
   @override
   int get hashCode => _equality.hash(this);
+
+  @override
+  String? get alias => null;
 }

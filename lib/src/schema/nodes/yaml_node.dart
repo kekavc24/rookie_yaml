@@ -11,10 +11,26 @@ part 'sequence.dart';
 
 const _equality = DeepCollectionEquality();
 
-/// A node dumpable to a `YAML` source string
+/// A simple node dumpable to a `YAML` source string
 sealed class YamlNode {
   /// Style used to serialize the node within the `YAML` source string
   NodeStyle get nodeStyle;
+}
+
+/// A [YamlNode] with a set of node properties.
+///
+/// `[NOTE]`: This interface is a blueprint and a contract. If any object
+/// provides an `alias` then `anchor` and `tag` **MUST** be `null`. If `anchor`
+/// or `tag` is provided, `alias` **MUST** be null.
+abstract interface class CompactYamlNode extends YamlNode {
+  /// [Tag] directive describing how the node is represented natively.
+  ResolvedTag? get tag => null;
+
+  /// Anchor name that allow other nodes to reference this node.
+  String? get anchor => null;
+
+  /// Alias name that references other nodes.
+  String? get alias => null;
 }
 
 /// A node parsed from a `YAML` source string.
@@ -26,24 +42,21 @@ sealed class YamlNode {
 ///   - [Scalar] of `4` has no difference when compared to `4`
 ///   - [Sequence] or [Map] of values will be equal to the same [List] or
 ///     [Map] declared in `Dart`.
-sealed class YamlSourceNode extends YamlNode {
+sealed class YamlSourceNode extends CompactYamlNode {
   YamlSourceNode();
+
+  /// [Tag] directive describing how the node is represented natively.
+  ///
+  /// If a custom [NodeResolver] tag was parsed, the [YamlSourceNode] may be
+  /// viewed in a resolved format by calling [asCustomType] getter on the node.
+  @override
+  ResolvedTag? get tag => null; // Just to redefine docs
 
   /// Start position in the source parsed, inclusive.
   SourceLocation get start;
 
   /// End position in the source parsed, exclusive
   SourceLocation get end;
-
-  /// [Tag] directive describing how the node is represented natively.
-  ///
-  /// If a custom [NodeResolver] tag was parsed, the [YamlSourceNode] may be
-  /// viewed in a resolved format by calling `asCustomType` getter on the node.
-  ResolvedTag? get tag => null;
-
-  /// Anchor name that allow other nodes to reference this node or an alias
-  /// name that references other nodes.
-  String? get anchorOrAlias => null;
 }
 
 /// Utility method for mapping any [YamlSourceNode] that has a [NodeResolver]
@@ -71,15 +84,15 @@ bool yamlSourceNodeDeepEqual(YamlSourceNode thiz, YamlSourceNode that) =>
 /// A node that is a pointer to another node.
 final class AliasNode extends YamlSourceNode {
   AliasNode(
-    this.anchorOrAlias,
+    this.alias,
     this.aliased, {
     required this.start,
     required this.end,
-  }) : assert(anchorOrAlias.isNotEmpty, 'An alias name cannot be empty');
+  }) : assert(alias.isNotEmpty, 'An alias name cannot be empty');
 
   /// Anchor name to [aliased]
   @override
-  final String anchorOrAlias;
+  final String alias;
 
   /// `YAML` node's reference
   final YamlSourceNode aliased;

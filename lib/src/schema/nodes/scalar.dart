@@ -9,7 +9,7 @@ final class Scalar<T> extends YamlSourceNode {
     this._type, {
     required this.scalarStyle,
     required this.tag,
-    required this.anchorOrAlias,
+    required this.anchor,
     required this.start,
     required this.end,
   });
@@ -28,7 +28,7 @@ final class Scalar<T> extends YamlSourceNode {
   final ResolvedTag? tag;
 
   @override
-  final String? anchorOrAlias;
+  final String? anchor;
 
   @override
   final SourceLocation start;
