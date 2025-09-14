@@ -20,6 +20,7 @@ String _encodeSequence<T>(
   required String Function(bool isFirst, bool hasNext, String entry)
   onEntryEncoded,
   required String Function(String encoded) completer,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
 }) {
   assert(sequence.isNotEmpty, 'Expected a non-empty sequence');
 
@@ -37,6 +38,7 @@ String _encodeSequence<T>(
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
       currentScalarStyle: preferredScalarStyle,
+      unpack: unpack,
     ).encoded;
 
     hasNext = iterator.moveNext();
@@ -54,19 +56,30 @@ String _encodeBlockSequence<T>(
   required String indentation,
   required ScalarStyle? preferredScalarStyle,
   required bool isRoot,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
+  required String? properties,
 }) => _encodeSequence(
   blockList,
   childIndent: indent + 2, // "-" + space
   preferredScalarStyle: preferredScalarStyle,
   isJsonCompatible: false,
   nodeStyle: NodeStyle.block,
+  unpack: unpack,
 
   /// Applies "- " and trailing line break for all except the last
   onEntryEncoded: (isFirst, _, entry) =>
       '${isFirst ? '' : indentation}'
       '- ${_replaceIfEmpty(entry)}'
       '${entry.endsWith('\n') ? '' : '\n'}',
-  completer: (list) => isRoot ? '$indentation$list' : list,
+  completer: (list) {
+    final compact = _applyProperties(
+      list,
+      properties,
+      separator: '\n$indentation',
+    );
+
+    return isRoot ? '$indentation$compact' : compact;
+  },
 );
 
 /// Encodes [Sequence] or [List] to a `YAML` [NodeStyle.flow] sequence. If
@@ -78,6 +91,8 @@ String _encodeFlowSequence<T>(
   required ScalarStyle? preferredScalarStyle,
   required bool isJsonCompatible,
   required bool isRoot,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
+  required String? properties,
 }) {
   final sequenceIndent = ' ' * indent;
   final entryIndent = '$sequenceIndent '; // +1 level, +1 indent
@@ -89,16 +104,22 @@ String _encodeFlowSequence<T>(
     preferredScalarStyle: preferredScalarStyle,
     isJsonCompatible: isJsonCompatible,
     nodeStyle: NodeStyle.flow,
+    unpack: unpack,
     onEntryEncoded: (_, hasNext, entry) =>
         '$entryIndent${_replaceIfEmpty(entry)}'
         // ignore: lines_longer_than_80_chars
         '${hasNext ? '${(entry.endsWith('\n') ? entryIndent : '')}$nextEntry' : ''}',
-    completer: (encoded) =>
-        '${isRoot ? sequenceIndent : ''}'
+    completer: (encoded) {
+      final compact = _applyProperties(
         '[\n'
         '$encoded'
         '${encoded.endsWith('\n') ? '' : '\n'}$sequenceIndent'
         ']',
+        properties,
+      );
+
+      return isRoot ? '$sequenceIndent$compact' : compact;
+    },
   );
 }
 
@@ -115,8 +136,10 @@ String _dumpSequence<L extends Iterable>(
   required bool jsonCompatible,
   bool isRoot = false,
   NodeStyle? collectionNodeStyle,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
+  required String? properties,
 }) => sequence.isEmpty
-    ? '[]'
+    ? _applyProperties('[]', properties)
     : (jsonCompatible
               ? NodeStyle.flow
               : (collectionNodeStyle ??
@@ -130,6 +153,8 @@ String _dumpSequence<L extends Iterable>(
         preferredScalarStyle: preferredScalarStyle,
         isJsonCompatible: jsonCompatible,
         isRoot: isRoot,
+        unpack: unpack,
+        properties: properties,
       )
     : _encodeBlockSequence(
         sequence,
@@ -137,4 +162,6 @@ String _dumpSequence<L extends Iterable>(
         preferredScalarStyle: preferredScalarStyle,
         indentation: ' ' * indent,
         isRoot: isRoot,
+        unpack: unpack,
+        properties: properties,
       );

@@ -1,27 +1,16 @@
 import 'package:collection/collection.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
+import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
-part 'dump_scalar.dart';
 part 'dump_mapping.dart';
+part 'dump_scalar.dart';
 part 'dump_sequence.dart';
-
-/// Represents a way to describe the amount of information to include in the
-/// `YAML` source string.
-enum DumpingStyle {
-  /// Classic `YAML` output style. Parsed node properties (including global
-  /// tags) are ignored. Aliases are unpacked and dumped asnthe actual node
-  /// they reference.
-  classic,
-
-  /// Unlike [DumpingStyle.classic], this only works with any encountered
-  /// [YamlSourceNode] which has properties. Anchors and aliases are preserved
-  /// and all [TagShorthand]s are linked accurately to their respective
-  /// [GlobalTag].
-  compact,
-}
+part 'dump_yaml_node.dart';
 
 extension on int {
   /// Normalizes all character that can be escaped.
@@ -293,26 +282,60 @@ typedef _DumpedObjectInfo = ({
   String encoded,
 });
 
+typedef _UnpackedCompact = ({
+  String? encodedAlias,
+  String? properties,
+  NodeStyle? styleOverride,
+  Object? toEncode,
+});
+
 /// Encodes any [object] to valid `YAML` source string. If [jsonCompatible] is
 /// `true`, the object is encoded as valid json with collections defaulting to
 /// [NodeStyle.flow] and scalars encoded with [ScalarStyle.doubleQuoted].
 ///
-/// In addition to encoding the [object], it returns if the source string can
+/// In addition to encoding the [object], it indicates if the source string can
 /// be an explicit key in a `YAML` [Mapping] and if the [object] was a
 /// collection.
 ///
 /// The [object] is always an explicit key if it is a collection or was
 /// [Scalar]-like and span multiple lines.
+///
+/// If an [unpack]ing function is provided and the [object] is a
+/// [CompactYamlNode], its properties will be included the string.
 _DumpedObjectInfo _encodeObject<T>(
   T object, {
   required int indent,
   required bool jsonCompatible,
   required NodeStyle nodeStyle,
   required ScalarStyle? currentScalarStyle,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
   ScalarStyle? mapKeyScalarStyle,
   ScalarStyle? mapValueScalarStyle,
 }) {
-  final encodable = switch (object) {
+  Object? encodable;
+  String? objectProperties;
+  var style = nodeStyle;
+
+  if (unpack != null && object is CompactYamlNode) {
+    final (:encodedAlias, :properties, :toEncode, :styleOverride) = unpack(
+      object,
+    );
+
+    // Incase the alias is linked correctly
+    if (encodedAlias != null) {
+      return (
+        encoded: encodedAlias,
+        isCollection: false,
+        explicitIfKey: false,
+      );
+    }
+
+    style = styleOverride ?? style;
+    encodable = toEncode;
+    objectProperties = properties;
+  }
+
+  encodable ??= switch (object) {
     AliasNode(:final aliased) => aliased,
     _ => object,
   };
@@ -328,6 +351,8 @@ _DumpedObjectInfo _encodeObject<T>(
           collectionNodeStyle: nodeStyle,
           jsonCompatible: jsonCompatible,
           preferredScalarStyle: currentScalarStyle,
+          unpack: unpack,
+          properties: objectProperties,
         ),
       );
 
@@ -340,8 +365,10 @@ _DumpedObjectInfo _encodeObject<T>(
           indent: indent,
           collectionNodeStyle: nodeStyle,
           jsonCompatible: jsonCompatible,
-          keyScalarStyle: mapKeyScalarStyle,
-          valueScalarStyle: mapValueScalarStyle,
+          keyScalarStyle: mapKeyScalarStyle ?? currentScalarStyle,
+          valueScalarStyle: mapValueScalarStyle ?? currentScalarStyle,
+          unpack: unpack,
+          properties: objectProperties,
         ),
       );
 
@@ -358,18 +385,20 @@ _DumpedObjectInfo _encodeObject<T>(
         return (
           explicitIfKey: explicitIfKey,
           isCollection: false,
-          encoded: encodedScalar,
+          encoded: _applyProperties(encodedScalar, objectProperties),
         );
       }
   }
 }
 
+/// Dumps an [object] that is a sequence entry.
 _DumpedObjectInfo _dumpListEntry<T>(
   T object, {
   required int indent,
   required bool jsonCompatible,
   required NodeStyle nodeStyle,
   required ScalarStyle? currentScalarStyle,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
 }) => _encodeObject(
   object,
   indent: indent,
@@ -378,10 +407,19 @@ _DumpedObjectInfo _dumpListEntry<T>(
   currentScalarStyle: currentScalarStyle,
   mapKeyScalarStyle: currentScalarStyle,
   mapValueScalarStyle: currentScalarStyle,
+  unpack: unpack,
 );
 
 /// Replaces an empty [string] with an explicit `null`.
 String _replaceIfEmpty(String string) => string.isEmpty ? 'null' : string;
+
+/// Applies an [encoded] node's [properties] limited to a tag and/or anchor
+/// with the [separator] added between them if the [properties] is not `null`.
+String _applyProperties(
+  String encoded,
+  String? properties, {
+  String separator = ' ',
+}) => properties == null ? encoded : '$properties$separator$encoded';
 
 /// Dumps a [Scalar] or any `Dart` object by calling its `toString` method.
 ///
@@ -436,6 +474,8 @@ String dumpSequence<L extends Iterable>(
   collectionNodeStyle: collectionNodeStyle,
   jsonCompatible: jsonCompatible,
   preferredScalarStyle: preferredScalarStyle,
+  unpack: null,
+  properties: null,
 );
 
 /// Dumps a [mapping] which must be a [Mapping] or `Dart` [Map].
@@ -474,4 +514,6 @@ String dumpMapping<M extends Map>(
   jsonCompatible: jsonCompatible,
   keyScalarStyle: keyScalarStyle,
   valueScalarStyle: valueScalarStyle,
+  unpack: null,
+  properties: null,
 );

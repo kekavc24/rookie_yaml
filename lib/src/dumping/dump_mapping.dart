@@ -20,6 +20,7 @@ String _encodeMapping<K, V>(
   required ScalarStyle? valueScalarStyle,
   required bool isJsonCompatible,
   required NodeStyle nodeStyle,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
   required String Function(bool isFirst, bool isExplicit, String key)
   onEncodedKey,
   required String Function(
@@ -49,6 +50,7 @@ String _encodeMapping<K, V>(
       mapValueScalarStyle: valueScalarStyle,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
+      unpack: unpack,
     );
 
     final encodedKey = onEncodedKey(
@@ -66,6 +68,7 @@ String _encodeMapping<K, V>(
       indent: valueIndent,
       jsonCompatible: isJsonCompatible,
       nodeStyle: nodeStyle,
+      unpack: unpack,
     );
 
     final encodedValue = onEncodedValue(
@@ -90,6 +93,8 @@ String _encodeBlockMap<K, V>(
   required ScalarStyle? keyScalarStyle,
   required ScalarStyle? valueScalarStyle,
   required bool isRoot,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
+  required String? properties,
 }) {
   final mapIndent = ' ' * indent;
   final explicitIndent = indent + 2;
@@ -142,7 +147,17 @@ String _encodeBlockMap<K, V>(
           '$value'
           '$valueTrailer';
     },
-    completer: (encoded) => isRoot ? '$mapIndent$encoded' : encoded,
+    unpack: unpack,
+    completer: (encoded) {
+      // Properties of a block map are applied on a new line
+      final compact = _applyProperties(
+        encoded,
+        properties,
+        separator: '\n$mapIndent',
+      );
+
+      return isRoot ? '$mapIndent$compact' : compact;
+    },
   );
 }
 
@@ -155,6 +170,8 @@ String _encodeFlowMap<K, V>(
   required ScalarStyle? valueScalarStyle,
   required bool jsonCompatible,
   required bool isRoot,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
+  required String? properties,
 }) {
   final mapIndent = ' ' * indent;
   final keyIndentation = '$mapIndent ';
@@ -189,12 +206,19 @@ String _encodeFlowMap<K, V>(
           '$value'
           '${hasNext ? ',\n' : ''}';
     },
-    completer: (encoded) =>
-        '${isRoot ? mapIndent : ''}'
+    unpack: unpack,
+    completer: (encoded) {
+      // Applied on the same line.
+      final compact = _applyProperties(
         '{\n'
         '$encoded'
         '${encoded.endsWith('\n') ? '' : '\n'}$mapIndent'
         '}',
+        properties,
+      );
+
+      return isRoot ? '$mapIndent$compact' : compact;
+    },
   );
 }
 
@@ -212,8 +236,10 @@ String _dumpMapping<M extends Map>(
   required bool jsonCompatible,
   bool isRoot = false,
   NodeStyle? collectionNodeStyle,
+  required _UnpackedCompact Function(CompactYamlNode object)? unpack,
+  required String? properties,
 }) => mapping.isEmpty
-    ? '{}'
+    ? _applyProperties('{}', properties)
     : (jsonCompatible
               ? NodeStyle.flow
               : (collectionNodeStyle ??
@@ -228,6 +254,8 @@ String _dumpMapping<M extends Map>(
         jsonCompatible: jsonCompatible,
         keyScalarStyle: keyScalarStyle,
         valueScalarStyle: valueScalarStyle,
+        unpack: unpack,
+        properties: properties,
       )
     : _encodeBlockMap(
         mapping,
@@ -235,4 +263,6 @@ String _dumpMapping<M extends Map>(
         isRoot: isRoot,
         keyScalarStyle: keyScalarStyle,
         valueScalarStyle: valueScalarStyle,
+        unpack: unpack,
+        properties: properties,
       );
