@@ -49,3 +49,32 @@ sealed class SpecificTag<T> implements Tag {
 
   final T content;
 }
+
+/// Extracts a resolved [tag]'s information.
+///
+/// By default for a normal [NodeTag], a [TagShorthand] suffix is returned and
+/// optionally its [GlobalTag] prefix if present.
+///
+/// A [VerbatimTag] is returned in verbatim as a string and a
+/// [TypeResolverTag]'s [NodeTag] is extracted.
+({GlobalTag<dynamic>? globalTag, TagShorthand? tag, String? verbatim})
+resolvedTagInfo(ResolvedTag tag) {
+  if (tag is VerbatimTag) {
+    return (globalTag: null, tag: null, verbatim: tag.verbatim);
+  }
+
+  final nodeTag = switch (tag) {
+    TypeResolverTag(:final resolvedTag) => resolvedTag,
+    _ => tag as NodeTag,
+  };
+
+  final NodeTag(:_resolvedTag, :suffix) = nodeTag;
+
+  return (
+    globalTag: _resolvedTag == suffix
+        ? null
+        : _resolvedTag as GlobalTag<dynamic>,
+    tag: suffix,
+    verbatim: null,
+  );
+}
