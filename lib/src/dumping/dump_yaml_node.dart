@@ -65,6 +65,13 @@ _UnpackedCompact _unpackCompactYamlNode(
     /// Even if we don't return an alias. We now have an anchor that ensures
     /// later nodes can be compacted without issues.
     toUnpack = aliased;
+  } else if (node.alias case String alias when anchors.contains(alias)) {
+    return (
+      encodedAlias: alias,
+      properties: null,
+      styleOverride: null,
+      toEncode: null,
+    );
   }
 
   final CompactYamlNode(:anchor, :tag, :nodeStyle) = toUnpack;
