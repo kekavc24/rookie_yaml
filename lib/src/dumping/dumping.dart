@@ -341,7 +341,7 @@ _DumpedObjectInfo _encodeObject<T>(
   };
 
   switch (encodable) {
-    case List list:
+    case Iterable list:
       return (
         explicitIfKey: true,
         isCollection: true,
