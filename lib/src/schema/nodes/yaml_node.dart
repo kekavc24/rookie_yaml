@@ -3,7 +3,6 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:source_span/source_span.dart';
 
-part 'dart_nodes.dart';
 part 'mapping.dart';
 part 'node_styles.dart';
 part 'scalar.dart';
@@ -115,4 +114,27 @@ final class AliasNode extends YamlSourceNode {
 
   @override
   String toString() => aliased.toString();
+}
+
+/// A simple wrapper for most `Dart` types. Effective if you want to access
+/// keys in a [Mapping]
+final class DartNode<T> extends YamlNode {
+  DartNode(T dartValue)
+    : assert(
+        dartValue != YamlNode,
+        'Expected a Dart type that is not a YamlNode',
+      ),
+      value = dartValue;
+
+  /// Wrapped value
+  final T value;
+
+  @override
+  NodeStyle get nodeStyle => NodeStyle.block;
+
+  @override
+  bool operator ==(Object other) => _equality.equals(other, value);
+
+  @override
+  int get hashCode => _equality.hash(value);
 }

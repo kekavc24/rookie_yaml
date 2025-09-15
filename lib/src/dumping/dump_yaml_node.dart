@@ -160,19 +160,6 @@ String _dumpCompactYamlNode(
 /// Dumps a [YamlNode] to a YAML source string with no properties
 String dumpYamlNode<N extends YamlNode>(N node) {
   switch (node) {
-    case JsonNodeToYaml(:final generator, :final nodeStyle):
-      return _encodeObject(
-        generator(),
-        indent: 0,
-        jsonCompatible: false,
-        nodeStyle: nodeStyle,
-        currentScalarStyle: null,
-        unpack: null,
-      ).encoded;
-
-    case DirectToYaml(:final linesToDump):
-      return linesToDump.join('\n');
-
     case DartNode(:final value):
       return _encodeObject(
         value,
