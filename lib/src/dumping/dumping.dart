@@ -425,7 +425,9 @@ String _applyProperties(
   String encoded,
   String? properties, {
   String separator = ' ',
-}) => properties == null ? encoded : '$properties$separator$encoded';
+}) => properties == null || properties.isEmpty
+    ? encoded
+    : '$properties$separator$encoded';
 
 /// Dumps a [Scalar] or any `Dart` object by calling its `toString` method.
 ///
