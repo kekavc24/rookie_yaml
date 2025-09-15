@@ -1,24 +1,10 @@
 part of 'dumping.dart';
 
-/// Represents a way to describe the amount of information to include in the
-/// `YAML` source string.
-enum _DumpingStyle {
-  /// Classic `YAML` output style. Parsed node properties (including global
-  /// tags) are ignored. Aliases are unpacked and dumped as the actual node
-  /// they reference.
-  classic,
-
-  /// Unlike [_DumpingStyle.classic], this only works with a [CompactYamlNode]
-  /// which has properties. Anchors and aliases are preserved and all
-  /// [TagShorthand]s are linked accurately to their respective [GlobalTag].
-  compact,
-}
-
 /// Extracts tag information from a [resolvedTag]. If a [GlobalTag] is present,
 /// [push] will be called.
 String? _extractTag(
   ResolvedTag? resolvedTag,
-  void Function(GlobalTag<dynamic> tag) push,
+  void Function(String globalTag) push,
 ) {
   if (resolvedTag == null) return null;
 
@@ -32,10 +18,11 @@ String? _extractTag(
     'Only valid YAML tags can have a secondary tag handle',
   );
 
-  if (globalTag != null) push(globalTag);
+  if (globalTag != null && globalTag != yamlGlobalTag) {
+    push(globalTag.toString());
+  }
 
-  // Defaults to either a verbatim tag or tag shorthand.
-  return verbatim ?? tag.toString();
+  return verbatim ?? tag.toString(); // Mutually exclusive
 }
 
 /// Unpacks a [node] and extracts its properties.
@@ -45,15 +32,16 @@ String? _extractTag(
 /// encode.
 _UnpackedCompact _unpackCompactYamlNode(
   CompactYamlNode node, {
-  required Set<String> anchors,
-  required Set<Directive> directives,
+  required bool Function(String alias) hasAlias,
+  required void Function(String anchor) pushAnchor,
+  required void Function(String globalTag) pushTag,
   required Object Function(CompactYamlNode node) unpack,
 }) {
   var toUnpack = node;
 
   if (node case AliasNode(:final alias, :final aliased)) {
     // We can safely encode as a reference without issues
-    if (anchors.contains(alias)) {
+    if (hasAlias(alias)) {
       return (
         encodedAlias: alias,
         properties: null,
@@ -62,10 +50,10 @@ _UnpackedCompact _unpackCompactYamlNode(
       );
     }
 
-    /// Even if we don't return an alias. We now have an anchor that ensures
+    /// Even if we don't return an alias. We may have an anchor that ensures
     /// later nodes can be compacted without issues.
     toUnpack = aliased;
-  } else if (node.alias case String alias when anchors.contains(alias)) {
+  } else if (node.alias case String alias when hasAlias(alias)) {
     return (
       encodedAlias: alias,
       properties: null,
@@ -79,11 +67,11 @@ _UnpackedCompact _unpackCompactYamlNode(
   final properties = <String>[];
 
   if (anchor != null) {
-    anchors.add(anchor);
+    pushAnchor(anchor);
     properties.add(anchor);
   }
 
-  if (_extractTag(tag, directives.add) case String tagShorthand) {
+  if (_extractTag(tag, pushTag) case String tagShorthand) {
     properties.add(tagShorthand);
   }
 
@@ -106,11 +94,11 @@ _UnpackedCompact _unpackCompactYamlNode(
   );
 }
 
-/// Dumps a [node] using the [dumpingStyle] provided.
+/// Dumps a [node] and its properties.
 String _dumpCompactYamlNode<N extends CompactYamlNode>(
   N node, {
-  required _DumpingStyle dumpingStyle,
   required Object Function(N node)? nodeUnpacker,
+  required ScalarStyle scalarStyle,
   YamlDirective? directive,
   Set<GlobalTag<dynamic>>? tags,
   List<ReservedDirective>? reserved,
@@ -118,10 +106,11 @@ String _dumpCompactYamlNode<N extends CompactYamlNode>(
   final actualUnpacker = nodeUnpacker ?? (n) => n;
 
   /// Spoof the unpacking function. [YamlSourceNode]s are dumped on our terms
-  /// since we extends native Dart objects (even the Scalar is a clever
+  /// since we extend native Dart objects (even the Scalar is a clever
   /// abstraction around a string to support custom types!).
   Object unpack(CompactYamlNode node) {
-    // Dart allows extension types.
+    /// Dart allows extension types. They are stripped but the underlying
+    /// type is still a YamlSourceNode.
     return node is YamlSourceNode
         ? node
         : node is N
@@ -129,67 +118,54 @@ String _dumpCompactYamlNode<N extends CompactYamlNode>(
         : node;
   }
 
-  if (dumpingStyle == _DumpingStyle.classic) {
-    return _encodeObject(
-      unpack(node),
-      indent: 0,
-      jsonCompatible: false,
-      nodeStyle: node.nodeStyle,
-      currentScalarStyle: null,
-      unpack: null,
-    ).encoded;
-  }
+  // Directives are always unique.
+  final directives = <String>{
+    (directive ?? parserVersion).toString(),
 
-  final directives = <Directive>{
-    directive ?? parserVersion,
-    ...?tags,
-    ...?reserved,
+    // The YAML global tag is implicit by default for all yaml documents
+    ...?tags?.where((t) => t != yamlGlobalTag).map((t) => t.toString()),
+
+    ...?reserved?.map((r) => r.toString()),
   };
 
-  final anchors = <String>{};
+  final anchors = <String>{}; // No need duplicating anchors
 
   final encoded = _encodeObject(
     node,
     indent: 0,
     jsonCompatible: false,
     nodeStyle: node.nodeStyle,
-    currentScalarStyle: null,
+    currentScalarStyle: scalarStyle,
     unpack: (object) => _unpackCompactYamlNode(
       object,
-      anchors: anchors,
-      directives: directives,
+      hasAlias: anchors.contains,
+      pushAnchor: anchors.add,
+      pushTag: directives.add,
       unpack: unpack,
     ),
   ).encoded;
 
-  return '${directives.map((d) => d.toString()).join('\n')}\n'
+  return '${directives.join('\n')}\n'
       '---\n'
       '$encoded'
       '${encoded.endsWith('\n') ? '' : '\n'}'
       '...';
 }
 
-/// Dumps a [YamlNode] to a YAML source string with no properties
-String dumpYamlNode<N extends YamlNode>(N node) {
-  switch (node) {
-    case DartNode(:final value):
-      return _encodeObject(
-        value,
-        indent: 0,
-        jsonCompatible: false,
-        nodeStyle: NodeStyle.block,
-        currentScalarStyle: ScalarStyle.plain,
-        unpack: null,
-      ).encoded;
-
-    default:
-      return _dumpCompactYamlNode(
-        node as CompactYamlNode,
-        dumpingStyle: _DumpingStyle.classic,
-        nodeUnpacker: (n) => n,
-      );
-  }
-}
+/// Dumps a [YamlNode] to a YAML source string with no properties. This is the
+/// classic output for existing YAML dumpers.
+String dumpYamlNode<N extends YamlNode>(
+  N node, {
+  NodeStyle style = NodeStyle.block,
+  ScalarStyle scalarStyle = ScalarStyle.plain,
+}) => _encodeObject(
+  node is DartNode ? node.value : node,
+  indent: 0,
+  jsonCompatible: false,
+  nodeStyle: style,
+  currentScalarStyle: scalarStyle,
+  unpack: null,
+).encoded;
 
 /// Dumps a [node] with its properties if any are present. Any [CompactYamlNode]
 /// subtype that is not a [Mapping], [Sequence] or [Scalar] should define a
@@ -198,17 +174,21 @@ String dumpYamlNode<N extends YamlNode>(N node) {
 String dumpCompactNode<N extends CompactYamlNode>(
   N node, {
   required Object Function(N node)? nodeUnpacker,
+  ScalarStyle scalarStyle = ScalarStyle.plain,
 }) => _dumpCompactYamlNode(
   node,
-  dumpingStyle: _DumpingStyle.compact,
   nodeUnpacker: nodeUnpacker,
+  scalarStyle: scalarStyle,
 );
 
 /// Dumps a collection of YAML [documents] with its directives if any are
 /// present. The [YamlDocument]'s root node is also dumped with its properties
 /// such that all [TagShorthand]s are linked to their respective [GlobalTag]
 /// directives and aliases "compressed" as anchors if possible.
-String dumpYamlDocuments(Iterable<YamlDocument> documents) {
+String dumpYamlDocuments(
+  Iterable<YamlDocument> documents, {
+  ScalarStyle scalarStyle = ScalarStyle.plain,
+}) {
   final buffer = StringBuffer();
 
   for (final YamlDocument(
@@ -221,7 +201,7 @@ String dumpYamlDocuments(Iterable<YamlDocument> documents) {
     buffer.writeln(
       _dumpCompactYamlNode(
         root,
-        dumpingStyle: _DumpingStyle.compact,
+        scalarStyle: scalarStyle,
         nodeUnpacker: null,
         directive: versionDirective,
         tags: tagDirectives,
