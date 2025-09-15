@@ -379,7 +379,13 @@ _DumpedObjectInfo _encodeObject<T>(
           indent: indent,
           jsonCompatible: jsonCompatible,
           parentNodeStyle: nodeStyle,
-          dumpingStyle: currentScalarStyle,
+
+          /// Always prefer a Scalar's scalar style in case nothing is present.
+          /// A node style will enforce its default style if a scalar style's
+          /// node style is invalid.
+          dumpingStyle:
+              currentScalarStyle ??
+              (encodable is Scalar ? encodable.scalarStyle : null),
         );
 
         return (
