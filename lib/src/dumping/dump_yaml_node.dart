@@ -93,9 +93,9 @@ _UnpackedCompact _unpackCompactYamlNode(
     encodedAlias: null,
     properties: properties.join(' '),
 
-    /// YAML has incompatibility issues when declaring properties for block
-    /// collections. Override the style and encode as flow for maps and lists to
-    /// ensure various parsers can handle this correctly.
+    /// For maximum compatibility with block collections, override the style
+    /// and encode as flow for maps and lists to ensure various parsers can
+    /// handle this correctly.
     styleOverride:
         (object is Map || object is Iterable) &&
             nodeStyle != NodeStyle.flow &&
@@ -107,10 +107,10 @@ _UnpackedCompact _unpackCompactYamlNode(
 }
 
 /// Dumps a [node] using the [dumpingStyle] provided.
-String _dumpCompactYamlNode(
-  CompactYamlNode node, {
+String _dumpCompactYamlNode<N extends CompactYamlNode>(
+  N node, {
   required _DumpingStyle dumpingStyle,
-  required Object Function(CompactYamlNode node)? nodeUnpacker,
+  required Object Function(N node)? nodeUnpacker,
   YamlDirective? directive,
   Set<GlobalTag<dynamic>>? tags,
   List<ReservedDirective>? reserved,
@@ -121,7 +121,12 @@ String _dumpCompactYamlNode(
   /// since we extends native Dart objects (even the Scalar is a clever
   /// abstraction around a string to support custom types!).
   Object unpack(CompactYamlNode node) {
-    return node is YamlSourceNode ? node : actualUnpacker(node);
+    // Dart allows extension types.
+    return node is YamlSourceNode
+        ? node
+        : node is N
+        ? actualUnpacker(node)
+        : node;
   }
 
   if (dumpingStyle == _DumpingStyle.classic) {
@@ -130,7 +135,7 @@ String _dumpCompactYamlNode(
       indent: 0,
       jsonCompatible: false,
       nodeStyle: node.nodeStyle,
-      currentScalarStyle: ScalarStyle.plain,
+      currentScalarStyle: null,
       unpack: null,
     ).encoded;
   }
@@ -148,7 +153,7 @@ String _dumpCompactYamlNode(
     indent: 0,
     jsonCompatible: false,
     nodeStyle: node.nodeStyle,
-    currentScalarStyle: ScalarStyle.plain,
+    currentScalarStyle: null,
     unpack: (object) => _unpackCompactYamlNode(
       object,
       anchors: anchors,
@@ -157,8 +162,8 @@ String _dumpCompactYamlNode(
     ),
   ).encoded;
 
-  return '${directives.map((d) => d.toString())}\n'
-      '---'
+  return '${directives.map((d) => d.toString()).join('\n')}\n'
+      '---\n'
       '$encoded'
       '${encoded.endsWith('\n') ? '' : '\n'}'
       '...';
@@ -181,18 +186,18 @@ String dumpYamlNode<N extends YamlNode>(N node) {
       return _dumpCompactYamlNode(
         node as CompactYamlNode,
         dumpingStyle: _DumpingStyle.classic,
-        nodeUnpacker: null,
+        nodeUnpacker: (n) => n,
       );
   }
 }
 
 /// Dumps a [node] with its properties if any are present. Any [CompactYamlNode]
 /// subtype that is not a [Mapping], [Sequence] or [Scalar] should define a
-/// [nodeUnpacker] function that prevent the [node] from being dumped as a
+/// [nodeUnpacker] function that prevents the [node] from being dumped as a
 /// [Scalar].
-String dumpCompactNode(
-  CompactYamlNode node, {
-  required Object Function(CompactYamlNode node)? nodeUnpacker,
+String dumpCompactNode<N extends CompactYamlNode>(
+  N node, {
+  required Object Function(N node)? nodeUnpacker,
 }) => _dumpCompactYamlNode(
   node,
   dumpingStyle: _DumpingStyle.compact,

@@ -16,8 +16,9 @@ sealed class YamlNode {
   NodeStyle get nodeStyle;
 }
 
-/// A [YamlNode] with a set of node properties. Such a node is not necessarily
-/// limited to YAML's compact notation.
+/// A [YamlNode] with a set of node properties. This node is not necessarily
+/// limited to YAML's compact notation unless such a notation is required when
+/// the object is being dumped.
 ///
 /// `[NOTE]`: This interface is a blueprint and a contract. If any object
 /// provides an `alias` then `anchor` and `tag` **MUST** be `null`. If `anchor`
