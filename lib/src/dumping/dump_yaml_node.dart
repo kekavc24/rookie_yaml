@@ -43,7 +43,7 @@ _UnpackedCompact _unpackCompactYamlNode(
     // We can safely encode as a reference without issues
     if (hasAlias(alias)) {
       return (
-        encodedAlias: alias,
+        encodedAlias: '*$alias',
         properties: null,
         styleOverride: null,
         toEncode: null,
@@ -55,7 +55,7 @@ _UnpackedCompact _unpackCompactYamlNode(
     toUnpack = aliased;
   } else if (node.alias case String alias when hasAlias(alias)) {
     return (
-      encodedAlias: alias,
+      encodedAlias: '*$alias',
       properties: null,
       styleOverride: null,
       toEncode: null,
@@ -68,7 +68,7 @@ _UnpackedCompact _unpackCompactYamlNode(
 
   if (anchor != null) {
     pushAnchor(anchor);
-    properties.add(anchor);
+    properties.add('&$anchor');
   }
 
   if (_extractTag(tag, pushTag) case String tagShorthand) {

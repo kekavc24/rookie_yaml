@@ -348,7 +348,7 @@ _DumpedObjectInfo _encodeObject<T>(
         encoded: _dumpSequence(
           list,
           indent: indent,
-          collectionNodeStyle: nodeStyle,
+          collectionNodeStyle: style,
           jsonCompatible: jsonCompatible,
           preferredScalarStyle: currentScalarStyle,
           unpack: unpack,
@@ -363,7 +363,7 @@ _DumpedObjectInfo _encodeObject<T>(
         encoded: _dumpMapping(
           map,
           indent: indent,
-          collectionNodeStyle: nodeStyle,
+          collectionNodeStyle: style,
           jsonCompatible: jsonCompatible,
           keyScalarStyle: mapKeyScalarStyle ?? currentScalarStyle,
           valueScalarStyle: mapValueScalarStyle ?? currentScalarStyle,
@@ -378,7 +378,7 @@ _DumpedObjectInfo _encodeObject<T>(
           encodable,
           indent: indent,
           jsonCompatible: jsonCompatible,
-          parentNodeStyle: nodeStyle,
+          parentNodeStyle: style,
 
           /// Always prefer a Scalar's scalar style in case nothing is present.
           /// A node style will enforce its default style if a scalar style's
