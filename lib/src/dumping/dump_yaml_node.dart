@@ -13,7 +13,8 @@ String? _extractTag(
   // We must not link invalid secondary tags
   assert(
     tag == null ||
-        tag.tagHandle.handleVariant != TagHandleVariant.secondary ||
+        (globalTag?.tagHandle ?? tag.tagHandle).handleVariant !=
+            TagHandleVariant.secondary ||
         isYamlTag(tag),
     'Only valid YAML tags can have a secondary tag handle',
   );
