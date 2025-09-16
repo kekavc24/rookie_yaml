@@ -197,7 +197,8 @@ String _encodeFlowMap<K, V>(
     onEncodedKey: (_, isExplicit, key) {
       return '$keyIndentation'
           '${isExplicit ? '? ' : ''}'
-          '$key';
+          '$key'
+          '${key.startsWith('*') ? ' ' : ''}'; // Add space for aliases
     },
     onEncodedValue: (value, hasNext, _, keyHasTrailingLF, _) {
       return '${keyHasTrailingLF ? valueIndentation : ''}'

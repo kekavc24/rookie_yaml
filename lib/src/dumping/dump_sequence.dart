@@ -96,7 +96,6 @@ String _encodeFlowSequence<T>(
 }) {
   final sequenceIndent = ' ' * indent;
   final entryIndent = '$sequenceIndent '; // +1 level, +1 indent
-  final nextEntry = '${flowEntryEnd.asString()}\n';
 
   return _encodeSequence(
     flowList,
@@ -105,10 +104,14 @@ String _encodeFlowSequence<T>(
     isJsonCompatible: isJsonCompatible,
     nodeStyle: NodeStyle.flow,
     unpack: unpack,
-    onEntryEncoded: (_, hasNext, entry) =>
-        '$entryIndent${_replaceIfEmpty(entry)}'
-        // ignore: lines_longer_than_80_chars
-        '${hasNext ? '${(entry.endsWith('\n') ? entryIndent : '')}$nextEntry' : ''}',
+    onEntryEncoded: (_, hasNext, entry) {
+      final trailing = hasNext
+          ? '${entry.startsWith('*') ? ' ' : ''}' // Separation for alias & ","
+                '${(entry.endsWith('\n') ? entryIndent : '')}'
+                ',\n'
+          : '';
+      return '$entryIndent${_replaceIfEmpty(entry)}$trailing';
+    },
     completer: (encoded) {
       final compact = _applyProperties(
         '[\n'
