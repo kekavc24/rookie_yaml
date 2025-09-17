@@ -435,6 +435,47 @@ implicit-2: is-an-error}
       );
     });
 
+    test('Parses trailing flow sequence aliases', () {
+      const yaml = '''
+[
+  &anchor value,
+
+  [ *anchor ], # Single trailing
+  [ *anchor , *anchor ],
+  *anchor
+]
+''';
+
+      check(
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+      ).equals(
+        [
+          'value',
+          ['value'],
+          ['value', 'value'],
+          'value',
+        ].toString(),
+      );
+    });
+
+    test('Parses compact block map with alias as key in block sequence', () {
+      const yaml = '''
+- &anchor value
+- *anchor
+- *anchor : *anchor
+''';
+
+      check(
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+      ).equals(
+        [
+          'value',
+          'value',
+          {'value': 'value'},
+        ].toString(),
+      );
+    });
+
     test('Throws when non-existent alias is used', () {
       const alias = 'value';
 

@@ -920,6 +920,32 @@ final class DocumentParser {
     delegate.updateEndOffset = _scanner.lineInfo().current;
   }
 
+  /// Returns `true` if any trailing empty scalar was added to the [sequence]
+  /// only if [properties] is not `null` and an anchor/alias is present.
+  bool _checkTrailingEntry(
+    SequenceDelegate sequence, {
+    required NodeProperties? properties,
+    required SourceLocation start,
+    required int indentLevel,
+    required int indent,
+    SourceLocation? end,
+  }) {
+    if (_nullOrAlias(
+          properties,
+          indentLevel: indentLevel,
+          indent: indent,
+          start: start,
+        )
+        case ParserDelegate entry) {
+      sequence.pushEntry(
+        entry..updateEndOffset = end ?? _scanner.lineInfo().current,
+      );
+      return true;
+    }
+
+    return false;
+  }
+
   /// Parse a flow sequence/list.
   ///
   /// If [forceInline] is `true`, the list must be declared on the same line
@@ -954,29 +980,23 @@ final class DocumentParser {
       switch (event) {
         case FlowCollectionEvent.nextFlowEntry:
           {
-            if (_nullOrAlias(
-                  properties,
-                  indentLevel: indentLevel,
-                  indent: indent,
-                  start: flowStartOffset,
-                )
-                case ParserDelegate entry) {
-              delegate.pushEntry(
-                entry..updateEndOffset = _scanner.lineInfo().current,
-              );
+            // We don't need to throw if we saw any anchor or alias
+            if (_checkTrailingEntry(
+              delegate,
+              properties: properties,
+              start: flowStartOffset,
+              indentLevel: indentLevel,
+              indent: indent,
+            )) {
               break;
             }
 
-            final exception = delegate.isEmpty
-                ? FormatException(
-                    'Expected to find the first value but found ","',
-                  )
-                : FormatException(
-                    'Found a duplicate "," before finding a flow sequence '
-                    'entry',
-                  );
-
-            throw exception;
+            throw FormatException(
+              delegate.isEmpty
+                  ? 'Expected to find the first value but found ","'
+                  : 'Found a duplicate "," before finding a flow sequence '
+                        'entry',
+            );
           }
 
         // Parse explicit key
@@ -1010,7 +1030,22 @@ final class DocumentParser {
           }
 
         case FlowCollectionEvent.endFlowSequence:
-          break listParser;
+          {
+            /// Ensure we don't exclude any trailing empty nodes that declared
+            /// properties
+            _checkTrailingEntry(
+              delegate,
+              properties: properties,
+              start: flowStartOffset,
+              indentLevel: indentLevel,
+              indent: indent,
+              end: hasMultilineProps
+                  ? _scanner.lineInfo().start
+                  : _scanner.lineInfo().current,
+            );
+
+            break listParser;
+          }
 
         default:
           {
@@ -1248,22 +1283,39 @@ final class DocumentParser {
       );
     }
 
+    return _parseBlockScalarMap(
+      delegate,
+      mapIndentLvel: indentLevel,
+      mapFixedIndent: fixedIndent,
+      keyProperties: parsedProperties,
+      parentEnforcedCompactness: parentEnforcedCompactness,
+    );
+  }
+
+  /// Parses a block [Mapping] after parsing an implicit scalar key.
+  _BlockNode _parseBlockScalarMap(
+    ParserDelegate scalarKey, {
+    required int mapIndentLvel,
+    required int mapFixedIndent,
+    required _ParsedNodeProperties? keyProperties,
+    required bool parentEnforcedCompactness,
+  }) {
     final map = MappingDelegate(
       collectionStyle: NodeStyle.block,
-      indentLevel: indentLevel,
+      indentLevel: mapIndentLvel,
 
       /// Map must now use the fixed indent we calculated. Forcing all keys to
       /// be aligned with the first key
-      indent: fixedIndent,
-      start: delegate.start, // Use offset of first key
+      indent: mapFixedIndent,
+      start: scalarKey.start, // Use offset of first key
     );
 
     var isKeyProps = false;
     NodeProperties? nodeProps;
 
-    if (parsedProperties != null) {
+    if (keyProperties != null) {
       final _ParsedNodeProperties(:isMultiline, :parsedAny, :properties) =
-          parsedProperties;
+          keyProperties;
 
       // Compact nodes cannot have node properties
       if (parentEnforcedCompactness && parsedAny) {
@@ -1278,10 +1330,10 @@ final class DocumentParser {
 
     // Give key its properties. Prevent overwrite during inference
     if (isKeyProps) {
-      _trackAnchor(delegate, nodeProps);
+      _trackAnchor(scalarKey, nodeProps);
     }
 
-    final mapInfo = _parseBlockMap(map, delegate, null);
+    final mapInfo = _parseBlockMap(map, scalarKey, null);
 
     if (!isKeyProps) {
       _trackAnchor(map, nodeProps);
@@ -2253,6 +2305,51 @@ final class DocumentParser {
     return _emptyScanner;
   }
 
+  /// Parses a block sequence entry
+  _BlockNode _parseBlockSequenceEntry({
+    required int indentLevel,
+    required int laxIndent,
+    required int fixedInlineIndent,
+    required bool forceInlined,
+    required bool isParsingKey,
+    required bool isExplicitKey,
+    required bool degenerateToImplicitMap,
+    required SourceLocation startOffset,
+    required _ParsedNodeProperties? parsedProperties,
+  }) {
+    final sequenceInfo = _parseBlockNode(
+      startOffset: startOffset,
+      indentLevel: indentLevel,
+      laxIndent: laxIndent,
+      fixedInlineIndent: fixedInlineIndent,
+      forceInlined: false,
+      isParsingKey: false,
+      isExplicitKey: false,
+      degenerateToImplicitMap: true,
+      parentEnforcedCompactness: true,
+      parsedProperties: parsedProperties,
+    );
+
+    if (sequenceInfo.delegate case AliasDelegate alias
+        when !(parsedProperties?.isMultiline ?? false) &&
+            _inferNextEvent(
+                  _scanner,
+                  isBlockContext: true,
+                  lastKeyWasJsonLike: false,
+                ) ==
+                BlockCollectionEvent.startEntryValue) {
+      return _parseBlockScalarMap(
+        alias..updateEndOffset = _scanner.lineInfo().current,
+        mapIndentLvel: indentLevel,
+        mapFixedIndent: fixedInlineIndent,
+        keyProperties: null,
+        parentEnforcedCompactness: true,
+      );
+    }
+
+    return sequenceInfo;
+  }
+
   /// Parses a block sequence.
   _BlockNodeInfo _parseBlockSequence(SequenceDelegate sequence) {
     final SequenceDelegate(:indent, :indentLevel) = sequence;
@@ -2355,7 +2452,7 @@ final class DocumentParser {
         startOffset: startOffset.offset,
       );
 
-      final (:delegate, :nodeInfo) = _parseBlockNode(
+      final (:delegate, :nodeInfo) = _parseBlockSequenceEntry(
         startOffset: startOffset,
         indentLevel: childIndentLevel,
         laxIndent: laxIndent,
@@ -2364,7 +2461,6 @@ final class DocumentParser {
         isParsingKey: false,
         isExplicitKey: false,
         degenerateToImplicitMap: true,
-        parentEnforcedCompactness: true,
         parsedProperties: parsedProps,
       );
 
