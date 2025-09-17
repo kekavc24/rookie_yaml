@@ -17,7 +17,7 @@ void main() {
     test('Parses bare documents', () {
       final docs = bootstrapDocParser(
         docStringAs(YamlDocType.bare),
-      ).parseDocs().toList();
+      ).parseDocuments().toList();
 
       check(docs).every(
         (d) => d
@@ -34,7 +34,7 @@ void main() {
     test('Parses explicit document', () {
       final docs = bootstrapDocParser(
         docStringAs(YamlDocType.explicit),
-      ).parseDocs().toList();
+      ).parseDocuments().toList();
 
       check(docs).every(
         (d) => d
@@ -76,7 +76,7 @@ $node
 ...
 ''';
 
-      final doc = bootstrapDocParser(yaml).parseDocs().firstOrNull;
+      final doc = bootstrapDocParser(yaml).parseDocuments().firstOrNull;
 
       check(doc).isNotNull()
         ..hasVersionDirective(yamlDirective)
@@ -120,7 +120,7 @@ folded
 - sequence
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocs()).every(
+      check(bootstrapDocParser(yaml).parseDocuments()).every(
         (d) => d
           ..isDocStartExplicit().isTrue()
           ..isDocEndExplicit().isFalse()
@@ -133,23 +133,18 @@ folded
 # Just comments
 ...
 ...
-!just-a-tag
+!just-a-tag # Treated as a string
 ...
 ''';
 
-      check(
-          bootstrapDocParser(yaml).parseDocs(),
-        )
+      check(bootstrapDocParser(yaml).parseDocuments())
         ..length.equals(3)
-        ..every(
-          (d) => d
-            ..isDocEndExplicit().isTrue()
-            ..hasNode().which(
-              (n) => n
-                ..isA<Scalar>().which(
-                  (s) => s.has((s) => s.value, 'Value').isNull(),
-                ),
-            ),
+        ..every((d) => d.isDocEndExplicit().isTrue())
+        ..has((d) => d.take(2).map((e) => e.root), 'Leading elements').every(
+          (e) => e.isA<Scalar>().has((s) => s.value, 'Value').isNull(),
+        )
+        ..has((d) => d.last.root, 'Trailing element').isA<Scalar>().which(
+          (s) => s.has((s) => s.value, 'Value').isA<String>().isEmpty(),
         );
     });
 
@@ -157,7 +152,7 @@ folded
       const yaml = '-- just a plain scalar';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).equals(yaml);
     });
   });
@@ -171,7 +166,9 @@ folded
 $tag yaml
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocs().parseNodeSingle()).hasTag(tag);
+      check(
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+      ).hasTag(tag);
     });
 
     test('Resolves shorthands with primary tag handles', () {
@@ -193,7 +190,7 @@ $suffix node
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).hasTag(globalTag, suffix: suffix);
     });
 
@@ -203,7 +200,7 @@ $suffix node
         final yaml = '$stringTag node';
 
         check(
-          bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
         ).hasTag(yamlGlobalTag, suffix: stringTag);
       },
     );
@@ -225,7 +222,7 @@ $stringTag node
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).hasTag(globalTag, suffix: stringTag);
     });
 
@@ -247,7 +244,7 @@ $suffix
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).hasTag(globalTag, suffix: suffix);
     });
 
@@ -286,7 +283,7 @@ $star
 
         final docs = bootstrapDocParser(
           yaml,
-        ).parseDocs().parsedNodes().toList();
+        ).parseDocuments().parsedNodes().toList();
 
         check(docs).length.equals(3);
 
@@ -302,7 +299,7 @@ $star
       check(
           bootstrapDocParser(
             '! { ! [], ! scalar }',
-          ).parseDocs().parseNodeSingle(),
+          ).parseDocuments().parseNodeSingle(),
         ).isNotNull().isA<Mapping>()
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
         ..has((map) => map.keys, 'Keys').which(
@@ -337,7 +334,7 @@ never parsed
       /// Once leading "!" is seen, the rest are treated as normal tag uri
       /// where "!" must be escaped
       check(
-        () => bootstrapDocParser(yaml).parseDocs(),
+        () => bootstrapDocParser(yaml).parseDocuments(),
       ).throwsAFormatException(
         'Expected "!" to be escaped. The "!" character must be escaped.',
       );
@@ -349,7 +346,7 @@ never parsed
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs(),
+        () => bootstrapDocParser(yaml).parseDocuments(),
       ).throwsAFormatException(
         'Expected a directive end marker but found "nullnull.." as the first '
         'two characters',
@@ -367,7 +364,7 @@ First document
 ''';
 
         check(
-          () => bootstrapDocParser(yaml).parseDocs().toList(),
+          () => bootstrapDocParser(yaml).parseDocuments().toList(),
         ).throwsAFormatException(
           '"%" cannot be used as the first non-whitespace character in a '
           'non-empty content line',

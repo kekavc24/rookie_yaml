@@ -23,7 +23,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -48,7 +48,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -73,7 +73,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -98,7 +98,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -124,7 +124,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -138,7 +138,7 @@ void main() {
   test('Infers booleans in different scalars', () {
     void checker(String yaml) {
       check(
-        bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -191,7 +191,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -216,7 +216,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -243,7 +243,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (d) => d.isA<Scalar>().which(
         (d) => d
@@ -266,7 +266,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(edgyYAML).parseDocs().nodeAsSimpleString(),
+      bootstrapDocParser(edgyYAML).parseDocuments().nodeAsSimpleString(),
     ).equals(
       {
         24: 'value',
@@ -285,7 +285,7 @@ void main() {
     final yaml = '$tag 24';
 
     check(
-        bootstrapDocParser(yaml).parseDocs().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).isNotNull().isA<Scalar>()
       ..withTag().equals(tag)
       ..hasParsedInteger(24);
@@ -301,7 +301,7 @@ $string: $integer
 $integer: $string
 ''';
 
-    check(bootstrapDocParser(yaml).parseDocs().parseNodeSingle())
+    check(bootstrapDocParser(yaml).parseDocuments().parseNodeSingle())
         .isNotNull()
         .isA<Mapping>()
         .has((m) => m.castTo<DynamicMapping>(), 'DynamicMapping cast')

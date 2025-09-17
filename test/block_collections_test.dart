@@ -17,7 +17,7 @@ void main() {
           ' - block sequence';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).equals(
         {
           'one': 'double-quoted',
@@ -64,7 +64,9 @@ void main() {
 : value
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
+      check(
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+      ).equals(
         {
           null: null,
           'plain-key-with-empty-value': null,
@@ -96,7 +98,9 @@ key3:
 - block indicator as indent
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
+      check(
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+      ).equals(
         {
           null: null,
           'key': null,
@@ -115,7 +119,7 @@ key3:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Expected ":" on a new line with an indent of 0 space(s) and'
         ' not 2 space(s)',
@@ -131,7 +135,7 @@ implicit: map
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Implicit keys are restricted to a single line. Consider using an'
         ' explicit key for the entry',
@@ -147,7 +151,7 @@ rogue
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAnException(
         '[Parser Error]: Implicit keys cannot have an exit indent',
       );
@@ -159,7 +163,7 @@ rogue
           ' - block sequence value # Block lists start on new line';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAFormatException(
         'The block collections must start on a new line'
         ' when used as values of an implicit key',
@@ -174,7 +178,7 @@ implicit:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Dangling node/node properties found with indent of 2 space(s) while parsing',
       );
@@ -198,7 +202,9 @@ implicit:
 - - nested
   - sequence''';
 
-      check(bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString()).equals(
+      check(
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+      ).equals(
         [
           'double quoted',
           'single quoted',
@@ -226,7 +232,7 @@ implicit:
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).equals(
         [
           {
@@ -258,7 +264,7 @@ implicit:
         check(
           bootstrapDocParser(
             '$yaml$marker$trailing',
-          ).parseDocs().nodeAsSimpleString(),
+          ).parseDocuments().nodeAsSimpleString(),
         ).equals(sequenceStr);
       }
     });
@@ -269,7 +275,7 @@ implicit:
           '-error';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Expected a "- " while parsing sequence but found "-e"',
       );
@@ -283,7 +289,7 @@ implicit:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocs().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
       ).throwsAFormatException(
         'Dangling node/node properties found with indent of 2 space(s) while'
         ' parsing',

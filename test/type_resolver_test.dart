@@ -39,7 +39,7 @@ void main() {
       bootstrapDocParser(
         yaml,
         resolvers: [resolver],
-      ).parseDocs().parseNodeSingle(),
+      ).parseDocuments().parseNodeSingle(),
     ).isA<Sequence>().every(
       (p) => p.isA<Scalar>()
         ..hasInferred('Dart ascii string', String.fromCharCodes(asciiList))
@@ -61,7 +61,7 @@ void main() {
           bootstrapDocParser(
             yaml,
             resolvers: [resolver],
-          ).parseDocs().parseNodeSingle(),
+          ).parseDocuments().parseNodeSingle(),
         )
         .isNotNull()
         .has((p) => p.asCustomType(), 'Custom type')
@@ -98,7 +98,7 @@ $asciiTag { handle: primary, suffix: $suffix}
           bootstrapDocParser(
             yaml,
             resolvers: [resolver],
-          ).parseDocs().parseNodeSingle(),
+          ).parseDocuments().parseNodeSingle(),
         )
         .isNotNull()
         .has((p) => p.asCustomType(), 'Custom type')

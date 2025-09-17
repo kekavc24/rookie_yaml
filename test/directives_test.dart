@@ -162,7 +162,7 @@ void main() {
       check(
         () => bootstrapDocParser(
           '%TEST Yess it is',
-        ).parseDocs().parseNodeSingle(),
+        ).parseDocuments().parseNodeSingle(),
       ).throwsAFormatException(
         'Expected a directive end marker but found "nullnull.." as the first '
         'two characters',
