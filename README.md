@@ -3,7 +3,7 @@
 ![pub_version][dart_pub_version]
 ![pub_downloads][dart_pub_downloads]
 ![Coverage Status][coverage]
-![test_suite](https://img.shields.io/badge/YAML_Test_Suite-70.0%25-yellow)
+![test_suite](https://img.shields.io/badge/YAML_Test_Suite-71.0%25-yellow)
 
 A (rookie) `Dart` YAML 1.2+ parser.
 
