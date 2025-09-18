@@ -1,6 +1,7 @@
 part of 'yaml_node.dart';
 
-/// A read-only `YAML` [List]
+/// A read-only `YAML` [List] which mirrors an actual Dart [List] in equality
+/// but not shape.
 final class Sequence extends DelegatingList<YamlSourceNode>
     with NonGrowableListMixin<YamlSourceNode>
     implements YamlSourceNode {
@@ -30,10 +31,10 @@ final class Sequence extends DelegatingList<YamlSourceNode>
 
   @override
   bool operator ==(Object other) =>
-      other is List && _equality.equals(this, other);
+      other is Iterable && yamlCollectionEquality.equals(this, other);
 
   @override
-  int get hashCode => _equality.hash(this);
+  int get hashCode => yamlCollectionEquality.hash(this);
 
   @override
   String? get alias => null;

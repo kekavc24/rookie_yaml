@@ -1,10 +1,9 @@
 part of 'yaml_node.dart';
 
-/// A read-only `YAML` [Map]. A mapping may allow a `null` key but it must be
-/// wrapped by a [Scalar].
+/// A read-only `YAML` [Map] which mirrors an actual Dart [Map] in equality
+/// but not shape.
 ///
-/// For equality, it expects at least a Dart [Map]. However, it should be noted
-/// that the value of a key will always be a [YamlSourceNode].
+/// A mapping may allow a `null` key but it must be  wrapped by a [Scalar].
 ///
 /// See [DynamicMapping] for a "no-cost" [Mapping] type cast.
 final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
@@ -58,10 +57,10 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
 
   @override
   bool operator ==(Object other) =>
-      other is Map && _equality.equals(this, other);
+      other is Map && yamlCollectionEquality.equals(this, other);
 
   @override
-  int get hashCode => _equality.hash(this);
+  int get hashCode => yamlCollectionEquality.hash(this);
 
   @override
   String? get alias => null;

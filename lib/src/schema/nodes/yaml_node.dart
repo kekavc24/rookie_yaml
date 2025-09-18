@@ -8,7 +8,13 @@ part 'node_styles.dart';
 part 'scalar.dart';
 part 'sequence.dart';
 
-const _equality = DeepCollectionEquality();
+/// A custom [Equality] object for deep equality. This includes [AliasNode]s
+/// which wrap their [YamlSourceNode] subclass references.
+final yamlCollectionEquality = DeepCollectionEquality(
+  EqualityBy<Object, Object>(
+    (e) => e is AliasNode ? e.aliased : e,
+  ),
+);
 
 /// A simple node dumpable to a `YAML` source string
 sealed class YamlNode {
@@ -108,10 +114,11 @@ final class AliasNode extends YamlSourceNode {
   NodeStyle get nodeStyle => aliased.nodeStyle;
 
   @override
-  bool operator ==(Object other) => _equality.equals(aliased, other);
+  bool operator ==(Object other) =>
+      yamlCollectionEquality.equals(aliased, other);
 
   @override
-  int get hashCode => _equality.hash(aliased);
+  int get hashCode => yamlCollectionEquality.hash(aliased);
 
   @override
   String toString() => aliased.toString();
@@ -134,8 +141,8 @@ final class DartNode<T> extends YamlNode {
   NodeStyle get nodeStyle => NodeStyle.block;
 
   @override
-  bool operator ==(Object other) => _equality.equals(other, value);
+  bool operator ==(Object other) => yamlCollectionEquality.equals(other, value);
 
   @override
-  int get hashCode => _equality.hash(value);
+  int get hashCode => yamlCollectionEquality.hash(value);
 }
