@@ -12,6 +12,10 @@ const _globalTagDirective = 'TAG';
 /// # !yaml! = shorthand
 /// # tag:yaml.org,2002: = prefix
 /// ```
+///
+/// {@category yaml_docs}
+/// {@category tag_types}
+/// {@category declare_tags}
 final class GlobalTag<T> extends SpecificTag<T> implements Directive {
   GlobalTag._(super.tagHandle, super.suffix) : super.fromString();
 

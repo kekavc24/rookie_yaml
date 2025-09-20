@@ -14,15 +14,23 @@ final _defaultYamlHandle = TagHandle.secondary();
 /// ```text
 /// %TAG !! tag:yaml.org,2002:
 /// ```
+///
+/// {@category schema}
 final yamlGlobalTag = GlobalTag.fromTagUri(_defaultYamlHandle, _yamlPrefix);
 
 /// Generic [Map]
+///
+/// {@category schema}
 final mappingTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'map');
 
 /// Generic [List]
+///
+/// {@category schema}
 final sequenceTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'seq');
 
 /// Generic [String]
+///
+/// {@category schema}
 final stringTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'str');
 
 //
@@ -31,15 +39,23 @@ final stringTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'str');
 //
 
 /// `JSON` `null`
+///
+/// {@category schema}
 final nullTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'null');
 
 /// `JSON` [bool]
+///
+/// {@category schema}
 final booleanTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'bool');
 
 /// `JSON` [int]
+///
+/// {@category schema}
 final integerTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'int');
 
 /// `JSON` [double]
+///
+/// {@category schema}
 final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
 
 //
@@ -47,9 +63,13 @@ final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
 //
 
 /// [Uri] tag
+///
+/// {@category schema}
 final uriTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'uri');
 
 /// Any [TagShorthand] that resolves to a [Scalar]
+///
+/// {@category schema}
 final scalarTags = {
   stringTag,
   nullTag,
@@ -61,5 +81,7 @@ final scalarTags = {
 
 /// Checks if a [tag] is valid tag in the yaml schema. A yaml tag uses the
 /// [TagHandleVariant.secondary] handle
+///
+/// {@category schema}
 bool isYamlTag(TagShorthand tag) =>
     tag == mappingTag || tag == sequenceTag || scalarTags.contains(tag);

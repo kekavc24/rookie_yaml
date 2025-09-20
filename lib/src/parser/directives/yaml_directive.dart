@@ -7,12 +7,16 @@ const _pinnedMajor = 1;
 /// `YAML` version that is used to implement the current `YamlParser` version.
 ///
 /// Must support this and all lower versions.
+///
+/// {@category yaml_docs}
 final parserVersion = YamlDirective.ofVersion(_pinnedMajor, 2);
 
 /// `YAML` version directive
 const _yamlDirective = 'YAML';
 
 /// Specifies the version a `YAML` document conforms to.
+///
+/// {@category yaml_docs}
 final class YamlDirective extends ReservedDirective {
   YamlDirective._(this.major, this.minor, String version)
     : super(name: _yamlDirective, parameters: [version]);

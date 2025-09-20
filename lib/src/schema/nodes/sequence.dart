@@ -2,6 +2,8 @@ part of 'yaml_node.dart';
 
 /// A read-only `YAML` [List] which mirrors an actual Dart [List] in equality
 /// but not shape.
+///
+/// {@category yaml_nodes}
 final class Sequence extends DelegatingList<YamlSourceNode>
     with NonGrowableListMixin<YamlSourceNode>
     implements YamlSourceNode {

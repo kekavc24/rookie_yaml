@@ -7,6 +7,9 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 final _logger = Logger(level: Level.all);
 
 /// An intuitive top level `YAML` parser
+///
+/// {@category intro}
+/// {@category yaml_docs}
 final class YamlParser {
   /// Creates a [DocumentParser] internally for the [source] string.
   ///

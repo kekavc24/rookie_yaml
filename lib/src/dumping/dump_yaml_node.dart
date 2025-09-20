@@ -155,6 +155,8 @@ String _dumpCompactYamlNode<N extends CompactYamlNode>(
 
 /// Dumps a [YamlNode] to a YAML source string with no properties. This is the
 /// classic output for existing YAML dumpers.
+///
+/// {@category dump_node}
 String dumpYamlNode<N extends YamlNode>(
   N node, {
   NodeStyle style = NodeStyle.block,
@@ -172,6 +174,9 @@ String dumpYamlNode<N extends YamlNode>(
 /// subtype that is not a [Mapping], [Sequence] or [Scalar] should define a
 /// [nodeUnpacker] function that prevents the [node] from being dumped as a
 /// [Scalar].
+///
+/// {@category dump_node}
+/// {@category dump_doc}
 String dumpCompactNode<N extends CompactYamlNode>(
   N node, {
   required Object Function(N node)? nodeUnpacker,
@@ -186,6 +191,8 @@ String dumpCompactNode<N extends CompactYamlNode>(
 /// present. The [YamlDocument]'s root node is also dumped with its properties
 /// such that all [TagShorthand]s are linked to their respective [GlobalTag]
 /// directives and aliases "compressed" as anchors if possible.
+///
+/// {@category dump_doc}
 String dumpYamlDocuments(
   Iterable<YamlDocument> documents, {
   ScalarStyle scalarStyle = ScalarStyle.plain,

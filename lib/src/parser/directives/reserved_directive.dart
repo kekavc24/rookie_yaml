@@ -4,6 +4,8 @@ const _equality = DeepCollectionEquality();
 
 /// Represents any unknown directive which `YAML`, by default, reserves for
 /// future use. Typically any that is not a [YamlDirective] or a [GlobalTag].
+///
+/// {@category yaml_docs}
 sealed class ReservedDirective implements Directive {
   ReservedDirective({required this.name, required Iterable<String> parameters})
     : parameters = List.from(parameters, growable: false);

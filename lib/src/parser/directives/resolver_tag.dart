@@ -2,6 +2,9 @@ part of 'directives.dart';
 
 /// A tag that wraps a [NodeTag] and defines a mapping function for any
 /// node annotated with the tag.
+///
+/// {@category tag_types}
+/// {@category resolvers}
 sealed class TypeResolverTag<I, O> extends ResolvedTag {
   TypeResolverTag(this.resolvedTag, {required this.resolver});
 
@@ -42,6 +45,9 @@ sealed class TypeResolverTag<I, O> extends ResolvedTag {
 /// control and allows the parser to determine its type if your custom
 /// function cannot. Additionally, the value type will belong to the scalar
 /// rather than having to call `asCustomType` method for a later resolution.
+///
+/// {@category tag_types}
+/// {@category resolvers}
 final class NodeResolver<O> extends TypeResolverTag<YamlSourceNode, O> {
   NodeResolver(super.resolvedTag, {required super.resolver});
 }
@@ -52,6 +58,9 @@ final class NodeResolver<O> extends TypeResolverTag<YamlSourceNode, O> {
 ///
 /// `NOTE:` This resolver will be ignored if the tag belongs to a [Mapping]
 /// or [Sequence]
+///
+/// {@category tag_types}
+/// {@category resolvers}
 final class ContentResolver<O> extends TypeResolverTag<String, O?> {
   ContentResolver(
     super.resolvedTag, {

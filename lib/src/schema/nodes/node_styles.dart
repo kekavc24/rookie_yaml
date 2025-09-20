@@ -1,6 +1,8 @@
 part of 'yaml_node.dart';
 
-/// Indicates how each [Node] is presented in the serialized yaml string.
+/// Indicates how each [YamlNode] is presented in the serialized yaml string.
+///
+/// {@category yaml_nodes}
 enum NodeStyle {
   /// A style that depends on indentation to indicate its structure
   block,
@@ -10,6 +12,8 @@ enum NodeStyle {
 }
 
 /// Indicates how each [Scalar] is presented in a serialized yaml string.
+///
+/// {@category yaml_nodes}
 enum ScalarStyle {
   /// A `block` style that starts with an explicit `|`.
   literal(NodeStyle.block),
@@ -29,11 +33,13 @@ enum ScalarStyle {
 
   const ScalarStyle(this.nodeStyle);
 
-  /// A basic [NodeStyle] used by the [YamlScalar]
+  /// A basic [NodeStyle] the [ScalarStyle] belongs to.
   final NodeStyle nodeStyle;
 }
 
 /// Controls how final line breaks and trailing empty lines are interpreted.
+///
+/// {@category yaml_nodes}
 enum ChompingIndicator {
   /// Indicates the final line break and any trailing empty lines should be
   /// excluded from the scalar's content.
@@ -54,6 +60,7 @@ enum ChompingIndicator {
   final String indicator;
 }
 
+/// {@category yaml_docs}
 enum DocumentMarker {
   /// Indicates the end of any documents and implies the start of a document.
   ///

@@ -1,0 +1,60 @@
+dartdoc:
+  categories:
+    intro:
+      markdown: doc/intro.md
+      displayName: Introduction
+    yaml_docs:
+      markdown: doc/documents.md
+      displayName: Parsing Documents
+    yaml_nodes:
+      markdown: doc/nodes.md
+      displayName: Parsing Nodes
+    anchor_alias:
+      markdown: doc/anchors_aliases.md
+      displayName: Anchors and Aliases
+    tags:
+      markdown: doc/tags_intro.md
+      displayName: Introduction to Tags
+    tag_types:
+      markdown: doc/tag_types.md
+      displayName: Types of Tags
+    declare_tags:
+      markdown: doc/declaring_tags.md
+      displayName: Declaring Tags in Code
+    resolvers:
+      markdown: doc/resolvers.md
+      displayName: Custom Resolvers
+    schema:
+      markdown: doc/schema_tags.md
+      displayName: Supported Schema Tags
+    dump_scalar:
+      markdown: doc/dump_scalar.md
+      displayName: Dumping Scalars
+    dump_sequence:
+      markdown: doc/dump_sequence.md
+      displayName: Dumping Sequence
+    dump_mapping:
+      markdown: doc/dump_mapping.md
+      displayName: Dumping Mapping
+    dump_node:
+      markdown: doc/dump_node.md
+      displayName: Dumping YAML Nodes
+    dump_doc:
+      markdown: doc/dump_document.md
+      displayName: Dumping YAML Documents
+
+  categoryOrder:
+    - intro
+    - yaml_docs
+    - yaml_nodes
+    - anchor_alias
+    - tags
+    - tag_types
+    - declare_tags
+    - resolvers
+    - schema
+    - dump_scalar
+    - dump_sequence
+    - dump_mapping
+    - dump_node
+    - dump_doc

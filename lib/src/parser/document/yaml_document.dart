@@ -18,6 +18,8 @@ part 'document_parser.dart';
 
 /// Represents the type of YAML document based on the use of directives,
 /// directives end marker (`---`) and document end marker (`...`)
+///
+/// {@category yaml_docs}
 enum YamlDocType {
   /// Yaml document without any directives or directives end markers
   ///
@@ -63,6 +65,9 @@ enum YamlDocType {
 
 /// A document representing the entire `YAML` string or a single
 /// scalar/collection node within a group of documents in `YAML`.
+///
+/// {@category yaml_docs}
+/// {@category dump_doc}
 final class YamlDocument {
   YamlDocument._(
     this.index,

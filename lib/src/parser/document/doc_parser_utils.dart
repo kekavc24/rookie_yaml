@@ -414,6 +414,8 @@ typedef _ResolverCreator = TypeResolverTag Function(NodeTag tag);
 /// A wrapper class used to define a [TagShorthand] that the parser associates
 /// with a [TypeResolverTag] to infer the kind for a [YamlSourceNode] or
 /// [String] content from [Scalar] to valid output [O].
+///
+/// {@category resolvers}
 final class Resolver<I, O> {
   Resolver._(this.target, this._creator);
 

@@ -16,6 +16,8 @@ const yamlCollectionEquality = YamlCollectionEquality();
 
 /// A [DeepCollectionEquality] implementation that treats [YamlSourceNode]s as
 /// immutable Dart objects.
+///
+/// {@category yaml_nodes}
 final class YamlCollectionEquality extends DeepCollectionEquality {
   const YamlCollectionEquality();
 
@@ -35,6 +37,8 @@ final class YamlCollectionEquality extends DeepCollectionEquality {
 }
 
 /// A simple node dumpable to a `YAML` source string
+///
+/// {@category yaml_nodes}
 sealed class YamlNode {
   /// Style used to serialize the node within the `YAML` source string
   NodeStyle get nodeStyle;
@@ -47,6 +51,9 @@ sealed class YamlNode {
 /// `[NOTE]`: This interface is a blueprint and a contract. If any object
 /// provides an `alias` then `anchor` and `tag` **MUST** be `null`. If `anchor`
 /// or `tag` is provided, `alias` **MUST** be null.
+///
+/// {@category yaml_nodes}
+/// {@category dump_node}
 abstract interface class CompactYamlNode extends YamlNode {
   /// [Tag] directive describing how the node is represented natively.
   ResolvedTag? get tag => null;
@@ -67,13 +74,15 @@ abstract interface class CompactYamlNode extends YamlNode {
 ///   - [Scalar] of `4` has no difference when compared to `4`
 ///   - [Sequence] or [Map] of values will be equal to the same [List] or
 ///     [Map] declared in `Dart`.
+///
+/// {@category yaml_nodes}
 sealed class YamlSourceNode extends CompactYamlNode {
   YamlSourceNode();
 
   /// [Tag] directive describing how the node is represented natively.
   ///
   /// If a custom [NodeResolver] tag was parsed, the [YamlSourceNode] may be
-  /// viewed in a resolved format by calling [asCustomType] getter on the node.
+  /// viewed in a resolved format by calling `asCustomType` getter on the node.
   @override
   ResolvedTag? get tag => null; // Just to redefine docs
 
@@ -86,6 +95,8 @@ sealed class YamlSourceNode extends CompactYamlNode {
 
 /// Utility method for mapping any [YamlSourceNode] that has a [NodeResolver]
 /// as its resolved tag.
+///
+/// {@category resolvers}
 extension CustomResolved on YamlSourceNode {
   /// Returns a custom resolved format if any [NodeResolver] is present. The
   /// [YamlSourceNode] is formatted each time this method is called.
@@ -103,10 +114,15 @@ extension CustomResolved on YamlSourceNode {
 /// [Scalar]s use the inferred type.
 ///
 /// See [Node comparison](https://yaml.org/spec/1.2.2/#3213-node-comparison)
+///
+/// {@category yaml_nodes}
 bool yamlSourceNodeDeepEqual(YamlSourceNode thiz, YamlSourceNode that) =>
     thiz == that && thiz.tag == that.tag;
 
 /// A node that is a pointer to another node.
+///
+/// {@category yaml_nodes}
+/// {@category anchor_alias}
 final class AliasNode extends YamlSourceNode {
   AliasNode(
     this.alias,
@@ -143,6 +159,8 @@ final class AliasNode extends YamlSourceNode {
 
 /// A simple wrapper for most `Dart` types. Effective if you want to access
 /// keys in a [Mapping]
+///
+/// {@category yaml_nodes}
 final class DartNode<T> extends YamlNode {
   DartNode(T dartValue)
     : assert(

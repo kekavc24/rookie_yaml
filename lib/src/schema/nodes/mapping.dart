@@ -6,6 +6,8 @@ part of 'yaml_node.dart';
 /// A mapping may allow a `null` key but it must be  wrapped by a [Scalar].
 ///
 /// See [DynamicMapping] for a "no-cost" [Mapping] type cast.
+///
+/// {@category yaml_nodes}
 final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
     with UnmodifiableMapMixin<YamlNode, YamlSourceNode?>
     implements YamlSourceNode {
@@ -100,6 +102,8 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
 ///
 /// Optionally cast to [Map] of type [T] if you are sure all the keys match the
 /// type. Values will still be [YamlSourceNode]s
+///
+/// {@category yaml_nodes}
 extension type DynamicMapping<T>(Mapping mapping) implements YamlSourceNode {
   YamlSourceNode? operator [](T key) =>
       mapping[key is YamlNode ? key : DartNode<T>(key)];

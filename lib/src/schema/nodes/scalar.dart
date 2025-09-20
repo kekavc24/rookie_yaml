@@ -4,6 +4,8 @@ part of 'yaml_node.dart';
 ///
 /// For equality, a scalar uses the inferred value [T] for maximum
 /// compatibility with `Dart` objects that can be scalars.
+///
+/// {@category yaml_nodes}
 final class Scalar<T> extends YamlSourceNode {
   Scalar(
     this._type, {

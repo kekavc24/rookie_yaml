@@ -1,6 +1,10 @@
 part of 'directives.dart';
 
 /// Types of a [TagHandle]
+///
+/// {@category tags}
+/// {@category tag_types}
+/// {@category declare_tags}
 enum TagHandleVariant {
   /// Normally used as a prefix for most [TagShorthand]s and all non-specific
   /// local tags
@@ -20,6 +24,10 @@ enum TagHandleVariant {
 }
 
 /// Represents a prefix for any [Tag] declared in `YAML`
+///
+/// {@category tags}
+/// {@category tag_types}
+/// {@category declare_tags}
 final class TagHandle {
   TagHandle._(this.handleVariant, String? handle)
     : handle = handle ?? handleVariant._handle;

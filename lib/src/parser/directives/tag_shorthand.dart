@@ -1,6 +1,9 @@
 part of 'directives.dart';
 
 /// A tag shorthand for a node that may (not) be resolved to a [GlobalTag]
+///
+/// {@category tag_types}
+/// {@category declare_tags}
 final class TagShorthand extends SpecificTag<String> {
   TagShorthand._(super.tagHandle, super.suffix) : super.fromString();
 

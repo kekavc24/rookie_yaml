@@ -38,6 +38,9 @@ String _formatAsVerbatim(
 
 /// Represents a [TagShorthand] shorthand that has (not) been resolved to a
 /// [GlobalTag] after it has been parsed.
+///
+/// {@category tag_types}
+/// {@category declare_tags}
 final class NodeTag<T> extends ResolvedTag {
   NodeTag(this._resolvedTag, TagShorthand? suffix)
     : verbatim = _formatAsVerbatim(
