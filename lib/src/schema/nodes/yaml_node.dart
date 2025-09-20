@@ -10,11 +10,29 @@ part 'sequence.dart';
 
 /// A custom [Equality] object for deep equality. This includes [AliasNode]s
 /// which wrap their [YamlSourceNode] subclass references.
-final yamlCollectionEquality = DeepCollectionEquality(
-  EqualityBy<Object, Object>(
-    (e) => e is AliasNode ? e.aliased : e,
-  ),
-);
+///
+/// {@category yaml_nodes}
+const yamlCollectionEquality = YamlCollectionEquality();
+
+/// A [DeepCollectionEquality] implementation that treats [YamlSourceNode]s as
+/// immutable Dart objects.
+final class YamlCollectionEquality extends DeepCollectionEquality {
+  const YamlCollectionEquality();
+
+  static Object? _unpack(Object? object) => switch (object) {
+    AliasNode(:final aliased) => aliased,
+    _ => object,
+  };
+
+  @override
+  bool equals(Object? e1, Object? e2) => super.equals(_unpack(e1), _unpack(e2));
+
+  @override
+  int hash(Object? o) => super.hash(_unpack(o));
+
+  @override
+  bool isValidKey(Object? o) => super.isValidKey(_unpack(o));
+}
 
 /// A simple node dumpable to a `YAML` source string
 sealed class YamlNode {
@@ -114,11 +132,10 @@ final class AliasNode extends YamlSourceNode {
   NodeStyle get nodeStyle => aliased.nodeStyle;
 
   @override
-  bool operator ==(Object other) =>
-      yamlCollectionEquality.equals(aliased, other);
+  bool operator ==(Object other) => aliased == other;
 
   @override
-  int get hashCode => yamlCollectionEquality.hash(aliased);
+  int get hashCode => aliased.hashCode;
 
   @override
   String toString() => aliased.toString();

@@ -56,8 +56,7 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
   final SourceLocation end;
 
   @override
-  bool operator ==(Object other) =>
-      other is Map && yamlCollectionEquality.equals(this, other);
+  bool operator ==(Object other) => yamlCollectionEquality.equals(this, other);
 
   @override
   int get hashCode => yamlCollectionEquality.hash(this);
