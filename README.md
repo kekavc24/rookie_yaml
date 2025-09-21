@@ -15,9 +15,30 @@ A (rookie) `Dart` YAML 1.2+ parser.
 - A fail-fast YAML parser.
 - Opinionated YAML dumper functions that prioritize compatibility and portability.
 
-## Documentation
+## Supported Schema Tags
 
-Visit the [pub guide][guide].
+The secondary tag handle `!!` is limited to tags below which all resolve to the YAML global tag prefix, `tag:yaml.org,2002`.
+
+- `YAML` schema tags
+  - `!!map` - `Map`
+  - `!!seq` - `List`
+  - `!!str` - `String`
+
+- `JSON` schema tags
+  - `!!null` - `null`
+  - `!!bool` - Boolean.
+  - `!!int` - Integer. `hex`, `octal` and `base 10` should use this.
+  - `!!float` - double.
+
+- `Dart`-specific schema tags
+  - `!!uri` - URI
+
+> [!WARNING]
+> The Dart-specific secondary tags may be moved to a custom global tag prefix.
+
+## Documentation & Examples
+
+Visit the [pub guide][guide] or examples folder.
 
 [coverage]: https://coveralls.io/repos/github/kekavc24/rookie_yaml/badge.svg?branch=main
 [dart_pub_version]: https://img.shields.io/pub/v/rookie_yaml.svg
