@@ -36,7 +36,7 @@ _UnpackedCompact _unpackCompactYamlNode(
   required bool Function(String alias) hasAlias,
   required void Function(String anchor) pushAnchor,
   required void Function(String globalTag) pushTag,
-  required Object Function(CompactYamlNode node) unpack,
+  required Object? Function(CompactYamlNode node) unpack,
 }) {
   var toUnpack = node;
 
@@ -98,7 +98,7 @@ _UnpackedCompact _unpackCompactYamlNode(
 /// Dumps a [node] and its properties.
 String _dumpCompactYamlNode<N extends CompactYamlNode>(
   N node, {
-  required Object Function(N node)? nodeUnpacker,
+  required Object? Function(N node)? nodeUnpacker,
   required ScalarStyle scalarStyle,
   YamlDirective? directive,
   Set<GlobalTag<dynamic>>? tags,
@@ -109,7 +109,7 @@ String _dumpCompactYamlNode<N extends CompactYamlNode>(
   /// Spoof the unpacking function. [YamlSourceNode]s are dumped on our terms
   /// since we extend native Dart objects (even the Scalar is a clever
   /// abstraction around a string to support custom types!).
-  Object unpack(CompactYamlNode node) {
+  Object? unpack(CompactYamlNode node) {
     /// Dart allows extension types. They are stripped but the underlying
     /// type is still a YamlSourceNode.
     return node is YamlSourceNode
@@ -179,7 +179,7 @@ String dumpYamlNode<N extends YamlNode>(
 /// {@category dump_doc}
 String dumpCompactNode<N extends CompactYamlNode>(
   N node, {
-  required Object Function(N node)? nodeUnpacker,
+  required Object? Function(N node)? nodeUnpacker,
   ScalarStyle scalarStyle = ScalarStyle.plain,
 }) => _dumpCompactYamlNode(
   node,
