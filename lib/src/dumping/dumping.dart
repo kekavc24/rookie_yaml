@@ -181,7 +181,10 @@ _DumpedObjectInfo _encodeObject<T>(
       );
     }
 
-    style = styleOverride ?? style;
+    /// Only block styles can be overriden in case the child has node properties
+    style = styleOverride != null && style != NodeStyle.flow
+        ? styleOverride
+        : style;
     encodable = toEncode;
     objectProperties = properties;
   }

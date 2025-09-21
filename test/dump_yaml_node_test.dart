@@ -217,6 +217,27 @@ $globalFromUri
 ...''');
     });
 
+    test("Prevents child block style override on parent flow's style", () {
+      final object = _TestObject(
+        [
+          'clean',
+          _TestObject(['value'], style: NodeStyle.block),
+        ],
+        anchor: 'parent',
+      );
+
+      check(_dumpTestObject(object)).equals('''
+%YAML 1.2
+---
+&parent [
+ clean,
+ [
+  value
+ ]
+]
+...''');
+    });
+
     test(
       'Throws an assertion error when a tag declared is not a valid YAML tag '
       'if the secondary tag handle is used',
