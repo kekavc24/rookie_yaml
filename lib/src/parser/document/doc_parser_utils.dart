@@ -389,12 +389,25 @@ void _blockNodeEndOffset(
   required GraphemeScanner scanner,
   required bool hasDocEndMarkers,
   required int? indentOnExit,
+}) => blockNode.updateEndOffset = _determineBlockEndOffset(
+  scanner,
+  hasDocEndMarkers: hasDocEndMarkers,
+  indentOnExit: indentOnExit,
+);
+
+/// Returns the end offset of a block node based on its [indentOnExit]. If
+/// [hasDocEndMarkers] is `true`, the end offset is the offset of the last `\n`
+/// (even if part of `\r\n`) before the document end markers (`---` or `...`)
+/// `+1`.
+SourceLocation _determineBlockEndOffset(
+  GraphemeScanner scanner, {
+  required bool hasDocEndMarkers,
+  required int? indentOnExit,
 }) {
   if (!hasDocEndMarkers && indentOnExit == null) {
     if (!scanner.canChunkMore) {
       scanner.skipCharAtCursor(); // Completely skip last char
-      blockNode.updateEndOffset = scanner.lineInfo().current;
-      return;
+      return scanner.lineInfo().current;
     }
 
     throw ArgumentError.value(
@@ -405,7 +418,7 @@ void _blockNodeEndOffset(
   }
 
   // For both doc end chars and indent change. Reference start of line
-  blockNode.updateEndOffset = scanner.lineInfo().start;
+  return scanner.lineInfo().start;
 }
 
 /// A function to easily create a [TypeResolverTag] on demand

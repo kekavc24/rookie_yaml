@@ -132,6 +132,7 @@ final class DocumentParser {
     required int indentLevel,
     required int indent,
     required SourceLocation start,
+    required SourceLocation end,
   }) {
     if (properties == null) return null;
 
@@ -150,7 +151,9 @@ final class DocumentParser {
           )
         : null);
 
-    return node != null ? _trackAnchor(node, properties) : node;
+    return node != null
+        ? _trackAnchor(node..updateEndOffset = end, properties)
+        : node;
   }
 
   /// Returns `true` if a flow key was "json-like", that is, a single/double
@@ -715,18 +718,21 @@ final class DocumentParser {
         'Expected at least a $exitIndicator but found null',
       );
     } else if (_scanner.charAtCursor == exitIndicator) {
-      if (parsedKey ??
-              _nullOrAlias(
-                keyProperties,
-                indentLevel: indentLevel,
-                indent: minIndent,
-                start: startOffset ?? _scanner.lineInfo().current,
-              )
-          case ParserDelegate nonTerminated) {
-        parsedKey = _trackAnchor(
-          nonTerminated..updateEndOffset = _scanner.lineInfo().current,
+      final keyEnd = _scanner.lineInfo().current;
+
+      // This "if" is intentional. I want to update the end offset just once.
+      if (parsedKey == null) {
+        parsedKey = _nullOrAlias(
           keyProperties,
+          indentLevel: indentLevel,
+          indent: minIndent,
+          start: startOffset ?? _scanner.lineInfo().current,
+          end: keyEnd,
         );
+      } else {
+        parsedKey
+          ..updateNodeProperties = keyProperties
+          ..updateEndOffset = keyEnd;
       }
 
       return (parsedKey, value);
@@ -935,11 +941,10 @@ final class DocumentParser {
           indentLevel: indentLevel,
           indent: indent,
           start: start,
+          end: end ?? _scanner.lineInfo().current,
         )
         case ParserDelegate entry) {
-      sequence.pushEntry(
-        entry..updateEndOffset = end ?? _scanner.lineInfo().current,
-      );
+      sequence.pushEntry(entry);
       return true;
     }
 
@@ -1814,14 +1819,13 @@ final class DocumentParser {
             indentLevel: indentLevel,
             indent: indent,
             start: valueOffset,
+            end: _determineBlockEndOffset(
+              _scanner,
+              hasDocEndMarkers: false,
+              indentOnExit: inferredIndent,
+            ),
           )
           case ParserDelegate nullOrAlias) {
-        _blockNodeEndOffset(
-          nullOrAlias,
-          scanner: _scanner,
-          hasDocEndMarkers: false,
-          indentOnExit: inferredIndent,
-        );
         val = nullOrAlias;
       }
 
@@ -2013,7 +2017,8 @@ final class DocumentParser {
             indentLevel: valueIndentLevel,
             indent: minValueIndent,
             start: valueOffset,
-          )?..updateEndOffset = _scanner.lineInfo().current,
+            end: _scanner.lineInfo().current,
+          ),
         ),
         nodeInfo: _emptyScanner,
       );
@@ -2416,22 +2421,24 @@ final class DocumentParser {
 
         // We moved to the next node irrespective of its indent.
         if (isLess || indentOrSeparation == indent) {
+          final end = _scanner.lineInfo().start;
+
           final entry =
               _nullOrAlias(
-                parsedProps.properties,
-                indentLevel: indentLevel,
-                indent: indent,
-                start: startOffset,
-              ) ??
-              nullScalarDelegate(
-                indentLevel: childIndentLevel,
-                indent: indent + 1,
-                startOffset: startOffset,
-              );
+                      parsedProps.properties,
+                      indentLevel: indentLevel,
+                      indent: indent,
+                      start: startOffset,
+                      end: end,
+                    ) ??
+                    nullScalarDelegate(
+                      indentLevel: childIndentLevel,
+                      indent: indent + 1,
+                      startOffset: startOffset,
+                    )
+                ..updateEndOffset = end;
 
-          sequence.pushEntry(
-            entry..updateEndOffset = _scanner.lineInfo().start,
-          );
+          sequence.pushEntry(entry);
 
           // Not a skill issue. 2 birds, 1 stone
           if (isLess) {
