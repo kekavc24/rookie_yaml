@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.0.6
+
+This is a packed patch release. The main highlight of this release is the support for dumping objects back to YAML. Some of the changes introduced in this release were blocking the implementation of this functionality. A baseline was required. Our dumping strategy needed to be inline with parser functionality.
+
+- `BREAKING`:
+  - Block scalar styles, `ScalarStyle.literal` and `ScalarStyle.folded`, are now restricted to the printable character set.
+  - Renamed `PreResolver` to `Resolver`.
+  - Removed `JsonNodeToYaml` and `DirectToYaml`. Prefer calling the dumping functions added in this release.
+
+- `feat`:
+  - `YamlParser` can be configured to ignore duplicate map entries. This is a backwards-compatibility feature for YAML 1.1 and below. Explicitly pass in `throwOnMapDuplicates` as `true`. Duplicate entries are ignored and do not overwrite the existing entry.
+  - `YamlParser` now accepts a logger callback. Register this callback if you have custom logging behaviour.
+  - Added `dumpScalar`, `dumpSequence` and `dumpMapping` for dumping objects without properties back to YAML.
+  - Added `CompactYamlNode` interface. External objects can provide custom properties by implementing this interface.
+  - Added `dumpYamlNode`, `dumpCompactNode` and `dumpYamlDocuments` for dumping `CompactYamlNode` subtypes.
+
+- `fix`:
+  - Tabs are treated as separation space in `ScalarStyle.plain` when checking if the plain scalar is a key to flow/block map.
+  - Escaped slashes `\` are not ignored in `ScalarStyle.doubleQuoted`.
+  - Comments in YAML directives are now skipped correctly and do not trigger a premature exit/error.
+  - Escaped line breaks in `ScalarStyle.doubleQuoted` are handled correctly.
+  - Prevent trailing aliases in flow sequences from being ignored.
+  - Prevent key aliases for compact mappings in block sequences from being treated as a normal sequence.
+
+- `docs`:
+  - Added guide for contributors who want to run the official YAML test suite to test the parser.
+  - Added topic-like docs for pub.
+  - Added examples.
+
 ## 0.0.5
 
 - `feat`:
