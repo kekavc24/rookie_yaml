@@ -10,6 +10,3 @@ The secondary tag handle `!!` is limited to tags below which all resolve to the 
   - `!!bool` - Boolean.
   - `!!int` - Integer. `hex`, `octal` and `base 10` should use this.
   - `!!float` - double.
-
-- `Dart`-specific schema tags (More will be supported)
-  - `!!uri` - URI

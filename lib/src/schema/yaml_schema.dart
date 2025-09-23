@@ -58,26 +58,10 @@ final integerTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'int');
 /// {@category schema}
 final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
 
-//
-// ** Dart Tags **
-//
-
-/// [Uri] tag
-///
-/// {@category schema}
-final uriTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'uri');
-
 /// Any [TagShorthand] that resolves to a [Scalar]
 ///
 /// {@category schema}
-final scalarTags = {
-  stringTag,
-  nullTag,
-  booleanTag,
-  integerTag,
-  floatTag,
-  uriTag,
-};
+final scalarTags = {stringTag, nullTag, booleanTag, integerTag, floatTag};
 
 /// Checks if a [tag] is valid tag in the yaml schema. A yaml tag uses the
 /// [TagHandleVariant.secondary] handle

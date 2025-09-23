@@ -176,31 +176,6 @@ void main() {
     );
   });
 
-  test('Infers Uri in different scalars', () {
-    final uri = Uri.https('i.love.dart');
-
-    final yaml =
-        '''
-- "$uri" # Double quoted
-- '$uri' # Single quoted
--  $uri  # Plain
-- |-     # Literal
-   $uri
-- >-     # Folded
-   $uri
-''';
-
-    check(
-      bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
-    ).isA<Sequence>().every(
-      (d) => d.isA<Scalar>().which(
-        (d) => d
-          ..hasTag(yamlGlobalTag, suffix: uriTag)
-          ..hasInferred('Uri', uri),
-      ),
-    );
-  });
-
   test('Defaults to string', () {
     const expected = 'Just a string';
 

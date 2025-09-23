@@ -30,9 +30,6 @@ The secondary tag handle `!!` is limited to tags below which all resolve to the 
   - `!!int` - Integer. `hex`, `octal` and `base 10` should use this.
   - `!!float` - double.
 
-- `Dart`-specific schema tags
-  - `!!uri` - URI
-
 > [!WARNING]
 > The Dart-specific secondary tags may be moved to a custom global tag prefix.
 
