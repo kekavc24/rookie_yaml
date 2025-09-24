@@ -76,11 +76,7 @@ String _parseTagUri(
       /// Alias/anchor names does not allow them.
       case _ when !allowFlowIndicators && char.isFlowDelimiter():
         {
-          if (isAnchorOrAlias) {
-            throw FormatException(
-              'Anchor/alias names must not contain flow indicators',
-            );
-          }
+          if (isAnchorOrAlias) break tagParser;
 
           throw FormatException(
             'Expected "${char.asString()}" to be escaped. '

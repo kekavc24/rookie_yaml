@@ -74,7 +74,8 @@ final class GraphemeScanner {
   /// Character at the cursor
   int? _charOnLastExit;
 
-  ///
+  /// Returns the current offset of this scanner and the actual start offset of
+  /// the current [LineSpan].
   LineRangeInfo lineInfo() {
     if (_currentLine == null) {
       _fetchNextLine();

@@ -24,10 +24,11 @@ final class GlobalTag<T> extends SpecificTag<T> implements Directive {
     : super.fromTagShorthand();
 
   /// Creates a global tag whose prefix is a valid tag uri
-  factory GlobalTag.fromTagUri(TagHandle handle, String uri) => GlobalTag._(
-    handle,
-    _ensureIsTagUri(uri, allowRestrictedIndicators: true),
-  );
+  GlobalTag.fromTagUri(TagHandle handle, String uri)
+    : this._(
+        handle,
+        _ensureIsTagUri(uri, allowRestrictedIndicators: true),
+      );
 
   @override
   String get name => _globalTagDirective;

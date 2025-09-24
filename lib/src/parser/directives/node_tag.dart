@@ -42,7 +42,7 @@ String _formatAsVerbatim(
 /// {@category tag_types}
 /// {@category declare_tags}
 final class NodeTag<T> extends ResolvedTag {
-  NodeTag(this._resolvedTag, TagShorthand? suffix)
+  NodeTag(this._resolvedTag, [TagShorthand? suffix])
     : verbatim = _formatAsVerbatim(
         _resolvedTag,
         suffix?.content ?? '',
