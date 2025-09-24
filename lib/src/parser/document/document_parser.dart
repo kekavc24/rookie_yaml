@@ -201,9 +201,10 @@ final class DocumentParser {
     _lastWasDocEndChars = marker.indicator;
     _docEndExplicit = marker == DocumentMarker.documentEnd;
 
-    if (_scanner.charAtCursor case int char
-        when (char.isWhiteSpace() || char.isLineBreak() || char == comment) &&
-            _docEndExplicit) {
+    if (_docEndExplicit &&
+        _scanner.charAtCursor.isNotNullAnd(
+          (c) => c == comment || c.isWhiteSpace() || c.isLineBreak(),
+        )) {
       skipToParsableChar(_scanner, comments: _comments);
     }
   }
