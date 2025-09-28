@@ -4,9 +4,10 @@ const _maxImplicitLength = 1024;
 
 bool _useNodeStyleDefault(ScalarStyle? style, String content) =>
     style == null ||
-    // Intentionally avoided treated escaped chars as whitespace
+    // Intentionally avoided treated escaped chars as whitespace. Also verbose!
     style == ScalarStyle.plain &&
         (content.startsWith('\n') ||
+            content.startsWith('#') ||
             content.endsWith('\n') ||
             trimYamlWhitespace(content).length != content.length);
 
