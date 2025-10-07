@@ -244,7 +244,7 @@ _ParsedNodeProperties _parseNodeProperties(
             throw FormatException('A node can only have a single tag property');
           }
 
-          nodeTag = switch (scanner.peekCharAfterCursor()) {
+          nodeTag = switch (scanner.charAfter) {
             verbatimStart => parseVerbatimTag(scanner),
             _ => resolver(parseTagShorthand(scanner)),
           };
@@ -399,7 +399,7 @@ void _blockNodeEndOffset(
 /// [hasDocEndMarkers] is `true`, the end offset is the offset of the last `\n`
 /// (even if part of `\r\n`) before the document end markers (`---` or `...`)
 /// `+1`.
-SourceLocation _determineBlockEndOffset(
+RuneOffset _determineBlockEndOffset(
   GraphemeScanner scanner, {
   required bool hasDocEndMarkers,
   required int? indentOnExit,

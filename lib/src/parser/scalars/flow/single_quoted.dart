@@ -1,6 +1,6 @@
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -37,7 +37,7 @@ PreScalar parseSingleQuoted(
       case singleQuote:
         {
           // Single quotes can also be a form of escaping.
-          if (scanner.peekCharAfterCursor() == singleQuote) {
+          if (scanner.charAfter == singleQuote) {
             buffer.writeChar(singleQuote);
             scanner.skipCharAtCursor(); // Skip the quote escaping it
           } else {

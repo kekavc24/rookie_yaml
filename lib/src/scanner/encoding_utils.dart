@@ -1,4 +1,4 @@
-part of 'chunk_scanner.dart';
+part of 'grapheme_scanner.dart';
 
 /// ASCII characters not represented/recognized correctly in a `Dart` string.
 /// This is (..maybe?..) great if we also get raw strings as input.

@@ -80,7 +80,7 @@ void _chompLineBreaks(
 int skipCrIfPossible(int lineBreak, {required GraphemeScanner scanner}) {
   var maybeCR = lineBreak;
 
-  if (maybeCR == carriageReturn && scanner.peekCharAfterCursor() == lineFeed) {
+  if (maybeCR == carriageReturn && scanner.charAfter == lineFeed) {
     maybeCR = lineFeed;
     scanner.skipCharAtCursor();
   }
@@ -132,7 +132,7 @@ void _maybeFoldLF(
   var startsWithTab = false;
   final canBeIndent = scannedIndent + scanner.skipWhitespace().length;
 
-  final charAfter = scanner.peekCharAfterCursor();
+  final charAfter = scanner.charAfter;
 
   /// We have to be sure that is not empty.
   ///
@@ -159,7 +159,7 @@ void _maybeFoldLF(
     );
 
     // This line cannot be used to determine the
-    if (scanner.peekCharAfterCursor().isNotNullAnd((c) => c.isLineBreak())) {
+    if (scanner.charAfter.isNotNullAnd((c) => c.isLineBreak())) {
       return (
         inferredIndent: canBeIndent,
         isEmptyLine: true,

@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 
 /// A [StringBuffer] wrapper for buffering scalars.
 final class ScalarBuffer {

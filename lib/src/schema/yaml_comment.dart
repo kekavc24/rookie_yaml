@@ -1,5 +1,5 @@
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
-import 'package:source_span/source_span.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 
 const _pattern = '# ';
 
@@ -7,22 +7,25 @@ const _pattern = '# ';
 ///
 /// {@category yaml_docs}
 final class YamlComment implements Comparable<YamlComment> {
-  YamlComment(this.comment, {required this.start, required this.end});
+  YamlComment(this.comment, {required this.commentSpan});
 
   /// Comment with leading `#` stripped off
   final String comment;
 
   /// Start offset for the comment (inclusive).
-  final SourceLocation start;
-
-  /// End offset for the comment (exclusive).
-  final SourceLocation end;
+  final RuneSpan commentSpan;
 
   /// Sorting based on position in document
   @override
   int compareTo(YamlComment other) {
-    if (other.end.offset < start.offset) return -1;
-    if (other.start.offset > end.offset) return 1;
+    if (other.commentSpan.end.utfOffset < commentSpan.start.utfOffset) {
+      return -1;
+    }
+
+    if (other.commentSpan.start.utfOffset > commentSpan.end.utfOffset) {
+      return 1;
+    }
+
     return 0;
   }
 
@@ -67,8 +70,7 @@ final class YamlComment implements Comparable<YamlComment> {
     onExit: chunkInfo,
     comment: YamlComment(
       comment,
-      start: start,
-      end: scanner.lineInfo().current,
+      commentSpan: (start: start, end: scanner.lineInfo().current),
     ),
   );
 }

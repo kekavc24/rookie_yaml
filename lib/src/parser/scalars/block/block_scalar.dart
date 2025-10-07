@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
-import 'package:source_span/source_span.dart';
 
 part 'block_header.dart';
 part 'block_utils.dart';
@@ -52,7 +52,7 @@ PreScalar parseBlockStyle(
   /// non-empty line.
   int? previousMaxIndent;
 
-  SourceLocation? end;
+  RuneOffset? end;
   var docMarkerType = DocumentMarker.none;
 
   blockParser:
@@ -70,7 +70,7 @@ PreScalar parseBlockStyle(
           }
 
           final scannedIndent = scanner.skipWhitespace(max: indent).length;
-          final charAfter = scanner.peekCharAfterCursor();
+          final charAfter = scanner.charAfter;
           final hasCharAfter = charAfter != null;
 
           if (charAfter != carriageReturn && charAfter != lineFeed) {

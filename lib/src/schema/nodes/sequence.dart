@@ -12,8 +12,7 @@ final class Sequence extends DelegatingList<YamlSourceNode>
     required this.nodeStyle,
     required this.tag,
     required this.anchor,
-    required this.start,
-    required this.end,
+    required this.nodeSpan,
   });
 
   @override
@@ -26,10 +25,7 @@ final class Sequence extends DelegatingList<YamlSourceNode>
   final String? anchor;
 
   @override
-  final SourceLocation start;
-
-  @override
-  final SourceLocation end;
+  final RuneSpan nodeSpan;
 
   @override
   bool operator ==(Object other) => yamlCollectionEquality.equals(this, other);

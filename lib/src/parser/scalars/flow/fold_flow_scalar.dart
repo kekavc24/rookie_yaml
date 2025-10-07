@@ -1,6 +1,6 @@
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -46,7 +46,7 @@ typedef FoldFlowInfo = ({
         ..skipCharAtCursor();
     }
   } while (scanner.charAtCursor == slash &&
-      scanner.peekCharAfterCursor().isNotNullAnd((c) => c.isLineBreak()));
+      scanner.charAfter.isNotNullAnd((c) => c.isLineBreak()));
 
   bufferedWhitespace.clear(); // Also escaped.
 
@@ -207,9 +207,7 @@ FoldFlowInfo foldFlowScalar(
           /// escaped. All other flow styles should return false!
           if (resumeOnEscapedLineBreak &&
               current == backSlash &&
-              scanner.peekCharAfterCursor().isNotNullAnd(
-                (c) => c.isLineBreak(),
-              )) {
+              scanner.charAfter.isNotNullAnd((c) => c.isLineBreak())) {
             final (
               :indentDidChange,
               :indentOnExit,

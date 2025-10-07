@@ -105,7 +105,7 @@ ParserEvent _inferNextEvent(
   required bool isBlockContext,
   required bool lastKeyWasJsonLike,
 }) {
-  final charAfter = scanner.peekCharAfterCursor();
+  final charAfter = scanner.charAfter;
 
   /// Can be allowed after map like indicator such as:
   ///   - "?" -> an explicit key indicator

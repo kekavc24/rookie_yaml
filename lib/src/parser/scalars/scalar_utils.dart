@@ -1,5 +1,5 @@
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:source_span/source_span.dart';
 
 /// A non-existent indent level for block(-like) scalars (`plain`, `literal`,
 /// `folded`) that are affected by indent changes. Indicates that the said
@@ -65,7 +65,7 @@ typedef PreScalar = ({
   int indentOnExit,
 
   /// End offset of the scalar (exclusive)
-  SourceLocation end,
+  RuneOffset end,
 });
 
 const _whitespace = ' ';

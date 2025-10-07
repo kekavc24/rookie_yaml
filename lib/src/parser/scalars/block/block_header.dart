@@ -59,8 +59,7 @@ _BlockHeaderInfo _parseBlockHeader(
     }
 
     functionDelegate(() => onParseComment(parseComment(scanner).comment));
-  } else if (current == carriageReturn &&
-      scanner.peekCharAfterCursor() == lineFeed) {
+  } else if (current == carriageReturn && scanner.charAfter == lineFeed) {
     skipChar();
   }
 

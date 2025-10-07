@@ -1,10 +1,10 @@
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:source_span/source_span.dart';
 
 /// Characters that must not be parsed as the first character in a plain scalar
 final _mustNotBeFirst = <int>{
@@ -52,7 +52,7 @@ PreScalar? parsePlain(
   final firstChar = scanner.charAtCursor;
 
   if (greedyChars.isEmpty && _mustNotBeFirst.contains(firstChar)) {
-    if (scanner.peekCharAfterCursor() case space || tab) {
+    if (scanner.charAfter case space || tab) {
       // Intentionally expressive with if statement! We eval once.
       if (firstChar == mappingValue) {
         // TODO: Pass in null when refactoring scalar
@@ -78,7 +78,7 @@ PreScalar? parsePlain(
 
   var docMarkerType = DocumentMarker.none;
   var foundLineBreak = false;
-  SourceLocation? end;
+  RuneOffset? end;
 
   chunker:
   while (scanner.canChunkMore) {
@@ -89,7 +89,7 @@ PreScalar? parsePlain(
     }
 
     final charBefore = scanner.charBeforeCursor;
-    var charAfter = scanner.peekCharAfterCursor();
+    var charAfter = scanner.charAfter;
 
     switch (char) {
       /// Check for the document end markers first always

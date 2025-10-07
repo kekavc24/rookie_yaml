@@ -3,7 +3,7 @@ part of 'parser_delegate.dart';
 ScalarDelegate nullScalarDelegate({
   required int indentLevel,
   required int indent,
-  required SourceLocation startOffset,
+  required RuneOffset startOffset,
 }) => ScalarDelegate(
   indentLevel: indentLevel,
   indent: indent,
@@ -62,8 +62,7 @@ final class MapEntryDelegate extends ParserDelegate {
     nodeStyle: nodeStyle,
     tag: _tag ?? _defaultTo(mappingTag),
     anchor: _anchor,
-    start: start,
-    end: _end!,
+    nodeSpan: (start: start, end: _end!),
   );
 
   @override
@@ -133,8 +132,7 @@ final class SequenceDelegate extends CollectionDelegate {
     nodeStyle: collectionStyle,
     tag: _tag ?? _defaultTo(sequenceTag),
     anchor: _anchor,
-    start: start,
-    end: _end!,
+    nodeSpan: (start: start, end: _end!),
   );
 
   @override
@@ -183,8 +181,7 @@ final class MappingDelegate extends CollectionDelegate {
     nodeStyle: collectionStyle,
     tag: _tag ?? _defaultTo(mappingTag),
     anchor: _anchor,
-    start: start,
-    end: _end!,
+    nodeSpan: (start: start, end: _end!),
   );
 
   @override

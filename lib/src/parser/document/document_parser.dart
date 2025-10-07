@@ -73,7 +73,7 @@ final class DocumentParser {
 
   /// Tracks the start offset of any characters consumed when checking for
   /// the directive end markers.
-  ({SourceLocation start, String greedChars})? _docMarkerGreedy;
+  ({RuneOffset start, String greedChars})? _docMarkerGreedy;
 
   /// Tracks anchors that can be used as aliases
   final _anchorNodes = <String, YamlSourceNode>{};
@@ -106,7 +106,7 @@ final class DocumentParser {
     NodeProperties properties, {
     required int indentLevel,
     required int indent,
-    required SourceLocation start,
+    required RuneOffset start,
   }) {
     final alias = properties.alias;
 
@@ -131,8 +131,8 @@ final class DocumentParser {
     NodeProperties? properties, {
     required int indentLevel,
     required int indent,
-    required SourceLocation start,
-    required SourceLocation end,
+    required RuneOffset start,
+    required RuneOffset end,
   }) {
     if (properties == null) return null;
 
@@ -283,7 +283,7 @@ final class DocumentParser {
     required bool isInFlowContext,
     required int indentLevel,
     required int minIndent,
-    SourceLocation? start,
+    RuneOffset? start,
     String greedyOnPlain = '',
   }) {
     final scalarOffset = start ?? _scanner.lineInfo().current;
@@ -458,7 +458,7 @@ final class DocumentParser {
     ParserDelegate? existing,
     required int indentLevel,
     required int indent,
-    required SourceLocation keyStartOffset,
+    required RuneOffset keyStartOffset,
   }) {
     if (properties case NodeProperties(:final isAlias) when isAlias) {
       if (existing != null) {
@@ -552,7 +552,7 @@ final class DocumentParser {
     required int collectionDelimiter,
     bool isBlockContext = false, // Block styles should override
     ParserEvent? inferredEvent,
-    SourceLocation? startOffset,
+    RuneOffset? startOffset,
   }) {
     final event =
         inferredEvent ??
@@ -709,7 +709,7 @@ final class DocumentParser {
     required bool forceInline,
     required int exitIndicator,
     required NodeProperties? keyProperties,
-    SourceLocation? startOffset,
+    RuneOffset? startOffset,
   }) {
     var parsedKey = key;
     ParserDelegate? value;
@@ -932,10 +932,10 @@ final class DocumentParser {
   bool _checkTrailingEntry(
     SequenceDelegate sequence, {
     required NodeProperties? properties,
-    required SourceLocation start,
+    required RuneOffset start,
     required int indentLevel,
     required int indent,
-    SourceLocation? end,
+    RuneOffset? end,
   }) {
     if (_nullOrAlias(
           properties,
@@ -1199,7 +1199,7 @@ final class DocumentParser {
       laxIndent: blockParentIndent + 1,
       inlineFixedIndent:
           blockParentIndent +
-          (_scanner.lineInfo().current.offset - startOffset),
+          (_scanner.lineInfo().current.utfOffset - startOffset),
     );
   }
 
@@ -1212,7 +1212,7 @@ final class DocumentParser {
   ///
   _BlockNode _parseBlockScalarWildcard(
     ScalarEvent event, {
-    required SourceLocation startOffset,
+    required RuneOffset startOffset,
     required int laxIndent,
     required int fixedIndent,
     required int indentLevel,
@@ -1356,7 +1356,7 @@ final class DocumentParser {
     required bool isInlined,
     required bool isParsingKey,
     required bool isExplicitKey,
-    required SourceLocation startOffset,
+    required RuneOffset startOffset,
   }) => _parseFlowNode(
     /// Ensure we prevent an event check and default it to an event
     /// we are privy to thus limiting the scope of the function.
@@ -1414,7 +1414,7 @@ final class DocumentParser {
     required bool isExplicitKey,
     required bool degenerateToImplicitMap,
     required bool parentEnforcedCompactness,
-    required SourceLocation startOffset,
+    required RuneOffset startOffset,
     required _ParsedNodeProperties? parsedProperties,
     ParserEvent? event,
   }) {
@@ -1669,7 +1669,7 @@ final class DocumentParser {
       :laxIndent,
       :inlineIndent,
     ) = _explicitIsParsable(
-      keyOffset.offset,
+      keyOffset.utfOffset,
       mapIndent,
     );
 
@@ -1806,7 +1806,7 @@ final class DocumentParser {
       :laxIndent,
       :inlineIndent,
     ) = _explicitIsParsable(
-      valueOffset.offset,
+      valueOffset.utfOffset,
       indent,
     );
 
@@ -2075,7 +2075,7 @@ final class DocumentParser {
       final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
         indentOrSeparation,
         blockParentIndent: parentIndent,
-        startOffset: contentOffset.offset,
+        startOffset: contentOffset.utfOffset,
       );
 
       final (
@@ -2120,7 +2120,7 @@ final class DocumentParser {
   /// Throws if a block node is declared with an indent that is greater than
   /// the block parent's indent but less than the indent of the first child of
   /// the block
-  (SourceLocation? offset, _ParsedNodeProperties? properties) _throwIfDangling(
+  (RuneOffset? offset, _ParsedNodeProperties? properties) _throwIfDangling(
     int collectionIndent,
     int currentIndent, {
     required bool allowProperties,
@@ -2142,7 +2142,7 @@ final class DocumentParser {
       if (!allowProperties) {
         throw FormatException(
           'Dangling node properties found at '
-          '${_scanner.lineInfo().current.offset}',
+          '${_scanner.lineInfo().current.utfOffset}',
         );
       }
 
@@ -2174,9 +2174,9 @@ final class DocumentParser {
 
     var properties = parsedProperties;
     NodeProperties? nodeProps;
-    SourceLocation? implicitStartOffset;
+    RuneOffset? implicitStartOffset;
 
-    void resetProps(_ParsedNodeProperties? props, SourceLocation? offset) {
+    void resetProps(_ParsedNodeProperties? props, RuneOffset? offset) {
       properties = props;
       implicitStartOffset = offset;
       nodeProps = null;
@@ -2209,7 +2209,7 @@ final class DocumentParser {
 
       if (!blockMapContinue) {
         throw FormatException(
-          'Incomplete block map at ${_scanner.lineInfo().current.offset}',
+          'Incomplete block map at ${_scanner.lineInfo().current.utfOffset}',
         );
       }
 
@@ -2320,7 +2320,7 @@ final class DocumentParser {
     required bool isParsingKey,
     required bool isExplicitKey,
     required bool degenerateToImplicitMap,
-    required SourceLocation startOffset,
+    required RuneOffset startOffset,
     required _ParsedNodeProperties? parsedProperties,
   }) {
     final sequenceInfo = _parseBlockNode(
@@ -2362,7 +2362,7 @@ final class DocumentParser {
 
     DocumentMarker? exitOrThrowIfNotBlock() {
       final char = _scanner.charAtCursor;
-      final charAfter = _scanner.peekCharAfterCursor();
+      final charAfter = _scanner.charAfter;
 
       switch (char) {
         /// Be gracious. Maybe we have doc end chars here.
@@ -2457,7 +2457,7 @@ final class DocumentParser {
       final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
         indentOrSeparation,
         blockParentIndent: indent,
-        startOffset: startOffset.offset,
+        startOffset: startOffset.utfOffset,
       );
 
       final (:delegate, :nodeInfo) = _parseBlockSequenceEntry(
@@ -2512,7 +2512,7 @@ final class DocumentParser {
   /// Parses a root flow mapping or sequence.
   CollectionDelegate _parseRootFlow(
     FlowCollectionEvent event, {
-    required SourceLocation rootStartOffset,
+    required RuneOffset rootStartOffset,
     required int rootIndentLevel,
     required int rootIndent,
   }) {
@@ -2589,7 +2589,7 @@ final class DocumentParser {
       /// sure, confirm this wasn't the case.
       if (!hasDirectiveEnd &&
           _scanner.charAtCursor == blockSequenceEntry &&
-          _scanner.peekCharAfterCursor() == blockSequenceEntry) {
+          _scanner.charAfter == blockSequenceEntry) {
         final startOnMissing = _scanner.lineInfo().current;
 
         _docStartExplicit =

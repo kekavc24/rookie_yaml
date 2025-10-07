@@ -43,8 +43,8 @@ final class TagHandle {
   factory TagHandle.named(String name) {
     assert(name.isNotEmpty, 'Name cannot be empty!');
 
-    for (final (index, char) in Characters(name).indexed) {
-      if (char.runes.firstOrNull.isNullOr((c) => !c.isAlphaNumeric())) {
+    for (final (index, char) in name.runes.indexed) {
+      if (!char.isAlphaNumeric()) {
         throw FormatException(
           'Found a non-alphanumeric char "$char" at index "$index"',
         );
@@ -85,7 +85,7 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
 
   TagHandle tagHandle;
 
-  switch (scanner.peekCharAfterCursor()) {
+  switch (scanner.charAfter) {
     // Just a single `!`
     case null || space || tab:
       tagHandle = TagHandle.primary();

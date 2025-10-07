@@ -1,10 +1,10 @@
 import 'dart:math';
 
-import 'package:characters/characters.dart';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
@@ -192,7 +192,7 @@ Directives parseDirectives(
     throw FormatException(
       'Expected a directive end marker but found '
       '"${scanner.charAtCursor?.asString()}'
-      '${scanner.peekCharAfterCursor()?.asString()}'
+      '${scanner.charAfter?.asString()}'
       '.." as the first two characters',
     );
   }

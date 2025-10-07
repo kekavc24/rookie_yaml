@@ -3,10 +3,10 @@ import 'dart:math';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
-import 'package:source_span/source_span.dart';
 
 part 'collection_delegate.dart';
 part 'scalar_delegate.dart';
@@ -28,29 +28,29 @@ abstract interface class ParserDelegate {
   int indent;
 
   /// Starting offset.
-  final SourceLocation start;
+  final RuneOffset start;
 
   /// Exclusive
-  SourceLocation? _end;
+  RuneOffset? _end;
 
-  set updateEndOffset(SourceLocation? end) {
+  set updateEndOffset(RuneOffset? end) {
     if (end == null) return;
 
-    final startOffset = start.offset;
-    final currentOffset = end.offset;
+    final startOffset = start.utfOffset;
+    final currentOffset = end.utfOffset;
 
-    if (currentOffset < start.offset) {
+    if (currentOffset < startOffset) {
       throw StateError(
         [
           'Invalid end offset for delegate [$runtimeType] with:',
           'Start offset: $startOffset',
-          'Current end offset: ${_end?.offset}',
+          'Current end offset: ${_end?.utfOffset}',
           'End offset provided: $currentOffset',
         ].join('\n\t'),
       );
     }
 
-    if (_end == null || _end!.offset < currentOffset) {
+    if (_end == null || _end!.utfOffset < currentOffset) {
       _end = end;
     }
   }
@@ -126,8 +126,8 @@ abstract interface class ParserDelegate {
   /// `NOTE:` This method is entirely situational and depends on the
   /// correctness of the parser or parser delegate calling it.
   int charDiff() {
-    if (_end case SourceLocation(:final offset)) {
-      return max(0, offset - start.offset);
+    if (_end case RuneOffset(:final utfOffset)) {
+      return max(0, utfOffset - start.utfOffset);
     }
 
     return 0;
@@ -159,7 +159,7 @@ final class AliasDelegate extends ParserDelegate {
 
   @override
   AliasNode _resolveNode<T>() =>
-      AliasNode(_alias ?? '', _reference, start: start, end: _end!);
+      AliasNode(_alias ?? '', _reference, nodeSpan: (start: start, end: _end!));
 
   @override
   bool isChild(int indent) => false;

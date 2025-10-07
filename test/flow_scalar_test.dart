@@ -2,7 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';

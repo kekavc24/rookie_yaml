@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
-import 'package:source_span/source_span.dart';
 
 part 'mapping.dart';
 part 'node_styles.dart';
@@ -86,11 +86,8 @@ sealed class YamlSourceNode extends CompactYamlNode {
   @override
   ResolvedTag? get tag => null; // Just to redefine docs
 
-  /// Start position in the source parsed, inclusive.
-  SourceLocation get start;
-
-  /// End position in the source parsed, exclusive
-  SourceLocation get end;
+  /// Start offset (inclusive) and end offset (exclusive) in the source parsed.
+  RuneSpan get nodeSpan;
 }
 
 /// Utility method for mapping any [YamlSourceNode] that has a [NodeResolver]
@@ -127,8 +124,7 @@ final class AliasNode extends YamlSourceNode {
   AliasNode(
     this.alias,
     this.aliased, {
-    required this.start,
-    required this.end,
+    required this.nodeSpan,
   }) : assert(alias.isNotEmpty, 'An alias name cannot be empty');
 
   /// Anchor name to [aliased]
@@ -139,10 +135,7 @@ final class AliasNode extends YamlSourceNode {
   final YamlSourceNode aliased;
 
   @override
-  final SourceLocation start;
-
-  @override
-  final SourceLocation end;
+  final RuneSpan nodeSpan;
 
   @override
   NodeStyle get nodeStyle => aliased.nodeStyle;

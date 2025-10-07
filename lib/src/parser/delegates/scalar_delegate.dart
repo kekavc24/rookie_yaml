@@ -85,8 +85,7 @@ final class ScalarDelegate extends ParserDelegate {
         scalarStyle: scalarStyle,
         tag: _tag,
         anchor: _anchor,
-        start: start,
-        end: end,
+        nodeSpan: (start: start, end: end),
       );
     }
 
@@ -95,8 +94,7 @@ final class ScalarDelegate extends ParserDelegate {
       scalarStyle: ScalarStyle.plain,
       tag: _tag ?? _defaultTo(nullTag),
       anchor: _anchor,
-      start: start,
-      end: _end!,
+      nodeSpan: (start: start, end: end),
     );
   }
 }

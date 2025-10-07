@@ -1,4 +1,4 @@
-part of 'chunk_scanner.dart';
+part of 'grapheme_scanner.dart';
 
 //
 // Line breaks

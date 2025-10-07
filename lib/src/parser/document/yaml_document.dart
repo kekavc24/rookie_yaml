@@ -6,11 +6,11 @@ import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
-import 'package:source_span/source_span.dart';
 
 part 'doc_parser_utils.dart';
 part 'document_events.dart';

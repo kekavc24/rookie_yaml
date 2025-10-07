@@ -1,6 +1,6 @@
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -62,9 +62,7 @@ PreScalar parseDoubleQuoted(
       // Attempt to fold or parsed escaped
       case backSlash:
         {
-          if (scanner.peekCharAfterCursor().isNotNullAnd(
-            (c) => c.isLineBreak(),
-          )) {
+          if (scanner.charAfter.isNotNullAnd((c) => c.isLineBreak())) {
             foldDoubleQuoted();
             break;
           }

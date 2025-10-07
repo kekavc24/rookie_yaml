@@ -12,8 +12,7 @@ final class Scalar<T> extends YamlSourceNode {
     required this.scalarStyle,
     required this.tag,
     required this.anchor,
-    required this.start,
-    required this.end,
+    required this.nodeSpan,
   });
 
   /// Type inferred from the scalar's content
@@ -33,10 +32,7 @@ final class Scalar<T> extends YamlSourceNode {
   final String? anchor;
 
   @override
-  final SourceLocation start;
-
-  @override
-  final SourceLocation end;
+  final RuneSpan nodeSpan;
 
   @override
   NodeStyle get nodeStyle => scalarStyle.nodeStyle;

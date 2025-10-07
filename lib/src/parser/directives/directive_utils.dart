@@ -19,7 +19,7 @@ String _dumpDirective(Directive directive) {
 /// Internally calls [_parseTagUri].
 String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
   return _parseTagUri(
-    GraphemeScanner.of(uri),
+    GraphemeScanner(UnicodeIterator.ofString(uri)),
     allowRestrictedIndicators: allowRestrictedIndicators,
   );
 }
@@ -125,7 +125,7 @@ void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
   }
 
   /// Ensure we return in a state where a tag uri can be parsed further
-  if (scanner.peekCharAfterCursor().isNullOr((c) => !isUriChar(c))) {
+  if (scanner.charAfter.isNullOr((c) => !isUriChar(c))) {
     throw FormatException('Expected at least a uri character after the scheme');
   }
 

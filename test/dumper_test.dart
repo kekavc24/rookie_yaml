@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/dumping.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:test/test.dart';
 

@@ -21,8 +21,7 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
     required this.nodeStyle,
     required this.tag,
     required this.anchor,
-    required this.start,
-    required this.end,
+    required this.nodeSpan,
   });
 
   /// Creates a [Mapping] after a block/flow map has been fully parsed.
@@ -31,15 +30,13 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
     required NodeStyle nodeStyle,
     required ResolvedTag? tag,
     required String? anchor,
-    required SourceLocation start,
-    required SourceLocation end,
+    required RuneSpan nodeSpan,
   }) : this._(
          source,
          nodeStyle: nodeStyle,
          tag: tag,
          anchor: anchor,
-         start: start,
-         end: end,
+         nodeSpan: nodeSpan,
        );
 
   @override
@@ -52,10 +49,7 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
   final String? anchor;
 
   @override
-  final SourceLocation start;
-
-  @override
-  final SourceLocation end;
+  final RuneSpan nodeSpan;
 
   @override
   bool operator ==(Object other) => yamlCollectionEquality.equals(this, other);

@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
