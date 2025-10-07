@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 
 /// Custom offset information.
 ///
@@ -9,11 +9,11 @@ import 'package:rookie_yaml/src/scanner/chunk_scanner.dart';
 /// `columnIndex` - represents the zero-based column index within a line.<br>
 /// `utf16Index` - represents the zero-based index in the source string read as
 /// a sequence of utf16 characters rather than utf8.
-typedef RuneOffset = ({int lineIndex, int columnIndex, int utf16Index});
+typedef RuneOffset = ({int lineIndex, int columnIndex, int utfOffset});
 
 /// Returns start [RuneOffset] position of a line.
 RuneOffset _getLineStart({int lineIndex = 0, int currentOffset = 0}) =>
-    (lineIndex: lineIndex, columnIndex: 0, utf16Index: currentOffset);
+    (lineIndex: lineIndex, columnIndex: 0, utfOffset: currentOffset);
 
 /// Represents a span of chunk within a source string
 typedef RuneSpan = ({RuneOffset start, RuneOffset end});
@@ -24,9 +24,22 @@ typedef RuneSpan = ({RuneOffset start, RuneOffset end});
 typedef LineInfo = ({RuneOffset start, RuneOffset current});
 
 /// Represents a single line's source information with an inclusive start index
-/// and end index. `chars` represents all characters that are not `\r` or `\n`
-/// or `\r\n` within the line.
-typedef Line = ({int startIndex, int inclusiveEndIndex, List<int> chars});
+/// and end index.
+final class SourceLine {
+  const SourceLine(this.startOffset, this.endOffset, {required this.chars});
+
+  /// Start offset (inclusive)
+  final int startOffset;
+
+  /// End index (inclusive)
+  final int endOffset;
+
+  /// UTF-8/UTF-16 code points
+  final List<int> chars;
+
+  @override
+  String toString() => String.fromCharCodes(chars);
+}
 
 /// An iterator that iterates over any source parsable YAML source string
 abstract interface class SourceIterator {
@@ -56,7 +69,7 @@ abstract interface class SourceIterator {
   LineInfo get currentLineInfo;
 
   /// Returns the lines that have been iterated so far.
-  List<Line> lines({int startIndex = 0});
+  List<SourceLine> lines({int startIndex = 0});
 }
 
 /// A [SourceIterator] that iterates the utf16 unicode points of a source
@@ -80,7 +93,7 @@ final class UnicodeIterator implements SourceIterator {
       return;
     }
 
-    _lines.add(const (startIndex: 0, inclusiveEndIndex: 0, chars: []));
+    _lines.add(const SourceLine(0, 0, chars: []));
   }
 
   /// Creates a [UnicodeIterator] that uses the [RuneIterator] of the [source]
@@ -90,13 +103,13 @@ final class UnicodeIterator implements SourceIterator {
   /// Creates a [UnicodeIterator] that synchronously reads the entire file from
   /// the [filePath] provided and uses the [Iterator] from its bytes.
   UnicodeIterator.ofFileSync(String filePath)
-    : this._(File(filePath).readAsBytesSync().buffer.asUint16List().iterator);
+    : this._(File(filePath).readAsBytesSync().iterator);
 
   /// Actual iterator being read.
   final Iterator<int> _iterator;
 
   /// [Line]s lazily buffered while iterating.
-  final _lines = <Line>[];
+  final _lines = <SourceLine>[];
 
   /// UTF-16 unicode characters buffered for single [Line]. Always handed off
   /// without an additional copy operation.
@@ -152,7 +165,7 @@ final class UnicodeIterator implements SourceIterator {
 
     _currentChar = _nextChar;
     _hasNext = _iterator.moveNext();
-    _nextChar = _iterator.current;
+    _nextChar = _hasNext ? _iterator.current : -1;
 
     ++_graphemeIndex;
 
@@ -187,12 +200,12 @@ final class UnicodeIterator implements SourceIterator {
     current: (
       lineIndex: _lineIndex,
       columnIndex: _columnIndex,
-      utf16Index: _graphemeIndex,
+      utfOffset: _graphemeIndex,
     ),
   );
 
   @override
-  List<Line> lines({int startIndex = 0}) =>
+  List<SourceLine> lines({int startIndex = 0}) =>
       UnmodifiableListView(_lines.skip(startIndex));
 
   /// Skips a `\r` if it's followed by a `\n`
@@ -217,12 +230,18 @@ final class UnicodeIterator implements SourceIterator {
 
   /// Buffers the current line's information to [_lines].
   void _markLineAsComplete() {
-    _lines.add((
-      startIndex: _lineStartOffset.utf16Index,
-      inclusiveEndIndex: _graphemeIndex,
-      chars: UnmodifiableListView(_bufferedRunes),
-    ));
+    _lines.add(
+      SourceLine(
+        _lineStartOffset.utfOffset,
+        _graphemeIndex,
+        chars: UnmodifiableListView(_bufferedRunes),
+      ),
+    );
 
     _bufferedRunes = [];
   }
+
+  /// Displays the current chunk within a line that is being iterated.
+  @override
+  String toString() => String.fromCharCodes(_bufferedRunes);
 }
