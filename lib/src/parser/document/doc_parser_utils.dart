@@ -404,17 +404,19 @@ RuneOffset _determineBlockEndOffset(
   required bool hasDocEndMarkers,
   required int? indentOnExit,
 }) {
-  if (!hasDocEndMarkers && indentOnExit == null) {
+  if (!hasDocEndMarkers) {
     if (!scanner.canChunkMore) {
       scanner.skipCharAtCursor(); // Completely skip last char
       return scanner.lineInfo().current;
     }
 
-    throw ArgumentError.value(
-      indentOnExit,
-      'indentOnExit',
-      'A block node always ends after an indent change but found null',
-    );
+    if (indentOnExit == null) {
+      throw ArgumentError.value(
+        indentOnExit,
+        'indentOnExit',
+        'A block node always ends after an indent change but found null',
+      );
+    }
   }
 
   // For both doc end chars and indent change. Reference start of line
