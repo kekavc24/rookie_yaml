@@ -1,7 +1,11 @@
+import 'dart:math';
+
+import 'package:rookie_yaml/src/dumping/dumping.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 
 part 'character_encoding.dart';
 part 'encoding_utils.dart';
+part 'error_utils.dart';
 
 /// Represents information returned after a call to `bufferChunk` method
 /// of the [GraphemeScanner]

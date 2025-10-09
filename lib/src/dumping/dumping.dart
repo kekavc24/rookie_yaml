@@ -13,7 +13,7 @@ part 'dump_sequence.dart';
 part 'dump_yaml_node.dart';
 part 'unfolding.dart';
 
-extension on int {
+extension Normalizer on int {
   /// Normalizes all character that can be escaped.
   ///
   /// If [includeTab] is `true`, then `\t` is also normalized. If

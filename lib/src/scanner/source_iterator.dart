@@ -54,6 +54,9 @@ abstract interface class SourceIterator {
   /// other than the first char.
   int get current;
 
+  /// Returns the index of the current line
+  int get currentLine;
+
   /// Moves the iterator forward.
   ///
   /// Eagerly throws an [Error] rather than an [Exception] if called without
@@ -119,7 +122,7 @@ final class UnicodeIterator implements SourceIterator {
   /// called.
   bool _hasNext = false;
 
-  /// Start offset of the current [Line]
+  /// Start offset of the current [SourceLine]
   RuneOffset _lineStartOffset = _getLineStart();
 
   /// Index of the UTF-8/UTF-16 unicode character in a string.
@@ -142,6 +145,9 @@ final class UnicodeIterator implements SourceIterator {
 
   @override
   int get current => _currentChar;
+
+  @override
+  int get currentLine => _lineIndex;
 
   @override
   void nextChar() {
