@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
@@ -87,6 +88,7 @@ final class UnicodeIterator implements SourceIterator {
         _bufferCurrent();
         _markLineAsComplete();
       } else {
+        _hasMoreLines = true;
         _hasNext = true;
         _nextChar = _iterator.current;
 
@@ -121,6 +123,8 @@ final class UnicodeIterator implements SourceIterator {
   /// Whether the [_iterator] has a character when `_iterator.current` is
   /// called.
   bool _hasNext = false;
+
+  bool _hasMoreLines = false;
 
   /// Start offset of the current [SourceLine]
   RuneOffset _lineStartOffset = _getLineStart();
@@ -195,6 +199,7 @@ final class UnicodeIterator implements SourceIterator {
     /// trigger an empty line to be added to [_lines]
     _bufferCurrent();
     _markLineAsComplete();
+    _hasMoreLines = false;
   }
 
   @override
@@ -205,7 +210,9 @@ final class UnicodeIterator implements SourceIterator {
     start: _lineStartOffset,
     current: (
       lineIndex: _lineIndex,
-      columnIndex: _columnIndex,
+      columnIndex: _hasMoreLines
+          ? _columnIndex
+          : max(0, _lines.last.chars.length - 1),
       utfOffset: _graphemeIndex,
     ),
   );
@@ -245,6 +252,7 @@ final class UnicodeIterator implements SourceIterator {
     );
 
     _bufferedRunes = [];
+    _columnIndex = 0;
   }
 
   /// Displays the current chunk within a line that is being iterated.
