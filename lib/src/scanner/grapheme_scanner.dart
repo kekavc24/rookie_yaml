@@ -27,9 +27,8 @@ extension type _SafeChar(int value) {
 /// Represents a scanner that iterates over a source only when a chunk or a
 /// single character is requested
 final class GraphemeScanner {
-  GraphemeScanner(this._iterator) {
-    _currentChar = _SafeChar(_iterator.current).char;
-  }
+  GraphemeScanner(this._iterator)
+    : _currentChar = _SafeChar(_iterator.current).char;
 
   GraphemeScanner.of(String source) : this(UnicodeIterator.ofString(source));
 

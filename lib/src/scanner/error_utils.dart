@@ -128,18 +128,16 @@ Never throwWithSingleOffset(
   // Include previous line if present
   final lines = iterator.lines(startIndex: max(0, lineIndex - 1));
 
-  final highlighted = _applyCarets(
-    (lines.lastOrNull ?? SourceLine(0, 0, chars: [space])).chars,
+  var highlighted = lines.length > 1
+      ? '${String.fromCharCodes(_nonEmpty(lines.first.chars))}\n'
+      : '';
+
+  highlighted += _applyCarets(
+    _nonEmpty((lines.lastOrNull ?? SourceLine(0, 0, chars: [space])).chars),
     indices: {columnIndex},
   );
 
-  throw YamlParseException(
-    message,
-    lineInfo: offset,
-    highlight:
-        '${lines.length > 1 ? '${lines.first.toString()}\n' : ''}'
-        '$highlighted',
-  );
+  throw YamlParseException(message, lineInfo: offset, highlight: highlighted);
 }
 
 /// Throws a [YamlParseException] for range of [lines] where the last line has
