@@ -1,6 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/document_events.dart';
+import 'package:rookie_yaml/src/parser/document/node_properties.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
@@ -13,7 +16,6 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 part 'doc_parser_utils.dart';
-part 'document_events.dart';
 part 'document_parser.dart';
 
 /// Represents the type of YAML document based on the use of directives,

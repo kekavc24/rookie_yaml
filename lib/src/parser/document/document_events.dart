@@ -1,8 +1,10 @@
-part of 'yaml_document.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-/// A event that controls the [DocumentParser]'s next parse action
+/// A event that controls the `DocumentParser`'s next parse action
 abstract interface class ParserEvent {
-  /// Returns `true` if the [DocumentParser] is parsing a [Node] with
+  /// Returns `true` if the `DocumentParser` is parsing a [YamlSourceNode] with
   /// [NodeStyle.flow] styling.
   bool get isFlowContext;
 }
@@ -30,7 +32,7 @@ enum ScalarEvent implements ParserEvent {
   final bool isFlowContext;
 }
 
-/// An event that trigger the parsing of a [Node]'s properties
+/// An event that trigger the parsing of a [YamlSourceNode]'s properties
 enum NodePropertyEvent implements ParserEvent {
   /// Parse a local tag
   startTag,
@@ -50,7 +52,8 @@ enum NodePropertyEvent implements ParserEvent {
   );
 }
 
-/// An event that triggers parsing of a [Node] with [NodeStyle.block] styling.
+/// An event that triggers parsing of a [YamlSourceNode] with [NodeStyle.block]
+/// styling.
 enum BlockCollectionEvent implements ParserEvent {
   /// Parse a block list
   startBlockListEntry,
@@ -71,7 +74,8 @@ enum BlockCollectionEvent implements ParserEvent {
   bool get isFlowContext => false;
 }
 
-/// An event that triggers parsing of a [Node] with [NodeStyle.flow] styling
+/// An event that triggers parsing of a [YamlSourceNode] with [NodeStyle.flow]
+/// styling
 enum FlowCollectionEvent implements ParserEvent {
   /// Parse a flow map
   startFlowMap,
@@ -100,7 +104,7 @@ enum FlowCollectionEvent implements ParserEvent {
 
 /// Infers a generalized [ParserEvent] that determines how the [DocumentParser]
 /// should parse the next collection of characters.
-ParserEvent _inferNextEvent(
+ParserEvent inferNextEvent(
   GraphemeScanner scanner, {
   required bool isBlockContext,
   required bool lastKeyWasJsonLike,

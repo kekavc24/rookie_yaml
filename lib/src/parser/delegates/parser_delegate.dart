@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -55,8 +56,8 @@ abstract interface class ParserDelegate {
     }
   }
 
-  set updateNodeProperties(NodeProperties? properties) {
-    if (properties == null) return;
+  set updateNodeProperties(ParsedProperty property) {
+    if (!property.parsedAny) return;
 
     if (_tag != null || _anchor != null || _alias != null) {
       throw ArgumentError(
@@ -64,15 +65,24 @@ abstract interface class ParserDelegate {
       );
     }
 
-    final (:alias, :anchor, :tag) = properties;
+    switch (property) {
+      case Alias(:final alias):
+        _alias = alias;
 
-    if (tag case TypeResolverTag(:var resolvedTag) || NodeTag resolvedTag) {
-      _checkResolvedTag(resolvedTag);
+      case NodeProperty(:final anchor, :final tag):
+        {
+          if (tag
+              case TypeResolverTag(:var resolvedTag) || NodeTag resolvedTag) {
+            _checkResolvedTag(resolvedTag);
+          }
+
+          _tag = tag;
+          _anchor = anchor;
+        }
+
+      default:
+        return;
     }
-
-    _tag = tag;
-    _anchor = anchor;
-    _alias = alias;
   }
 
   NodeTag _checkResolvedTag(NodeTag tag);
