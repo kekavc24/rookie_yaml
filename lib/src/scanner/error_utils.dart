@@ -190,6 +190,22 @@ Never _rangedThrow(
   );
 }
 
+/// Throw a [YamlParseException] with the current active line whose characters
+/// are being iterated. The line is highlighted from the start to the end.
+Never throwForCurrentLine(
+  GraphemeScanner scanner, {
+  required String message,
+  RuneOffset? end,
+}) {
+  final (:start, :current) = scanner.lineInfo();
+  return throwWithRangedOffset(
+    scanner,
+    message: message,
+    start: start,
+    end: end ?? current,
+  );
+}
+
 /// Throws a [YamlParseException] for a source string with the [start] and [end]
 /// offset specified.
 Never throwWithRangedOffset(
