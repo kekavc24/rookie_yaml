@@ -1,4 +1,5 @@
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/yaml_parser.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -7,7 +8,7 @@ YamlParser bootstrapDocParser(
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
   void Function(String message)? onMapDuplicate,
-}) => YamlParser(
+}) => YamlParser.ofString(
   yaml,
   resolvers: resolvers,
   throwOnMapDuplicates: onMapDuplicate == null,

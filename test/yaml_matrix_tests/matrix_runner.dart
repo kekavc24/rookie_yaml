@@ -30,7 +30,7 @@ final class MatrixRunner {
     void markAsInvalid() => result = MatrixResultType.invalidPass;
 
     try {
-      parsedNodeString = YamlParser(
+      parsedNodeString = YamlParser.ofString(
         testAsYaml,
       ).parseNodes().toList().toString();
 
@@ -93,7 +93,7 @@ void main(List<String> args) async {
 $header
 
 Failed with the following messages:
-${messages.map((e) => '$pad$e').join('\n')},
+${messages.map((e) => '$pad$e').join('\n')}
 
 ${_footer(header.length)}''');
     } else {

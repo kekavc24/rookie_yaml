@@ -281,7 +281,7 @@ $globalFromUri
 
       check(
         dumpCompactNode(
-          YamlParser(source).parseNodes().first,
+          YamlParser.ofString(source).parseNodes().first,
           nodeUnpacker: null,
         ),
       ).equals('''
@@ -313,7 +313,7 @@ $globalFromUri
 ''';
 
       check(
-        dumpYamlDocuments(YamlParser(source).parseDocuments()),
+        dumpYamlDocuments(YamlParser.ofString(source).parseDocuments()),
       ).equals('''
 %YAML 1.2
 %RESERVED has no meaning

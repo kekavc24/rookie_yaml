@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:rookie_yaml/rookie_yaml.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 
 void main(List<String> args) {
   /// Let's decode json embedded in a double quoted scalar. This is for
@@ -23,7 +24,7 @@ void main(List<String> args) {
 $jsonTag "${json.encode(object).replaceAll('"', r'\"')}"
 ''';
 
-  final decodeJson = YamlParser(
+  final decodeJson = YamlParser.ofString(
     yaml,
     resolvers: [jsonResolver],
   ).parseNodes().first.castTo<Scalar>().value;

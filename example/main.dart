@@ -24,7 +24,7 @@ block:
     - sequence
 ''';
 
-  final docs = YamlParser(yaml).parseDocuments(); // Parse documents
+  final docs = YamlParser.ofString(yaml).parseDocuments(); // Parse documents
 
   // [parseNodes] maps the docs parsed as below.
   print(docs.map((d) => d.root));
