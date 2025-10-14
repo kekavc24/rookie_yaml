@@ -36,16 +36,27 @@ final class TagShorthand extends SpecificTag<String> {
 
 /// Parses a [TagShorthand]
 TagShorthand parseTagShorthand(GraphemeScanner scanner) {
-  var handle = TagHandle.primary();
+  if (scanner.charAtCursor != tag) {
+    throwWithSingleOffset(
+      scanner,
+      message: 'Expected a tag indicator "!"',
+      offset: scanner.lineInfo().current,
+    );
+  }
+
+  /// Local tags can be fast forwarded quite easily based on some granular
+  /// quirky checks. Ergo, the non-dependence on [parseTagHandle] is
+  /// intentional. Any refactors should take that into account.
+
+  // *Just a gap*
   scanner.skipCharAtCursor(); // Ignore leading "!"
 
   /// Quickly extract the remaining shorthand characters as valid uri chars
-  /// that must be escaped since this is a secondary tag
+  /// that must be escaped since this is a secondary tag shorthand
   if (scanner.charAtCursor == tag) {
-    handle = TagHandle.secondary();
     scanner.skipCharAtCursor();
     return TagShorthand._(
-      handle,
+      TagHandle.secondary(),
       _parseTagUri(scanner, allowRestrictedIndicators: false),
     );
   }
@@ -53,9 +64,8 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
   final buffer = StringBuffer();
   var hasNonAlphaNumChar = false;
 
-  // Local tags require granular
   localTagChunker:
-  while (scanner.canChunkMore) {
+  while (scanner.charAtCursor != null || scanner.canChunkMore) {
     final char = scanner.charAtCursor!;
 
     switch (char) {
@@ -65,20 +75,27 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
       // We have to convert to named tag handle
       case tag:
         {
-          // A named handle must have at least a character
+          /// This condition is just a safety net. Never happens. Consecutive
+          /// tag indicators forces the shorthand to be treated as a secondary
+          /// tag shorthand. This happens before this loop starts. You can never
+          /// be too sure though :)
           if (buffer.isEmpty) {
-            throw const FormatException(
-              'A named tag must not be empty. Expected at least a single '
-              'alphanumeric character.',
+            throwWithSingleOffset(
+              scanner,
+              message:
+                  'A named tag must not be empty. Expected at least a single '
+                  'alphanumeric character.',
+              offset: scanner.lineInfo().current,
             );
-            // } else if (handle.handleVariant == TagHandleVariant.secondary) {
-            //   throw FormatException(
-            //     'A named tag must have a single "!" character. '
-            //     'Any additional "!" must be escaped',
-            //   );
           } else if (hasNonAlphaNumChar) {
-            throw const FormatException(
-              'A named tag can only have alphanumeric characters',
+            throwWithApproximateRange(
+              scanner,
+              message: 'A named tag can only have alphanumeric characters',
+              current: scanner.lineInfo().current,
+
+              /// Highlight the buffered shorthand including the "!" we skipped
+              /// at the beginning.
+              charCountBefore: buffer.length + 1,
             );
           }
 
@@ -119,12 +136,16 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
         }
 
       default:
-        throw FormatException('"${char.asString()}" is not a valid URI char');
+        throwWithSingleOffset(
+          scanner,
+          message: 'The current character is not a valid URI char',
+          offset: scanner.lineInfo().current,
+        );
     }
 
     scanner.skipCharAtCursor();
   }
 
   // A local tag does not need to have a character i.e wildcard
-  return TagShorthand._(handle, buffer.toString());
+  return TagShorthand._(TagHandle.primary(), buffer.toString());
 }

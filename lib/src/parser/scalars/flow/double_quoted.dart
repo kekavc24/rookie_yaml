@@ -4,8 +4,24 @@ import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-const _doubleQuoteException = FormatException(
-  'Expected to find a closing quote',
+Never _doubleQuoteException(
+  GraphemeScanner scanner,
+  String message,
+) => throwWithSingleOffset(
+  scanner,
+
+  // Defaults to a closing quote exceptions
+  message: message,
+  offset: scanner.lineInfo().current,
+);
+
+Never _closingQuoteException(
+  GraphemeScanner scanner,
+) => throwWithApproximateRange(
+  scanner,
+  message: 'Expected a closing quote (") after the last character',
+  current: scanner.lineInfo().current,
+  charCountBefore: scanner.charAtCursor?.isLineBreak() ?? true ? 1 : 0,
 );
 
 /// Parses a `double quoted` scalar
@@ -17,10 +33,7 @@ PreScalar parseDoubleQuoted(
   final leadingChar = scanner.charAtCursor;
 
   if (leadingChar != doubleQuote) {
-    throw FormatException(
-      'Expected an opening double quote (") but found'
-      ' "${leadingChar?.asString()}"',
-    );
+    _doubleQuoteException(scanner, 'Expected an opening double quote (")');
   }
 
   var quoteCount = 1;
@@ -42,7 +55,6 @@ PreScalar parseDoubleQuoted(
         foundLineBreak;
   }
 
-  // TODO: Save offsets etc.
   dQuotedLoop:
   while (scanner.canChunkMore && quoteCount != 2) {
     final current = scanner.charAtCursor;
@@ -95,7 +107,7 @@ PreScalar parseDoubleQuoted(
   }
 
   if (quoteCount != 2) {
-    throw _doubleQuoteException;
+    _closingQuoteException(scanner);
   }
 
   return (
@@ -122,11 +134,12 @@ void _parseEscaped(
   final charAfterEscape = scanner.charAtCursor;
 
   if (charAfterEscape == null) {
-    throw _doubleQuoteException;
+    _closingQuoteException(scanner);
   }
 
   // Attempt to resolve as an hex
-  if (checkHexWidth(charAfterEscape) case int hexToRead) {
+  if (checkHexWidth(charAfterEscape) case int hexWidth) {
+    var hexToRead = hexWidth;
     int? hexCode;
 
     void convertRollingHex(String digit) {
@@ -146,13 +159,14 @@ void _parseEscaped(
       final hexChar = scanner.charAtCursor;
 
       if (hexChar == null) {
-        throw const FormatException(
+        _doubleQuoteException(
+          scanner,
           'Expected an hexadecimal digit but found nothing',
         );
       }
 
       if (!hexChar.isHexDigit()) {
-        throw const FormatException('Invalid hex digit found!');
+        _doubleQuoteException(scanner, 'Invalid hex digit found!');
       }
 
       --hexToRead;
@@ -160,11 +174,22 @@ void _parseEscaped(
       scanner.skipCharAtCursor();
     }
 
-    if (hexCode == null || hexToRead > 0) {
-      throw FormatException('$hexToRead hex digit(s) are missing.');
+    // Must read all expected hex characters to be valid
+    if (hexToRead > 0) {
+      throwWithApproximateRange(
+        scanner,
+        message: '$hexToRead hex digit(s) are missing.',
+        current: scanner.lineInfo().current,
+
+        /// If no characters were read, we can safely assume the offset will
+        /// point to the hex width identifier (x, u or U). In this case, we just
+        /// include the previous character. In all other cases, we have to
+        /// highlight all the other characters read and hex width identifiers.
+        charCountBefore: (hexWidth - hexToRead) + 1,
+      );
     }
 
-    buffer.writeChar(hexCode!);
+    buffer.writeChar(hexCode!); // Will never be null if [hexToRead] is 0
     return;
   }
 
@@ -182,7 +207,10 @@ void _parseEscaped(
     return;
   }
 
-  throw FormatException(
-    'Unknown escaped character found: "${charAfterEscape.asString()}"',
+  throwWithApproximateRange(
+    scanner,
+    message: 'Unknown escaped character found',
+    current: scanner.lineInfo().current,
+    charCountBefore: 1, // Include the "\"
   );
 }

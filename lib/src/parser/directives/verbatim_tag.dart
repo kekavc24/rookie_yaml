@@ -25,7 +25,8 @@ String _wrapAsVerbatim(String uri) =>
 final class VerbatimTag extends ResolvedTag {
   VerbatimTag._(this.verbatim);
 
-  /// Creates a verbatim tag from a valid tag uri
+  /// Creates a verbatim tag from a valid tag uri. [uri] should not have a
+  /// leading `!`.
   factory VerbatimTag.fromTagUri(String uri) => VerbatimTag._(
     _wrapAsVerbatim(
       '!'
@@ -38,7 +39,7 @@ final class VerbatimTag extends ResolvedTag {
     final uri = tag.toString().trim();
 
     if (tag.tagHandle.handleVariant != TagHandleVariant.primary) {
-      throw const FormatException(
+      throw FormatException(
         'Verbatim tags with a local tag must have a single "!" prefix',
       );
     } else if (uri.isEmpty) {
@@ -84,7 +85,11 @@ VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
     required String errorOnMismatch,
   }) {
     if (charAtCursor.isNullOr(matcher)) {
-      throw FormatException(errorOnMismatch);
+      throwWithSingleOffset(
+        scanner,
+        message: errorOnMismatch,
+        offset: scanner.lineInfo().current,
+      );
     }
 
     buffer.writeCharCode(charAtCursor!);
@@ -120,7 +125,12 @@ VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
   );
 
   if (uri.isEmpty) {
-    throw const FormatException(_onNonEmptyVerbatimUri);
+    throwWithApproximateRange(
+      scanner,
+      message: _onNonEmptyVerbatimUri,
+      current: scanner.lineInfo().current,
+      charCountBefore: buffer.length - 1,
+    );
   }
 
   charAtCursor = scanner.charAtCursor;

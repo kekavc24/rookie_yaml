@@ -11,8 +11,10 @@ _BlockHeaderInfo _parseBlockHeader(
   final isLiteral = _isLiteralIndicator(current);
 
   if (isLiteral == null) {
-    throw FormatException(
-      '${current.asString()} is not a valid block style indicator',
+    throwWithSingleOffset(
+      scanner,
+      message: 'The current char is not a valid block style indicator',
+      offset: scanner.lineInfo().current,
     );
   }
 
@@ -53,8 +55,11 @@ _BlockHeaderInfo _parseBlockHeader(
   // Extract any comments
   if (current == comment) {
     if (!isWhitespace(scanner.charBeforeCursor)) {
-      throw FormatException(
-        'Expected a whitespace character before the start of the comment',
+      throwWithSingleOffset(
+        scanner,
+        message:
+            'Expected a whitespace character before the start of the comment',
+        offset: scanner.lineInfo().current,
       );
     }
 
@@ -65,7 +70,7 @@ _BlockHeaderInfo _parseBlockHeader(
 
   // TODO: Should block headers terminate with line break at all times?
   if (!current.isNotNullAnd((c) => c.isLineBreak())) {
-    throw _charNotAllowedException(current.asString());
+    _charNotAllowedException(scanner);
   }
 
   return (
@@ -75,9 +80,8 @@ _BlockHeaderInfo _parseBlockHeader(
   );
 }
 
-const _indentationException = FormatException(
-  'Invalid block indentation indicator. Value must be between 1 - 9',
-);
+const _indentationErr =
+    'Invalid block indentation indicator. Value must be between 1 - 9';
 
 /// Parses block indentation and chomping indicators
 _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
@@ -93,7 +97,12 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
     if (char!.isDigit()) {
       // Allows only a single digit between 1 - 9
       if (indentIndicator != null) {
-        throw _indentationException;
+        throwWithApproximateRange(
+          scanner,
+          message: _indentationErr,
+          current: scanner.lineInfo().current,
+          charCountBefore: 1, // Include the previous digit we read
+        );
       }
 
       indentIndicator = char - asciiZero;
@@ -103,14 +112,16 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
         1,
         9,
         null,
-        _indentationException.message,
+        _indentationErr,
       );
     } else {
       // We must not see duplicate chomping indicators or any other char
       if (chomping != null) {
-        throw FormatException(
-          'Duplicate chomping indicators not allowed! Already declared'
-          ' "$chomping" but found "${char.asString()}"',
+        throwWithApproximateRange(
+          scanner,
+          message: 'Duplicate chomping indicators not allowed!',
+          current: scanner.lineInfo().current,
+          charCountBefore: 1, // Include chomping indicator before
         );
       }
 
@@ -121,7 +132,7 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
         /// function parsing the block header
         if (char == comment) break;
 
-        throw _charNotAllowedException(char.asString());
+        _charNotAllowedException(scanner);
       }
     }
 

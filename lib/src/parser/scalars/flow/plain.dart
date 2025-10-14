@@ -181,7 +181,8 @@ PreScalar? parsePlain(
   }
 
   return (
-    // Cannot have leading and trailing whitespaces
+    /// Cannot have leading and trailing whitespaces.
+    /// TODO: Include line breaks?
     content: trimYamlWhitespace(buffer.bufferedContent()),
     scalarStyle: _style,
     scalarIndent: indent,

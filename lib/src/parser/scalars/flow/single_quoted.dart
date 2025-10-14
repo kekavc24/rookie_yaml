@@ -4,11 +4,6 @@ import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-const _exception = FormatException('Expected a single quote');
-const _printableException = FormatException(
-  'Single-quoted scalars are restricted to printable characters only',
-);
-
 /// Parses a `single quoted` scalar
 PreScalar parseSingleQuoted(
   GraphemeScanner scanner, {
@@ -16,7 +11,11 @@ PreScalar parseSingleQuoted(
   required bool isImplicit,
 }) {
   if (scanner.charAtCursor != singleQuote) {
-    throw _exception;
+    throwWithSingleOffset(
+      scanner,
+      message: "Expected an opening single quote (')",
+      offset: scanner.lineInfo().current,
+    );
   }
 
   scanner.skipCharAtCursor();
@@ -30,7 +29,11 @@ PreScalar parseSingleQuoted(
     final possibleChar = scanner.charAtCursor;
 
     if (possibleChar == null) {
-      throw _exception;
+      throwWithSingleOffset(
+        scanner,
+        message: "Expected a closing single quote (')",
+        offset: scanner.lineInfo().current,
+      );
     }
 
     switch (possibleChar) {
@@ -67,7 +70,13 @@ PreScalar parseSingleQuoted(
       default:
         {
           if (!possibleChar.isPrintable()) {
-            throw _printableException;
+            throwWithSingleOffset(
+              scanner,
+              message:
+                  'Single-quoted scalars are restricted to printable '
+                  'characters only',
+              offset: scanner.lineInfo().current,
+            );
           }
 
           buffer.writeChar(possibleChar);
@@ -77,7 +86,12 @@ PreScalar parseSingleQuoted(
   }
 
   if (quoteCount != 2) {
-    throw _exception;
+    throwWithApproximateRange(
+      scanner,
+      message: "Expected a closing single quote (') after the last character",
+      current: scanner.lineInfo().current,
+      charCountBefore: scanner.charAtCursor?.isLineBreak() ?? true ? 1 : 0,
+    );
   }
 
   return (

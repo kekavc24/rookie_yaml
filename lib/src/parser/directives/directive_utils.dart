@@ -2,16 +2,8 @@ part of 'directives.dart';
 
 /// Returns a full `YAML` string representation of [YamlDirective]
 String _dumpDirective(Directive directive) {
-  final separation = String.fromCharCode(space);
-
   final Directive(:name, :parameters) = directive;
-
-  final buffer = StringBuffer()
-    ..writeCharCode(_directiveIndicator)
-    ..write(name)
-    ..write(separation)
-    ..write(parameters.join(separation));
-  return buffer.toString();
+  return '${_directiveIndicator.asString()}$name ${parameters.join(' ')}';
 }
 
 /// Validates a tag uri. Returns it if valid. Otherwise, an exception is thrown.
@@ -78,23 +70,32 @@ String _parseTagUri(
         {
           if (isAnchorOrAlias) break tagParser;
 
-          throw FormatException(
-            'Expected "${char.asString()}" to be escaped. '
-            'Flow collection characters must be escaped.',
+          throwWithSingleOffset(
+            scanner,
+            message:
+                'Flow collection characters must be escaped when used as '
+                'a URI character',
+            offset: scanner.lineInfo().current,
           );
         }
 
       /// Tag indicators must be escaped when parsing tags
       case tag when !isAnchorOrAlias:
-        throw FormatException(
-          'Expected "!" to be escaped. The "!" character must be escaped.',
+        throwWithSingleOffset(
+          scanner,
+          message: 'Tag indicator must escaped when used as a URI character',
+          offset: scanner.lineInfo().current,
         );
 
       case _ when isUriChar(char):
         buffer.writeCharCode(char);
 
       default:
-        throw FormatException('"${char.asString()}" is not a valid URI char');
+        throwWithSingleOffset(
+          scanner,
+          message: 'The current character is not a valid URI character',
+          offset: scanner.lineInfo().current,
+        );
     }
 
     scanner.skipCharAtCursor();
@@ -121,12 +122,19 @@ void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
 
   // We must have a ":" as the last char
   if (lastChar != schemeEnd) {
-    throw FormatException('Invalid URI scheme in tag uri');
+    throwWithSingleOffset(
+      scanner,
+      message: 'Invalid URI scheme in tag uri',
+      offset: scanner.lineInfo().current,
+    );
   }
 
   /// Ensure we return in a state where a tag uri can be parsed further
   if (scanner.charAfter.isNullOr((c) => !isUriChar(c))) {
-    throw FormatException('Expected at least a uri character after the scheme');
+    throwForCurrentLine(
+      scanner,
+      message: 'Expected at least a uri character after the scheme',
+    );
   }
 
   scanner.skipCharAtCursor(); // Parsing can continue
@@ -140,11 +148,25 @@ void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
   if (scanner.takeUntil(
         includeCharAtCursor: false,
         mapper: (char) => char.asString(),
-        onMapped: (mapped) => hexBuff.write(mapped),
+        onMapped: hexBuff.write,
         stopIf: (count, next) => !next.isHexDigit() || count == hexCount,
       ) !=
       hexCount) {
-    throw FormatException('Invalid escaped hex found in tag URI => "$hexBuff"');
+    throwWithApproximateRange(
+      scanner,
+      message: 'Expected at least 2 hex digits',
+      current: scanner.lineInfo().current,
+
+      /// We have highlight the "%" that indicated this is an hex. This will
+      /// help provide accurate and contextual information. The buffer
+      /// indicates how many characters we have read so far. Its baseline is 2,
+      /// such that:
+      ///   - If we read 1 char, (3 - 2) = 1. So we have to highlight 1 char
+      ///     behind.
+      ///   - If we read 0 chars, (2 - 2) = 0. So have to highlight 0 chars
+      ///     behind.
+      charCountBefore: hexBuff.length - hexCount,
+    );
   }
 
   uriBuffer.write(String.fromCharCode(int.parse(hexBuff.toString())));

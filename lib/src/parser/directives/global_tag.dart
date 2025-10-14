@@ -63,15 +63,19 @@ GlobalTag<dynamic> _parseGlobalTag(
 
   // Exit early if we already a global tag with this handle
   if (isDuplicate(tagHandle)) {
-    throw FormatException(
-      'A global tag directive with the "${tagHandle.handle}" has already '
-      'been declared in this document',
+    throwForCurrentLine(
+      scanner,
+      message:
+          'A global tag directive with the "${tagHandle.handle}" has already '
+          'been declared in this document',
     );
   }
 
   if (scanner.charAtCursor.isNullOr((c) => !c.isWhiteSpace())) {
-    throw FormatException(
-      'A global tag must have a separation space after its handle',
+    throwWithSingleOffset(
+      scanner,
+      message: 'A global tag must have a separation space after its handle',
+      offset: scanner.lineInfo().current,
     );
   }
 
@@ -86,7 +90,7 @@ GlobalTag<dynamic> _parseGlobalTag(
       {
         scanner.skipCharAtCursor();
 
-        /// A global ga cannot be affected by flow indicators or the tag
+        /// A global tag cannot be affected by flow indicators or the tag
         /// indicator as long we already removed the leading "!". A hack or
         /// just common sense.
         return GlobalTag.fromTagShorthand(
@@ -112,9 +116,11 @@ GlobalTag<dynamic> _parseGlobalTag(
       }
 
     default:
-      // TODO: Shabby exception
-      throw FormatException(
-        'A global tag only accepts valid uri characters as a tag prefix',
+      throwWithSingleOffset(
+        scanner,
+        message:
+            'A global tag only accepts valid uri characters in its tag prefix',
+        offset: scanner.lineInfo().current,
       );
   }
 }

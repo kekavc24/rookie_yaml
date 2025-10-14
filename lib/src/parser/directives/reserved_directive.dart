@@ -80,8 +80,12 @@ ReservedDirective _parseReservedDirective(
         {
           // Parameters only allow alpha-numeric characters. Cannot be null here
           if (!current!.isPrintable()) {
-            throw const FormatException(
-              'Only printable characters are allowed in a parameter',
+            throwWithSingleOffset(
+              scanner,
+              message:
+                  'Only printable characters are allowed in a directive '
+                  'parameter',
+              offset: scanner.lineInfo().current,
             );
           }
 

@@ -50,6 +50,7 @@ YamlDirective _verifyYamlVersion(
   int parsedMajor,
   int parsedMinor,
   void Function(String message) logger,
+  Never Function(String message) onMajorMismatch,
 ) {
   final sourceVersion = '$parsedMajor.$parsedMinor';
   final YamlDirective(:minor, :version) = parserVersion;
@@ -57,10 +58,8 @@ YamlDirective _verifyYamlVersion(
   /// Major versions are incompatible
   /// https://yaml.org/spec/1.2.2/#681-yaml-directives
   if (parsedMajor != _pinnedMajor) {
-    throw FormatException(
-      'Unsupported YAML version requested.\n'
-      '\tSource string version: $sourceVersion\n'
-      '\tParser version: $version',
+    onMajorMismatch(
+      'Unsupported YAML version requested. Current parser version is $version',
     );
   }
 
@@ -87,8 +86,6 @@ YamlDirective _parseYamlDirective(
   int? lastChar;
   var version = versionReset;
 
-  const prefix = 'Invalid YAML version format. ';
-
   versionBuilder:
   while (scanner.canChunkMore) {
     final char = scanner.charAtCursor!;
@@ -104,15 +101,18 @@ YamlDirective _parseYamlDirective(
         {
           // We must not see the separator if we have no integers
           if (lastChar == null) {
-            throw FormatException(
-              '$prefix'
-              'Version cannot start with a "${_versionSeparator.asString()}"',
+            throwWithSingleOffset(
+              scanner,
+              message: 'A YAML directive cannot start with a version separator',
+              offset: scanner.lineInfo().current,
             );
           } else if (lastChar == _versionSeparator) {
-            throw FormatException(
-              '$prefix'
-              'Version cannot have consecutive '
-              '"${_versionSeparator.asString()}" characters',
+            throwWithApproximateRange(
+              scanner,
+              message:
+                  'A YAML directive cannot have consecutive version separators',
+              current: scanner.lineInfo().current,
+              charCountBefore: 1, // Highlight previous version separator
             );
           }
 
@@ -121,10 +121,12 @@ YamlDirective _parseYamlDirective(
         }
 
       default:
-        throw FormatException(
-          'Invalid "${char.asString()}" character in YAML version. '
-          'Only digits separated by "${_versionSeparator.asString()}"'
-          ' characters are allowed.',
+        throwWithSingleOffset(
+          scanner,
+          message:
+              'A YAML version directive can only have digits separated by'
+              ' a "."',
+          offset: scanner.lineInfo().current,
         );
     }
 
@@ -137,13 +139,17 @@ YamlDirective _parseYamlDirective(
   }
 
   if (formattedVersion.length != 2 || lastChar == _versionSeparator) {
-    throw FormatException(
-      '$prefix'
-      'A YAML version must have only 2 integers separated by '
-      '"${_versionSeparator.asString()}" but found: %YAML '
-      '${formattedVersion.join('.')}',
+    throwForCurrentLine(
+      scanner,
+      message:
+          'A YAML version directive can only have 2 integers separated by "."',
     );
   }
 
-  return _verifyYamlVersion(formattedVersion[0], formattedVersion[1], logger);
+  return _verifyYamlVersion(
+    formattedVersion[0],
+    formattedVersion[1],
+    logger,
+    (m) => throwForCurrentLine(scanner, message: m),
+  );
 }

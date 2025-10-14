@@ -34,8 +34,12 @@ ChompingIndicator? _resolveChompingIndicator(int char) {
   };
 }
 
-FormatException _charNotAllowedException(String char) =>
-    FormatException('"$char" character is not allowed in block scalar header');
+Never _charNotAllowedException(GraphemeScanner scanner) =>
+    throwWithSingleOffset(
+      scanner,
+      message: 'The current character is not allowed in block scalar header',
+      offset: scanner.lineInfo().current,
+    );
 
 /// Chomps the trailing line breaks of a parsed block scalar.
 ///
@@ -177,7 +181,6 @@ void _maybeFoldLF(
   );
 }
 
-// TODO: Use join function here on list. Return string?
 /// Preserves line breaks in two ways in `folded` scalar style (line breaks in
 /// `literal` style are always preserved):
 ///
@@ -288,9 +291,15 @@ DocumentMarker checkForDocumentMarkers(
           return DocumentMarker.documentEnd;
         }
 
-        throw FormatException(
-          'Document end markers "..." can only have whitespace/comments '
-          'after but found: ${charAtCursor.asString()}',
+        final (:start, :current) = scanner.lineInfo();
+
+        throwWithRangedOffset(
+          scanner,
+          message:
+              'Document end markers "..." can only have whitespace/comments'
+              ' after',
+          start: start,
+          end: current,
         );
       }
 

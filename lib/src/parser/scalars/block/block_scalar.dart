@@ -116,9 +116,14 @@ PreScalar parseBlockStyle(
               } else {
                 if (previousMaxIndent != null &&
                     previousMaxIndent > inferredIndent) {
-                  throw FormatException(
-                    'A previous empty line was more indented than the current'
-                    ' line',
+                  throwWithApproximateRange(
+                    scanner,
+                    message:
+                        'A previous empty line was more indented with '
+                        '$previousMaxIndent space(s). Indent must be at least'
+                        ' equal to or greater than this indent.',
+                    current: scanner.lineInfo().current,
+                    charCountBefore: inferredIndent,
                   );
                 }
 
@@ -149,13 +154,8 @@ PreScalar parseBlockStyle(
           }
         }
 
-      // Literal & folded restricted to printable charset
-      case _ when !char.isPrintable():
-        throw FormatException(
-          'Block scalar styles are restricted to the printable character set',
-        );
-
-      default:
+      // All block scalar styles only accept printable characters
+      case _ when char.isPrintable():
         {
           if (char.isWhiteSpace()) {
             buffer.writeAll(
@@ -188,6 +188,15 @@ PreScalar parseBlockStyle(
 
           if (sourceEnded) break blockParser;
         }
+
+      default:
+        throwWithSingleOffset(
+          scanner,
+          message:
+              'Block scalar styles are restricted to the printable '
+              'character set',
+          offset: scanner.lineInfo().current,
+        );
     }
   }
 

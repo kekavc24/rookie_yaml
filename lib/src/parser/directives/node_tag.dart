@@ -21,7 +21,7 @@ String _formatAsVerbatim(
 
     // Local tags can be empty if non-specific
     if (!suffixIsNonSpecific && formattedSuffix.isEmpty) {
-      throw const FormatException('A global tag must have a non-empty suffix');
+      throw FormatException('A global tag must have a non-empty suffix');
     }
 
     // Add ":" only if it is not a local tag prefix

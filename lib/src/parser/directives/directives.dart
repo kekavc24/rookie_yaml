@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -59,9 +59,10 @@ Directives parseDirectives(
 }) {
   void throwIfNotSeparation(int? char) {
     if (char != null && !char.isWhiteSpace()) {
-      throw FormatException(
-        'Expected a separation space but found ${char.asString()}'
-        ' after parsing the directive name',
+      throwWithSingleOffset(
+        scanner,
+        message: 'Expected a separation space after parsing the directive name',
+        offset: scanner.lineInfo().current,
       );
     }
 
@@ -95,9 +96,14 @@ Directives parseDirectives(
             /// Directives must start with "%". Never indented.
             /// [skipToParsableChar] will ensure all comments and empty lines
             /// are skipped
-            throw FormatException(
-              'Expected a non-indented directive line with directives or the '
-              'directive end marker but found one with "$indent" indent spaces',
+            throwWithApproximateRange(
+              scanner,
+              message:
+                  'Expected a non-indented directive line with directives or a '
+                  'directive end marker but found one with "$indent" indent '
+                  'space(s)',
+              current: scanner.lineInfo().current,
+              charCountBefore: indent,
             );
           }
 
@@ -107,7 +113,7 @@ Directives parseDirectives(
           {
             // Buffer
             final ChunkInfo(:charOnExit) = scanner.bufferChunk(
-              (c) => directiveBuffer.writeCharCode(c),
+              directiveBuffer.writeCharCode,
               exitIf: (_, curr) =>
                   curr.isWhiteSpace() ||
                   curr.isLineBreak() ||
@@ -115,9 +121,11 @@ Directives parseDirectives(
             );
 
             if (directiveBuffer.isEmpty) {
-              throw const FormatException(
-                'Expected at least a printable non-space'
-                ' character as the directive name',
+              throwForCurrentLine(
+                scanner,
+                message:
+                    'Expected at least a printable non-space'
+                    ' character as the directive name',
               );
             }
 
@@ -127,8 +135,11 @@ Directives parseDirectives(
               case _yamlDirective:
                 {
                   if (directive != null) {
-                    throw const FormatException(
-                      'A YAML directive can only be declared once per document',
+                    throwForCurrentLine(
+                      scanner,
+                      message:
+                          'A YAML directive can only be declared once per '
+                          'document',
                     );
                   }
 
@@ -189,11 +200,11 @@ Directives parseDirectives(
 
     /// As long as "%" was seen, we must parse directives and terminate with
     /// the "---" marker
-    throw FormatException(
-      'Expected a directive end marker but found '
-      '"${scanner.charAtCursor?.asString()}'
-      '${scanner.charAfter?.asString()}'
-      '.." as the first two characters',
+    throwWithApproximateRange(
+      scanner,
+      message: 'Expected a directives end marker after the last directive',
+      current: scanner.lineInfo().current,
+      charCountBefore: 1,
     );
   }
 

@@ -78,9 +78,13 @@ bool foldQuotedFlowScalar(
 
   // Quoted scalar never allow an indent change before seeing closing quote
   if (indentDidChange) {
-    throw FormatException(
-      'Invalid indent! Expected $minIndent space(s), found $foldIndent'
-      ' space(s)',
+    throwWithApproximateRange(
+      scanner,
+      message:
+          'Invalid indent! Expected $minIndent space(s), found $foldIndent'
+          ' space(s)',
+      current: scanner.lineInfo().current,
+      charCountBefore: foldIndent,
     );
   }
 

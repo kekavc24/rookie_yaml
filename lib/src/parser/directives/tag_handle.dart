@@ -46,7 +46,9 @@ final class TagHandle {
     for (final (index, char) in name.runes.indexed) {
       if (!char.isAlphaNumeric()) {
         throw FormatException(
-          'Found a non-alphanumeric char "$char" at index "$index"',
+          'Non-alphanumeric characters are not allowed',
+          name,
+          index,
         );
       }
     }
@@ -77,9 +79,11 @@ final class TagHandle {
 /// Parses a [TagHandle]
 TagHandle parseTagHandle(GraphemeScanner scanner) {
   // All tag handles must start with the indicator
-  if (scanner.charAtCursor case var char when char != tag) {
-    throw FormatException(
-      'Expected a "${tag.asString()}" but found "${char.asString()}"',
+  if (scanner.charAtCursor != tag) {
+    throwWithSingleOffset(
+      scanner,
+      message: 'Expected a tag indicator "${tag.asString()}"',
+      offset: scanner.lineInfo().current,
     );
   }
 
@@ -108,22 +112,21 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
           ..takeUntil(
             includeCharAtCursor: true, // Prefer setting the leading "!"
             mapper: (c) => c.asString(),
-            onMapped: (c) => namedBuffer.write(c),
+            onMapped: namedBuffer.write,
             stopIf: (_, n) => !n.isAlphaNumeric(),
           )
           ..skipCharAtCursor();
 
-        final current = scanner.charAtCursor;
-
         /// The named tag must not degenerate to a "!" or "!!". "!" is not
         /// alphanumeric
-        if (current != tag || namedBuffer.length <= 1) {
-          final str = current.asString();
+        if (scanner.charAtCursor != tag || namedBuffer.length <= 1) {
+          throwWithApproximateRange(
+            scanner,
+            message: 'Invalid/incomplete named tag handle',
+            current: scanner.lineInfo().current,
 
-          throw FormatException(
-            'Invalid/incomplete named tag handle. Expected a tag with '
-            'alphanumeric characters but found $namedBuffer'
-            '${current == null ? str : '<$str>'}',
+            // Highlight the buffer named tag only
+            charCountBefore: namedBuffer.length,
           );
         }
 
