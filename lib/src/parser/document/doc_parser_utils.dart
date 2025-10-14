@@ -32,6 +32,8 @@ typedef _BlockMapEntry = ({ParserDelegate? key, ParserDelegate? value});
 
 typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
 
+typedef _ImplicitBlockValue = _BlockNodeGeneric<ParserDelegate?>;
+
 /// Throws an exception if the prospective [YamlSourceNode]
 /// (a child of the root node or the root node itself) in the document being
 /// parsed did not have an explicit directives end marker (`---`) or the
@@ -39,14 +41,17 @@ typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
 ///
 /// This method is only works for [ScalarStyle.plain]. Any other style is safe.
 void _throwIfUnsafeForDirectiveChar(
-  int? char, {
+  GraphemeScanner scanner, {
   required int indent,
   required bool hasDirectives,
 }) {
-  if (char == directive && indent == 0 && !hasDirectives) {
-    throw FormatException(
-      '"%" cannot be used as the first non-whitespace character in a non-empty'
-      ' content line',
+  if (scanner.charAtCursor == directive && indent == 0 && !hasDirectives) {
+    throwWithSingleOffset(
+      scanner,
+      message:
+          '"%" cannot be used as the first non-whitespace character in a'
+          ' non-empty content line',
+      offset: scanner.lineInfo().current,
     );
   }
 }
@@ -76,8 +81,10 @@ bool _docIsInMarkerLine(
       break;
 
     default:
-      throw FormatException(
-        'Expected a separation space after the directives end markers',
+      throwWithSingleOffset(
+        scanner,
+        message: 'Expected a separation space after the directives end markers',
+        offset: scanner.lineInfo().current,
       );
   }
 
