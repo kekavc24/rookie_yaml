@@ -69,7 +69,7 @@ _BlockHeaderInfo _parseBlockHeader(
   }
 
   // TODO: Should block headers terminate with line break at all times?
-  if (!current.isNotNullAnd((c) => c.isLineBreak())) {
+  if (!current.isNullOr((c) => c.isLineBreak())) {
     _charNotAllowedException(scanner);
   }
 

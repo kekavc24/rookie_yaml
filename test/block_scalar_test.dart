@@ -62,6 +62,20 @@ $indent
       check(comments).unorderedEquals([comment, comment]);
     });
 
+    test('Parses block scalar with header only', () {
+      for (final block in defaultBlockIndicators) {
+        check(
+            parseBlockStyle(
+              GraphemeScanner.of(block),
+              minimumIndent: 0,
+              onParseComment: comments.add,
+            ),
+          )
+          ..hasIndent(0)
+          ..hasFormattedContent('');
+      }
+    });
+
     test('Throws if indent indicator is not in range of 1 - 9', () {
       // 0 is a single digit. Will check range before throwing
       check(
