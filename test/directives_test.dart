@@ -28,8 +28,8 @@ void main() {
     test('Throws if non-printable character are used', () {
       final yaml = '%RESERVED ${bell.asString()}';
 
-      check(() => vanillaDirectives(yaml)).throwsAFormatException(
-        'Only printable characters are allowed in a parameter',
+      check(() => vanillaDirectives(yaml)).throwsParserException(
+        'Only printable characters are allowed in a directive parameter',
       );
     });
   });
@@ -78,40 +78,31 @@ void main() {
 %YAML 2.2
 ''';
 
-      check(() => vanillaDirectives(yaml)).throwsAFormatException(
+      check(() => vanillaDirectives(yaml)).throwsParserException(
         'A YAML directive can only be declared once per document',
       );
     });
 
     test('Throws if version is specified incorrectly', () {
-      const prefix = 'Invalid YAML version format. ';
-
-      check(() => vanillaDirectives('%YAML 10.0')).throwsAFormatException(
-        'Unsupported YAML version requested.\n'
-        '\tSource string version: 10.0\n'
-        '\tParser version: ${parserVersion.version}',
+      check(() => vanillaDirectives('%YAML 10.0')).throwsParserException(
+        'Unsupported YAML version requested. '
+        'Current parser version is ${parserVersion.version}',
       );
 
-      check(() => vanillaDirectives('%YAML ..1')).throwsAFormatException(
-        '$prefix'
-        'Version cannot start with a "."',
+      check(() => vanillaDirectives('%YAML ..1')).throwsParserException(
+        'A YAML directive cannot start with a version separator',
       );
 
-      check(() => vanillaDirectives('%YAML 1..1')).throwsAFormatException(
-        '$prefix'
-        'Version cannot have consecutive "." characters',
+      check(() => vanillaDirectives('%YAML 1..1')).throwsParserException(
+        'A YAML directive cannot have consecutive version separators',
       );
 
-      check(() => vanillaDirectives('%YAML 1.1.2')).throwsAFormatException(
-        '$prefix'
-        'A YAML version must have only 2 integers separated by "." but found: '
-        '%YAML 1.1.2',
+      check(() => vanillaDirectives('%YAML 1.1.2')).throwsParserException(
+        'A YAML version directive can only have 2 integers separated by "."',
       );
 
-      check(() => vanillaDirectives('%YAML A.B')).throwsAFormatException(
-        'Invalid "A" character in YAML version. '
-        'Only digits separated by "."'
-        ' characters are allowed.',
+      check(() => vanillaDirectives('%YAML A.B')).throwsParserException(
+        'A YAML version directive can only have digits separated by a "."',
       );
     });
   });
@@ -163,9 +154,8 @@ void main() {
         () => bootstrapDocParser(
           '%TEST Yess it is',
         ).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
-        'Expected a directive end marker but found "nullnull.." as the first '
-        'two characters',
+      ).throwsParserException(
+        'Expected a directives end marker after the last directive',
       );
     });
   });

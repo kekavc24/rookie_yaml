@@ -120,9 +120,8 @@ key3:
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
-        'Expected ":" on a new line with an indent of 0 space(s) and'
-        ' not 2 space(s)',
+      ).throwsParserException(
+        'Expected indent of 0 space(s) but found 2 space(s)',
       );
     });
 
@@ -136,7 +135,7 @@ implicit: map
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Implicit keys are restricted to a single line. Consider using an'
         ' explicit key for the entry',
       );
@@ -152,8 +151,8 @@ rogue
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAnException(
-        '[Parser Error]: Implicit keys cannot have an exit indent',
+      ).throwsParserException(
+        'Implicit keys cannot have an exit indent',
       );
     });
 
@@ -164,7 +163,7 @@ rogue
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'The block collections must start on a new line'
         ' when used as values of an implicit key',
       );
@@ -179,7 +178,7 @@ implicit:
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Dangling node/node properties found with indent of 2 space(s) while parsing',
       );
     });
@@ -276,8 +275,8 @@ implicit:
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
-        'Expected a "- " while parsing sequence but found "-e"',
+      ).throwsParserException(
+        'Expected a "- " while parsing sequence entry',
       );
     });
 
@@ -290,7 +289,7 @@ implicit:
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Dangling node/node properties found with indent of 2 space(s) while'
         ' parsing',
       );

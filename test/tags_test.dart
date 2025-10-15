@@ -32,16 +32,13 @@ void main() {
     test('Throws if leading char is not a tag indicator', () {
       check(
         () => parseTagHandle(GraphemeScanner.of('fake')),
-      ).throwsAFormatException('Expected a "!" but found "f"');
+      ).throwsParserException('Expected a tag indicator "!"');
     });
 
     test('Throws if primary tag has trailing chars and is not named', () {
       check(
         () => parseTagHandle(GraphemeScanner.of('!fake')),
-      ).throwsAFormatException(
-        'Invalid/incomplete named tag handle. Expected a tag with alphanumeric'
-        ' characters but found !fake<null>',
-      );
+      ).throwsParserException('Invalid/incomplete named tag handle');
     });
   });
 
@@ -118,7 +115,7 @@ void main() {
 %TAG ! !foo
 %TAG ! !foo''';
 
-      check(() => vanillaDirectives(yaml)).throwsAFormatException(
+      check(() => vanillaDirectives(yaml)).throwsParserException(
         'A global tag directive with the "!" has already '
         'been declared in this document',
       );
@@ -130,7 +127,7 @@ void main() {
       () {
         final yaml = '%TAG !no-prefix-or-separation-after!';
 
-        check(() => vanillaDirectives(yaml)).throwsAFormatException(
+        check(() => vanillaDirectives(yaml)).throwsParserException(
           'A global tag must have a separation space after its handle',
         );
       },
@@ -141,8 +138,8 @@ void main() {
       () {
         final yaml = '%TAG !no-uri-or-local-tag-prefix! ';
 
-        check(() => vanillaDirectives(yaml)).throwsAFormatException(
-          'A global tag only accepts valid uri characters as a tag prefix',
+        check(() => vanillaDirectives(yaml)).throwsParserException(
+          'A global tag only accepts valid uri characters in its tag prefix',
         );
       },
     );
@@ -154,8 +151,8 @@ void main() {
             '%TAG !no-uri-or-local-tag-prefix! '
             '${bell.asString()}';
 
-        check(() => vanillaDirectives(yaml)).throwsAFormatException(
-          'A global tag only accepts valid uri characters as a tag prefix',
+        check(() => vanillaDirectives(yaml)).throwsParserException(
+          'A global tag only accepts valid uri characters in its tag prefix',
         );
       },
     );
@@ -222,7 +219,7 @@ void main() {
 
       check(
         () => parseTagShorthand(GraphemeScanner.of(yaml)),
-      ).throwsAFormatException('"$offender" is not a valid URI char');
+      ).throwsParserException('The current character is not a valid URI char');
     });
 
     test('Throws if a flow indicator is not escaped', () {
@@ -231,9 +228,9 @@ void main() {
       for (final string in flowDelimiters) {
         check(
           () => parseTagShorthand(GraphemeScanner.of('$yaml$string')),
-        ).throwsAFormatException(
-          'Expected "$string" to be escaped. Flow collection characters must be'
-          ' escaped.',
+        ).throwsParserException(
+          'Flow collection characters must be escaped when used as a URI'
+          ' character',
         );
       }
     });
@@ -244,9 +241,8 @@ void main() {
 
       check(
         () => parseTagShorthand(GraphemeScanner.of(yaml)),
-      ).throwsAFormatException(
-        'Expected "$offender" to be escaped. The "$offender" character must be'
-        ' escaped.',
+      ).throwsParserException(
+        'Tag indicator must escaped when used as a URI character',
       );
     });
 
@@ -255,7 +251,7 @@ void main() {
 
       check(
         () => parseTagShorthand(GraphemeScanner.of(yaml)),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'A named tag can only have alphanumeric characters',
       );
     });
@@ -282,7 +278,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException('A verbatim tag must start with "!"');
+      ).throwsParserException('A verbatim tag must start with "!"');
     });
 
     test("Throws if verbatim start indicator is missing (<)", () {
@@ -290,7 +286,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException('Expected to find a "<" after "!"');
+      ).throwsParserException('Expected to find a "<" after "!"');
     });
 
     test("Throws if verbatim end indicator is missing (>)", () {
@@ -298,7 +294,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Expected to find a ">" after parsing a verbatim tag',
       );
     });
@@ -308,7 +304,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Verbatim tags are never resolved and should have a non-empty suffix',
       );
     });
@@ -335,7 +331,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException('A verbatim tag must start with "!"');
+      ).throwsParserException('A verbatim tag must start with "!"');
     });
 
     test("Throws if verbatim start indicator is missing (<)", () {
@@ -343,7 +339,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException('Expected to find a "<" after "!"');
+      ).throwsParserException('Expected to find a "<" after "!"');
     });
 
     test("Throws if verbatim end indicator is missing (>)", () {
@@ -351,7 +347,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Expected to find a ">" after parsing a verbatim tag',
       );
     });
@@ -361,7 +357,7 @@ void main() {
 
       check(
         () => parseVerbatimTag(GraphemeScanner.of(node)),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Verbatim tags are never resolved and should have a non-empty suffix',
       );
     });

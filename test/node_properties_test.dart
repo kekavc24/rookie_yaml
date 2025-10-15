@@ -191,9 +191,9 @@ $seqTag
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
-        'Unrecognized secondary tag "$tag". Expected any of: '
-        '$mappingTag, $sequenceTag, ${scalarTags.join(', ')}',
+      ).throwsParserException(
+        'Invalid secondary tag. Expected any of: $mappingTag, $sequenceTag, '
+        '${scalarTags.join(', ')}',
       );
     });
 
@@ -203,8 +203,8 @@ $seqTag
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
-        'Named tag "$tag" has no corresponding global tag',
+      ).throwsParserException(
+        'Named tags must have a corresponding global tag',
       );
     });
 
@@ -219,9 +219,7 @@ $tag ignored :)
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
-        'Named tag "$tag" has no suffix',
-      );
+      ).throwsParserException('Named tags must have a non-empty suffix');
     });
 
     test(
@@ -231,7 +229,7 @@ $tag ignored :)
           () => bootstrapDocParser(
             '!!str ? explicit-key',
           ).parseDocuments().parseNodeSingle(),
-        ).throwsAFormatException(
+        ).throwsParserException(
           'Inline node properties cannot be declared before the first "? "'
           ' indicator',
         );
@@ -245,7 +243,7 @@ $tag ignored :)
 !error ? never-parsed
 ''',
           ).parseDocuments().parseNodeSingle(),
-        ).throwsAFormatException(
+        ).throwsParserException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
         );
@@ -260,7 +258,7 @@ $tag ignored :)
 ? even-when-on-a-new-line
 ''',
           ).parseDocuments().parseNodeSingle(),
-        ).throwsAFormatException(
+        ).throwsParserException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
         );
@@ -277,7 +275,7 @@ $tag ignored :)
 }
 ''',
           ).parseDocuments().parseNodeSingle(),
-        ).throwsAFormatException(
+        ).throwsParserException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
         );
@@ -294,7 +292,7 @@ $tag ignored :)
 implicit-2: is-an-error
 ''',
         ).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Node properties for an implicit block key cannot span multiple lines',
       );
 
@@ -308,7 +306,7 @@ implicit-2: is-an-error
 implicit-2: is-an-error}
 ''',
         ).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Node properties for an implicit flow key cannot span multiple lines',
       );
     });
@@ -318,7 +316,7 @@ implicit-2: is-an-error}
         () => bootstrapDocParser(
           '!!str - not-okay',
         ).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Inline node properties cannot be declared before the first "- "'
         ' indicator',
       );
@@ -333,8 +331,8 @@ implicit-2: is-an-error}
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException(
-        'Dangling node properties found at ${yaml.indexOf('!', 3)}',
+      ).throwsParserException(
+        'Dangling node properties are not allowed here',
       );
     });
   });
@@ -483,7 +481,7 @@ implicit-2: is-an-error}
         () => bootstrapDocParser(
           'key: *$alias',
         ).parseDocuments().parseNodeSingle(),
-      ).throwsAFormatException('Node alias "$alias" is unrecognized');
+      ).throwsParserException('Alias is not a valid anchor reference');
     });
   });
 }

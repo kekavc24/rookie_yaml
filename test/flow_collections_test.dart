@@ -93,16 +93,13 @@ void main() {
     test("Throws if flow map doesn't start/end with map delimiters", () {
       check(
         () => bootstrapDocParser('}').parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
-        'Leading "," "}" or "]" flow indicators found with no opening "["'
-        ' "{"',
+      ).throwsParserException(
+        'Expected the flow collection indicators: "[" or "{"',
       );
 
       check(
         () => bootstrapDocParser('{').parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
-        'Expected the flow delimiter: "}" but found: "nothing"',
-      );
+      ).throwsParserException('Expected the flow delimiter: "}"');
     });
 
     test('Throws if duplicate keys are found', () {
@@ -110,24 +107,22 @@ void main() {
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Flow map cannot contain duplicate entries by the same key',
       );
     });
 
     test('Throws if "," is declared before key', () {
+      const err = 'Expected at least a key before the next flow map entry';
+
       check(
         () => bootstrapDocParser('{,}').parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
-        'Expected at least a key in the flow map entry but found ","',
-      );
+      ).throwsParserException(err);
 
       check(
         () =>
             bootstrapDocParser('{key,,}').parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
-        'Expected at least a key in the flow map entry but found ","',
-      );
+      ).throwsParserException(err);
     });
 
     test("Throws if implicit key spans multiple lines", () {
@@ -139,7 +134,7 @@ void main() {
           ': value'
           '}',
         ).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Expected a next flow entry indicator "," or a map value indicator ":" '
         'or a terminating delimiter "}"',
       );
@@ -188,23 +183,20 @@ implicit: pair,
       () {
         check(
           () => bootstrapDocParser(']').parseDocuments().nodeAsSimpleString(),
-        ).throwsAFormatException(
-          'Leading "," "}" or "]" flow indicators found with no opening "["'
-          ' "{"',
+        ).throwsParserException(
+          'Expected the flow collection indicators: "[" or "{"',
         );
 
         check(
           () => bootstrapDocParser('[').parseDocuments().nodeAsSimpleString(),
-        ).throwsAFormatException(
-          'Expected the flow delimiter: "]" but found: "nothing"',
-        );
+        ).throwsParserException('Expected the flow delimiter: "]"');
       },
     );
 
     test('Throws if "," is declared before entry', () {
       check(
         () => bootstrapDocParser('[,]').parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Expected to find the first value but found ","',
       );
 
@@ -212,7 +204,7 @@ implicit: pair,
         () => bootstrapDocParser(
           '[value,,]',
         ).parseDocuments().nodeAsSimpleString(),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Found a duplicate "," before finding a flow sequence entry',
       );
     });

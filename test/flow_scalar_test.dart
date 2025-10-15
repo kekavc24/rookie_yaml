@@ -173,9 +173,7 @@ Fun with escapes:
           indent: 0,
           isImplicit: false,
         ),
-      ).throwsAFormatException(
-        'Expected an opening double quote (") but found "u"',
-      );
+      ).throwsParserException('Expected an opening double quote (")');
     });
 
     test('Throws if trailing quote is missing', () {
@@ -185,7 +183,9 @@ Fun with escapes:
           indent: 0,
           isImplicit: false,
         ),
-      ).throwsAFormatException('Expected to find a closing quote');
+      ).throwsParserException(
+        'Expected a closing quote (") after the last character',
+      );
     });
 
     test('Throws on premature exit if implicit and no quote', () {
@@ -195,7 +195,9 @@ Fun with escapes:
           indent: 0,
           isImplicit: true,
         ),
-      ).throwsAFormatException('Expected to find a closing quote');
+      ).throwsParserException(
+        'Expected a closing quote (") after the last character',
+      );
     });
 
     test('Throws if unknown characters are escaped', () {
@@ -205,7 +207,7 @@ Fun with escapes:
           indent: 0,
           isImplicit: true,
         ),
-      ).throwsAFormatException('Unknown escaped character found: "c"');
+      ).throwsParserException('Unknown escaped character found');
     });
 
     test('Throws on indent change before closing quote', () {
@@ -222,7 +224,7 @@ Fun with escapes:
           indent: 2,
           isImplicit: false,
         ),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Invalid indent! Expected 2 space(s), found 1 space(s)',
       );
     });
@@ -272,7 +274,7 @@ Fun with escapes:
           indent: 0,
           isImplicit: false,
         ),
-      ).throwsAFormatException('Expected a single quote');
+      ).throwsParserException("Expected an opening single quote (')");
     });
 
     test('Throws if trailing single quote is missing', () {
@@ -282,7 +284,9 @@ Fun with escapes:
           indent: 0,
           isImplicit: false,
         ),
-      ).throwsAFormatException('Expected a single quote');
+      ).throwsParserException(
+        "Expected a closing single quote (') after the last character",
+      );
     });
 
     test('Throws on premature exit if implicit and no quote', () {
@@ -292,7 +296,9 @@ Fun with escapes:
           indent: 0,
           isImplicit: true,
         ),
-      ).throwsAFormatException('Expected a single quote');
+      ).throwsParserException(
+        "Expected a closing single quote (') after the last character",
+      );
     });
 
     test('Throws if unprintable characters are used', () {
@@ -304,7 +310,7 @@ Fun with escapes:
           indent: 0,
           isImplicit: false,
         ),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Single-quoted scalars are restricted to printable characters only',
       );
     });
@@ -323,7 +329,7 @@ Fun with escapes:
           indent: 2,
           isImplicit: false,
         ),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Invalid indent! Expected 2 space(s), found 1 space(s)',
       );
     });

@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -335,8 +336,8 @@ never parsed
       /// where "!" must be escaped
       check(
         () => bootstrapDocParser(yaml).parseDocuments(),
-      ).throwsAFormatException(
-        'Expected "!" to be escaped. The "!" character must be escaped.',
+      ).throwsParserException(
+        'Tag indicator must escaped when used as a URI character',
       );
     });
 
@@ -347,9 +348,8 @@ never parsed
 
       check(
         () => bootstrapDocParser(yaml).parseDocuments(),
-      ).throwsAFormatException(
-        'Expected a directive end marker but found "nullnull.." as the first '
-        'two characters',
+      ).throwsParserException(
+        'Expected a directives end marker after the last directive',
       );
     });
 
@@ -365,7 +365,7 @@ First document
 
         check(
           () => bootstrapDocParser(yaml).parseDocuments().toList(),
-        ).throwsAFormatException(
+        ).throwsParserException(
           '"%" cannot be used as the first non-whitespace character in a '
           'non-empty content line',
         );

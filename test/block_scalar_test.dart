@@ -1,7 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:test/test.dart';
 
@@ -85,7 +84,7 @@ $indent
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Invalid block indentation indicator. Value must be between 1 - 9',
       );
     });
@@ -101,9 +100,8 @@ $indent
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
-      ).throwsAFormatException(
-        'Duplicate chomping indicators not allowed! Already declared'
-        ' "${ChompingIndicator.keep}" but found "-"',
+      ).throwsParserException(
+        'Duplicate chomping indicators not allowed!',
       );
     });
 
@@ -118,7 +116,7 @@ $indent
           minimumIndent: 0,
           onParseComment: comments.add,
         ),
-      ).throwsAFormatException(
+      ).throwsParserException(
         'Expected a whitespace character before the start of the comment',
       );
     });
@@ -161,8 +159,9 @@ $indent
             minimumIndent: 0,
             onParseComment: comments.add,
           ),
-        ).throwsAFormatException(
-          'A previous empty line was more indented than the current line',
+        ).throwsParserException(
+          'A previous empty line was more indented with 4 space(s). '
+          'Indent must be at least equal to or greater than this indent.',
         );
       }
     });
