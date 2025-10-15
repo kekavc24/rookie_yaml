@@ -1427,7 +1427,7 @@ final class DocumentParser {
 
     final mapInfo = _parseBlockMap(map, scalarKey, null);
 
-    /// TODO: *SIGH* This gives the ick. Will circle back with a cleaner approach
+    // TODO: *SIGH* This gives the ick. Will circle back with a cleaner approach
     if (keyProperty.isMultiline) {
       _trackAnchor(map, keyProperty);
     }
@@ -2588,9 +2588,21 @@ final class DocumentParser {
         comments: _comments,
       );
 
-      final indentOrSeparation = parsedProps.indentOnExit;
+      if (!_scanner.canChunkMore) {
+        if (entryProperty.parsedAny) {
+          sequence.pushEntry(
+            _nullOrAlias(
+              entryProperty,
+              indentLevel: childIndentLevel,
+              indent: indent + 1,
+              start: startOffset,
+              end: entryProperty.span.end,
+            )!,
+          );
+        }
 
-      if (!_scanner.canChunkMore) break;
+        break;
+      }
 
       final indentOrSeparation = entryProperty.indentOnExit;
 
