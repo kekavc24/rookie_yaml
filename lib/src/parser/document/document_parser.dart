@@ -1192,8 +1192,8 @@ final class DocumentParser {
             );
 
             final (keyProps, entryProps) = property.isMultiline
-                ? (property, empty)
-                : (empty, property);
+                ? (empty, property)
+                : (property, empty);
 
             // We have the key. No need for it!
             final (_, value) = _parseFlowMapEntry(
@@ -2050,7 +2050,13 @@ final class DocumentParser {
           ((indentOrSeparation == parentIndent && !isBlockList) ||
               (indentOrSeparation < parentIndent))) {
         return (
-          delegate: null,
+          delegate: _nullOrAlias(
+            valueProperty,
+            indentLevel: valueIndentLevel,
+            indent: minValueIndent,
+            start: valueOffset,
+            end: _scanner.lineInfo().start,
+          ),
           nodeInfo: (
             docMarker: DocumentMarker.none,
             exitIndent: indentOrSeparation,
@@ -2208,8 +2214,7 @@ final class DocumentParser {
       if (exitIndent != null && exitIndent != seamlessIndentMarker) {
         throwWithApproximateRange(
           _scanner,
-          message:
-              'Internal Parser Error. Implicit keys cannot have an exit indent',
+          message: 'Implicit keys cannot have an exit indent',
           current: _scanner.lineInfo().current,
           charCountBefore: exitIndent,
         );
