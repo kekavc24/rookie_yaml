@@ -163,9 +163,9 @@ ParsedProperty parseNodeProperties(
   bool isMultiline() => lfCount > 0;
 
   int? skipAndTrackLF() {
-    final indentOnExit = skipToParsableChar(scanner, comments: comments);
-    if (indentOnExit != null) ++lfCount;
-    return indentOnExit;
+    final indent = skipToParsableChar(scanner, comments: comments);
+    if (indent != null) ++lfCount;
+    return indent;
   }
 
   Never rangedThrow(String message) => throwWithRangedOffset(
@@ -248,8 +248,7 @@ ParsedProperty parseNodeProperties(
 
           scanner.skipCharAtCursor();
           nodeAlias = parseAnchorOrAlias(scanner);
-
-          skipAndTrackLF();
+          indentOnExit = skipAndTrackLF();
 
           // Parsing an alias ignores any tag and anchor
           return Alias(
@@ -278,7 +277,7 @@ ParsedProperty parseNodeProperties(
 
   /// Prefer having accurate indent info. Parsing only reaches here if we
   /// managed to parse both the tag and anchor.
-  skipAndTrackLF();
+  indentOnExit = skipAndTrackLF();
 
   return ParsedProperty.of(
     propStart,
