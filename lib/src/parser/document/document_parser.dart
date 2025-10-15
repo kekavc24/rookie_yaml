@@ -399,17 +399,15 @@ final class DocumentParser {
         if (isBlockContext) {
           _throwIfDangling(minMapIndent, indentOnExit, allowProperties: false);
           return indentOnExit == minMapIndent;
-        } else {
-          if (indentOnExit < minMapIndent) {
-            throwWithApproximateRange(
-              _scanner,
-              message:
-                  'Expected at least ${minMapIndent - indentOnExit} additional'
-                  'spaces',
-              current: _scanner.lineInfo().current,
-              charCountBefore: indentOnExit,
-            );
-          }
+        } else if (indentOnExit < minMapIndent) {
+          throwWithApproximateRange(
+            _scanner,
+            message:
+                'Expected at least ${minMapIndent - indentOnExit} additional'
+                'spaces',
+            current: _scanner.lineInfo().current,
+            charCountBefore: indentOnExit,
+          );
         }
       }
 
@@ -454,7 +452,15 @@ final class DocumentParser {
 
     // Implicit keys cannot span multiple lines
     if (parsedAny) {
-      if (isMultiline) {
+      /// We need to be graceful to the map state for flow maps. Flow maps
+      /// can have keys without any values. Ergo, we need to avoid penalizing
+      /// the map if parsinng will end immediately after the key is
+      /// referenced/marked as null key with properties.
+      if (isMultiline &&
+          !(!isBlockContext &&
+              _scanner.charAtCursor.isNotNullAnd(
+                (c) => c == flowEntryEnd || c == mappingEnd,
+              ))) {
         throwWithRangedOffset(
           _scanner,
           message:
