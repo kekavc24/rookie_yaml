@@ -160,7 +160,7 @@ Never _rangedThrow(
       /// Basic maths for any array dictates that the starting index indicates
       /// the number of elements we have to skip. The first line may have an
       /// offset that is ahead
-      _spannedHighlight(lines.first.chars.skip(columnIndex), startIndex),
+      _spannedHighlight(lines.first.chars.skip(columnIndex), 0),
     );
 
     columnIndex = 0; // Reset. First line captured this index.
