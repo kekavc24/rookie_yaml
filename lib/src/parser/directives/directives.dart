@@ -86,28 +86,19 @@ Directives parseDirectives(
         /// Skip line breaks greedily
         case lineFeed || carriageReturn || comment:
           {
-            final indent = skipToParsableChar(
-              scanner,
-              onParseComment: onParseComment,
-            );
-
-            if (indent case null || 0) break;
-
             /// Directives must start with "%". Never indented.
             /// [skipToParsableChar] will ensure all comments and empty lines
             /// are skipped
-            throwWithApproximateRange(
-              scanner,
-              message:
-                  'Expected a non-indented directive line with directives or a '
-                  'directive end marker but found one with "$indent" indent '
-                  'space(s)',
-              current: scanner.lineInfo().current,
-              charCountBefore: indent,
-            );
+            if (_skipToNextNonEmptyLine(scanner, onParseComment)) {
+              continue extractor;
+            }
+
+            char = scanner.charAtCursor;
+            continue terminator;
           }
 
         // Extract directive
+        extractor:
         case _directiveIndicator
             when scanner.charBeforeCursor.isNullOr((c) => c.isLineBreak()):
           {
@@ -179,6 +170,7 @@ Directives parseDirectives(
           }
 
         /// Directives must see "---" to terminate
+        terminator:
         default:
           {
             // Force a "---" check and not "..."
@@ -200,11 +192,9 @@ Directives parseDirectives(
 
     /// As long as "%" was seen, we must parse directives and terminate with
     /// the "---" marker
-    throwWithApproximateRange(
+    throwForCurrentLine(
       scanner,
       message: 'Expected a directives end marker after the last directive',
-      current: scanner.lineInfo().current,
-      charCountBefore: 1,
     );
   }
 

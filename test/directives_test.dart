@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:collection/collection.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
@@ -11,7 +12,7 @@ import 'helpers/model_helpers.dart';
 void main() {
   group('Reserved directives', () {
     test('Parse reserved directives', () {
-      final yaml = '''
+      const yaml = '''
 %MMH.. A reserved directive
 %RESERVED cannot be constructed
 %WHY? Irriz warririz https://youtu.be/y9r_pZL4boE?si=IQyibJXzS1agg2GN
@@ -149,6 +150,30 @@ void main() {
       ]);
     });
 
+    test('Empty lines in between directives', () {
+      const yaml = '''
+%HELLO Just testing empty lines
+
+%IN between directives
+
+
+%THAT also includes empty lines with just
+
+\t\t\t
+
+%TABS :)
+''';
+
+      check(vanillaDirectives('$yaml\n---'))
+          .has(
+            (d) => d.reservedDirectives.map((r) => r.toString()).join('\n'),
+            'Reserved Directives',
+          )
+          .equalsIgnoringWhitespace(
+            yaml.split('\n').whereNot((e) => e.trim().isEmpty).join('\n'),
+          );
+    });
+
     test('Throws if directive end markers are absent', () {
       check(
         () => bootstrapDocParser(
@@ -156,6 +181,20 @@ void main() {
         ).parseDocuments().parseNodeSingle(),
       ).throwsParserException(
         'Expected a directives end marker after the last directive',
+      );
+    });
+
+    test('Throws if indented directives are found', () {
+      check(
+        () => bootstrapDocParser(
+          '''
+%HELLO Just testing empty lines
+ %IN between directives
+''',
+        ).parseDocuments().parseNodeSingle(),
+      ).throwsParserException(
+        'Expected a non-indented directive line with directives or a '
+        'directive end marker',
       );
     });
   });

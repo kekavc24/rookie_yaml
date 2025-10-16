@@ -1,5 +1,68 @@
 part of 'directives.dart';
 
+/// Skips to the next non-empty directive line.
+///
+/// Returns `true` only if the current character is a [directive] (`%`)
+/// indicator. Returns `false` only if:
+///   - No more characters are present
+///   - No line breaks were skipped
+///   - The next character looks like a [directiveEndSingle] (`-`)
+///
+/// Otherwise, always throws since the conditions above all failed when a
+/// non-zero positive indent was encountered.
+bool _skipToNextNonEmptyLine(
+  GraphemeScanner scanner,
+  void Function(YamlComment comment) onParseComment,
+) {
+  bool canSkip() => scanner.charAtCursor.isNotNullAnd((c) => c.isLineBreak());
+
+  skipper:
+  do {
+    final indent = skipToParsableChar(scanner, onParseComment: onParseComment);
+
+    // Let [parseDirectives] handle this
+    if (indent == null) return false;
+
+    switch (scanner.charAtCursor) {
+      // Nothing else. Let top level parser handle this.
+      case null:
+        return false;
+
+      // End parsing
+      case directiveEndSingle when indent == 0:
+        return false;
+
+      // Next directive
+      case directive when indent == 0:
+        return true;
+
+      // Attempt to salvage the current line. This may be an empty line.
+      case tab:
+        {
+          scanner
+            ..skipWhitespace(skipTabs: true)
+            ..skipCharAtCursor();
+
+          if (canSkip()) continue skipper;
+
+          continue throwable;
+        }
+
+      throwable:
+      default:
+        throwForCurrentLine(
+          scanner,
+          message:
+              'Expected a non-indented directive line with directives or a '
+              'directive end marker',
+          end: scanner.lineInfo().current,
+        );
+    }
+  } while (canSkip());
+
+  return false;
+}
+
 /// Returns a full `YAML` string representation of [YamlDirective]
 String _dumpDirective(Directive directive) {
   final Directive(:name, :parameters) = directive;
