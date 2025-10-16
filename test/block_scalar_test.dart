@@ -324,10 +324,10 @@ $indent
           'folded line\n'
           'next line\n'
           '  * bullet\n'
-          ' \n' // Space in between more indented line
+          '\n'
           '  * list\n'
           '  * lines\n'
-          '\n' // No space since next line is not indented
+          '\n'
           'last line';
 
       check(

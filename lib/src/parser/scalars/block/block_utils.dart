@@ -181,37 +181,6 @@ void _maybeFoldLF(
   );
 }
 
-/// Preserves line breaks in two ways in `folded` scalar style (line breaks in
-/// `literal` style are always preserved):
-///
-/// 1. If the current line is indented, all buffered lines are never folded.
-/// 2. If the current line is indented but was preceded by a single/several
-/// empty line(s) before the last non-empty indented line, a space character is
-/// added to indicate that despite this line being empty it signifies content
-/// and was never `folded`.
-Iterable<int> _preserveEmptyIndented({
-  required bool isLiteral,
-  required bool lastWasIndented,
-  required List<int> lineBreaks,
-}) {
-  ///
-  /// All buffered line breaks are written by default in both `literal`.
-  ///
-  /// When `folded`, we need to ensure empty lines between two indented lines
-  /// can be reproduced if the string was to be "un-folded". Emit a white space
-  /// before each line break after the first one.
-  ///
-  /// See: https://yaml.org/spec/1.2.2/#813-folded-style:~:text=Lines%20starting%20with%20white%20space%20characters%20(more%2Dindented%20lines)%20are%20not%20folded.
-  return isLiteral || !lastWasIndented || lineBreaks.isEmpty
-      ? lineBreaks
-      : [lineBreaks.first].followedBy(
-          lineBreaks.skip(1).expand((value) sync* {
-            yield space;
-            yield value;
-          }),
-        );
-}
-
 /// Single char for document end marker, `...`
 const docEndSingle = period;
 

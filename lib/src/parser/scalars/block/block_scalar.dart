@@ -158,14 +158,7 @@ PreScalar parseBlockStyle(
       case _ when char.isPrintable():
         {
           if (char.isWhiteSpace()) {
-            buffer.writeAll(
-              _preserveEmptyIndented(
-                isLiteral: isLiteral,
-                lineBreaks: lineBreaks,
-                lastWasIndented: lastWasIndented,
-              ),
-            );
-
+            buffer.writeAll(lineBreaks);
             lastWasIndented = true;
             lineBreaks.clear();
           } else {
