@@ -4,12 +4,8 @@ const _maxImplicitLength = 1024;
 
 bool _useNodeStyleDefault(ScalarStyle? style, String content) =>
     style == null ||
-    // Intentionally avoided treated escaped chars as whitespace. Also verbose!
     style == ScalarStyle.plain &&
-        (content.startsWith('\n') ||
-            content.startsWith('#') ||
-            content.endsWith('\n') ||
-            trimYamlWhitespace(content).length != content.length);
+        (content.startsWith('#') || content.trim().length != content.length);
 
 /// Returns a [ScalarStyle] that is valid and can be used to encode a scalar.
 ///

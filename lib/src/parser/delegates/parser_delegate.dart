@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
-import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';

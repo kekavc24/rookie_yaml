@@ -30,6 +30,7 @@ void main() {
         () {
           check(
             dumpScalar(
+              'Normalized '
               '${unicodeNull.asString()}'
               '${bell.asString()}'
               '${backspace.asString()}'
@@ -39,11 +40,12 @@ void main() {
               '${lineSeparator.asString()}'
               '${paragraphSeparator.asString()}'
               '${asciiEscape.asString()}'
-              '${nbsp.asString()}',
+              '${nbsp.asString()}'
+              ' sandwich',
               indent: 0,
               dumpingStyle: ScalarStyle.plain,
             ),
-          ).equals(r'\0\a\b\v\f\N\L\P\e\_');
+          ).equals(r'Normalized \0\a\b\v\f\N\L\P\e\_ sandwich');
         },
       );
     });

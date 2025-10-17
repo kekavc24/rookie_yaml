@@ -1,5 +1,4 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 

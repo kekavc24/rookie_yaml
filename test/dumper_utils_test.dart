@@ -1,10 +1,10 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/dumping.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
-import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:test/test.dart';
@@ -63,7 +63,7 @@ multiline string.
         defaultFolded,
       );
 
-      // Check plain
+      // Check plain.
       parserMatches(
         parsePlain(
           GraphemeScanner.of(unfolded),
@@ -72,7 +72,9 @@ multiline string.
           isImplicit: false,
           isInFlowContext: false,
         ),
-        defaultFolded,
+
+        // Cannot have leading and trailing whitespace
+        defaultFolded.trim(),
       );
     });
 

@@ -1,6 +1,6 @@
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
-import 'package:rookie_yaml/src/parser/scalars/scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -181,9 +181,8 @@ PreScalar? parsePlain(
   }
 
   return (
-    /// Cannot have leading and trailing whitespaces.
-    /// TODO: Include line breaks?
-    content: trimYamlWhitespace(buffer.bufferedContent()),
+    /// Cannot have leading and trailing whitespace (line breaks included).
+    content: buffer.bufferedContent().trim(),
     scalarStyle: _style,
     scalarIndent: indent,
     docMarkerType: docMarkerType,

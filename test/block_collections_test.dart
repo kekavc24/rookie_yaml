@@ -70,7 +70,7 @@ void main() {
         {
           null: null,
           'plain-key-with-empty-value': null,
-          'block-key\n': ['value', 'value\n'],
+          'block-key\n': ['value', 'value'],
           'folded key\n': ['value', 'value'],
           ['block', 'sequence', 'key']: {'flow': 'value'},
           {'flow': 'map', 'as': 'key'}: 'double quoted value',
@@ -105,8 +105,8 @@ key3:
           null: null,
           'key': null,
           'key0': 'value',
-          'key1': {'nested': 'block map\n'},
-          'key2': ['block sequence\n'],
+          'key1': {'nested': 'block map'},
+          'key2': ['block sequence'],
           'key3': ['block indicator as indent'],
         }.toString(),
       );

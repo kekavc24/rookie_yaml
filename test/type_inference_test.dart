@@ -206,11 +206,11 @@ void main() {
 
     final expected = '$content\n';
 
+    // Plain scalars cannot have leading & trailing whitespaces
     final yaml =
         '''
 - "$content\n\n " # Double quoted
 - '$content\n\n ' # Single quoted
--  $content\n\n  # Plain
 - |              # Literal
    $content\n\n
 - >              # Folded
