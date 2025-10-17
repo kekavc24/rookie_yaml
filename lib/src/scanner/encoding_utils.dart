@@ -38,7 +38,7 @@ int? checkHexWidth(int unicode) => switch (unicode) {
 /// Resolves an escaped character in a double quoted string to its unescaped
 /// form in unicode
 int? resolveDoubleQuotedEscaped(int unicode) {
-  if (unicode case backSlash || slash || space || doubleQuote) {
+  if (unicode case backSlash || slash || space || tab || doubleQuote) {
     return unicode;
   }
 
