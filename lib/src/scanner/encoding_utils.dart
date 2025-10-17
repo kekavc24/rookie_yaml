@@ -129,6 +129,11 @@ extension CharUtils on int {
       this == flowSequenceStart ||
       this == flowSequenceEnd ||
       this == flowEntryEnd;
+
+  /// Return `true` only if the character is printable and not:
+  ///   - A whitespace character
+  ///   - Line break i.e. `\r` or `\n`
+  bool isNonSpaceChar() => !isWhiteSpace() && !isLineBreak() && isPrintable();
 }
 
 /// Characters allowed in a `URI` not included in `isAlphaNumeric` or

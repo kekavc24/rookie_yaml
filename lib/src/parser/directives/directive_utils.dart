@@ -98,12 +98,8 @@ String _parseTagUri(
   required bool allowRestrictedIndicators,
   bool includeScheme = false,
   bool isVerbatim = false,
-  bool isAnchorOrAlias = false,
   StringBuffer? existingBuffer,
 }) {
-  final allowFlowIndicators = !isAnchorOrAlias && allowRestrictedIndicators;
-  final isVerbatimUri = !isAnchorOrAlias && isVerbatim;
-
   final buffer = existingBuffer ?? StringBuffer();
 
   if (includeScheme) {
@@ -119,31 +115,19 @@ String _parseTagUri(
         break tagParser;
 
       // Parse as escaped hex %
-      case _directiveIndicator when !isAnchorOrAlias:
+      case _directiveIndicator:
         _parseHexInUri(scanner, buffer);
 
       // A verbatim tag ends immediately a ">" is seen
-      case _verbatimEnd when isVerbatimUri:
+      case _verbatimEnd when isVerbatim:
         break tagParser;
 
-      /// Flow indicators must be escaped with `%` if parsing a tag uri.
-      ///
-      /// Alias/anchor names does not allow them.
-      case _ when !allowFlowIndicators && char.isFlowDelimiter():
-        {
-          if (isAnchorOrAlias) break tagParser;
-
-          throwWithSingleOffset(
-            scanner,
-            message:
-                'Flow collection characters must be escaped when used as '
-                'a URI character',
-            offset: scanner.lineInfo().current,
-          );
-        }
+      // Prefer exiting immediately a flow delimiter is encountered.
+      case _ when !allowRestrictedIndicators && char.isFlowDelimiter():
+        break tagParser;
 
       /// Tag indicators must be escaped when parsing tags
-      case tag when !isAnchorOrAlias:
+      case tag:
         throwWithSingleOffset(
           scanner,
           message: 'Tag indicator must escaped when used as a URI character',
@@ -235,10 +219,38 @@ void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
   uriBuffer.write(String.fromCharCode(int.parse(hexBuff.toString())));
 }
 
-/// Parses an alias or anchor name.
-String parseAnchorOrAlias(GraphemeScanner scanner) => _parseTagUri(
-  scanner,
-  allowRestrictedIndicators: false,
-  isVerbatim: false,
-  isAnchorOrAlias: true,
-);
+/// Parses an alias or anchor suffix.
+String parseAnchorOrAliasTrailer(GraphemeScanner scanner) {
+  final buffer = StringBuffer();
+
+  // [parseNodeProperties] always skips leading "&" and "*"
+  do {
+    /// Allows only non-space characters. Prefer quick exit once a flow
+    /// delimiter is encountered.
+    if (scanner.charAtCursor case int available
+        when !available.isFlowDelimiter() && available.isNonSpaceChar()) {
+      buffer.writeCharCode(available);
+      scanner.skipCharAtCursor();
+      continue;
+    }
+
+    break;
+  } while (true);
+
+  // Anchor/alias must have at least 1 char after "&"/"*" respectively.
+  if (buffer.isEmpty) {
+    const message = 'Expected at 1 non-whitespace character';
+    final offset = scanner.lineInfo().current;
+
+    scanner.canChunkMore
+        ? throwWithSingleOffset(scanner, message: message, offset: offset)
+        : throwWithApproximateRange(
+            scanner,
+            message: message,
+            current: offset,
+            charCountBefore: 1,
+          );
+  }
+
+  return buffer.toString();
+}

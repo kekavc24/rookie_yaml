@@ -235,7 +235,7 @@ ParsedProperty parseNodeProperties(
           }
 
           scanner.skipCharAtCursor();
-          nodeAnchor = parseAnchorOrAlias(scanner); // URI chars preceded by "&"
+          nodeAnchor = parseAnchorOrAliasTrailer(scanner);
 
           notLineBreak();
         }
@@ -247,7 +247,7 @@ ParsedProperty parseNodeProperties(
           }
 
           scanner.skipCharAtCursor();
-          nodeAlias = parseAnchorOrAlias(scanner);
+          nodeAlias = parseAnchorOrAliasTrailer(scanner);
           indentOnExit = skipAndTrackLF();
 
           // Parsing an alias ignores any tag and anchor

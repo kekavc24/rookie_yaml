@@ -5,7 +5,7 @@ export 'src/dumping/dumping.dart'
 export 'src/parser/directives/directives.dart'
     hide
         Directives,
-        parseAnchorOrAlias,
+        parseAnchorOrAliasTrailer,
         parseDirectives,
         parseTagHandle,
         parseTagShorthand,

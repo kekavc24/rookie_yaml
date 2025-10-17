@@ -213,6 +213,17 @@ void main() {
       },
     );
 
+    test('Exits gracefully if a flow indicator is not escaped', () {
+      const yaml = '!!flow-indicator-in-shorthand';
+
+      for (final string in flowDelimiters) {
+        final scanner = GraphemeScanner.of('$yaml$string');
+
+        check(parseTagShorthand(scanner).toString()).equals(yaml);
+        check(scanner.charAtCursor?.asString()).isNotNull().equals(string);
+      }
+    });
+
     test('Throws if a non-uri char is used in tag', () {
       final offender = bell.asString();
       final yaml = '!local$offender';
@@ -220,19 +231,6 @@ void main() {
       check(
         () => parseTagShorthand(GraphemeScanner.of(yaml)),
       ).throwsParserException('The current character is not a valid URI char');
-    });
-
-    test('Throws if a flow indicator is not escaped', () {
-      const yaml = '!!flow-indicator-in-shorthand';
-
-      for (final string in flowDelimiters) {
-        check(
-          () => parseTagShorthand(GraphemeScanner.of('$yaml$string')),
-        ).throwsParserException(
-          'Flow collection characters must be escaped when used as a URI'
-          ' character',
-        );
-      }
     });
 
     test('Throws if a tag indicator is not escaped', () {
