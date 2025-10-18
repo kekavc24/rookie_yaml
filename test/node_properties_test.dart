@@ -81,9 +81,6 @@ $seqEntryTag plain
 
   $seqEntryTag {flow: map-string},
 
-  $seqEntryTag
-  compact-flow-map: 'entire tag goes to compact map',
-
   $seqEntryTag compact-flow-map: 'tag goes to key'
 ]
 ''';
@@ -96,7 +93,7 @@ $seqEntryTag plain
       check(parsed).isA<Sequence>()
         ..hasTag(seqTag)
         ..has(
-          (e) => e.take(5),
+          (e) => e.take(4),
           'First 5 entries',
         ).every((e) => e.hasTag(seqEntryTag))
         ..which(
@@ -220,6 +217,21 @@ $tag ignored :)
       check(
         () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
       ).throwsParserException('Named tags must have a non-empty suffix');
+    });
+
+    test('Throws when a tag is declared for a compact flow node', () {
+      final yaml = '''
+[
+  !compact-tag
+  key: value
+]
+''';
+
+      check(
+        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+      ).throwsParserException(
+        'Compact implicit map entries cannot have properties',
+      );
     });
 
     test(
@@ -391,7 +403,7 @@ implicit-2: is-an-error}
     *flow-key ,
 
     &multi-line-entry
-    key: *seq-key ,
+    {key: *seq-key} ,
 
     *multi-line-entry ,
 
@@ -482,6 +494,21 @@ implicit-2: is-an-error}
           'key: *$alias',
         ).parseDocuments().parseNodeSingle(),
       ).throwsParserException('Alias is not a valid anchor reference');
+    });
+
+    test('Throws when an anchor is declared for a compact flow node', () {
+      final yaml = '''
+[
+  !compact-anchor
+  key: value
+]
+''';
+
+      check(
+        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+      ).throwsParserException(
+        'Compact implicit map entries cannot have properties',
+      );
     });
   });
 }

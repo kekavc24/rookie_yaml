@@ -1177,39 +1177,31 @@ final class DocumentParser {
               break;
             }
 
-            // Give to entire entry if multiline
-            /// TODO: Purge this with future changes
-            /// it seems compact flow map entries cannot node properties
-            final start = _scanner.lineInfo().current;
-            final empty = ParsedProperty.empty(
-              start,
-              start,
-              null,
-              spanMultipleLines: false,
-            );
-
-            final (keyProps, entryProps) = property.isMultiline
-                ? (empty, property)
-                : (property, empty);
+            // Compact implicit maps cannot have properties
+            if (property.parsedAny && property.isMultiline) {
+              throwWithRangedOffset(
+                _scanner,
+                message: 'Compact implicit map entries cannot have properties',
+                start: property.span.start,
+                end: _scanner.lineInfo().current,
+              );
+            }
 
             // We have the key. No need for it!
             final (_, value) = _parseFlowMapEntry(
               keyOrElement,
               indentLevel: indentLevel,
               minIndent: indent,
-              keyProperty: keyProps,
+              keyProperty: property,
               forceInline: forceInline,
               exitIndicator: flowSequenceEnd,
             );
 
             delegate.pushEntry(
-              _trackAnchor(
-                MapEntryDelegate(
-                  nodeStyle: NodeStyle.flow,
-                  keyDelegate: keyOrElement,
-                )..updateValue = value,
-                entryProps,
-              ),
+              MapEntryDelegate(
+                nodeStyle: NodeStyle.flow,
+                keyDelegate: keyOrElement,
+              )..updateValue = value,
             );
           }
       }
