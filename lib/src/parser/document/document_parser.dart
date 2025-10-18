@@ -1617,7 +1617,7 @@ final class DocumentParser {
         {
           _throwIfNotCompactCompatible(
             blockNodeProperty,
-            parentEnforcedCompactness: parentEnforcedCompactness,
+            parentEnforcedCompactness: false,
             isBlockSequence: true,
           );
 
@@ -1805,7 +1805,7 @@ final class DocumentParser {
       isParsingKey: true,
       isExplicitKey: true,
       degenerateToImplicitMap: true,
-      parentEnforcedCompactness: true,
+      parentEnforcedCompactness: false,
       blockNodeProperty: parsedProperty,
     );
 
@@ -1953,7 +1953,7 @@ final class DocumentParser {
       isParsingKey: false,
       isExplicitKey: false,
       degenerateToImplicitMap: true,
-      parentEnforcedCompactness: true,
+      parentEnforcedCompactness: false,
       blockNodeProperty: parsedProperty,
     );
 
@@ -2485,7 +2485,7 @@ final class DocumentParser {
     required bool forceInlined,
     required bool isParsingKey,
     required bool isExplicitKey,
-    required bool degenerateToImplicitMap,
+    required bool enforceCompactness,
     required RuneOffset startOffset,
     required ParsedProperty entryProperty,
   }) {
@@ -2498,7 +2498,7 @@ final class DocumentParser {
       isParsingKey: false,
       isExplicitKey: false,
       degenerateToImplicitMap: true,
-      parentEnforcedCompactness: true,
+      parentEnforcedCompactness: enforceCompactness,
       blockNodeProperty: entryProperty,
     );
 
@@ -2520,7 +2520,7 @@ final class DocumentParser {
           null,
           spanMultipleLines: false,
         ),
-        parentEnforcedCompactness: true,
+        parentEnforcedCompactness: false,
       );
     }
 
@@ -2654,7 +2654,7 @@ final class DocumentParser {
         forceInlined: false,
         isParsingKey: false,
         isExplicitKey: false,
-        degenerateToImplicitMap: true,
+        enforceCompactness: indentOrSeparation != null,
         entryProperty: entryProperty,
       );
 
