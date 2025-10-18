@@ -12,6 +12,15 @@ import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 part 'collection_delegate.dart';
 part 'scalar_delegate.dart';
 
+/// Overrides the [current] node tag to a [kindDefault] if [current] is
+/// non-specific.
+NodeTag _overrideNonSpecific(NodeTag current, TagShorthand kindDefault) {
+  if (!current.suffix.isNonSpecific) return current;
+
+  // No need to override if the non-specific tag has a global tag prefix
+  return current.resolvedTag is GlobalTag ? current : _defaultTo(kindDefault);
+}
+
 /// A delegate that stores parser information when parsing nodes of the `YAML`
 /// tree.
 abstract interface class ParserDelegate {
@@ -71,12 +80,25 @@ abstract interface class ParserDelegate {
 
       case NodeProperty(:final anchor, :final tag):
         {
-          if (tag
-              case TypeResolverTag(:var resolvedTag) || NodeTag resolvedTag) {
-            _checkResolvedTag(resolvedTag);
+          switch (tag) {
+            case TypeResolverTag(:final resolvedTag):
+              {
+                /// Cannot override the captured tag; only validate it.
+                /// Non-specific tags not allowed in cannot be resolved to a
+                /// type other than YAML defaults.
+                _checkResolvedTag(resolvedTag);
+                _tag = tag;
+              }
+
+            /// Node tags with only non-specific tags and no global tag prefix
+            /// will default to str, mapping or seq based on its schema kind.
+            case NodeTag nodeTag:
+              _tag = _checkResolvedTag(nodeTag);
+
+            default:
+              _tag = tag;
           }
 
-          _tag = tag;
           _anchor = anchor;
         }
 

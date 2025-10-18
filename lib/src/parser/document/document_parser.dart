@@ -227,7 +227,7 @@ final class DocumentParser {
     RuneOffset end,
     TagShorthand localTag,
   ) {
-    final TagShorthand(:tagHandle, :content, :isNonSpecific) = localTag;
+    final TagShorthand(:tagHandle, :content) = localTag;
 
     SpecificTag prefix = localTag;
     TagShorthand? suffix; // Local tags have no suffixes
@@ -287,10 +287,7 @@ final class DocumentParser {
       return function(NodeTag(prefix, suffix));
     }
 
-    /// Explicitly ignore non-specific tag shorthands if no global tag was
-    /// declared as a prefix. When the [YamlSourceNode] is constructed, it will
-    /// be assigned a default secondary tag based on the node's kind.
-    return !hasGlobalTag && isNonSpecific ? null : NodeTag(prefix, suffix);
+    return NodeTag(prefix, suffix);
   }
 
   /// Parses a [Scalar].

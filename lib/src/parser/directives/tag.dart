@@ -76,12 +76,10 @@ resolvedTagInfo(ResolvedTag tag) {
     _ => tag as NodeTag,
   };
 
-  final NodeTag(:_resolvedTag, :suffix) = nodeTag;
+  final NodeTag(:resolvedTag, :suffix) = nodeTag;
 
   return (
-    globalTag: _resolvedTag == suffix
-        ? null
-        : _resolvedTag as GlobalTag<dynamic>,
+    globalTag: resolvedTag == suffix ? null : resolvedTag as GlobalTag<dynamic>,
     tag: suffix,
     verbatim: null,
   );

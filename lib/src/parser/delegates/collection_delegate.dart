@@ -11,7 +11,7 @@ ScalarDelegate nullScalarDelegate({
 );
 
 bool _isMapTag(TagShorthand tag) =>
-    tag == sequenceTag || !scalarTags.contains(tag);
+    tag != sequenceTag && !scalarTags.contains(tag);
 
 NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, tag);
 
@@ -75,7 +75,7 @@ final class MapEntryDelegate extends ParserDelegate {
       );
     }
 
-    return tag;
+    return _overrideNonSpecific(tag, mappingTag);
   }
 }
 
@@ -143,7 +143,7 @@ final class SequenceDelegate extends CollectionDelegate {
       throw FormatException('A sequence cannot be resolved as "$suffix" kind');
     }
 
-    return tag;
+    return _overrideNonSpecific(tag, sequenceTag);
   }
 }
 
@@ -192,6 +192,6 @@ final class MappingDelegate extends CollectionDelegate {
       throw FormatException('A mapping cannot be resolved as "$suffix" kind');
     }
 
-    return tag;
+    return _overrideNonSpecific(tag, mappingTag);
   }
 }

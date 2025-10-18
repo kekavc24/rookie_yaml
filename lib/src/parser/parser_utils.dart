@@ -143,7 +143,13 @@ typedef ResolverCreator = TypeResolverTag Function(NodeTag tag);
 ///
 /// {@category resolvers}
 final class Resolver<I, O> {
-  Resolver._(this.target, this.creator);
+  Resolver._(TagShorthand tag, this.creator)
+    : assert(
+        !tag.isNonSpecific,
+        'Non-specific tags cannot be overridden to a kind. '
+        'Only the parser can perform this action!',
+      ),
+      target = tag;
 
   /// Suffix associated with a [TypeResolverTag]
   final TagShorthand target;

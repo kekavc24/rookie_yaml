@@ -42,35 +42,35 @@ String _formatAsVerbatim(
 /// {@category tag_types}
 /// {@category declare_tags}
 final class NodeTag<T> extends ResolvedTag {
-  NodeTag(this._resolvedTag, [TagShorthand? suffix])
+  NodeTag(this.resolvedTag, [TagShorthand? suffix])
     : verbatim = _formatAsVerbatim(
-        _resolvedTag,
+        resolvedTag,
         suffix?.content ?? '',
         suffixIsNonSpecific: suffix?.isNonSpecific ?? false,
       ),
-      suffix = suffix ?? _resolvedTag as TagShorthand;
+      suffix = suffix ?? resolvedTag as TagShorthand;
 
   /// A [TagShorthand] shorthand resolved to a [GlobalTag] or the tag itself.
-  final SpecificTag<T> _resolvedTag;
+  final SpecificTag<T> resolvedTag;
 
   @override
   final TagShorthand suffix; // A parsed tag always has a suffix
 
   @override
-  String get prefix => _resolvedTag.prefix;
+  String get prefix => resolvedTag.prefix;
 
   @override
-  TagHandle get tagHandle => _resolvedTag.tagHandle;
+  TagHandle get tagHandle => resolvedTag.tagHandle;
 
   @override
   final String verbatim;
 
   @override
   bool operator ==(Object other) =>
-      other is NodeTag && other._resolvedTag == _resolvedTag;
+      other is NodeTag && other.resolvedTag == resolvedTag;
 
   @override
-  int get hashCode => _resolvedTag.hashCode;
+  int get hashCode => resolvedTag.hashCode;
 
   @override
   String toString() => verbatim;

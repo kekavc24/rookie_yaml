@@ -32,7 +32,7 @@ final class ScalarDelegate extends ParserDelegate {
       throw FormatException('A scalar cannot be resolved as "$suffix" kind');
     }
 
-    return tag;
+    return _overrideNonSpecific(tag, stringTag);
   }
 
   @override
