@@ -2570,9 +2570,14 @@ final class DocumentParser {
 
       _scanner.skipCharAtCursor(); // Skip "-"
 
+      var indentOrSeparation = skipToParsableChar(
+        _scanner,
+        onParseComment: _comments.add,
+      );
+
       final entryProperty = parseNodeProperties(
         _scanner,
-        minIndent: indent + 1,
+        minIndent: indentOrSeparation ?? indent + 1,
         resolver: _resolveTag,
         comments: _comments,
       );
@@ -2593,7 +2598,11 @@ final class DocumentParser {
         break;
       }
 
-      final indentOrSeparation = entryProperty.indentOnExit;
+      final enforceCompactness = indentOrSeparation == null;
+
+      if (entryProperty.indentOnExit case int exitIndent) {
+        indentOrSeparation = exitIndent;
+      }
 
       if (indentOrSeparation != null) {
         final isLess = indentOrSeparation < indent;
@@ -2646,7 +2655,7 @@ final class DocumentParser {
         forceInlined: false,
         isParsingKey: false,
         isExplicitKey: false,
-        enforceCompactness: indentOrSeparation != null,
+        enforceCompactness: enforceCompactness,
         entryProperty: entryProperty,
       );
 
