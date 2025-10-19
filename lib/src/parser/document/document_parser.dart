@@ -1766,16 +1766,16 @@ final class DocumentParser {
         (exitIndent: inferredIndent, docMarker: DocumentMarker.none),
 
         _trackAnchor(
-            nullScalarDelegate(
+          nullScalarDelegate(
               indentLevel: indentLevel,
               indent: mapIndent,
               startOffset: keyOffset,
-            ),
-            parsedProperty,
-          )
-          ..updateEndOffset = preKeyHasIndent
-              ? lineInfo.start
-              : lineInfo.current,
+            )
+            ..updateEndOffset = preKeyHasIndent
+                ? lineInfo.start
+                : lineInfo.current,
+          parsedProperty,
+        ),
       );
     }
 
