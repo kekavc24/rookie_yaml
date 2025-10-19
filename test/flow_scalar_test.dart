@@ -228,6 +228,20 @@ Fun with escapes:
         'Invalid indent! Expected 2 space(s), found 1 space(s)',
       );
     });
+
+    test('Throws when document markers are used before closing quote', () {
+      final value = '\n...\n';
+
+      check(
+        () => parseDoubleQuoted(
+          GraphemeScanner.of(doubleQuoted(value)),
+          indent: 0,
+          isImplicit: false,
+        ),
+      ).throwsParserException(
+        'Expected a (") before the current document was terminated',
+      );
+    });
   });
 
   group('Single Quoted Flow Scalar', () {
@@ -331,6 +345,20 @@ Fun with escapes:
         ),
       ).throwsParserException(
         'Invalid indent! Expected 2 space(s), found 1 space(s)',
+      );
+    });
+
+    test('Throws when document markers are used before closing quote', () {
+      final value = '\n...\n';
+
+      check(
+        () => parseSingleQuoted(
+          GraphemeScanner.of(singleQuoted(value)),
+          indent: 0,
+          isImplicit: false,
+        ),
+      ).throwsParserException(
+        "Expected a (') before the current document was terminated",
       );
     });
   });

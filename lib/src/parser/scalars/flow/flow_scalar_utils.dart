@@ -10,6 +10,31 @@ typedef FoldFlowInfo = ({
   bool hasLineBreak,
 });
 
+/// Throws if document/directive end markers are encountered while parsing a
+/// scalar that is [ScalarStyle.doubleQuoted] or [ScalarStyle.singleQuoted].
+void throwIfDocEndInQuoted(
+  GraphemeScanner scanner, {
+  required void Function(List<int> chars) onDocMissing,
+  required int quoteChar,
+}) {
+  final start = scanner.lineInfo().current;
+
+  if (checkForDocumentMarkers(
+        scanner,
+        onMissing: onDocMissing,
+      )
+      case DocumentMarker marker when marker.stopIfParsingDoc) {
+    throwWithRangedOffset(
+      scanner,
+      message:
+          'Expected a (${quoteChar.asString()}) before the current document'
+          ' was terminated',
+      start: start,
+      end: scanner.lineInfo().current,
+    );
+  }
+}
+
 /// Ignores an escaped line break and excludes it from content in
 /// [ScalarStyle.doubleQuoted].
 ///

@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/fold_flow_scalar.dart';
+import 'package:rookie_yaml/src/parser/scalars/flow/flow_scalar_utils.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -80,6 +80,19 @@ PreScalar parseDoubleQuoted(
           }
 
           _parseEscaped(scanner, buffer: buffer);
+        }
+
+      // Ensure the `---` or `...` combination is never used in quoted scalars
+      case blockSequenceEntry || period
+          when indent == 0 &&
+              scanner.charBeforeCursor.isNotNullAnd((c) => c.isLineBreak()) &&
+              scanner.charAfter == current:
+        {
+          throwIfDocEndInQuoted(
+            scanner,
+            onDocMissing: buffer.writeAll,
+            quoteChar: doubleQuote,
+          );
         }
 
       // Always fold by default if not escaped

@@ -72,6 +72,86 @@ typedef PreScalar = ({
   RuneOffset end,
 });
 
+/// Single char for document end marker, `...`
+const docEndSingle = period;
+
+/// Single char for directives end marker, `---`
+const directiveEndSingle = blockSequenceEntry;
+
+/// Checks and returns if the next sequence of characters are valid
+/// [DocumentMarker]. Defaults to [DocumentMarker.none] if not true.
+/// May throw if non-whitespace characters are declared in the same line as
+/// document end markers (`...`).
+DocumentMarker checkForDocumentMarkers(
+  GraphemeScanner scanner, {
+  required void Function(List<int> buffered) onMissing,
+}) {
+  var charAtCursor = scanner.charAtCursor;
+  final markers = <int>[];
+
+  void pointToNext() {
+    scanner.skipCharAtCursor();
+    charAtCursor = scanner.charAtCursor;
+  }
+
+  /// Document markers, that `...` and `---` have no indent. They must be
+  /// top level. Check before falling back to checking if it is a top level
+  /// scalar.
+  ///
+  /// We insist on it being top level because the markers have no indent
+  /// before. They have a -1 indent at this point or zero depending on how
+  /// far along the parsing this is called.
+  if (charAtCursor case docEndSingle || directiveEndSingle) {
+    const expectedCount = 3;
+    final match = charAtCursor;
+
+    final skipped = scanner.takeUntil(
+      includeCharAtCursor: true,
+      mapper: (v) => v,
+      onMapped: (v) => markers.add(v),
+      stopIf: (count, possibleNext) {
+        return count == expectedCount || possibleNext != match;
+      },
+    );
+
+    pointToNext();
+
+    if (skipped == expectedCount) {
+      /// YAML insists document markers should not have any characters
+      /// after unless its just whitespace or comments.
+      if (match == docEndSingle) {
+        if (charAtCursor.isNotNullAnd((c) => c.isWhiteSpace())) {
+          scanner.skipWhitespace(skipTabs: true);
+          pointToNext();
+        }
+
+        if (charAtCursor.isNullOr((c) => c.isLineBreak() || c == comment)) {
+          return DocumentMarker.documentEnd;
+        }
+
+        final (:start, :current) = scanner.lineInfo();
+
+        throwWithRangedOffset(
+          scanner,
+          message:
+              'Document end markers "..." can only have whitespace/comments'
+              ' after',
+          start: start,
+          end: current,
+        );
+      }
+
+      // Directives end markers can have either
+      if (charAtCursor.isNullOr((c) => c.isLineBreak() || c.isWhiteSpace())) {
+        return DocumentMarker.directiveEnd;
+      }
+    }
+  }
+
+  onMissing(markers);
+  return DocumentMarker.none;
+}
+
 /// Skips any comments and linebreaks until a character that can be parsed
 /// is encountered. Returns `null` if no indent was found.
 ///
