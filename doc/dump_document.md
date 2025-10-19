@@ -12,7 +12,7 @@ const source = '''
 ''';
 
 print(
-  dumpYamlDocuments(YamlParser(source).parseDocuments())
+  dumpYamlDocuments(YamlParser.ofString(source).parseDocuments())
 );
 ```
 

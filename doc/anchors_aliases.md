@@ -47,7 +47,7 @@ final expectedMap = {
   ]: {'key': 'value'}
 };
 
-final node = YamlParser(yaml).parseNodes().first.castTo<Mapping>();
+final node = YamlParser.ofString(yaml).parseNodes().first.castTo<Mapping>();
 
 /// Aliases are unpacked as the node they reference
 print(node.toString() == expectedMap.toString()); // True
@@ -74,7 +74,7 @@ key: value
 &key-anchor !!str key: value
 ''';
 
-final docs = YamlParser(yaml).parseDocuments();
+final docs = YamlParser.ofString(yaml).parseDocuments();
 
 // Anchor in first document goes to the root map
 print(docs[0].root.anchorOrAlias != null); // True
@@ -104,7 +104,7 @@ const yaml = '''
 - next
 ''';
 
-final docs = YamlParser(yaml).parseDocuments();
+final docs = YamlParser.ofString(yaml).parseDocuments();
 
 // True
 print(docs.every((d) => d.root.anchorOrAlias != null));

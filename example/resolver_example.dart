@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:rookie_yaml/rookie_yaml.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
 
 void main(List<String> args) {
   /// Let's decode json embedded in a double quoted scalar. This is for

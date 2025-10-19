@@ -13,7 +13,7 @@ Any node that is not a `Sequence` or `Mapping`. By default, its type is inferred
 /// This is for demo purposes to showcase equality.
 dynamic value = 24;
 
-final node = YamlParser('$value').parseNodes().first.castTo<Scalar>();
+final node = YamlParser.ofString('$value').parseNodes().first.castTo<Scalar>();
 print(node == value); // True.
 ```
 
@@ -30,7 +30,7 @@ const yaml = '''
 - in town
 ''';
 
-final node = YamlParser('$yaml').parseNodes().first.castTo<Sequence>();
+final node = YamlParser.ofString('$yaml').parseNodes().first.castTo<Sequence>();
 
 // True.
 print(
@@ -61,7 +61,7 @@ const mappy = {
 };
 
 // Native Dart objects as strings are just flow nodes in yaml
-final node = YamlParser(
+final node = YamlParser.ofString(
   mappy.toString(),
 ).parseNodes().first.castTo<Mapping>();
 

@@ -44,7 +44,7 @@ final yaml =
 - $utf16Tag $codeUnits
 ''';
 
-final node = YamlParser(
+final node = YamlParser.ofString(
   yaml,
   resolvers: [utf16Resolver, base64Resolver],
 ).parseNodes().first.castTo<Sequence>();
@@ -86,7 +86,7 @@ final yaml = '$base32Tag $encoded';
 
 // Defaults to string
 print(
-  YamlParser(
+  YamlParser.ofString(
     yaml,
     resolvers: [safeResolver],
   ).parseNodes().first,
@@ -94,7 +94,7 @@ print(
 
 // Throws
 print(
-  YamlParser(
+  YamlParser.ofString(
     yaml,
     resolvers: [aggressiveResolver],
   ).parseNodes().first,

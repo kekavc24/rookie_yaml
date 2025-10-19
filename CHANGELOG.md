@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.0
+
+This is the first minor release. It introduces a custom (experimental) error reporting style that focuses on providing a contextual and fairly accurate visual aid on the location of an error within the source string.
+
+- `BREAKING`:
+  - Non-specific tags are resolved to `!!map`, `!!seq` or `!!str` based on its kind. No type inference for scalars.
+  - `TagShorthand`s that are non-specific ( `!`) cannot be used to declare a custom type `Resolver`.
+  - Drop support for `!!uri` tag.
+
+- `feat`:
+  - Added a rich error reporting style.
+  - `YamlParser` can now parse based on the source string location using the `ofString` and `ofFilePath` constructors.
+
+- `fix`:
+  - Document and directive end marker are now checked even in quoted scalar styles, `ScalarStyle.doubleQuoted` and `ScalarStyle.singleQuoted`.
+  - Fixes an issue where ` :` and `: ` combination was handled incorrectly when parsing plain scalars.
+  - Fixes an issue where block sequence entries not declared using YAML's `compact-inline notation` were parsed incorrectly.
+  - Always update the end offset of an explicit block key with no value before exiting.
+  - Flow map nodes in flow sequence declared using YAML's `compact-inline notation` cannot have properties.
+  - Alias/anchors are no longer restricted to URI characters. Any non-space character can be used.
+  - Leading and trailing line breaks are now trimmed in plain scalars.
+  - Parser exits gracefully when block scalar styles (`ScalarStyle.literal` and `ScalarStyle.folded`) only declare the header.
+  - Parser exits gracefully when a block sequence entry is empty but present.
+  - Parser exits gracefully when flow indicators are encountered while parsing tags/anchors/aliases.
+
 ## 0.0.6
 
 This is a packed patch release. The main highlight of this release is the support for dumping objects back to YAML. Some of the changes introduced in this release were blocking the implementation of this functionality. A baseline was required. Our dumping strategy needed to be inline with parser functionality.
