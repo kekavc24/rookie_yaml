@@ -103,7 +103,9 @@ FoldFlowInfo foldFlowScalar(
   required int minIndent,
   required bool isImplicit,
   bool resumeOnEscapedLineBreak = false,
+  bool Function(int? charAfter)? matcherOnPlain,
 }) {
+  final matchesPlain = matcherOnPlain ?? (_) => false;
   final bufferedWhitespace = <int>[];
 
   var didFold = false;
@@ -156,6 +158,12 @@ FoldFlowInfo foldFlowScalar(
             if (current != null &&
                 current.isWhiteSpace() &&
                 !isDifferentScalar) {
+              if (matchesPlain(scanner.charAfter)) {
+                foldCurrent(null);
+                scanner.skipCharAtCursor();
+                break folding;
+              }
+
               bufferedWhitespace.add(current);
 
               scanner
@@ -202,8 +210,13 @@ FoldFlowInfo foldFlowScalar(
         }
 
       case space || tab:
-        bufferedWhitespace.add(current!);
-        scanner.skipCharAtCursor();
+        {
+          scanner.skipCharAtCursor();
+
+          // Match " :" or " #". These assumes the plain scalar is a key.
+          if (matchesPlain(scanner.charAtCursor)) break folding;
+          bufferedWhitespace.add(current!);
+        }
 
       default:
         {

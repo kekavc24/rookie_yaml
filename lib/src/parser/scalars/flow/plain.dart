@@ -114,7 +114,12 @@ PreScalar? parsePlain(
       /// A mapping key can never be followed by a whitespace. Exit regardless
       /// of whether we folded this scalar before.
       case mappingValue
-          when charAfter.isNullOr((c) => c.isWhiteSpace() || c.isLineBreak()):
+          when charAfter.isNullOr(
+            (c) =>
+                (isInFlowContext && c.isFlowDelimiter()) ||
+                c.isWhiteSpace() ||
+                c.isLineBreak(),
+          ):
         break chunker;
 
       /// A look behind condition if encountered while folding the scalar.
@@ -141,6 +146,8 @@ PreScalar? parsePlain(
             scalarBuffer: buffer,
             minIndent: indent,
             isImplicit: isImplicit,
+            matcherOnPlain: (charAfter) =>
+                charAfter == mappingValue || charAfter == comment,
           );
 
           if (indentDidChange) {

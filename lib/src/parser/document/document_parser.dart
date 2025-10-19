@@ -849,11 +849,12 @@ final class DocumentParser {
 
     // Check if this is the start of a flow value
     if (inferNextEvent(
-          _scanner,
-          isBlockContext: false,
-          lastKeyWasJsonLike: _keyIsJsonLike(parsedKey),
-        ) ==
-        FlowCollectionEvent.startEntryValue) {
+              _scanner,
+              isBlockContext: false,
+              lastKeyWasJsonLike: _keyIsJsonLike(parsedKey),
+            ) ==
+            FlowCollectionEvent.startEntryValue ||
+        _scanner.charAtCursor == mappingValue) {
       _scanner.skipCharAtCursor(); // ":"
 
       final (:event, :property) = parseSimpleFlowProps(
