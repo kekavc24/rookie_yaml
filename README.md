@@ -8,7 +8,7 @@
 > [!WARNING]
 > The parser is still in active development and has missing features/intermediate functionalities. Until a stable `1.0.0` is released, package API may have breaking changes in each minor/patch version.
 
-A (rookie) `Dart` YAML 1.2+ parser.
+A (rookie) `Dart` [YAML][yaml] 1.2+ parser.
 
 ## What's Included
 
@@ -30,14 +30,19 @@ The secondary tag handle `!!` is limited to tags below which all resolve to the 
   - `!!int` - Integer. `hex`, `octal` and `base 10` should use this.
   - `!!float` - double.
 
-## Documentation & Examples
+## Documentation & Examples (Still in progress 🏗️)
 
-- The `docs` folder in the repository. Open dartdoc_options.yaml for a guided order (See `categoryOrder` key).
+- The `docs` folder in the repository.
 - Visit [pub guide][guide] which provides an automatic guided order for the docs above.
 - The `example` folder.
 
+## Contribution
+
+See [guide][contribute] on how to make contributions to this repository.
+
+[yaml]: https://yaml.org/spec/1.2.2/
 [coverage]: https://coveralls.io/repos/github/kekavc24/rookie_yaml/badge.svg?branch=main
 [dart_pub_version]: https://img.shields.io/pub/v/rookie_yaml.svg
 [dart_pub_downloads]: https://img.shields.io/pub/dm/rookie_yaml.svg
 [guide]: https://pub.dev/documentation/rookie_yaml/latest/
-[semver_link]: https://semver.org/
+[contribute]: CONTRIBUTING.md

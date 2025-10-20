@@ -50,6 +50,7 @@ You can still override the `ScalarStyle` by providing a `preferredScalarStyle`.
 dumpSequence(
   ['hello', 24, true, 24.0],
   collectionNodeStyle: NodeStyle.block,
+  preferredScalarStyle: ScalarStyle.plain,
 );
 ```
 

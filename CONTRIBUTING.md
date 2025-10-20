@@ -1,6 +1,6 @@
 # Intro
 
-We are open for contributions from any human irrespective of your skill level, age, gender, race, nationality or religious beliefs. Just contribute.
+We are open to contributions from any human irrespective of your skill level, age, gender, race, nationality or religious beliefs. Just contribute.
 
 >[!CAUTION]
 > Spam/malicious PRs will be closed without review.
@@ -15,6 +15,9 @@ We are open for contributions from any human irrespective of your skill level, a
 1. Identify an open issue. If the issues don't scratch your itch, run the official `YAML` Test Suite using the [guide](./test/yaml_matrix_tests/README.md) and create an issue. Help us bring this parser closer to the spec!
 
 2. Fork this repo. Create a branch. Fix issue, commit using the [commit behaviour guide](#commit-behaviour) and create a PR.
+
+> [!TIP]
+> If you do not know where to start on fixing a bug or implementing a feature you found, just ping me @kekavc24
 
 ## Commit Behaviour
 

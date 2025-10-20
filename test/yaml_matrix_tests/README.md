@@ -3,14 +3,17 @@
 The runner is simple and runs like any program but also explicitly catches the `Error` object and treats it as an `Exception`. This is intentional. The runner's entry point is the [matrix_runner.dart](./matrix_runner.dart).
 
 ```sh
-/// Clone/fork repo
+# Clone/fork repo
+git clone https://github.com/kekavc24/rookie_yaml.git
 
+# Open and navigate to test suite runner directory
 cd test/yaml_matrix_tests
-dart matrix_runner.dart --no-file-output
 
+# Run command to get current test suite pass rate
+dart matrix_runner.dart --no-file-output
 ```
 
-Running the command above prints the current pass rate. If you need a file with the captured errors, omit the `--no-file-output` flag. In this case, the script will also create a `test.rate` file in the current `yaml_matrix_tests` directory that is not tracked by version control.
+Running the command above prints the current pass rate. If you need a file with the captured errors, omit the `--no-file-output` flag. In this case, the script will also create a `test.rate` file in the directory you run the command from.
 
 ## `test.rate` format
 
@@ -42,30 +45,35 @@ Describes why the test failed when the parser attempted to parse the yaml input.
 > [!IMPORTANT]
 > This is a fail-fast parser.
 >
-> The errors will reflect the errors thrown by the copy of the parser (repo) you have locally. Currently, the errors have no source information but provide accurate information on what caused the error. Future versions may fix this.
+> The errors will reflect the errors thrown by the copy of the parser (repo) you have locally.
 
 - The node was parsed successfully but the test failed because the expected node output doesn't match that provided by YAML.
 
 ```text
-<++++ DK95-05: Tabs that look like indentation ++++>
+<++++ L24T-01: Trailing line of spaces ++++>
 
 Failed with the following messages:
-  Expected node string: [{foo: 1, bar: 2}]
-  Found: [{foo: 1
-, bar: 2}],
+  Expected node string: [{foo: x
 
-<-------------------------------------------------->
+}]
+  Found: [{foo: x
+ }]
+
+<------------------------------------------>
 ```
 
 - The test was supposed to pass but the parser threw an error.
 
 ```text
-<++++ 6LVF: Spec Example 6.13. Reserved Directives ++++>
+<++++ X38W: Aliases in Flow Objects ++++>
 
 Failed with the following messages:
-  FormatException: Expected a directive end marker but found "  .." as the first two characters,
+  ParserException[Line 0, Column 25, Offset 25]: Flow map cannot contain duplicate entries by the same key
 
-<------------------------------------------------------>
+  { &a [a, &b b]: *b, *a : [c, *b, d]}
+                      ^^^^^^
+
+<--------------------------------------->
 ```
 
 - The test was supposed to fail but the parser parsed a complete node. This is a great indicator of a bug.
@@ -85,7 +93,16 @@ Failed with the following messages:
 <++++ 9KAX: Various combinations of tags and anchors ++++>
 
 Failed with the following messages:
-  Exception: [Parser Error]: Should not be parsing node here,
+  ParserException[Line 13, Column 0, Offset 80]: Internal Parser Error. Should not be parsing block node here
+
+  &a4 !!map
+  ^^^^^^^^^
+  &a5 !!str key5: value4
+  ^
 
 <-------------------------------------------------------->
 ```
+
+All contributions are welcome (including issues). Use the test outputs above to hunt for:
+  - Bugs that need to fixed.
+  - Features that need to be implemented.
