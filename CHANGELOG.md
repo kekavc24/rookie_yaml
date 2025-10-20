@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- `docs`:
+  - Fix typo in package usage docs.
+  - Update README.
+
 ## 0.1.0
 
 This is the first minor release. It introduces a custom (experimental) error reporting style that focuses on providing a contextual and fairly accurate visual aid on the location of an error within the source string.
