@@ -754,7 +754,8 @@ final class DocumentParser {
         throwWithRangedOffset(
           _scanner,
           message:
-              'Internal Parser Error. Should not be parsing flow node here',
+              'Invalid flow node state. The current flow node could not '
+              'be parsed further.',
           start: flowStartOffset,
           end: _scanner.lineInfo().current,
         );
@@ -1675,7 +1676,8 @@ final class DocumentParser {
         throwWithRangedOffset(
           _scanner,
           message:
-              'Internal Parser Error. Should not be parsing block node here',
+              'Invalid block node state. The current block node could not be '
+              'parsed further.',
           start: blockNodeProperty.span.start,
           end: _scanner.lineInfo().current,
         );

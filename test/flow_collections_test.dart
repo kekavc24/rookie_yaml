@@ -94,7 +94,8 @@ void main() {
       check(
         () => bootstrapDocParser('}').parseDocuments().nodeAsSimpleString(),
       ).throwsParserException(
-        'Expected the flow collection indicators: "[" or "{"',
+        'Invalid flow node state. The current flow node could not '
+        'be parsed further.',
       );
 
       check(
@@ -184,7 +185,8 @@ implicit: pair,
         check(
           () => bootstrapDocParser(']').parseDocuments().nodeAsSimpleString(),
         ).throwsParserException(
-          'Expected the flow collection indicators: "[" or "{"',
+          'Invalid flow node state. The current flow node could not '
+          'be parsed further.',
         );
 
         check(
