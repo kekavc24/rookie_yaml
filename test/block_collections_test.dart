@@ -17,7 +17,7 @@ void main() {
           ' - block sequence';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           'one': 'double-quoted',
@@ -65,7 +65,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           null: null,
@@ -99,7 +99,7 @@ key3:
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           null: null,
@@ -119,7 +119,7 @@ key3:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Expected indent of 0 space(s) but found 2 space(s)',
       );
@@ -134,7 +134,7 @@ implicit: map
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Implicit keys are restricted to a single line. Consider using an'
         ' explicit key for the entry',
@@ -150,7 +150,7 @@ rogue
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Implicit keys cannot have an exit indent',
       );
@@ -162,7 +162,7 @@ rogue
           ' - block sequence value # Block lists start on new line';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'The block collections must start on a new line'
         ' when used as values of an implicit key',
@@ -177,7 +177,7 @@ implicit:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Dangling node/node properties found with indent of 2 space(s) while parsing',
       );
@@ -202,7 +202,7 @@ implicit:
   - sequence''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         [
           'double quoted',
@@ -231,7 +231,7 @@ implicit:
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         [
           {
@@ -261,9 +261,7 @@ implicit:
 
       for (final marker in markers) {
         check(
-          bootstrapDocParser(
-            '$yaml$marker$trailing',
-          ).parseDocuments().nodeAsSimpleString(),
+          bootstrapDocParser('$yaml$marker$trailing').nodeAsSimpleString(),
         ).equals(sequenceStr);
       }
     });
@@ -274,7 +272,7 @@ implicit:
           '-error';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Expected a "- " while parsing sequence entry',
       );
@@ -288,7 +286,7 @@ implicit:
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Dangling node/node properties found with indent of 2 space(s) while'
         ' parsing',

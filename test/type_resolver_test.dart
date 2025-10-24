@@ -36,10 +36,7 @@ void main() {
 ''';
 
     check(
-      bootstrapDocParser(
-        yaml,
-        resolvers: [resolver],
-      ).parseDocuments().parseNodeSingle(),
+      bootstrapDocParser(yaml, resolvers: [resolver]).parseNodeSingle(),
     ).isA<Sequence>().every(
       (p) => p.isA<Scalar>()
         ..hasInferred('Dart ascii string', String.fromCharCodes(asciiList))
@@ -57,12 +54,7 @@ void main() {
 
     final yaml = '$asciiTag $asciiList';
 
-    check(
-          bootstrapDocParser(
-            yaml,
-            resolvers: [resolver],
-          ).parseDocuments().parseNodeSingle(),
-        )
+    check(bootstrapDocParser(yaml, resolvers: [resolver]).parseNodeSingle())
         .isNotNull()
         .has((p) => p.asCustomType(), 'Custom type')
         .which((v) => v.isNotNull().equals(String.fromCharCodes(asciiList)));
@@ -94,12 +86,7 @@ $asciiTag { handle: primary, suffix: $suffix}
       },
     );
 
-    check(
-          bootstrapDocParser(
-            yaml,
-            resolvers: [resolver],
-          ).parseDocuments().parseNodeSingle(),
-        )
+    check(bootstrapDocParser(yaml, resolvers: [resolver]).parseNodeSingle())
         .isNotNull()
         .has((p) => p.asCustomType(), 'Custom type')
         .which((v) => v.isNotNull().equals(asciiTag));

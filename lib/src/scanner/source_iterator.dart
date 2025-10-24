@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -107,8 +106,7 @@ final class UnicodeIterator implements SourceIterator {
 
   /// Creates a [UnicodeIterator] that synchronously reads the entire file from
   /// the [filePath] provided and uses the [Iterator] from its bytes.
-  UnicodeIterator.ofFileSync(String filePath)
-    : this._(File(filePath).readAsBytesSync().iterator);
+  UnicodeIterator.ofByteSource(Iterable<int> source) : this._(source.iterator);
 
   /// Actual iterator being read.
   final Iterator<int> _iterator;

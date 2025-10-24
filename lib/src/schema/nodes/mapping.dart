@@ -8,36 +8,21 @@ part of 'yaml_node.dart';
 /// See [DynamicMapping] for a "no-cost" [Mapping] type cast.
 ///
 /// {@category yaml_nodes}
-final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
-    with UnmodifiableMapMixin<YamlNode, YamlSourceNode?>
+final class Mapping extends DelegatingMap<YamlSourceNode, YamlSourceNode?>
+    with UnmodifiableMapMixin<YamlSourceNode, YamlSourceNode?>
     implements YamlSourceNode {
   /// Creates a [Mapping].
   ///
   /// Intentional. We don't want weird injections from a source with [YamlNode]
   /// keys. Use [DynamicMapping] instead which offers both type safety and
   /// laxity which this class cannot (and should not).
-  Mapping._(
+  Mapping(
     super.base, {
     required this.nodeStyle,
     required this.tag,
     required this.anchor,
     required this.nodeSpan,
   });
-
-  /// Creates a [Mapping] after a block/flow map has been fully parsed.
-  Mapping.strict(
-    Map<YamlSourceNode, YamlSourceNode?> source, {
-    required NodeStyle nodeStyle,
-    required ResolvedTag? tag,
-    required String? anchor,
-    required RuneSpan nodeSpan,
-  }) : this._(
-         source,
-         nodeStyle: nodeStyle,
-         tag: tag,
-         anchor: anchor,
-         nodeSpan: nodeSpan,
-       );
 
   @override
   final NodeStyle nodeStyle;
@@ -67,7 +52,9 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
   }
 
   @override
-  void removeWhere(bool Function(YamlNode key, YamlSourceNode value) test) {
+  void removeWhere(
+    bool Function(YamlSourceNode key, YamlSourceNode value) test,
+  ) {
     // Copied from Dart internal
     throw UnsupportedError("Cannot modify a parsed mapping");
   }
@@ -84,7 +71,7 @@ final class Mapping extends DelegatingMap<YamlNode, YamlSourceNode?>
 
   @override
   void updateAll(
-    YamlSourceNode? Function(YamlNode key, YamlSourceNode? value) update,
+    YamlSourceNode? Function(YamlSourceNode key, YamlSourceNode? value) update,
   ) {
     // Copied from Dart internal
     throw UnsupportedError("Cannot modify a parsed mapping");

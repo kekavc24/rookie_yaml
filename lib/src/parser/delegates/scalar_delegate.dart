@@ -1,28 +1,43 @@
 part of 'parser_delegate.dart';
 
+typedef ScalarFunction<T> =
+    T Function(
+      ScalarValue inferred,
+      ScalarStyle style,
+      ResolvedTag? tag,
+      String? anchor,
+      RuneSpan span,
+    );
+
 /// A delegate that resolves to a [Scalar].
-final class ScalarDelegate extends ParserDelegate {
+final class ScalarDelegate<T> extends ParserDelegate<T> {
   ScalarDelegate({
     required super.indentLevel,
     required super.indent,
     required super.start,
-  });
+    required this.scalarResolver,
+    PreScalar? prescalar,
+  }) : content = prescalar?.content,
+       wroteLineBreak = prescalar?.wroteLineBreak ?? false,
+       scalarStyle = prescalar?.scalarStyle ?? ScalarStyle.plain {
+    if (prescalar == null) return;
 
-  PreScalar? _prescalar;
-
-  PreScalar? get preScalar => _prescalar;
-
-  set scalar(PreScalar scalar) {
-    assert(
-      preScalar == null,
-      'A scalar can only be resolved once after its parsing is complete',
-    );
-
-    _prescalar = scalar;
-    indent = scalar.scalarIndent;
-    _hasLineBreak = scalar.hasLineBreak;
-    _end = scalar.end;
+    indent = prescalar.scalarIndent;
+    _hasLineBreak = prescalar.hasLineBreak;
+    _end = prescalar.end;
   }
+
+  /// Parsed content
+  final String? content;
+
+  /// [content] has a line break.
+  final bool wroteLineBreak;
+
+  /// Scalar style
+  final ScalarStyle scalarStyle;
+
+  /// A dynamic resolver function assigned at runtime by the [DocumentParser].
+  final ScalarFunction<T> scalarResolver;
 
   @override
   NodeTag _checkResolvedTag(NodeTag tag) {
@@ -36,36 +51,24 @@ final class ScalarDelegate extends ParserDelegate {
   }
 
   @override
-  bool isChild(int indent) => false; // Scalars have no children.
+  T _resolver() {
+    ScalarValue? value;
 
-  /// Returns a [Scalar].
-  ///
-  /// Scalars are resolved immediately once their parsing is complete when the
-  /// [scalar] setter is called. If the setter is never called, an empty
-  /// scalar is emitted with a [ScalarStyle.doubleQuoted].
-  @override
-  Scalar<T> _resolveNode<T>() {
-    final end = _end!;
-
-    if (_prescalar != null) {
-      final PreScalar(:content, :scalarStyle, :wroteLineBreak) = _prescalar!;
-
-      ScalarValue<T>? value;
-
-      if (_tag case ContentResolver<T>(
+    if (content != null) {
+      if (_tag case ContentResolver<dynamic>(
         :final resolver,
         :final toYamlSafe,
         :final acceptNullAsValue,
       )) {
-        if (resolver(content) case T? resolved
+        if (resolver(content!) case dynamic resolved
             when resolved != null || acceptNullAsValue) {
-          value = CustomValue(resolved as T, toYamlSafe: toYamlSafe);
+          value = CustomValue(resolved, toYamlSafe: toYamlSafe);
         }
       }
 
       // Just infer our way if it cannot be resolved or it was never declared
       value ??= ScalarValue.fromParsedScalar(
-        content,
+        content!,
         defaultToString: wroteLineBreak || _tag is NodeResolver,
         parsedTag: _tag?.suffix,
         ifParsedTagNull: (inferred) {
@@ -79,22 +82,14 @@ final class ScalarDelegate extends ParserDelegate {
           _tag = NodeTag(yamlGlobalTag, inferred);
         },
       );
-
-      return Scalar(
-        value,
-        scalarStyle: scalarStyle,
-        tag: _tag,
-        anchor: _anchor,
-        nodeSpan: (start: start, end: end),
-      );
     }
 
-    return Scalar(
-      NullView('') as ScalarValue<T>,
-      scalarStyle: ScalarStyle.plain,
-      tag: _tag ?? _defaultTo(nullTag),
-      anchor: _anchor,
-      nodeSpan: (start: start, end: end),
+    return scalarResolver(
+      value ?? NullView(''),
+      scalarStyle,
+      _tag ?? _defaultTo(nullTag),
+      _anchor,
+      (start: start, end: _ensureEndIsSet()),
     );
   }
 }

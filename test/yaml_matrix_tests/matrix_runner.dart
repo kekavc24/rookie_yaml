@@ -30,10 +30,7 @@ final class MatrixRunner {
     void markAsInvalid() => result = MatrixResultType.invalidPass;
 
     try {
-      parsedNodeString = YamlParser.ofString(
-        testAsYaml,
-      ).parseNodes().toList().toString();
-
+      parsedNodeString = loadNodes(source: testAsYaml).toList().toString();
       result = MatrixResultType.pass;
     } catch (e) {
       result = MatrixResultType.fail;

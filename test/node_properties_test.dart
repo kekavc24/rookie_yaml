@@ -31,7 +31,7 @@ $tag
 - block sequence
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocuments().parsedNodes())
+      check(bootstrapDocParser(yaml).parsedNodes())
         ..length.equals(7)
         ..every((n) => n.hasTag(tag));
     });
@@ -52,7 +52,7 @@ $entryTag key0: $entryTag value
 ''';
 
       check(
-          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseNodeSingle(),
         ).isA<Mapping>()
         ..hasTag(mapTag)
         ..has((m) => m.entries, 'Flow Map Entries').every(
@@ -85,9 +85,7 @@ $seqEntryTag plain
 ]
 ''';
 
-      final parsed = bootstrapDocParser(
-        yaml,
-      ).parseDocuments().parseNodeSingle();
+      final parsed = bootstrapDocParser(yaml).parseNodeSingle();
 
       // First 5 elements have tags.
       check(parsed).isA<Sequence>()
@@ -120,7 +118,7 @@ $kvTag key0: $kvTag value
 ''';
 
       check(
-          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseNodeSingle(),
         ).isA<Mapping>()
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
         ..has((m) => m.entries, 'Block Map Entries').every(
@@ -168,7 +166,7 @@ $seqTag
 
       final parsed = bootstrapDocParser(
         yaml,
-      ).parseDocuments().parseNodeSingle();
+      ).parseNodeSingle();
 
       check(parsed).isA<Sequence>()
         ..hasTag(seqTag)
@@ -187,7 +185,7 @@ $seqTag
       final yaml = '$tag ignored :)';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException(
         'Invalid secondary tag. Expected any of: $mappingTag, $sequenceTag, '
         '${scalarTags.join(', ')}',
@@ -199,7 +197,7 @@ $seqTag
       final yaml = '$tag ignored :)';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException(
         'Named tags must have a corresponding global tag',
       );
@@ -215,7 +213,7 @@ $tag ignored :)
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException('Named tags must have a non-empty suffix');
     });
 
@@ -228,7 +226,7 @@ $tag ignored :)
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException(
         'Compact implicit map entries cannot have properties',
       );
@@ -240,7 +238,7 @@ $tag ignored :)
         check(
           () => bootstrapDocParser(
             '!!str ? explicit-key',
-          ).parseDocuments().parseNodeSingle(),
+          ).parseNodeSingle(),
         ).throwsParserException(
           'Inline node properties cannot be declared before the first "? "'
           ' indicator',
@@ -254,7 +252,7 @@ $tag ignored :)
 
 !error ? never-parsed
 ''',
-          ).parseDocuments().parseNodeSingle(),
+          ).parseNodeSingle(),
         ).throwsParserException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
@@ -269,7 +267,7 @@ $tag ignored :)
 !error
 ? even-when-on-a-new-line
 ''',
-          ).parseDocuments().parseNodeSingle(),
+          ).parseNodeSingle(),
         ).throwsParserException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
@@ -286,7 +284,7 @@ $tag ignored :)
 ? also-applies-to-flow
 }
 ''',
-          ).parseDocuments().parseNodeSingle(),
+          ).parseNodeSingle(),
         ).throwsParserException(
           'Explicit keys cannot have any node properties before the "?" '
           'indicator',
@@ -303,7 +301,7 @@ $tag ignored :)
 !this-is-not-okay
 implicit-2: is-an-error
 ''',
-        ).parseDocuments().parseNodeSingle(),
+        ).parseNodeSingle(),
       ).throwsParserException(
         'Node properties for an implicit block key cannot span multiple lines',
       );
@@ -317,7 +315,7 @@ implicit-2: is-an-error
 !this-is-not-okay
 implicit-2: is-an-error}
 ''',
-        ).parseDocuments().parseNodeSingle(),
+        ).parseNodeSingle(),
       ).throwsParserException(
         'Node properties for an implicit flow key cannot span multiple lines',
       );
@@ -327,7 +325,7 @@ implicit-2: is-an-error}
       check(
         () => bootstrapDocParser(
           '!!str - not-okay',
-        ).parseDocuments().parseNodeSingle(),
+        ).parseNodeSingle(),
       ).throwsParserException(
         'Inline node properties cannot be declared before the first "- "'
         ' indicator',
@@ -342,7 +340,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException(
         'Dangling node properties are not allowed here',
       );
@@ -366,7 +364,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           'key': ['value'],
@@ -415,7 +413,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           'key': 'key',
@@ -439,7 +437,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {'key': 'key', 'another': 'another'}.toString(),
       );
@@ -457,7 +455,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         [
           'value',
@@ -476,7 +474,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         [
           'value',
@@ -490,9 +488,7 @@ implicit-2: is-an-error}
       const alias = 'value';
 
       check(
-        () => bootstrapDocParser(
-          'key: *$alias',
-        ).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser('key: *$alias').parseNodeSingle(),
       ).throwsParserException('Alias is not a valid anchor reference');
     });
 
@@ -505,7 +501,7 @@ implicit-2: is-an-error}
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException(
         'Compact implicit map entries cannot have properties',
       );

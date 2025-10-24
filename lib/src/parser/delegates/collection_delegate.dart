@@ -1,13 +1,15 @@
 part of 'parser_delegate.dart';
 
-ScalarDelegate nullScalarDelegate({
+ScalarDelegate<T> nullScalarDelegate<T>({
   required int indentLevel,
   required int indent,
   required RuneOffset startOffset,
+  required ScalarFunction<T> resolver,
 }) => ScalarDelegate(
   indentLevel: indentLevel,
   indent: indent,
   start: startOffset,
+  scalarResolver: resolver,
 );
 
 bool _isMapTag(TagShorthand tag) =>
@@ -15,72 +17,8 @@ bool _isMapTag(TagShorthand tag) =>
 
 NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, tag);
 
-/// A delegate that represents a single key-value pair within a flow/block
-/// [Sequence]
-final class MapEntryDelegate extends ParserDelegate {
-  MapEntryDelegate({
-    required this.nodeStyle,
-    required this.keyDelegate,
-  }) : super(
-         indent: keyDelegate.indent,
-         indentLevel: keyDelegate.indentLevel,
-         start: keyDelegate.start,
-       ) {
-    hasLineBreak = keyDelegate.encounteredLineBreak;
-    updateEndOffset = keyDelegate._end;
-  }
-
-  final NodeStyle nodeStyle;
-
-  /// Key delegate that qualifies this entry as a key in a map
-  final ParserDelegate keyDelegate;
-
-  /// Optional value delegate.
-  ///
-  /// `YAML` allows for keys to be specified alone with no value in maps.
-  ParserDelegate? _valueDelegate;
-
-  set updateValue(ParserDelegate? value) {
-    if (value == null) return;
-
-    hasLineBreak = value.encounteredLineBreak;
-    updateEndOffset = value._end;
-    _valueDelegate = value;
-  }
-
-  @override
-  bool isChild(int indent) =>
-      indent > this.indent || (_valueDelegate?.indent ?? -1) == indent;
-
-  /// Usually returns a [Mapping].
-  ///
-  /// This will rarely be called, but if so, this must a return a mapping with
-  /// only a single value. A key must exist.
-  @override
-  Mapping _resolveNode<T>() => Mapping.strict(
-    {keyDelegate.parsed(): _valueDelegate?.parsed()},
-    nodeStyle: nodeStyle,
-    tag: _tag ?? _defaultTo(mappingTag),
-    anchor: _anchor,
-    nodeSpan: (start: start, end: _end!),
-  );
-
-  @override
-  NodeTag _checkResolvedTag(NodeTag tag) {
-    final NodeTag(:suffix) = tag;
-
-    if (!_isMapTag(suffix)) {
-      throw FormatException(
-        'A mapping entry cannot be resolved as "$suffix" kind',
-      );
-    }
-
-    return _overrideNonSpecific(tag, mappingTag);
-  }
-}
-
 /// A collection delegate
-abstract base class CollectionDelegate extends ParserDelegate {
+abstract base class CollectionDelegate<R, T, I> extends ParserDelegate<T> {
   CollectionDelegate({
     required this.collectionStyle,
     required super.indentLevel,
@@ -91,49 +29,38 @@ abstract base class CollectionDelegate extends ParserDelegate {
   /// Collection style
   final NodeStyle collectionStyle;
 
-  /// First element in collection. Determines the indent & indent level of
-  /// its siblings.
-  ParserDelegate? _firstEntry;
+  /// Returns `true` if the collection is empty
+  bool get isEmpty;
 
-  @override
-  int get indent => _firstEntry?.indent ?? super.indent;
-
-  bool get isEmpty => _firstEntry == null;
-
-  @override
-  bool isChild(int indent) {
-    return (isEmpty && indent >= this.indent) ||
-        (!isEmpty && _firstEntry!.isSibling(indent));
-  }
+  /// Buffers input [I] to a collection
+  R accept(I input);
 }
 
+typedef ListFunction<I, Seq extends List<I>> =
+    Seq Function(
+      List<I> buffer,
+      NodeStyle listStyle,
+      ResolvedTag? tag,
+      String? anchor,
+      RuneSpan nodeSpan,
+    );
+
 /// A delegate that resolves to a [Sequence]
-final class SequenceDelegate extends CollectionDelegate {
+final class SequenceDelegate<I, Seq extends List<I>>
+    extends CollectionDelegate<void, Seq, I> {
   SequenceDelegate({
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
+    required this.listResolver,
   });
 
-  /// Node delegates that resolve to nodes that are elements of the sequence.
-  final List<YamlSourceNode> _nodes = [];
+  /// Actual list
+  final _list = <I>[];
 
-  void pushEntry(ParserDelegate entry) {
-    _firstEntry ??= entry;
-    hasLineBreak = entry._hasLineBreak;
-    _nodes.add(entry.parsed());
-  }
-
-  /// Returns a [Sequence]
-  @override
-  Sequence _resolveNode<T>() => Sequence(
-    _nodes,
-    nodeStyle: collectionStyle,
-    tag: _tag ?? _defaultTo(sequenceTag),
-    anchor: _anchor,
-    nodeSpan: (start: start, end: _end!),
-  );
+  /// A dynamic resolver function assigned at runtime by the [DocumentParser].
+  final ListFunction<I, Seq> listResolver;
 
   @override
   NodeTag _checkResolvedTag(NodeTag tag) {
@@ -145,44 +72,49 @@ final class SequenceDelegate extends CollectionDelegate {
 
     return _overrideNonSpecific(tag, sequenceTag);
   }
+
+  @override
+  Seq _resolver() => listResolver(
+    _list,
+    collectionStyle,
+    _tag ?? _defaultTo(sequenceTag),
+    _anchor,
+    (start: start, end: _ensureEndIsSet()),
+  );
+
+  @override
+  void accept(I input) => _list.add(input);
+
+  @override
+  bool get isEmpty => _list.isEmpty;
 }
 
+typedef MapInput<I> = (I key, I? value);
+typedef MapFunction<I, M extends Map<I, I?>> =
+    M Function(
+      Map<I, I?> buffer,
+      NodeStyle mapStyle,
+      ResolvedTag? tag,
+      String? anchor,
+      RuneSpan nodeSpan,
+    );
+
 /// A delegate that resolves to a [Mapping]
-final class MappingDelegate extends CollectionDelegate {
+final class MappingDelegate<I, M extends Map<I, I?>>
+    extends CollectionDelegate<bool, M, MapInput<I>> {
   MappingDelegate({
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
+    required this.mapResolver,
   });
 
   /// A map that is resolved as a key is added
-  final _map = <YamlSourceNode, YamlSourceNode?>{};
+  final _map = <I, I?>{};
 
-  /// Returns `true` if the [entry] is added. Otherwise, `false`.
-  bool pushEntry(ParserDelegate key, ParserDelegate? value) {
-    _firstEntry ??= key;
-    final keyNode = key.parsed();
-
-    // A key must not occur more than once.
-    if (_map.containsKey(keyNode)) {
-      return false;
-    }
-
-    _map[keyNode] = value?.parsed();
-    hasLineBreak = key._hasLineBreak || (value?._hasLineBreak ?? false);
-    return true;
-  }
-
-  /// Returns a [Mapping].
-  @override
-  Mapping _resolveNode<T>() => Mapping.strict(
-    _map,
-    nodeStyle: collectionStyle,
-    tag: _tag ?? _defaultTo(mappingTag),
-    anchor: _anchor,
-    nodeSpan: (start: start, end: _end!),
-  );
+  /// A dynamic resolver function assigned at runtime by the [DocumentParser].
+  final MapFunction<I, M> mapResolver;
 
   @override
   NodeTag _checkResolvedTag(NodeTag tag) {
@@ -194,4 +126,24 @@ final class MappingDelegate extends CollectionDelegate {
 
     return _overrideNonSpecific(tag, mappingTag);
   }
+
+  @override
+  M _resolver() => mapResolver(
+    _map,
+    collectionStyle,
+    _tag ?? _defaultTo(mappingTag),
+    _anchor,
+    (start: start, end: _ensureEndIsSet()),
+  );
+
+  @override
+  bool accept(MapInput<I> input) {
+    final (key, value) = input;
+    if (_map.containsKey(key)) return false;
+    _map[key] = value;
+    return true;
+  }
+
+  @override
+  bool get isEmpty => _map.isEmpty;
 }

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
@@ -23,7 +21,7 @@ NodeTag _overrideNonSpecific(NodeTag current, TagShorthand kindDefault) {
 
 /// A delegate that stores parser information when parsing nodes of the `YAML`
 /// tree.
-abstract interface class ParserDelegate {
+abstract interface class ParserDelegate<T> {
   ParserDelegate({
     required this.indentLevel,
     required this.indent,
@@ -42,6 +40,8 @@ abstract interface class ParserDelegate {
 
   /// Exclusive
   RuneOffset? _end;
+
+  RuneOffset? get endOffset => _end;
 
   set updateEndOffset(RuneOffset? end) {
     if (end == null) return;
@@ -65,6 +65,17 @@ abstract interface class ParserDelegate {
     }
   }
 
+  RuneOffset _ensureEndIsSet() {
+    if (_end == null) {
+      throw StateError(
+        '[$runtimeType] with start offset $start has no valid end offset',
+      );
+    }
+
+    return _end!;
+  }
+
+  ///
   set updateNodeProperties(ParsedProperty property) {
     if (!property.parsedAny) return;
 
@@ -107,17 +118,17 @@ abstract interface class ParserDelegate {
     }
   }
 
+  /// Validates the parsed [_tag].
   NodeTag _checkResolvedTag(NodeTag tag);
 
+  /// Resolved tag
   ResolvedTag? _tag;
 
+  /// Anchor
   String? _anchor;
 
+  /// Alias
   String? _alias;
-
-  bool get hasAnchor => _alias != null;
-
-  String? get alias => _alias;
 
   /// Delegate's parent
   ParserDelegate? parent;
@@ -135,68 +146,46 @@ abstract interface class ParserDelegate {
   set hasLineBreak(bool foundLineBreak) =>
       _hasLineBreak = _hasLineBreak || foundLineBreak;
 
-  YamlSourceNode? _parsedNode;
+  /// A resolved node.
+  T? _resolved;
 
-  /// Resolves a delegate's node
-  YamlSourceNode _resolveNode<T>();
-
-  /// `YAML` node delegated to the parser.
-  YamlSourceNode parsed() {
-    assert(
-      _end != null,
-      'Call to [$runtimeType.parsed()] with start offset [$start] must have a '
-      'valid end offset.',
-    );
-
-    _parsedNode ??= _resolveNode();
-    return _parsedNode!;
+  /// Returns the object's [T] whose source information this delegate is
+  /// assigned to track.
+  T parsed() {
+    _resolved ??= _resolver();
+    return _resolved!;
   }
 
-  /// Returns the number of readable grapheme characters parsed since this
-  /// delegate was initialized.
-  ///
-  /// `NOTE:` This method is entirely situational and depends on the
-  /// correctness of the parser or parser delegate calling it.
-  int charDiff() {
-    if (_end case RuneOffset(:final utfOffset)) {
-      return max(0, utfOffset - start.utfOffset);
-    }
-
-    return 0;
-  }
-
-  /// Returns `true` if an incoming delegate is a child of the current
-  /// delegate.
-  bool isChild(int indent);
-
-  /// Returns `true` if the [Node] delegated to it share the same indent.
-  ///
-  /// While it may seem fitting to use the indent level, a Node's level
-  /// is easy to determine when moving deeper into the tree. Backtracking
-  /// a `YAML` tree requires us to use the indent.
-  bool isSibling(int indent) => indent == this.indent;
+  /// Resolves the actual object [T].
+  T _resolver();
 }
 
+typedef AliasFunction<Obj, Ref> =
+    Obj Function(String alias, Ref reference, RuneSpan nodeSpan);
+
 /// Represents a delegate that resolves to an [AliasNode]
-final class AliasDelegate extends ParserDelegate {
+final class AliasDelegate<Obj, Ref> extends ParserDelegate<Obj> {
   AliasDelegate(
     this._reference, {
     required super.indentLevel,
     required super.indent,
     required super.start,
+    required this.refResolver,
   });
 
-  /// Delegate resolving to the parsed node
-  final YamlSourceNode _reference;
+  /// Object referenced as an alias
+  final Ref _reference;
 
-  @override
-  AliasNode _resolveNode<T>() =>
-      AliasNode(_alias ?? '', _reference, nodeSpan: (start: start, end: _end!));
-
-  @override
-  bool isChild(int indent) => false;
+  /// A dynamic resolver function assigned at runtime by the [DocumentParser].
+  final AliasFunction<Obj, Ref> refResolver;
 
   @override
   NodeTag _checkResolvedTag(NodeTag tag) =>
       throw FormatException('An alias cannot have a "${tag.suffix}" kind');
+
+  @override
+  Obj _resolver() => refResolver(_alias ?? '', _reference, (
+    start: start,
+    end: _ensureEndIsSet(),
+  ));
 }

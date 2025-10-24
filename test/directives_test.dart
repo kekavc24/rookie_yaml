@@ -176,9 +176,7 @@ void main() {
 
     test('Throws if directive end markers are absent', () {
       check(
-        () => bootstrapDocParser(
-          '%TEST Yess it is',
-        ).parseDocuments().parseNodeSingle(),
+        () => bootstrapDocParser('%TEST Yess it is').parseNodeSingle(),
       ).throwsParserException(
         'Expected a directives end marker after the last directive',
       );
@@ -191,7 +189,7 @@ void main() {
 %HELLO Just testing empty lines
  %IN between directives
 ''',
-        ).parseDocuments().parseNodeSingle(),
+        ).parseNodeSingle(),
       ).throwsParserException(
         'Expected a non-indented directive line with directives or a '
         'directive end marker',

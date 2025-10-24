@@ -26,13 +26,16 @@ const _BlockNodeInfo _emptyScanner = (
 
 typedef _BlockNodeGeneric<T> = ({_BlockNodeInfo nodeInfo, T delegate});
 
-typedef _BlockNode = _BlockNodeGeneric<ParserDelegate>;
+typedef _BlockNode<R> = _BlockNodeGeneric<ParserDelegate<R>>;
 
-typedef _BlockMapEntry = ({ParserDelegate? key, ParserDelegate? value});
+typedef _BlockMapEntry<R> = ({
+  ParserDelegate<R>? key,
+  ParserDelegate<R>? value,
+});
 
-typedef _BlockEntry = _BlockNodeGeneric<_BlockMapEntry>;
+typedef _BlockEntry<R> = _BlockNodeGeneric<_BlockMapEntry<R>>;
 
-typedef _ImplicitBlockValue = _BlockNodeGeneric<ParserDelegate?>;
+typedef _ImplicitBlockValue<R> = _BlockNodeGeneric<ParserDelegate<R>?>;
 
 /// Throws an exception if the prospective [YamlSourceNode]
 /// (a child of the root node or the root node itself) in the document being

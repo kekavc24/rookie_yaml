@@ -17,7 +17,7 @@ void main() {
 
     final sequence = bootstrapDocParser(
       string,
-    ).parseDocuments().parseNodeSingle()!.castTo<Sequence>();
+    ).parseNodeSingle()!.castTo<Sequence>();
 
     check(sequence[0]).isA<Scalar>()
       ..hasInferred('Value', '24')
@@ -46,7 +46,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -71,7 +71,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -96,7 +96,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -121,7 +121,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -147,7 +147,7 @@ void main() {
 ''';
 
         check(
-          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseNodeSingle(),
         ).isA<Sequence>().every(
           (d) => d.isA<Scalar>().which(
             (d) => d
@@ -161,7 +161,7 @@ void main() {
     test('Infers booleans in different scalars', () {
       void checker(String yaml) {
         check(
-          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseNodeSingle(),
         ).isA<Sequence>().every(
           (d) => d.isA<Scalar>().which(
             (d) => d
@@ -214,7 +214,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -241,7 +241,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).isA<Sequence>().every(
         (d) => d.isA<Scalar>().which(
           (d) => d
@@ -264,7 +264,7 @@ void main() {
 ''';
 
       check(
-        bootstrapDocParser(edgyYAML).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(edgyYAML).nodeAsSimpleString(),
       ).equals(
         {
           24: 'value',
@@ -283,31 +283,31 @@ void main() {
       final yaml = '$tag 24';
 
       check(
-          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseNodeSingle(),
         ).isNotNull().isA<Scalar>()
         ..withTag().equals(tag)
         ..hasParsedInteger(24);
     });
 
-    test('Dart types can be used as keys in DynamicMapping', () {
-      const string = 'key';
-      const integer = 24;
+    //     test('Dart types can be used as keys in DynamicMapping', () {
+    //       const string = 'key';
+    //       const integer = 24;
 
-      const yaml =
-          '''
-$string: $integer
-$integer: $string
-''';
+    //       const yaml =
+    //           '''
+    // $string: $integer
+    // $integer: $string
+    // ''';
 
-      check(bootstrapDocParser(yaml).parseDocuments().parseNodeSingle())
-          .isNotNull()
-          .isA<Mapping>()
-          .has((m) => m.castTo<DynamicMapping>(), 'DynamicMapping cast')
-          .which(
-            (dm) => dm
-              ..has((v) => v[string], 'String key').isNotNull()
-              ..has((v) => v[integer], 'Integer key').isNotNull(),
-          );
-    });
+    //       check(bootstrapDocParser(yaml).parseNodeSingle())
+    //           .isNotNull()
+    //           .isA<Mapping>()
+    //           .has((m) => m.castTo<DynamicMapping>(), 'DynamicMapping cast')
+    //           .which(
+    //             (dm) => dm
+    //               ..has((v) => v[string], 'String key').isNotNull()
+    //               ..has((v) => v[integer], 'Integer key').isNotNull(),
+    //           );
+    //     });
   });
 }

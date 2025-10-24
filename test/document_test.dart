@@ -16,9 +16,7 @@ import 'helpers/model_helpers.dart';
 void main() {
   group('YamlDocument', () {
     test('Parses bare documents', () {
-      final docs = bootstrapDocParser(
-        docStringAs(YamlDocType.bare),
-      ).parseDocuments().toList();
+      final docs = bootstrapDocParser(docStringAs(YamlDocType.bare)).toList();
 
       check(docs).every(
         (d) => d
@@ -35,7 +33,7 @@ void main() {
     test('Parses explicit document', () {
       final docs = bootstrapDocParser(
         docStringAs(YamlDocType.explicit),
-      ).parseDocuments().toList();
+      ).toList();
 
       check(docs).every(
         (d) => d
@@ -77,7 +75,7 @@ $node
 ...
 ''';
 
-      final doc = bootstrapDocParser(yaml).parseDocuments().firstOrNull;
+      final doc = bootstrapDocParser(yaml).firstOrNull;
 
       check(doc).isNotNull()
         ..hasVersionDirective(yamlDirective)
@@ -121,7 +119,7 @@ folded
 - sequence
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocuments()).every(
+      check(bootstrapDocParser(yaml)).every(
         (d) => d
           ..isDocStartExplicit().isTrue()
           ..isDocEndExplicit().isFalse()
@@ -138,7 +136,7 @@ folded
 ...
 ''';
 
-      check(bootstrapDocParser(yaml).parseDocuments())
+      check(bootstrapDocParser(yaml))
         ..length.equals(3)
         ..every((d) => d.isDocEndExplicit().isTrue())
         ..has((d) => d.take(2).map((e) => e.root), 'Leading elements').every(
@@ -153,7 +151,7 @@ folded
       const yaml = '-- just a plain scalar';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(yaml);
     });
   });
@@ -168,7 +166,7 @@ $tag yaml
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).hasTag(tag);
     });
 
@@ -191,7 +189,7 @@ $suffix node
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).hasTag(globalTag, suffix: suffix);
     });
 
@@ -201,7 +199,7 @@ $suffix node
         final yaml = '$stringTag node';
 
         check(
-          bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser(yaml).parseNodeSingle(),
         ).hasTag(yamlGlobalTag, suffix: stringTag);
       },
     );
@@ -223,7 +221,7 @@ $stringTag node
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).hasTag(globalTag, suffix: stringTag);
     });
 
@@ -245,7 +243,7 @@ $suffix
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().parseNodeSingle(),
+        bootstrapDocParser(yaml).parseNodeSingle(),
       ).hasTag(globalTag, suffix: suffix);
     });
 
@@ -284,7 +282,7 @@ $star
 
         final docs = bootstrapDocParser(
           yaml,
-        ).parseDocuments().parsedNodes().toList();
+        ).parsedNodes().toList();
 
         check(docs).length.equals(3);
 
@@ -298,9 +296,7 @@ $star
 
     test('Resolves non-specific tags based on kind', () {
       check(
-          bootstrapDocParser(
-            '! { ! [], ! scalar }',
-          ).parseDocuments().parseNodeSingle(),
+          bootstrapDocParser('! { ! [], ! scalar }').parseNodeSingle(),
         ).isNotNull().isA<Mapping>()
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
         ..has((map) => map.keys, 'Keys').which(
@@ -335,7 +331,7 @@ never parsed
       /// Once leading "!" is seen, the rest are treated as normal tag uri
       /// where "!" must be escaped
       check(
-        () => bootstrapDocParser(yaml).parseDocuments(),
+        () => bootstrapDocParser(yaml),
       ).throwsParserException(
         'Tag indicator must escaped when used as a URI character',
       );
@@ -347,7 +343,7 @@ never parsed
 ''';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments(),
+        () => bootstrapDocParser(yaml),
       ).throwsParserException(
         'Expected a directives end marker after the last directive',
       );
@@ -364,7 +360,7 @@ First document
 ''';
 
         check(
-          () => bootstrapDocParser(yaml).parseDocuments().toList(),
+          () => bootstrapDocParser(yaml).toList(),
         ).throwsParserException(
           '"%" cannot be used as the first non-whitespace character in a '
           'non-empty content line',

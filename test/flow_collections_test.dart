@@ -17,7 +17,7 @@ void main() {
           '}';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           'one': 'double-quoted',
@@ -35,7 +35,7 @@ void main() {
           '? explicit key: value }';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals({'implicit key': 'value', 'explicit key': 'value'}.toString());
     });
 
@@ -43,7 +43,7 @@ void main() {
       const yaml = '{ ? }';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals({null: null}.toString());
     });
 
@@ -57,7 +57,7 @@ void main() {
           '}';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           'implicit': 'with value',
@@ -79,7 +79,7 @@ void main() {
           '}';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         {
           {'JSON-like-map': 'as-key'}: 'value',
@@ -92,14 +92,14 @@ void main() {
 
     test("Throws if flow map doesn't start/end with map delimiters", () {
       check(
-        () => bootstrapDocParser('}').parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser('}').nodeAsSimpleString(),
       ).throwsParserException(
         'Invalid flow node state. The current flow node could not '
         'be parsed further.',
       );
 
       check(
-        () => bootstrapDocParser('{').parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser('{').nodeAsSimpleString(),
       ).throwsParserException('Expected the flow delimiter: "}"');
     });
 
@@ -107,7 +107,7 @@ void main() {
       const yaml = '{key: value, key: value}';
 
       check(
-        () => bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
         'Flow map cannot contain duplicate entries by the same key',
       );
@@ -117,12 +117,11 @@ void main() {
       const err = 'Expected at least a key before the next flow map entry';
 
       check(
-        () => bootstrapDocParser('{,}').parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser('{,}').nodeAsSimpleString(),
       ).throwsParserException(err);
 
       check(
-        () =>
-            bootstrapDocParser('{key,,}').parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser('{key,,}').nodeAsSimpleString(),
       ).throwsParserException(err);
     });
 
@@ -134,7 +133,7 @@ void main() {
           '\n splits-here'
           ': value'
           '}',
-        ).parseDocuments().nodeAsSimpleString(),
+        ).nodeAsSimpleString(),
       ).throwsParserException(
         'Expected a next flow entry indicator "," or a map value indicator ":" '
         'or a terminating delimiter "}"',
@@ -147,7 +146,7 @@ void main() {
       const yaml = '[one, two, three, four]';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(['one', 'two', 'three', 'four'].toString());
     });
 
@@ -166,7 +165,7 @@ implicit: pair,
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseDocuments().nodeAsSimpleString(),
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(
         [
           'double quoted',
@@ -183,21 +182,21 @@ implicit: pair,
       "Throws if flow sequence doesn't start/end with sequence delimiters",
       () {
         check(
-          () => bootstrapDocParser(']').parseDocuments().nodeAsSimpleString(),
+          () => bootstrapDocParser(']').nodeAsSimpleString(),
         ).throwsParserException(
           'Invalid flow node state. The current flow node could not '
           'be parsed further.',
         );
 
         check(
-          () => bootstrapDocParser('[').parseDocuments().nodeAsSimpleString(),
+          () => bootstrapDocParser('[').nodeAsSimpleString(),
         ).throwsParserException('Expected the flow delimiter: "]"');
       },
     );
 
     test('Throws if "," is declared before entry', () {
       check(
-        () => bootstrapDocParser('[,]').parseDocuments().nodeAsSimpleString(),
+        () => bootstrapDocParser('[,]').nodeAsSimpleString(),
       ).throwsParserException(
         'Expected to find the first value but found ","',
       );
@@ -205,7 +204,7 @@ implicit: pair,
       check(
         () => bootstrapDocParser(
           '[value,,]',
-        ).parseDocuments().nodeAsSimpleString(),
+        ).nodeAsSimpleString(),
       ).throwsParserException(
         'Found a duplicate "," before finding a flow sequence entry',
       );
