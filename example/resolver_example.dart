@@ -23,10 +23,11 @@ void main(List<String> args) {
 $jsonTag "${json.encode(object).replaceAll('"', r'\"')}"
 ''';
 
-  final decodeJson = YamlParser.ofString(
-    yaml,
+  // Embedded in the scalar
+  final decodeJson = loadYamlNode<Scalar>(
+    source: yaml,
     resolvers: [jsonResolver],
-  ).parseNodes().first.castTo<Scalar>().value;
+  )?.value;
 
   assert(decodeJson is List, 'Fake news!!');
   print(yamlCollectionEquality.equals(decodeJson, object)); // True
