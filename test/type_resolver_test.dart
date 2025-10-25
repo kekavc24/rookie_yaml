@@ -70,8 +70,8 @@ $asciiTag { handle: primary, suffix: $suffix}
     final resolver = Resolver<Mapping, TagShorthand>.node(
       asciiTag,
       resolver: (m) {
-        final map = m.castTo<Mapping>();
-        dynamic mapVal(dynamic key) => (map[DartNode(key)] as Scalar).value;
+        final map = m.castTo<DynamicMapping>();
+        dynamic mapVal(dynamic key) => (map[key] as Scalar).value;
 
         return TagShorthand.fromTagUri(
           switch (mapVal('handle')) {
