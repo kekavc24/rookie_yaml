@@ -153,7 +153,7 @@ abstract interface class ParserDelegate<T> {
   /// assigned to track.
   T parsed() {
     _resolved ??= _resolver();
-    return _resolved!;
+    return _resolved as T;
   }
 
   /// Resolves the actual object [T].
