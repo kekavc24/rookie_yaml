@@ -63,7 +63,7 @@ bool _skipToNextNonEmptyLine(
   return false;
 }
 
-/// Returns a full `YAML` string representation of [YamlDirective]
+/// Returns a full representation string for a [directive]
 String _dumpDirective(Directive directive) {
   final Directive(:name, :parameters) = directive;
   return '${_directiveIndicator.asString()}$name ${parameters.join(' ')}';
@@ -151,6 +151,7 @@ String _parseTagUri(
   return buffer.toString();
 }
 
+/// Parses a URI scheme
 void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
   int? lastChar;
   const schemeEnd = mappingValue; // ":" char
@@ -187,6 +188,7 @@ void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
   scanner.skipCharAtCursor(); // Parsing can continue
 }
 
+/// Parses a URI character escaped with `%`
 void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
   const hexCount = 2;
 

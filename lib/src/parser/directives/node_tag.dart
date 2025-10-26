@@ -37,7 +37,7 @@ String _formatAsVerbatim(
 }
 
 /// Represents a [TagShorthand] shorthand that has (not) been resolved to a
-/// [GlobalTag] after it has been parsed.
+/// [GlobalTag] prefix after it has been parsed.
 ///
 /// {@category tag_types}
 /// {@category declare_tags}

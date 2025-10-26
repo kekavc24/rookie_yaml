@@ -1,13 +1,6 @@
 part of 'parser_delegate.dart';
 
-typedef ScalarFunction<T> =
-    T Function(
-      ScalarValue inferred,
-      ScalarStyle style,
-      ResolvedTag? tag,
-      String? anchor,
-      RuneSpan span,
-    );
+
 
 /// A delegate that resolves to a [Scalar].
 final class ScalarDelegate<T> extends ParserDelegate<T> {

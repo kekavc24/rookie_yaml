@@ -1,5 +1,6 @@
 part of 'parser_delegate.dart';
 
+/// Returns a `null` wrapped in a [ScalarDelegate].
 ScalarDelegate<T> nullScalarDelegate<T>({
   required int indentLevel,
   required int indent,
@@ -12,9 +13,12 @@ ScalarDelegate<T> nullScalarDelegate<T>({
   scalarResolver: resolver,
 );
 
+/// Returns `true` if a [tag] is a [Mapping] tag.
 bool _isMapTag(TagShorthand tag) =>
     tag != sequenceTag && !scalarTags.contains(tag);
 
+/// Returns a default [NodeTag] with the [yamlGlobalTag] as its prefix. [tag]
+/// must be a secondary tag.
 NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, tag);
 
 /// A collection delegate
@@ -36,14 +40,7 @@ abstract base class CollectionDelegate<R, T, I> extends ParserDelegate<T> {
   R accept(I input);
 }
 
-typedef ListFunction<I, Seq extends List<I>> =
-    Seq Function(
-      List<I> buffer,
-      NodeStyle listStyle,
-      ResolvedTag? tag,
-      String? anchor,
-      RuneSpan nodeSpan,
-    );
+
 
 /// A delegate that resolves to a [Sequence]
 final class SequenceDelegate<I, Seq extends List<I>>
@@ -89,15 +86,7 @@ final class SequenceDelegate<I, Seq extends List<I>>
   bool get isEmpty => _list.isEmpty;
 }
 
-typedef MapInput<I> = (I key, I? value);
-typedef MapFunction<I, M extends Map<I, I?>> =
-    M Function(
-      Map<I, I?> buffer,
-      NodeStyle mapStyle,
-      ResolvedTag? tag,
-      String? anchor,
-      RuneSpan nodeSpan,
-    );
+
 
 /// A delegate that resolves to a [Mapping]
 final class MappingDelegate<I, M extends Map<I, I?>>

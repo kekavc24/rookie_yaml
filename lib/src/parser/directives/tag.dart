@@ -1,6 +1,6 @@
 part of 'directives.dart';
 
-/// Describes the type of native data structure represented by a `YAML` node.
+/// Describes the kind of native data structure represented by a `YAML` node.
 ///
 /// {@category tags}
 sealed class Tag {
@@ -15,8 +15,8 @@ sealed class Tag {
   String get prefix;
 }
 
-/// Represents any [Tag] resolved to a [GlobalTag] or declared in verbatim as
-/// a [VerbatimTag]
+/// Represents any [Tag] resolved to a [GlobalTag] prefix or declared in
+/// verbatim as a [VerbatimTag]
 ///
 /// {@category tag_types}
 /// {@category declare_tags}

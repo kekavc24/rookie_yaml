@@ -19,6 +19,40 @@ NodeTag _overrideNonSpecific(NodeTag current, TagShorthand kindDefault) {
   return current.resolvedTag is GlobalTag ? current : _defaultTo(kindDefault);
 }
 
+/// A builder function for [List] or [Sequence].
+typedef ListFunction<I, Seq extends List<I>> =
+    Seq Function(
+      List<I> buffer,
+      NodeStyle listStyle,
+      ResolvedTag? tag,
+      String? anchor,
+      RuneSpan nodeSpan,
+    );
+
+/// A standard input for a [MappingDelegate].
+typedef MapInput<I> = (I key, I? value);
+
+/// A builder function for [Map] or [Mapping]
+typedef MapFunction<I, M extends Map<I, I?>> =
+    M Function(
+      Map<I, I?> buffer,
+      NodeStyle mapStyle,
+      ResolvedTag? tag,
+      String? anchor,
+      RuneSpan nodeSpan,
+    );
+
+/// A builder function for a scalar or a Dart built-in type that is not a [Map]
+/// or [List]
+typedef ScalarFunction<T> =
+    T Function(
+      ScalarValue inferred,
+      ScalarStyle style,
+      ResolvedTag? tag,
+      String? anchor,
+      RuneSpan span,
+    );
+
 /// A delegate that stores parser information when parsing nodes of the `YAML`
 /// tree.
 abstract interface class ParserDelegate<T> {
