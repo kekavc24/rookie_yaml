@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:rookie_yaml/src/parser/yaml_parser.dart';
+import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 
 import 'test_loader.dart';
 

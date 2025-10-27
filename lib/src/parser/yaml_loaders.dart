@@ -75,6 +75,8 @@ GraphemeScanner _defaultScanner(String? source, Iterable<int>? byteSource) {
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
 /// warning and continues parsing the next entry. The existing value will
 /// not be overwritten.
+///
+/// {@category dart_objects}
 T? loadDartObject<T>({
   String? source,
   Iterable<int>? byteSource,
@@ -102,6 +104,8 @@ T? loadDartObject<T>({
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
 /// warning and continues parsing the next entry. The existing value will
 /// not be overwritten.
+///
+/// {@category dart_objects}
 List<dynamic> loadAsDartObjects({
   String? source,
   Iterable<int>? byteSource,
@@ -126,6 +130,8 @@ List<dynamic> loadAsDartObjects({
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
 /// warning and continues parsing the next entry. The existing value will
 /// not be overwritten.
+///
+/// {@category yaml_nodes}
 T? loadYamlNode<T extends YamlSourceNode>({
   String? source,
   Iterable<int>? byteSource,
@@ -151,6 +157,8 @@ T? loadYamlNode<T extends YamlSourceNode>({
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
 /// warning and continues parsing the next entry. The existing value will
 /// not be overwritten.
+///
+/// {@category yaml_nodes}
 Iterable<YamlSourceNode> loadNodes({
   String? source,
   Iterable<int>? byteSource,
@@ -177,6 +185,8 @@ Iterable<YamlSourceNode> loadNodes({
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
 /// warning and continues parsing the next entry. The existing value will
 /// not be overwritten.
+///
+/// {@category yaml_docs}
 List<YamlDocument> loadAllDocuments({
   String? source,
   Iterable<int>? byteSource,

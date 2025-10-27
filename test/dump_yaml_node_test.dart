@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/dumping.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/yaml_parser.dart';
+import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';

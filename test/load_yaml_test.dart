@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/parser/yaml_parser.dart';
+import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 import 'package:test/test.dart';
 
 void main() {
