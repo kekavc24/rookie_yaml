@@ -1,7 +1,5 @@
 part of 'parser_delegate.dart';
 
-
-
 /// A delegate that resolves to a [Scalar].
 final class ScalarDelegate<T> extends ParserDelegate<T> {
   ScalarDelegate({

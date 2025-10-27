@@ -2,6 +2,7 @@
 
 test/yaml_matrix_tests/
 scripts/*
+doc/_contents.md
 
 playground.dart
 todo.md

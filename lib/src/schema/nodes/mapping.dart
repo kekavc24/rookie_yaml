@@ -7,6 +7,7 @@ part of 'yaml_node.dart';
 ///
 /// See [DynamicMapping] for a "no-cost" [Mapping] type cast.
 ///
+/// {@category intro}
 /// {@category yaml_nodes}
 final class Mapping extends DelegatingMap<YamlSourceNode, YamlSourceNode?>
     with UnmodifiableMapMixin<YamlSourceNode, YamlSourceNode?>

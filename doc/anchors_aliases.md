@@ -2,8 +2,6 @@ An `alias` acts as a reference to an `anchor`. Think `pointer`s in `C` and any l
 
 A node cannot have both an `anchor` and `alias`. `YAML` demands them to be mutually exclusive. This also disqualifies an `alias` from having a `tag` since it "borrows" its kind from the `anchor` node.
 
-[uri_char_url]: https://yaml.org/spec/1.2.2/#692-node-anchors
-
 ## Flow Nodes
 
 Anchors and aliases for flow nodes are straightforward due to their heavy use of explicit indicators.
@@ -47,7 +45,7 @@ final expectedMap = {
   ]: {'key': 'value'}
 };
 
-final node = YamlParser.ofString(yaml).parseNodes().first.castTo<Mapping>();
+final node = loadYamlNode<Mapping>(source: yaml);
 
 /// Aliases are unpacked as the node they reference
 print(node.toString() == expectedMap.toString()); // True
@@ -74,13 +72,13 @@ key: value
 &key-anchor !!str key: value
 ''';
 
-final docs = YamlParser.ofString(yaml).parseDocuments();
+final docs = loadAllDocuments(source: yaml);
 
 // Anchor in first document goes to the root map
-print(docs[0].root.anchorOrAlias != null); // True
+print(docs[0].root.anchor != null); // True
 
 // Anchor in second document goes to the first key
-print(docs[1].root.anchorOrAlias != null); // False
+print(docs[1].root.anchor != null); // False
 ```
 
 ## Block Explicit Keys & Block Sequences
@@ -104,37 +102,58 @@ const yaml = '''
 - next
 ''';
 
-final docs = YamlParser.ofString(yaml).parseDocuments();
+final docs = loadAllDocuments(source: yaml);
 
 // True
 print(docs.every((d) => d.root.anchorOrAlias != null));
+```
 
-/// All the yaml declared below will fail and also applies to block sequences.
-/// Rule of thumb:
-///   - If it is the first entry, okay if multiline
-///   - In all other cases, it is an error
-const mapErr = '''
+## Examples of invalid anchors for a block node
+
+* Invalid properties for a block map's explicit key.
+
+```dart
+// Throws
+print(
+  loadYamlNode<Mapping>(
+    source: '''
 # Invalid use in block map
 
 key: value
 
 # Throws. This is the second key. We already know this is a map.
-# Even if it is multiline.
+# Even if it is multiline. Explicit cannot have preceding properties.
 
 &anchor
 ? next-key
 : value
-''';
+'''
+  ),
+);
 
-const anotherMapErr = '''
+// Throws
+print(
+  loadYamlNode<Mapping>(
+    source: '''
 # First key. Properties are inline. Error
 
 &anchor ? key
 
 : value
-''';
+'''
+  ),
+);
 
-const listErr = '''
+```
+
+* Invalid properties for a block sequence (entry)
+
+``` dart
+
+// Throws
+print(
+  loadYamlNode<Sequence>(
+    source: '''
 # Invalid use in list map
 
 - value
@@ -143,13 +162,21 @@ const listErr = '''
 
 &anchor
 - anothervalue
-''';
+'''
+  ),
+);
 
-const anotherListErr = '''
+// Throws
+print(
+  loadYamlNode<Sequence>(
+    source: '''
 # First entry. Properties are inline. Error
 
 &anchor - entry
-''';
+'''
+  ),
+);
+
 ```
 
 > [!WARNING]
@@ -158,3 +185,5 @@ const anotherListErr = '''
 >
 >1. An `anchor` to a collection cannot be used by an entry in the same collection.
 >2. An `anchor` can be redeclared to point to another node. Ergo, if rule `1` and `2` are satisfied and the `anchor` exists, an `alias` is valid.
+
+[uri_char_url]: https://yaml.org/spec/1.2.2/#692-node-anchors

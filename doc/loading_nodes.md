@@ -9,12 +9,8 @@ YAML allows nodes to be declared using a `block` or `flow` style. You can use `f
 Any node that is not a `Sequence` or `Mapping`. By default, its type is inferred out of the box.
 
 ```dart
-/// Do not use dynamic (anti-pattern in Dart).
-/// This is for demo purposes to showcase equality.
-dynamic value = 24;
-
-final node = YamlParser.ofString('$value').parseNodes().first.castTo<Scalar>();
-print(node == value); // True.
+final node = loadYamlNode<Scalar>(source: '24');
+print(yamlCollectionEquality.equals(24, node)); // True.
 ```
 
 ## Sequences (Lists)
@@ -30,7 +26,7 @@ const yaml = '''
 - in town
 ''';
 
-final node = YamlParser.ofString('$yaml').parseNodes().first.castTo<Sequence>();
+final node = loadYamlNode<Sequence>(source: yaml);
 
 // True.
 print(
@@ -40,9 +36,6 @@ print(
     'in town',
   ]),
 );
-
-// A Sequence is immutable. Cheekily with "==" operator.
-print((node as List) == ['rookie_yaml. The', 'new kid', 'in town']);
 ```
 
 ## Mapping (Map)
@@ -60,10 +53,8 @@ const mappy = {
   }
 };
 
-// Native Dart objects as strings are just flow nodes in yaml
-final node = YamlParser.ofString(
-  mappy.toString(),
-).parseNodes().first.castTo<Mapping>();
+// Built-in Dart types as strings are just flow nodes in yaml
+final node = loadYamlNode<Mapping>(source: mappy.toString());
 
 // True.
 print(yamlCollectionEquality.equals(node, mappy));

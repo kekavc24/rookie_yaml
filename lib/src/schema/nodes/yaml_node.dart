@@ -38,6 +38,7 @@ final class YamlCollectionEquality extends DeepCollectionEquality {
 
 /// A simple node dumpable to a `YAML` source string
 ///
+/// {@category intro}
 /// {@category yaml_nodes}
 sealed class YamlNode {
   /// Style used to serialize the node within the `YAML` source string
@@ -52,6 +53,7 @@ sealed class YamlNode {
 /// provides an `alias` then `anchor` and `tag` **MUST** be `null`. If `anchor`
 /// or `tag` is provided, `alias` **MUST** be null.
 ///
+/// {@category intro}
 /// {@category yaml_nodes}
 /// {@category dump_node}
 abstract interface class CompactYamlNode extends YamlNode {
@@ -75,6 +77,7 @@ abstract interface class CompactYamlNode extends YamlNode {
 ///   - [Sequence] or [Map] of values will be equal to the same [List] or
 ///     [Map] declared in `Dart`.
 ///
+/// {@category intro}
 /// {@category yaml_nodes}
 sealed class YamlSourceNode extends CompactYamlNode {
   YamlSourceNode();
@@ -118,6 +121,7 @@ bool yamlSourceNodeDeepEqual(YamlSourceNode thiz, YamlSourceNode that) =>
 
 /// A node that is a pointer to another node.
 ///
+/// {@category intro}
 /// {@category yaml_nodes}
 /// {@category anchor_alias}
 final class AliasNode extends YamlSourceNode {

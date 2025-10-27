@@ -40,8 +40,6 @@ abstract base class CollectionDelegate<R, T, I> extends ParserDelegate<T> {
   R accept(I input);
 }
 
-
-
 /// A delegate that resolves to a [Sequence]
 final class SequenceDelegate<I, Seq extends List<I>>
     extends CollectionDelegate<void, Seq, I> {
@@ -85,8 +83,6 @@ final class SequenceDelegate<I, Seq extends List<I>>
   @override
   bool get isEmpty => _list.isEmpty;
 }
-
-
 
 /// A delegate that resolves to a [Mapping]
 final class MappingDelegate<I, M extends Map<I, I?>>

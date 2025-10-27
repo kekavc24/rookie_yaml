@@ -44,14 +44,14 @@ final yaml =
 - $utf16Tag $codeUnits
 ''';
 
-final node = YamlParser.ofString(
-  yaml,
+final node = loadYamlNode<Sequence>(
+  source: yaml,
   resolvers: [utf16Resolver, base64Resolver],
-).parseNodes().first.castTo<Sequence>();
+);
 
 /// base64 string decoded and embedded in Scalar
 /// Sequence values inferred as "int"
-print((node as List) == [string, codeUnits]);
+print(yamlCollectionEquality.equals(node, [string, codeUnits]));
 
 // Convert Sequence safely on demand
 print(node[1].asCustomType<String>());
@@ -85,20 +85,10 @@ final safeResolver = Resolver.content(
 final yaml = '$base32Tag $encoded';
 
 // Defaults to string
-print(
-  YamlParser.ofString(
-    yaml,
-    resolvers: [safeResolver],
-  ).parseNodes().first,
-);
+print(loadYamlNode(source: yaml, resolvers: [safeResolver]));
 
 // Throws
-print(
-  YamlParser.ofString(
-    yaml,
-    resolvers: [aggressiveResolver],
-  ).parseNodes().first,
-);
+print(loadYamlNode(source: yaml, resolvers: [aggressiveResolver]));
 ```
 
 > [!NOTE]

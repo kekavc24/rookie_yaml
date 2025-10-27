@@ -32,4 +32,13 @@ $jsonTag "${json.encode(object).replaceAll('"', r'\"')}"
   assert(decodeJson is List, 'Fake news!!');
   print(yamlCollectionEquality.equals(decodeJson, object)); // True
   print(decodeJson); // [This, is, my, json]
+
+  /// We can even take this further and load the scalar as the list we have
+  /// decoded directly as a Dart object
+  final decodedList = loadDartObject<List>(
+    source: yaml,
+    resolvers: [jsonResolver],
+  );
+
+  print(decodedList); // [This, is, my, json]
 }

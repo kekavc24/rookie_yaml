@@ -32,7 +32,7 @@ The secondary tag handle `!!` is limited to tags below which all resolve to the 
 
 ## Documentation & Examples (Still in progress 🏗️)
 
-- The `docs` folder in the repository.
+- The `docs` folder in the repository. Use the [table of contents](./doc/_contents.md) as a guide.
 - Visit [pub guide][guide] which provides an automatic guided order for the docs above.
 - The `example` folder.
 
@@ -44,5 +44,5 @@ See [guide][contribute] on how to make contributions to this repository.
 [coverage]: https://coveralls.io/repos/github/kekavc24/rookie_yaml/badge.svg?branch=main
 [dart_pub_version]: https://img.shields.io/pub/v/rookie_yaml.svg
 [dart_pub_downloads]: https://img.shields.io/pub/dm/rookie_yaml.svg
-[guide]: https://pub.dev/documentation/rookie_yaml/latest/
+[guide]: https://pub.dev/documentation/rookie_yaml/latest/topics/intro-topic.html
 [contribute]: CONTRIBUTING.md

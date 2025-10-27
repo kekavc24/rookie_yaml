@@ -3,12 +3,15 @@ dartdoc:
     intro:
       markdown: doc/intro.md
       displayName: Introduction
+    dart_objects:
+      markdown: doc/load_dart_objects.md
+      displayName: Loading as Dart built-in types
     yaml_docs:
-      markdown: doc/documents.md
-      displayName: Parsing Documents
+      markdown: doc/load_document.md
+      displayName: Loading a YamlDocument
     yaml_nodes:
-      markdown: doc/nodes.md
-      displayName: Parsing Nodes
+      markdown: doc/loading_nodes.md
+      displayName: Loading a YamlSourceNode
     anchor_alias:
       markdown: doc/anchors_aliases.md
       displayName: Anchors and Aliases
@@ -45,6 +48,7 @@ dartdoc:
 
   categoryOrder:
     - intro
+    - dart_objects
     - yaml_docs
     - yaml_nodes
     - anchor_alias
