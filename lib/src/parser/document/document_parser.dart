@@ -1250,7 +1250,8 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
   ({int laxIndent, int inlineFixedIndent}) _blockChildIndent(
     int? inferred, {
     required int blockParentIndent,
-    required int startOffset,
+    required int yamlNodeStartOffset,
+    required int contentOffset,
   }) {
     if (inferred != null) {
       return (laxIndent: inferred, inlineFixedIndent: inferred);
@@ -1308,8 +1309,7 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
     return (
       laxIndent: blockParentIndent + 1,
       inlineFixedIndent:
-          blockParentIndent +
-          (_scanner.lineInfo().current.utfOffset - startOffset),
+          blockParentIndent + (contentOffset - yamlNodeStartOffset),
     );
   }
 
