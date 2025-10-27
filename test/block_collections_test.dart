@@ -218,6 +218,40 @@ implicit:
       );
     });
 
+    test('Parses a nested block map with properties correctly', () {
+      final defaultSeq = [
+        'value',
+        {
+          'value': null,
+          ['flow', 'key']: 'value',
+        },
+        ['flow', 'key'],
+      ];
+
+      check(
+        bootstrapDocParser(
+          '''
+- &scalar value
+- *scalar : &anchor-to-null
+  &flow-list [flow, key]: *scalar
+- *flow-list
+''',
+        ).nodeAsSimpleString(),
+      ).equals(defaultSeq.toString());
+
+      check(
+        bootstrapDocParser(
+          '''
+- &scalar value
+-
+  *scalar : &anchor-to-null
+  &flow-list [flow, key]: *scalar
+- *flow-list
+''',
+        ).nodeAsSimpleString(),
+      ).equals(defaultSeq.toString());
+    });
+
     test('Parses block sequence with compact block nodes', () {
       const yaml = '''
 - ? compact: explicit

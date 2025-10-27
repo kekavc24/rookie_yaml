@@ -1675,7 +1675,7 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
         {
           _throwIfNotCompactCompatible(
             blockNodeProperty,
-            parentEnforcedCompactness: false,
+            parentEnforcedCompactness: parentEnforcedCompactness,
             isBlockSequence: true,
           );
 
@@ -2168,10 +2168,17 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       /// map level.
       indentOnExit = indentOrSeparation;
     } else {
+      final fauxOffset = contentOffset.utfOffset;
+
+      /// We provide a faux value because a block implicit value will always
+      /// use a `laxIndent` for scalars and flow nodes. `inlineFixedIndent`
+      /// will never be used for block maps & sequences since they must begin
+      /// on a new line.
       final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
         indentOrSeparation,
         blockParentIndent: parentIndent,
-        startOffset: contentOffset.utfOffset,
+        yamlNodeStartOffset: fauxOffset,
+        contentOffset: fauxOffset,
       );
 
       final (
@@ -2576,29 +2583,53 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       blockNodeProperty: entryProperty,
     );
 
-    if (sequenceInfo.delegate case AliasDelegate<R, R> alias
-        when !entryProperty.isMultiline &&
-            inferNextEvent(
-                  _scanner,
-                  isBlockContext: true,
-                  lastKeyWasJsonLike: false,
-                ) ==
-                BlockCollectionEvent.startEntryValue) {
-      return _parseWildcardBlockMap(
-        alias..updateEndOffset = _scanner.lineInfo().current,
-        mapIndentLvel: indentLevel,
-        mapFixedIndent: fixedInlineIndent,
-        keyProperty: ParsedProperty.empty(
-          entryProperty.span.start,
-          entryProperty.span.end,
-          null,
-          spanMultipleLines: false,
-        ),
-        parentEnforcedCompactness: false,
-      );
-    }
+    switch (sequenceInfo.delegate) {
+      case AliasDelegate<R, R> alias:
+        {
+          if (entryProperty.isMultiline) {
+            _blockNodeInfoEndOffset(
+              alias,
+              scanner: _scanner,
+              info: sequenceInfo.nodeInfo,
+            );
 
-    return sequenceInfo;
+            return sequenceInfo;
+          } else if (skipToParsableChar(_scanner, onParseComment: _comments.add)
+              case int indent) {
+            // Exit immediately if we cannot degenerate to a block map
+            return (
+              delegate: alias..updateEndOffset = _scanner.lineInfo().start,
+              nodeInfo: (exitIndent: indent, docMarker: DocumentMarker.none),
+            );
+          } else if (inferNextEvent(
+                _scanner,
+                isBlockContext: true,
+                lastKeyWasJsonLike: false,
+              ) ==
+              BlockCollectionEvent.startEntryValue) {
+            return _parseWildcardBlockMap(
+              alias..updateEndOffset = _scanner.lineInfo().current,
+              mapIndentLvel: indentLevel,
+              mapFixedIndent: fixedInlineIndent,
+              keyProperty: ParsedProperty.empty(
+                entryProperty.span.start,
+                entryProperty.span.end,
+                null,
+                spanMultipleLines: false,
+              ),
+              parentEnforcedCompactness: false,
+            );
+          }
+
+          return (
+            delegate: alias,
+            nodeInfo: (exitIndent: null, docMarker: DocumentMarker.none),
+          );
+        }
+
+      default:
+        return sequenceInfo;
+    }
   }
 
   /// Parses a block sequence.
@@ -2727,7 +2758,8 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
         indentOrSeparation,
         blockParentIndent: indent,
-        startOffset: startOffset.utfOffset,
+        yamlNodeStartOffset: startOffset.utfOffset,
+        contentOffset: entryProperty.span.start.utfOffset,
       );
 
       final (:delegate, :nodeInfo) = _parseBlockSequenceEntry(
