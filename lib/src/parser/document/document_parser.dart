@@ -1752,17 +1752,15 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
   /// then this node cannot be parsed.
   ///
   /// See [_blockChildIndent] implementation.
-  _ParseExplicitInfo _explicitIsParsable(int startOffset, int parentIndent) {
+  _ParseExplicitInfo _explicitIsParsable(
+    RuneOffset startOffset,
+    int parentIndent,
+  ) {
     _scanner.skipCharAtCursor(); // Skip the "?" or ":"
 
-    /// Typically exists as "?"<whitespace>. We can't know what/where to
-    /// start parsing. Attempt to parsed node properties. The function also
-    /// skips to the next possible parsable char
-    final explicitProperty = parseNodeProperties(
+    var inferredIndent = skipToParsableChar(
       _scanner,
-      minIndent: parentIndent + 1,
-      resolver: _resolveTag,
-      comments: _comments,
+      onParseComment: _comments.add,
     );
 
     // Must be able to parse more characters
@@ -1770,14 +1768,18 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       return (
         shouldExit: true,
         hasIndent: false,
-        parsedProperty: explicitProperty,
+        parsedProperty: ParsedProperty.empty(
+          startOffset,
+          _scanner.lineInfo().current,
+          null,
+          spanMultipleLines: false,
+        ),
         inferredIndent: seamlessIndentMarker,
         laxIndent: seamlessIndentMarker,
         inlineIndent: seamlessIndentMarker,
       );
     }
 
-    final inferredIndent = explicitProperty.indentOnExit;
     final hasIndent = inferredIndent != null;
 
     /// If equal then we are at the same level as a "?" or ":" on a new line.
@@ -1786,17 +1788,35 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       return (
         shouldExit: true,
         hasIndent: hasIndent,
-        parsedProperty: explicitProperty,
+        parsedProperty: ParsedProperty.empty(
+          startOffset,
+          _scanner.lineInfo().current,
+          null,
+          spanMultipleLines: false,
+        ),
         inferredIndent: inferredIndent,
         laxIndent: inferredIndent,
         inlineIndent: inferredIndent,
       );
     }
 
+    /// Typically exists as "?"<whitespace>. We can't know what/where to
+    /// start parsing. Attempt to parsed node properties. The function also
+    /// skips to the next possible parsable char
+    final explicitProperty = parseNodeProperties(
+      _scanner,
+      minIndent: inferredIndent ?? parentIndent + 1,
+      resolver: _resolveTag,
+      comments: _comments,
+    );
+
+    inferredIndent = explicitProperty.indentOnExit;
+
     final (:laxIndent, :inlineFixedIndent) = _blockChildIndent(
       inferredIndent,
       blockParentIndent: parentIndent,
-      startOffset: startOffset,
+      yamlNodeStartOffset: startOffset.utfOffset,
+      contentOffset: explicitProperty.span.start.utfOffset,
     );
 
     return (
@@ -1824,7 +1844,7 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       :laxIndent,
       :inlineIndent,
     ) = _explicitIsParsable(
-      keyOffset.utfOffset,
+      keyOffset,
       mapIndent,
     );
 
@@ -1971,7 +1991,7 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
       :laxIndent,
       :inlineIndent,
     ) = _explicitIsParsable(
-      valueOffset.utfOffset,
+      valueOffset,
       indent,
     );
 
