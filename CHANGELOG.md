@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.0
+
+This release introduces the ability to load YAML directly as a built-in Dart type.
+
+- `BREAKING`:
+  - Removed `YamlParser` in favour of loader functions.
+  - `Mapping` now only accepts a `YamlSourceNode` as a key. Always cast to `DynamicMapping` if you want to use built-in Dart types as keys.
+
+- `feat`:
+  - Added `loadDartObject` that loads a single document as a Dart built-in type.
+  - Added `loadDartObjects` that loads multiple documents as Dart built-in types.
+  - Added `loadYamlNode`. Migrated `YamlParser.parseNodes` and `YamlParser.parseDocuments` to `loadNodes` and `loadAllDocuments` respectively.
+
+- `fix`:
+  - Fixes an issue where block maps with flow maps/sequences as the first key were ignored.
+  - Throws better errors when a block/flow node cannot be parsed in the current parser state.
+
+- `docs`:
+  - Added guides on loading YAML as a built-in Dart type.
+  - Added a table of contents when accessing docs from the github repository.
+
 ## 0.1.1
 
 - `docs`:
