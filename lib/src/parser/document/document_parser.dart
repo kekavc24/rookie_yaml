@@ -129,9 +129,9 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
   }) {
     final Alias(:alias, :span) = property;
 
-    if (_anchorNodes[alias] case R node) {
+    if (_anchorNodes[alias] case Object present) {
       return AliasDelegate<R, R>(
-        node,
+        present as R,
         refResolver: aliasFunction,
         indentLevel: indentLevel,
         indent: indent,
