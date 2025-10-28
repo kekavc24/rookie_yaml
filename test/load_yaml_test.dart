@@ -69,6 +69,40 @@ void main() {
         ),
       ).isTrue();
     });
+
+    group('Aliases', () {
+      const yaml = '''
+- &list [ flow, &map { key: value } ]
+- *list
+- *map
+''';
+
+      const node = [
+        [
+          'flow',
+          {'key': 'value'},
+        ],
+        [
+          'flow',
+          {'key': 'value'},
+        ],
+        {'key': 'value'},
+      ];
+
+      test('Loads node with anchor and aliases', () {
+        check(loadDartObject<List>(source: yaml)).isA<List>().deepEquals(node);
+      });
+
+      test('Dereferences list and map aliases', () {
+        final sequence = loadDartObject<List>(
+          source: yaml,
+          dereferenceAliases: true,
+        );
+
+        check(sequence?[0]).not((list) => list.equals(sequence?[1]));
+        check(sequence?[0][1]).not((map) => map.equals(sequence?[2]));
+      });
+    });
   });
 
   test('Loads multiple documents dynamically', () {
