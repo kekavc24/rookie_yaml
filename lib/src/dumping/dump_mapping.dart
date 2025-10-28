@@ -136,9 +136,10 @@ String _encodeBlockMap<K, V>(
       }
 
       /// Block sequences or block maps whose first key is explicit need to be
-      /// forced to start on a new line with the necessary indent.
+      /// forced to start on a new line with the necessary indent. This includes
+      /// implicit block maps.
       final leading =
-          isCollection && (value.startsWith('- ') || value.startsWith('? '))
+          isCollection && !(value.startsWith('{') || value.startsWith('['))
           ? '\n$mapIndent  '
           : ' ';
 

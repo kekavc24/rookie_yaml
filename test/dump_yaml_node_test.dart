@@ -140,7 +140,8 @@ void main() {
 %YAML 1.2
 ---
 normal: 24
-compact: &map !!map {
+compact:
+  &map !!map {
    nested: map
   }
 ...''');
