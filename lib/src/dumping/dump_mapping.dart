@@ -28,6 +28,7 @@ String _encodeMapping<K, V>(
     bool hasNext,
     bool keyIsExplicit,
     bool keyHasTrailingLF,
+    bool valueIsFlow,
     bool valueIsCollection,
   )
   onEncodedValue,
@@ -42,7 +43,12 @@ String _encodeMapping<K, V>(
 
   do {
     final MapEntry(:key, :value) = iterator.current;
-    final (:explicitIfKey, isCollection: _, :encoded) = _encodeObject(
+    final (
+      :explicitIfKey,
+      isCollection: _,
+      isFlow: _,
+      :encoded,
+    ) = _encodeObject(
       key,
       indent: keyIndent,
       currentScalarStyle: keyScalarStyle,
@@ -60,7 +66,12 @@ String _encodeMapping<K, V>(
     );
     hasNext = iterator.moveNext();
 
-    final (:isCollection, encoded: object, explicitIfKey: _) = _encodeObject(
+    final (
+      :isCollection,
+      :isFlow,
+      encoded: object,
+      explicitIfKey: _,
+    ) = _encodeObject(
       value,
       currentScalarStyle: valueScalarStyle,
       mapKeyScalarStyle: keyScalarStyle,
@@ -76,6 +87,7 @@ String _encodeMapping<K, V>(
       hasNext,
       explicitIfKey,
       encodedKey.endsWith('\n'),
+      isFlow,
       isCollection,
     );
 
@@ -126,11 +138,11 @@ String _encodeBlockMap<K, V>(
           '${key.startsWith('*') ? ' ' : ''}' // Aliases accept ":"
           ':';
     },
-    onEncodedValue: (value, _, keyIsExplicit, keyHasTrailingLF, isCollection) {
+    onEncodedValue: (value, _, keyIsExplicit, keyHasLF, isFlow, isCollection) {
       final valueTrailer = value.endsWith('\n') ? '' : '\n';
 
       if (keyIsExplicit) {
-        return '${keyHasTrailingLF ? '' : '\n'}'
+        return '${keyHasLF ? '' : '\n'}'
             '$mapIndent: $value'
             '$valueTrailer';
       }
@@ -138,10 +150,7 @@ String _encodeBlockMap<K, V>(
       /// Block sequences or block maps whose first key is explicit need to be
       /// forced to start on a new line with the necessary indent. This includes
       /// implicit block maps.
-      final leading =
-          isCollection && !(value.startsWith('{') || value.startsWith('['))
-          ? '\n$mapIndent  '
-          : ' ';
+      final leading = !isFlow && isCollection ? '\n$mapIndent  ' : ' ';
 
       // Readability's sake
       return '$leading'
@@ -201,7 +210,7 @@ String _encodeFlowMap<K, V>(
           '$key'
           '${key.startsWith('*') ? ' ' : ''}'; // Add space for aliases
     },
-    onEncodedValue: (value, hasNext, _, keyHasTrailingLF, _) {
+    onEncodedValue: (value, hasNext, _, keyHasTrailingLF, _, _) {
       return '${keyHasTrailingLF ? valueIndentation : ''}'
           // Flow maps can ignore the ":" if the value is empty.
           '${value.isEmpty ? '' : ': '}'

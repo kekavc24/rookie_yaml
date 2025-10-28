@@ -128,6 +128,7 @@ Iterable<String> _splitBlockString(String blockContent) => splitLazyChecked(
 
 typedef _DumpedObjectInfo = ({
   bool explicitIfKey,
+  bool isFlow,
   bool isCollection,
   String encoded,
 });
@@ -166,6 +167,8 @@ _DumpedObjectInfo _encodeObject<T>(
   String? objectProperties;
   var style = nodeStyle;
 
+  bool isFlow() => style == NodeStyle.flow;
+
   if (unpack != null && object is CompactYamlNode) {
     final (:encodedAlias, :properties, :toEncode, :styleOverride) = unpack(
       object,
@@ -175,6 +178,7 @@ _DumpedObjectInfo _encodeObject<T>(
     if (encodedAlias != null) {
       return (
         encoded: encodedAlias,
+        isFlow: isFlow(),
         isCollection: false,
         explicitIfKey: false,
       );
@@ -197,6 +201,7 @@ _DumpedObjectInfo _encodeObject<T>(
     case Iterable list:
       return (
         explicitIfKey: true,
+        isFlow: isFlow(),
         isCollection: true,
         encoded: _dumpSequence(
           list,
@@ -212,6 +217,7 @@ _DumpedObjectInfo _encodeObject<T>(
     case Map map:
       return (
         explicitIfKey: true,
+        isFlow: isFlow(),
         isCollection: true,
         encoded: _dumpMapping(
           map,
@@ -243,6 +249,7 @@ _DumpedObjectInfo _encodeObject<T>(
 
         return (
           explicitIfKey: explicitIfKey,
+          isFlow: isFlow(),
           isCollection: false,
           encoded: _applyProperties(encodedScalar, objectProperties),
         );
