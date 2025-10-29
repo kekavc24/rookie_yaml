@@ -2711,7 +2711,10 @@ final class DocumentParser<R, Seq extends List<R>, M extends Map<R, R?>> {
         break;
       }
 
-      final enforceCompactness = indentOrSeparation == null;
+      /// Force node to be compact with no properties only if the properties
+      /// did not span multiple lines.
+      final enforceCompactness =
+          indentOrSeparation == null && !entryProperty.isMultiline;
 
       if (entryProperty.indentOnExit case int exitIndent) {
         indentOrSeparation = exitIndent;
