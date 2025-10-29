@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.1
+
+This release fixes issues with the parser and built-in Dart type loaders.
+
+- `fix(parser)`:
+  - Fixes an issue where a missing alias was treated as `null` when loading objects as built-in Dart types.
+  - Fixes an issue where block nodes specified an incorrect node start that resulted in an invalid indent error when parsing block sequences and block maps.
+  - Fixes an issue where a multi-line block node was mistakenly treated as a compact inline block node when parsing block sequences.
+  - Allows `List` and `Map` aliases to be dereferenced when loading built-in Dart types. Pass in `dereferencesAliases` as `true` when calling `loadDartObject` or `loadAsDartObjects`.
+
+- `fix(dumper)`:
+  - Fixes an issue where a nested block map value was dumped on the same line as implicit block map key which is invalid YAML.
+
+- `docs`:
+  - Added information on dereferencing aliases to docs.
+
 ## 0.2.0
 
 This release introduces the ability to load YAML directly as a built-in Dart type.

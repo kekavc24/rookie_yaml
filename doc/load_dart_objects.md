@@ -79,6 +79,36 @@ print(
 );
 ```
 
+> [!TIP]
+> You can configure the parser to dereference `List` and `Map` aliases, by default. The `List` or `Map` alias will be copied each time the parser needs it.
+>
+> ```dart
+>   final list = loadDartObject<List>(
+>     source: '''
+> - &list [ flow, &map { key: value } ]
+> - *list
+> - *map
+>   ''',
+>   )!;
+> 
+>   print(list[0] == list[1]); // Same list reference. True
+>   print(list[0][1] == list[2]); // Same map reference. True
+> ```
+> 
+> ```dart
+>   final list = loadDartObject<List>(
+>     source: '''
+> - &list [ flow, &map { key: value } ]
+> - *list
+> - *map
+>   ''',
+>     dereferenceAliases: true,
+>   )!;
+> 
+>   print(list[0] == list[1]); // Copies list. False.
+>   print(list[0][1] == list[2]); // Copies map. False
+> ```
+
 ## Loading multiple documents
 
 You can also load multiple documents by calling `loadAsDartObjects`. It explicitly returns a `List<dynamic>` which contains the built-in Dart types for every root node in each document in the order the parser encountered/parsed them.
