@@ -39,16 +39,8 @@ void _defaultOnMapDuplicate(
 /// built-in Dart type loaders such [loadDartObject] or [loadAsDartObjects]
 /// may want aliases dereferenced since the parser does a zero-copy operation
 /// and just passes the reference around.
-dynamic _dereferenceAliases(dynamic object, {required bool dereferenceAlias}) {
-  if (!dereferenceAlias) return object;
-
-  // Copy immediately for lists and map
-  return switch (object) {
-    List list => List.of(list),
-    Map map => Map.of(map),
-    _ => object,
-  };
-}
+dynamic _dereferenceAliases(dynamic object, {required bool dereferenceAlias}) =>
+    dereferenceAlias ? deepCopyReference(object) : object;
 
 /// Instantiates a [GraphemeScanner] with [UnicodeIterator] that uses a
 /// [source] string or [byteSource] as a source of UTF code points.

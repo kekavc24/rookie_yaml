@@ -258,3 +258,39 @@ final class Resolver<I, O> {
     required O Function(YamlSourceNode input) resolver,
   }) : this._(tag, (tag) => NodeResolver(tag, resolver: resolver));
 }
+
+/// Recursively copies all elements of a [Map] or [List]
+dynamic deepCopyReference(dynamic object) {
+  switch (object) {
+    case Map map:
+      {
+        final copy = {};
+        _dereferenceMap(copy, map);
+        return copy;
+      }
+
+    case List list:
+      {
+        final copy = [];
+        _dereferenceList(copy, list);
+        return copy;
+      }
+
+    default:
+      return object;
+  }
+}
+
+/// Copies all keys and values from [original] to the [copy]
+void _dereferenceMap(Map copy, Map original) {
+  for (final MapEntry(:key, :value) in original.entries) {
+    copy[deepCopyReference(key)] = deepCopyReference(value);
+  }
+}
+
+/// Copies all elements from the [original] to the [copy]
+void _dereferenceList(List copy, List original) {
+  for (final object in original) {
+    copy.add(deepCopyReference(object));
+  }
+}
