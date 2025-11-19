@@ -5,8 +5,7 @@ part of 'yaml_node.dart';
 ///
 /// {@category intro}
 /// {@category yaml_nodes}
-final class Sequence extends DelegatingList<YamlSourceNode>
-    with NonGrowableListMixin<YamlSourceNode>
+final class Sequence extends UnmodifiableListView<YamlSourceNode>
     implements YamlSourceNode {
   Sequence(
     super.base, {
@@ -36,23 +35,4 @@ final class Sequence extends DelegatingList<YamlSourceNode>
 
   @override
   String? get alias => null;
-
-  @override
-  void operator []=(_, _) =>
-      throw UnsupportedError("Cannot modify a parsed sequence");
-
-  // Throws
-  @override
-  void setAll(_, _) =>
-      throw UnsupportedError("Cannot modify a parsed sequence");
-
-  // Throws
-  @override
-  void setRange(_, _, _, [int _ = 0]) =>
-      throw UnsupportedError("Cannot modify a parsed sequence");
-
-  // Throws
-  @override
-  void fillRange(_, _, [YamlSourceNode? _]) =>
-      throw UnsupportedError("Cannot modify a parsed sequence");
 }

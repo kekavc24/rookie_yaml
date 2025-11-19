@@ -9,8 +9,7 @@ part of 'yaml_node.dart';
 ///
 /// {@category intro}
 /// {@category yaml_nodes}
-final class Mapping extends DelegatingMap<YamlSourceNode, YamlSourceNode?>
-    with UnmodifiableMapMixin<YamlSourceNode, YamlSourceNode?>
+final class Mapping extends UnmodifiableMapView<YamlSourceNode, YamlSourceNode?>
     implements YamlSourceNode {
   /// Creates a [Mapping].
   ///
@@ -45,38 +44,6 @@ final class Mapping extends DelegatingMap<YamlSourceNode, YamlSourceNode?>
 
   @override
   String? get alias => null;
-
-  @override
-  void addEntries(Iterable<MapEntry<YamlNode, YamlSourceNode?>> entries) {
-    // Copied from Dart internal
-    throw UnsupportedError("Cannot modify a parsed mapping");
-  }
-
-  @override
-  void removeWhere(
-    bool Function(YamlSourceNode key, YamlSourceNode value) test,
-  ) {
-    // Copied from Dart internal
-    throw UnsupportedError("Cannot modify a parsed mapping");
-  }
-
-  @override
-  YamlSourceNode update(
-    YamlNode key,
-    YamlSourceNode? Function(YamlSourceNode? value) update, {
-    YamlSourceNode? Function()? ifAbsent,
-  }) {
-    // Copied from Dart internal
-    throw UnsupportedError("Cannot modify a parsed mapping");
-  }
-
-  @override
-  void updateAll(
-    YamlSourceNode? Function(YamlSourceNode key, YamlSourceNode? value) update,
-  ) {
-    // Copied from Dart internal
-    throw UnsupportedError("Cannot modify a parsed mapping");
-  }
 }
 
 /// A "no-cost" [Mapping] that allow arbitrary `Dart` values to be used as
