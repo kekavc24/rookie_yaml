@@ -1,5 +1,6 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
+import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -19,64 +20,58 @@ NodeTag _overrideNonSpecific(NodeTag current, TagShorthand kindDefault) {
   return current.resolvedTag is GlobalTag ? current : _defaultTo(kindDefault);
 }
 
-/// A builder function for [List] or [Sequence].
-typedef ListFunction<I, Seq extends List<I>> =
-    Seq Function(
-      List<I> buffer,
-      NodeStyle listStyle,
+/// A constructor for any object that delegates its builder to a
+/// [ParserDelegate].
+typedef YamlObjectBuilder<S, I, O> =
+    O Function(
+      I object,
+      S objectStyle,
       ResolvedTag? tag,
       String? anchor,
       RuneSpan nodeSpan,
     );
 
-/// A standard input for a [MappingDelegate].
-typedef MapInput<I> = (I key, I? value);
+/// A constructor for collection-like builders.
+typedef YamlCollectionBuilder<I, O> = YamlObjectBuilder<NodeStyle, I, O>;
+
+/// A builder function for [List] or [Sequence].
+typedef ListFunction<I, C extends Iterable<I>> =
+    YamlCollectionBuilder<Iterable<I>, C>;
 
 /// A builder function for [Map] or [Mapping]
-typedef MapFunction<I, M extends Map<I, I?>> =
-    M Function(
-      Map<I, I?> buffer,
-      NodeStyle mapStyle,
-      ResolvedTag? tag,
-      String? anchor,
-      RuneSpan nodeSpan,
-    );
+typedef MapFunction<I, C extends Map<I, I?>> =
+    YamlCollectionBuilder<Map<I, I?>, C>;
 
 /// A builder function for a scalar or a Dart built-in type that is not a [Map]
 /// or [List]
-typedef ScalarFunction<T> =
-    T Function(
-      ScalarValue inferred,
-      ScalarStyle style,
-      ResolvedTag? tag,
-      String? anchor,
-      RuneSpan span,
-    );
+typedef ScalarFunction<T> = YamlObjectBuilder<ScalarStyle, ScalarValue, T>;
 
 /// A delegate that stores parser information when parsing nodes of the `YAML`
 /// tree.
-abstract interface class ParserDelegate<T> {
+abstract base class ParserDelegate<T> {
   ParserDelegate({
     required this.indentLevel,
     required this.indent,
     required this.start,
-    this.parent,
   });
 
   /// Level in the `YAML` tree. Must be equal or less than [indent].
-  final int indentLevel;
+  int indentLevel;
 
   /// Indent of the current node being parsed
   int indent;
 
   /// Starting offset.
-  final RuneOffset start;
+  RuneOffset start;
 
   /// Exclusive
   RuneOffset? _end;
 
+  /// End offset
   RuneOffset? get endOffset => _end;
 
+  /// Updates the end offset of a node. The [end] must be equal to or greater
+  /// than the [start]
   set updateEndOffset(RuneOffset? end) {
     if (end == null) return;
 
@@ -99,6 +94,8 @@ abstract interface class ParserDelegate<T> {
     }
   }
 
+  /// Throws if the end offset was never set. Otherwise, returns the non-null
+  /// [endOffset].
   RuneOffset _ensureEndIsSet() {
     if (_end == null) {
       throw StateError(
@@ -109,11 +106,12 @@ abstract interface class ParserDelegate<T> {
     return _end!;
   }
 
-  ///
-  set updateNodeProperties(ParsedProperty property) {
-    if (!property.parsedAny) return;
+  /// Updates a node's properties. Throws an [ArgumentError] if this delegate
+  /// has a tag, alias or anchor.
+  set updateNodeProperties(ParsedProperty? property) {
+    if (!(property?.parsedAny ?? false)) return;
 
-    if (_tag != null || _anchor != null || _alias != null) {
+    if (hasProperties) {
       throw ArgumentError(
         'Duplicate node properties provided to a node',
       );
@@ -150,6 +148,9 @@ abstract interface class ParserDelegate<T> {
       default:
         return;
     }
+
+    start = property!.span.start;
+    _hasLineBreak = _hasLineBreak || property.isMultiline;
   }
 
   /// Validates the parsed [_tag].
@@ -164,18 +165,14 @@ abstract interface class ParserDelegate<T> {
   /// Alias
   String? _alias;
 
-  /// Delegate's parent
-  ParserDelegate? parent;
-
-  /// Returns `true` if the node delegated to this parser is the root of the
-  /// [YamlDocument]
-  bool get isRootDelegate => parent == null;
-
   /// Tracks if a line break was encountered
   bool _hasLineBreak = false;
 
-  /// Returns `true` if a line break was encountered while parsing.
+  /// Whether a line break was encountered while parsing.
   bool get encounteredLineBreak => _hasLineBreak;
+
+  /// Whether any properties are present
+  bool get hasProperties => _tag != null || _anchor != null || _alias != null;
 
   set hasLineBreak(bool foundLineBreak) =>
       _hasLineBreak = _hasLineBreak || foundLineBreak;
@@ -194,11 +191,12 @@ abstract interface class ParserDelegate<T> {
   T _resolver();
 }
 
-typedef AliasFunction<Obj, Ref> =
-    Obj Function(String alias, Ref reference, RuneSpan nodeSpan);
+/// A builder function for an [Alias] or any referenced Dart-built in type.
+typedef AliasFunction<Ref> =
+    Ref Function(String alias, Ref reference, RuneSpan nodeSpan);
 
 /// Represents a delegate that resolves to an [AliasNode]
-final class AliasDelegate<Obj, Ref> extends ParserDelegate<Obj> {
+final class AliasDelegate<Ref> extends ParserDelegate<Ref> {
   AliasDelegate(
     this._reference, {
     required super.indentLevel,
@@ -211,14 +209,14 @@ final class AliasDelegate<Obj, Ref> extends ParserDelegate<Obj> {
   final Ref _reference;
 
   /// A dynamic resolver function assigned at runtime by the [DocumentParser].
-  final AliasFunction<Obj, Ref> refResolver;
+  final AliasFunction<Ref> refResolver;
 
   @override
   NodeTag _checkResolvedTag(NodeTag tag) =>
       throw FormatException('An alias cannot have a "${tag.suffix}" kind');
 
   @override
-  Obj _resolver() => refResolver(_alias ?? '', _reference, (
+  Ref _resolver() => refResolver(_alias ?? '', _reference, (
     start: start,
     end: _ensureEndIsSet(),
   ));
