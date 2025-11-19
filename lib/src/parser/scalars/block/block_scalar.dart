@@ -18,6 +18,7 @@ part 'block_utils.dart';
 PreScalar parseBlockStyle(
   GraphemeScanner scanner, {
   required int minimumIndent,
+  required int indentLevel,
   required void Function(YamlComment comment) onParseComment,
 }) {
   var indentOnExit = seamlessIndentMarker;
@@ -33,7 +34,7 @@ PreScalar parseBlockStyle(
   /// If not null, we know the indent. Otherwise we have to infer from the
   /// first non-empty line.
   if (indentIndicator != null) {
-    trueIndent = minimumIndent + indentIndicator;
+    trueIndent = indentLevel + indentIndicator;
   }
 
   var char = scanner.charAtCursor;
