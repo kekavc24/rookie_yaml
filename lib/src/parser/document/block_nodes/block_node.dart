@@ -397,6 +397,19 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required bool composeImplicitMap,
 }) {
   switch (kind) {
+    case NodeKind.set:
+      {
+        // Be lenient (for now). Treat a set as an iterable too.
+        if (event
+            case BlockCollectionEvent.startBlockListEntry ||
+                FlowCollectionEvent.startFlowSequence) {
+          continue sequence;
+        }
+
+        continue mapping;
+      }
+
+    mapping:
     case NodeKind.mapping:
       {
         if (event == BlockCollectionEvent.startExplicitKey) {
@@ -419,7 +432,8 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         );
       }
 
-    case NodeKind.sequence || NodeKind.set:
+    sequence:
+    case NodeKind.sequence:
       {
         BlockNode<Obj>? sequence;
 

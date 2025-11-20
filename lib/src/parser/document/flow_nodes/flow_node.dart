@@ -180,6 +180,17 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   final isInline = isImplicit || forceInline;
 
   switch (kind) {
+    case NodeKind.set:
+      {
+        // Be lenient (for now). Treat a set as an iterable too.
+        if (flowEvent == FlowCollectionEvent.startFlowSequence) {
+          continue sequence;
+        }
+
+        continue mapping;
+      }
+
+    mapping:
     case NodeKind.mapping:
       {
         return parseFlowMap(
@@ -191,7 +202,8 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
             as ParserDelegate<Obj>;
       }
 
-    case NodeKind.sequence || NodeKind.set:
+    sequence:
+    case NodeKind.sequence:
       {
         return parseFlowSequence(
               parserState,

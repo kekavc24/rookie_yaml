@@ -22,7 +22,8 @@ final class MappingDelegate<I, M extends Map<I, I?>> extends ParserDelegate<M> {
   NodeTag _checkResolvedTag(NodeTag tag) {
     final NodeTag(:suffix) = tag;
 
-    if (isYamlScalarTag(suffix) || isYamlSequenceTag(suffix)) {
+    if (isYamlScalarTag(suffix) ||
+        (suffix != setTag && isYamlSequenceTag(suffix))) {
       throw FormatException('A mapping cannot be resolved as "$suffix" kind');
     }
 

@@ -68,16 +68,11 @@ final integerTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'int');
 /// {@category schema}
 final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
 
-/// Any [TagShorthand] that resolves to a [Scalar]
-///
-/// {@category schema}
-final scalarTags = {};
-
 /// Whether a [tag] is a valid [Map] or [Mapping] tag.
 ///
 /// {@category schema}
 bool isYamlMapTag(TagShorthand tag) =>
-    tag == mappingTag || tag == orderedMappingTag;
+    tag == mappingTag || tag == orderedMappingTag || tag == setTag;
 
 /// Whether a [tag] is a valid [List] or [Set] or [Sequence] tag.
 ///
