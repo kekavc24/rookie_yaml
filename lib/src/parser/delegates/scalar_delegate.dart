@@ -47,7 +47,7 @@ final class ScalarDelegate<T> extends ParserDelegate<T> {
   NodeTag _checkResolvedTag(NodeTag tag) {
     final NodeTag(:suffix) = tag;
 
-    if (suffix == mappingTag || suffix == sequenceTag) {
+    if (isYamlMapTag(suffix) || isYamlSequenceTag(suffix)) {
       throw FormatException('A scalar cannot be resolved as "$suffix" kind');
     }
 

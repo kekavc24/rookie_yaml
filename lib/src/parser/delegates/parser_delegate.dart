@@ -8,8 +8,13 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
-part 'collection_delegate.dart';
+part 'mapping_delegate.dart';
 part 'scalar_delegate.dart';
+part 'sequence_delegate.dart';
+
+/// Creates a default [NodeTag] with the [yamlGlobalTag] as its prefix. [tag]
+/// must be a secondary tag.
+NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, tag);
 
 /// Overrides the [current] node tag to a [kindDefault] if [current] is
 /// non-specific.
