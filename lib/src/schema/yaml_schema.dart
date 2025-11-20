@@ -23,6 +23,11 @@ final yamlGlobalTag = GlobalTag.fromTagUri(_defaultYamlHandle, _yamlPrefix);
 /// {@category schema}
 final mappingTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'map');
 
+/// Generic ordered [Map]
+///
+/// {@category schema}
+final orderedMappingTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'omap');
+
 /// Generic [List]
 ///
 /// {@category schema}
@@ -32,6 +37,11 @@ final sequenceTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'seq');
 ///
 /// {@category schema}
 final stringTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'str');
+
+/// Generic [Set]
+///
+/// {@category schema}
+final setTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'set');
 
 //
 // ** JSON SCHEMA TAGS **
@@ -61,11 +71,32 @@ final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
 /// Any [TagShorthand] that resolves to a [Scalar]
 ///
 /// {@category schema}
-final scalarTags = {stringTag, nullTag, booleanTag, integerTag, floatTag};
+final scalarTags = {};
 
-/// Checks if a [tag] is valid tag in the yaml schema. A yaml tag uses the
-/// [TagHandleVariant.secondary] handle
+/// Whether a [tag] is a valid [Map] or [Mapping] tag.
+///
+/// {@category schema}
+bool isYamlMapTag(TagShorthand tag) =>
+    tag == mappingTag || tag == orderedMappingTag;
+
+/// Whether a [tag] is a valid [List] or [Set] or [Sequence] tag.
+///
+/// {@category schema}
+bool isYamlSequenceTag(TagShorthand tag) => tag == sequenceTag || tag == setTag;
+
+/// Whether a [tag] is a valid [Scalar] tag.
+///
+/// {@category schema}
+bool isYamlScalarTag(TagShorthand tag) =>
+    tag == stringTag ||
+    tag == nullTag ||
+    tag == booleanTag ||
+    tag == integerTag ||
+    tag == floatTag;
+
+/// Whether a [tag] is valid tag in the yaml schema. A yaml tag uses the
+/// [TagHandleVariant.secondary] handle.
 ///
 /// {@category schema}
 bool isYamlTag(TagShorthand tag) =>
-    tag == mappingTag || tag == sequenceTag || scalarTags.contains(tag);
+    isYamlMapTag(tag) || isYamlSequenceTag(tag) || isYamlScalarTag(tag);
