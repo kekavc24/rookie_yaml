@@ -58,12 +58,6 @@ enum BlockCollectionEvent implements ParserEvent {
   /// Parse a block list
   startBlockListEntry,
 
-  /// Parse a block map with a key.
-  ///
-  /// This event is unique and should never be inferred. It requires the
-  /// caller to have parsed a(n) (implicit) key belonging to a block map.
-  startImplicitKey,
-
   /// Parse a block map beginning with an explicit key
   startExplicitKey,
 
@@ -129,7 +123,10 @@ ParserEvent inferNextEvent(
 
     // Flow node doesn't need the space when key is json-like (double quoted)
     mappingValue
-        when !isBlockContext && (canBeSeparation || lastKeyWasJsonLike) =>
+        when !isBlockContext &&
+            (canBeSeparation ||
+                lastKeyWasJsonLike ||
+                charAfter.isNotNullAnd((c) => c.isFlowDelimiter())) =>
       FlowCollectionEvent.startEntryValue,
 
     blockSequenceEntry when canBeSeparation && isBlockContext =>
