@@ -274,19 +274,26 @@ final class Resolver<I, O> {
 }
 
 /// Recursively copies all elements of a [Map] or [List]
-dynamic deepCopyReference(dynamic object) {
+Object? deepCopyReference(Object? object) {
   switch (object) {
-    case Map map:
+    case Map():
       {
-        final copy = {};
-        _dereferenceMap(copy, map);
+        final copy = <Object?, Object?>{};
+        _dereferenceMap(copy, object);
         return copy;
       }
 
-    case List list:
+    case List():
       {
-        final copy = [];
-        _dereferenceList(copy, list);
+        final copy = <Object?>[];
+        _dereferenceIterable(object, copy.add);
+        return copy;
+      }
+
+    case Set():
+      {
+        final copy = <Object?>{};
+        _dereferenceIterable(object, copy.add);
         return copy;
       }
 
@@ -296,15 +303,21 @@ dynamic deepCopyReference(dynamic object) {
 }
 
 /// Copies all keys and values from [original] to the [copy]
-void _dereferenceMap(Map copy, Map original) {
+void _dereferenceMap(
+  Map<Object?, Object?> copy,
+  Map<Object?, Object?> original,
+) {
   for (final MapEntry(:key, :value) in original.entries) {
     copy[deepCopyReference(key)] = deepCopyReference(value);
   }
 }
 
 /// Copies all elements from the [original] to the [copy]
-void _dereferenceList(List copy, List original) {
+void _dereferenceIterable(
+  Iterable<Object?> original,
+  void Function(Object? object) push,
+) {
   for (final object in original) {
-    copy.add(deepCopyReference(object));
+    push(deepCopyReference(object));
   }
 }
