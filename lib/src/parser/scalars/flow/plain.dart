@@ -150,7 +150,8 @@ PreScalar? parsePlain(
           );
 
           if (indentDidChange) {
-            end = scanner.lineInfo().start;
+            final (:start, :current) = scanner.lineInfo();
+            end = scanner.canChunkMore ? start : current;
             indentOnExit = foldIndent;
             break chunker;
           }
