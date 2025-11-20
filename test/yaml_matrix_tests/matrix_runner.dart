@@ -48,6 +48,7 @@ final class MatrixRunner {
             markAsInvalid();
             messages.addAll([
               'Expected node string: $jsonAsDartStr',
+              '',
               'Found: $parsedNodeString',
             ]);
           }
@@ -90,6 +91,7 @@ void main(List<String> args) async {
 $header
 
 Failed with the following messages:
+
 ${messages.map((e) => '$pad$e').join('\n')}
 
 ${_footer(header.length)}''');

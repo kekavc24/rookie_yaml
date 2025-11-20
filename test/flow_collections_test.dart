@@ -94,13 +94,14 @@ void main() {
       check(
         () => bootstrapDocParser('}').nodeAsSimpleString(),
       ).throwsParserException(
-        'Invalid flow node state. The current flow node could not '
-        'be parsed further.',
+        'Invalid flow node state. Expected "{" or "]"',
       );
 
       check(
         () => bootstrapDocParser('{').nodeAsSimpleString(),
-      ).throwsParserException('Expected the flow delimiter: "}"');
+      ).throwsParserException(
+        'Invalid flow collection state. Expected to find: "}"',
+      );
     });
 
     test('Throws if duplicate keys are found', () {
@@ -109,12 +110,12 @@ void main() {
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
-        'Flow map cannot contain duplicate entries by the same key',
+        'A flow map cannot contain duplicate entries by the same key',
       );
     });
 
     test('Throws if "," is declared before key', () {
-      const err = 'Expected at least a key before the next flow map entry';
+      const err = 'Invalid flow collection state. Expected "}"';
 
       check(
         () => bootstrapDocParser('{,}').nodeAsSimpleString(),
@@ -183,31 +184,26 @@ implicit: pair,
       () {
         check(
           () => bootstrapDocParser(']').nodeAsSimpleString(),
-        ).throwsParserException(
-          'Invalid flow node state. The current flow node could not '
-          'be parsed further.',
-        );
+        ).throwsParserException('Invalid flow node state. Expected "{" or "]"');
 
         check(
           () => bootstrapDocParser('[').nodeAsSimpleString(),
-        ).throwsParserException('Expected the flow delimiter: "]"');
+        ).throwsParserException(
+          'Invalid flow collection state. Expected to find: "]"',
+        );
       },
     );
 
     test('Throws if "," is declared before entry', () {
       check(
         () => bootstrapDocParser('[,]').nodeAsSimpleString(),
-      ).throwsParserException(
-        'Expected to find the first value but found ","',
-      );
+      ).throwsParserException('Invalid flow collection state. Expected "]"');
 
       check(
         () => bootstrapDocParser(
           '[value,,]',
         ).nodeAsSimpleString(),
-      ).throwsParserException(
-        'Found a duplicate "," before finding a flow sequence entry',
-      );
+      ).throwsParserException('Invalid flow collection state. Expected "]"');
     });
   });
 }

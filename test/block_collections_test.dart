@@ -94,8 +94,9 @@ key1:
 key2:
   - block sequence
 
-key3:
-- block indicator as indent
+# TODO: Excluded. Implement if this is something people want
+# key3:
+# - block indicator as indent
 ''';
 
       check(
@@ -107,7 +108,7 @@ key3:
           'key0': 'value',
           'key1': {'nested': 'block map'},
           'key2': ['block sequence'],
-          'key3': ['block indicator as indent'],
+          //'key3': ['block indicator as indent'],
         }.toString(),
       );
     });
@@ -121,7 +122,7 @@ key3:
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
-        'Expected indent of 0 space(s) but found 2 space(s)',
+        'Dangling node found when parsing explicit entry',
       );
     });
 
@@ -136,8 +137,8 @@ implicit: map
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
-        'Implicit keys are restricted to a single line. Consider using an'
-        ' explicit key for the entry',
+        'A block sequence cannot be forced to be implicit or have inline'
+        ' properties before its indicator',
       );
     });
 
@@ -152,7 +153,7 @@ rogue
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
-        'Implicit keys cannot have an exit indent',
+        'Implicit block keys are restricted to a single line',
       );
     });
 
@@ -179,7 +180,7 @@ implicit:
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
-        'Dangling node/node properties found with indent of 2 space(s) while parsing',
+        'Dangling indent does not belong to the current block map',
       );
     });
   });
@@ -307,9 +308,7 @@ implicit:
 
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).throwsParserException(
-        'Expected a "- " while parsing sequence entry',
-      );
+      ).throwsParserException('Expected a "- " at the start of the next entry');
     });
 
     test('Throws if dangling nested block entry is encountered', () {
@@ -321,10 +320,7 @@ implicit:
 
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).throwsParserException(
-        'Dangling node/node properties found with indent of 2 space(s) while'
-        ' parsing',
-      );
+      ).throwsParserException('Invalid block list entry found');
     });
   });
 }

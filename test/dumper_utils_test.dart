@@ -90,6 +90,7 @@ multiline string.
         parseBlockStyle(
           GraphemeScanner.of('>\n$unfolded'),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: (_) {},
         ),
         defaultFolded,
@@ -184,6 +185,7 @@ multiline string.
         parseBlockStyle(
           GraphemeScanner.of('>$unfolded'),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: (_) {},
         ),
         foldTarget,

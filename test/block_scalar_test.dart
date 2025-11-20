@@ -31,6 +31,7 @@ $indent
           parseBlockStyle(
             GraphemeScanner.of('$block$trailing'),
             minimumIndent: 0,
+            indentLevel: 0,
             onParseComment: comments.add,
           ),
         ).hasIndent(indent);
@@ -54,6 +55,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of('$block$trailing'),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         );
       }
@@ -68,6 +70,7 @@ $indent
             parseBlockStyle(
               GraphemeScanner.of(block),
               minimumIndent: 0,
+              indentLevel: 0,
               onParseComment: comments.add,
             ),
           )
@@ -82,6 +85,7 @@ $indent
         () => parseBlockStyle(
           GraphemeScanner.of('|0\n'),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).throwsWithMessage<RangeError>(
@@ -96,6 +100,7 @@ $indent
         () => parseBlockStyle(
           GraphemeScanner.of('|10\n'),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).throwsParserException(
@@ -112,6 +117,7 @@ $indent
         () => parseBlockStyle(
           GraphemeScanner.of(yaml),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).throwsParserException(
@@ -128,6 +134,7 @@ $indent
         () => parseBlockStyle(
           GraphemeScanner.of(yaml),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).throwsParserException(
@@ -137,22 +144,21 @@ $indent
 
     test('Exits if indent is less than the indent specified by indicator', () {
       const lessIndented = '''
-2
+3
   This line is not indented by at least 2 spaces more than minimum indent
 ''';
-
-      const minIndent = 2;
 
       for (final str in defaultBlockIndicators) {
         check(
             parseBlockStyle(
               GraphemeScanner.of('$str$lessIndented'),
-              minimumIndent: minIndent,
+              minimumIndent: 0,
+              indentLevel: 0,
               onParseComment: comments.add,
             ),
           )
           ..hasFormattedContent('')
-          ..indentDidChangeTo(minIndent);
+          ..indentDidChangeTo(2);
       }
     });
 
@@ -171,6 +177,7 @@ $indent
               '$emptyLineIsMoreIndented',
             ),
             minimumIndent: 0,
+            indentLevel: 0,
             onParseComment: comments.add,
           ),
         ).throwsParserException(
@@ -196,6 +203,7 @@ $indent
           parseBlockStyle(
             GraphemeScanner.of(scalar),
             minimumIndent: 0,
+            indentLevel: 0,
             onParseComment: comments.add,
           ),
         )
@@ -221,6 +229,7 @@ $indent
           parseBlockStyle(
             GraphemeScanner.of(scalar),
             minimumIndent: 0,
+            indentLevel: 0,
             onParseComment: comments.add,
           ),
         )
@@ -239,6 +248,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of(scalar),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -255,6 +265,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of(scalar),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -271,6 +282,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of(scalar),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -291,6 +303,7 @@ $indent
           parseBlockStyle(
             GraphemeScanner.of(scalar),
             minimumIndent: 0,
+            indentLevel: 0,
             onParseComment: comments.add,
           ),
         )
@@ -334,6 +347,7 @@ $indent
           parseBlockStyle(
             GraphemeScanner.of(scalar),
             minimumIndent: 0,
+            indentLevel: 0,
             onParseComment: comments.add,
           ),
         )
@@ -352,6 +366,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of(scalar),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -368,6 +383,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of(scalar),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -384,6 +400,7 @@ $indent
         parseBlockStyle(
           GraphemeScanner.of(scalar),
           minimumIndent: 0,
+          indentLevel: 0,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);

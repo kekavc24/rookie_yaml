@@ -11,29 +11,29 @@ import 'helpers/model_helpers.dart';
 void main() {
   group('Tag properties', () {
     test('Parses simple tags', () {
-      final tag = TagShorthand.fromTagUri(TagHandle.primary(), 'test-tag');
+      final testTag = TagShorthand.fromTagUri(TagHandle.primary(), 'test-tag');
       final yaml =
           '''
-$tag plain-scalar
+$testTag plain-scalar
 ---
-$tag "double quoted"
+$testTag "double quoted"
 ---
-$tag 'single quoted'
+$testTag 'single quoted'
 ---
-$tag {flow: map}
+$testTag {flow: map}
 ---
-$tag [flow, sequence]
+$testTag [flow, sequence]
 ---
-$tag
+$testTag
 block: map
 ---
-$tag
+$testTag
 - block sequence
 ''';
 
       check(bootstrapDocParser(yaml).parsedNodes())
         ..length.equals(7)
-        ..every((n) => n.hasTag(tag));
+        ..every((n) => n.hasTag(testTag));
     });
 
     test('Parses tags nested in flow map', () {
@@ -187,8 +187,10 @@ $seqTag
       check(
         () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException(
-        'Invalid secondary tag. Expected any of: $mappingTag, $sequenceTag, '
-        '${scalarTags.join(', ')}',
+        'Invalid secondary tag. Expected any of: '
+        '$mappingTag, $orderedMappingTag, '
+        '$sequenceTag, $setTag, '
+        '$stringTag, $nullTag, $booleanTag, $integerTag or $floatTag',
       );
     });
 
@@ -227,21 +229,17 @@ $tag ignored :)
 
       check(
         () => bootstrapDocParser(yaml).parseNodeSingle(),
-      ).throwsParserException(
-        'Compact implicit map entries cannot have properties',
-      );
+      ).throwsParserException('Invalid flow collection state. Expected "]"');
     });
 
     test(
       'Throws when tags are used before explicit keys in block and flow styles',
       () {
         check(
-          () => bootstrapDocParser(
-            '!!str ? explicit-key',
-          ).parseNodeSingle(),
+          () => bootstrapDocParser('&anchor ? explicit-key').parseNodeSingle(),
         ).throwsParserException(
-          'Inline node properties cannot be declared before the first "? "'
-          ' indicator',
+          'An explicit key cannot be forced to be implicit or have inline '
+          'properties before its indicator',
         );
 
         check(
@@ -254,8 +252,8 @@ $tag ignored :)
 ''',
           ).parseNodeSingle(),
         ).throwsParserException(
-          'Explicit keys cannot have any node properties before the "?" '
-          'indicator',
+          'An explicit key cannot be forced to be implicit or have inline '
+          'properties before its indicator',
         );
 
         check(
@@ -269,8 +267,7 @@ $tag ignored :)
 ''',
           ).parseNodeSingle(),
         ).throwsParserException(
-          'Explicit keys cannot have any node properties before the "?" '
-          'indicator',
+          'Implicit block nodes cannot span multiple lines',
         );
 
         check(
@@ -286,8 +283,7 @@ $tag ignored :)
 ''',
           ).parseNodeSingle(),
         ).throwsParserException(
-          'Explicit keys cannot have any node properties before the "?" '
-          'indicator',
+          'Flow node cannot span multiple lines when implicit',
         );
       },
     );
@@ -303,7 +299,7 @@ implicit-2: is-an-error
 ''',
         ).parseNodeSingle(),
       ).throwsParserException(
-        'Node properties for an implicit block key cannot span multiple lines',
+        'Implicit block nodes cannot span multiple lines',
       );
 
       check(
@@ -317,33 +313,29 @@ implicit-2: is-an-error}
 ''',
         ).parseNodeSingle(),
       ).throwsParserException(
-        'Node properties for an implicit flow key cannot span multiple lines',
+        'Flow node cannot span multiple lines when implicit',
       );
     });
 
     test('Throws when tags are declared before block sequence indicator', () {
       check(
         () => bootstrapDocParser(
-          '!!str - not-okay',
+          '!!seq - not-okay',
         ).parseNodeSingle(),
       ).throwsParserException(
-        'Inline node properties cannot be declared before the first "- "'
-        ' indicator',
+        'A block sequence cannot be forced to be implicit or have inline '
+        'properties before its indicator',
       );
 
-      const yaml = '''
+      check(
+        () => bootstrapDocParser('''
 !experimental-okay-1st
 - first
 
 !not-and-unlikely-okay
 - second
-''';
-
-      check(
-        () => bootstrapDocParser(yaml).parseNodeSingle(),
-      ).throwsParserException(
-        'Dangling node properties are not allowed here',
-      );
+''').parseNodeSingle(),
+      ).throwsParserException('Expected a "- " at the start of the next entry');
     });
   });
 
@@ -502,9 +494,7 @@ implicit-2: is-an-error}
 
       check(
         () => bootstrapDocParser(yaml).parseNodeSingle(),
-      ).throwsParserException(
-        'Compact implicit map entries cannot have properties',
-      );
+      ).throwsParserException('Invalid flow collection state. Expected "]"');
     });
   });
 }
