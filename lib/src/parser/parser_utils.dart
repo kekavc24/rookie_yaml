@@ -56,7 +56,7 @@ typedef PreScalar = ({
   /// (Dart type) since most (, if not all,) types are inline.
   bool wroteLineBreak,
 
-  /// Returns `true` for block(-like) styles, that is, `plain`, `literal` and
+  /// Always `true` for block(-like) styles, that is, `plain`, `literal` and
   /// `folded` if an indent change triggered the end of its parsing
   bool indentDidChange,
 
@@ -155,14 +155,15 @@ DocumentMarker checkForDocumentMarkers(
 /// Skips any comments and linebreaks until a character that can be parsed
 /// is encountered. Returns `null` if no indent was found.
 ///
-/// Leading white spaces when this function is called are ignored. This
-/// function treats them as separation space including tabs.
+/// If [skipLeading] is `true`, leading white spaces (including tabs) when this
+/// function is called are ignored and treated as separation spaces.
 ///
 /// You must provide either [comments] or an [onParseComment] [Function]
 int? skipToParsableChar(
   GraphemeScanner scanner, {
   List<YamlComment>? comments,
   void Function(YamlComment comment)? onParseComment,
+  bool skipLeading = true,
 }) {
   assert(
     comments != null || onParseComment != null,
@@ -170,31 +171,37 @@ int? skipToParsableChar(
   );
 
   int? indent;
-  var isLeading = true;
+
+  var warmUp = true;
+  var isLeading = skipLeading;
 
   void addComment(YamlComment comment) =>
       comments != null ? comments.add(comment) : onParseComment!(comment);
 
+  void checkIndent() {
+    indent = scanner.takeUntil(
+      includeCharAtCursor: warmUp && scanner.charAtCursor == space,
+      mapper: (c) => c,
+      onMapped: (_) {},
+      stopIf: (_, possibleNext) => !possibleNext.isIndent(),
+    );
+
+    scanner.skipCharAtCursor();
+    warmUp = false;
+
+    if (!isLeading) return;
+
+    indent = null;
+    if (scanner.charAtCursor == tab) {
+      scanner.skipWhitespace(skipTabs: true);
+    }
+  }
+
   while (scanner.canChunkMore) {
     switch (scanner.charAtCursor) {
-      /// If the first character is a leading whitespace, ignore. There
-      /// is no need treating it as indent
-      case space || tab when isLeading:
-        {
-          scanner.skipWhitespace(skipTabs: true);
-          scanner.skipCharAtCursor();
-        }
-
-      // Each line break triggers implicit indent inference
-      case int char when char.isLineBreak():
-        {
-          skipCrIfPossible(char, scanner: scanner);
-
-          // Only spaces. Tabs are not considered indent
-          indent = scanner.skipWhitespace().length;
-          scanner.skipCharAtCursor();
-          isLeading = false;
-        }
+      // Check if leading whitespace can be indent
+      case space:
+        checkIndent();
 
       case comment:
         {
@@ -202,12 +209,19 @@ int? skipToParsableChar(
           addComment(comment);
 
           if (onExit.sourceEnded) return null;
-          indent = null; // Guarantees a recheck to indent
+          indent = null; // Guarantees indent recheck
         }
 
-      // We found the first parsable character
-      default:
-        return indent;
+      // Each line break triggers implicit indent inference
+      case int? char:
+        {
+          if (char == null || !char.isLineBreak()) return indent;
+
+          skipCrIfPossible(char, scanner: scanner);
+          isLeading = false;
+
+          checkIndent();
+        }
     }
   }
 
