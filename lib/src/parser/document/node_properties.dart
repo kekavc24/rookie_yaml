@@ -1,5 +1,6 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
+import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -130,24 +131,34 @@ final class Alias extends ParsedProperty {
   bool get isAlias => true;
 }
 
-/// Parses the node properties of a `YamlSourceNode` and resolves any
-/// [TagShorthand] parsed using the [resolver]. A [VerbatimTag] is never
-/// resolved. All node properties declared on a new line must have an indent
-/// equal to or greater than the [minIndent].
+typedef _Property = ({ParsedProperty property, NodeKind kind});
+
+typedef ConcreteProperty = ({
+  ParserEvent event,
+  NodeKind kind,
+  ParsedProperty property,
+});
+
+/// Parses node properties of flow node if [isBlockContext] is `false`.
 ///
-/// See `skipToParsableChar` which adds any comments parsed to [comments].
-ParsedProperty parseNodeProperties(
+/// When [isBlockContext] is `true`, the function gladly checks if a duplicate
+/// node property was declared on a new line. In such a case, this means that
+/// the property may belong to a node other than current one.
+///
+/// The function always exits when the first non-whitespace char declared on a
+/// new line has a lesser indent than [minIndent]. [onParseComment] adds
+/// comments encountered when skipping to the next parsable char declared on a
+/// new line.
+_Property _corePropertyParser(
   GraphemeScanner scanner, {
   required int minIndent,
-  required ResolvedTag? Function(
-    RuneOffset start,
-    RuneOffset end,
-    TagShorthand tag,
-  )
-  resolver,
-  required List<YamlComment> comments,
+  required TagResolver resolver,
+  required void Function(YamlComment comment) onParseComment,
+  required bool isBlockContext,
 }) {
-  final propStart = scanner.lineInfo().current;
+  final startOffset = scanner.lineInfo().current;
+
+  var nodeKind = NodeKind.unknown;
 
   String? nodeAnchor;
   ResolvedTag? nodeTag;
@@ -156,24 +167,39 @@ ParsedProperty parseNodeProperties(
 
   var lfCount = 0;
 
-  var lastWasLineBreak = false;
-
-  void notLineBreak() => lastWasLineBreak = false;
-
   bool isMultiline() => lfCount > 0;
 
-  int? skipAndTrackLF() {
-    final indent = skipToParsableChar(scanner, comments: comments);
-    if (indent != null) ++lfCount;
-    return indent;
+  void skipAndTrackLF() {
+    indentOnExit = skipToParsableChar(scanner, onParseComment: onParseComment);
+    if (indentOnExit != null) ++lfCount;
   }
 
-  Never rangedThrow(String message) => throwWithRangedOffset(
-    scanner,
-    message: message,
-    start: propStart,
-    end: scanner.lineInfo().current,
-  );
+  void resetIndent() => indentOnExit = null;
+
+  _Property exitIfBlock(String error) {
+    /// Block node can have a lifeline in cases where a node spans multiple
+    /// lines. The properties may belong to a
+    if (isBlockContext && indentOnExit != null) {
+      return (
+        kind: nodeKind,
+        property: NodeProperty(
+          startOffset,
+          scanner.lineInfo().start,
+          indentOnExit,
+          spanMultipleLines: true, // Obviously :)
+          anchor: nodeAnchor,
+          tag: nodeTag,
+        ),
+      );
+    }
+
+    throwWithRangedOffset(
+      scanner,
+      message: error,
+      start: startOffset,
+      end: scanner.lineInfo().current,
+    );
+  }
 
   /// A node can only have:
   ///   - Either a tag or anchor or both
@@ -187,140 +213,182 @@ ParsedProperty parseNodeProperties(
           scanner
             ..skipWhitespace(skipTabs: true) // Separation space
             ..skipCharAtCursor();
-
-          notLineBreak();
         }
 
       case lineFeed || carriageReturn || comment:
         {
-          indentOnExit = skipAndTrackLF();
+          skipAndTrackLF();
 
           final hasNoIndent = indentOnExit == null;
 
-          if (hasNoIndent || indentOnExit < minIndent) {
+          if (hasNoIndent || indentOnExit! < minIndent) {
             final (:start, :current) = scanner.lineInfo();
 
-            return ParsedProperty.of(
-              propStart,
-              hasNoIndent ? current : start,
-              spanMultipleLines: isMultiline(),
-              indentOnExit: indentOnExit,
-              anchor: nodeAnchor,
-              tag: nodeTag,
+            return (
+              kind: nodeKind,
+              property: ParsedProperty.of(
+                start,
+                hasNoIndent ? current : start,
+                spanMultipleLines: isMultiline(),
+                indentOnExit: indentOnExit,
+                anchor: nodeAnchor,
+                tag: nodeTag,
+              ),
             );
           }
-
-          lastWasLineBreak = true;
         }
 
       case tag:
         {
           if (nodeTag != null) {
-            rangedThrow('A node can only have a single tag property');
+            return exitIfBlock(
+              'A node can only have a single tag property',
+            );
           } else if (scanner.charAfter == verbatimStart) {
             nodeTag = parseVerbatimTag(scanner);
           } else {
             final tagStart = scanner.lineInfo().current;
             final shorthand = parseTagShorthand(scanner);
-            nodeTag = resolver(tagStart, scanner.lineInfo().current, shorthand);
+            final (:kind, :tag) = resolver(
+              tagStart,
+              scanner.lineInfo().current,
+              shorthand,
+            );
+            nodeKind = kind;
+            nodeTag = tag;
           }
 
-          notLineBreak();
+          resetIndent();
         }
 
       case anchor:
         {
           if (nodeAnchor != null) {
-            rangedThrow('A node can only have a single anchor property');
+            return exitIfBlock('A node can only have a single anchor property');
           }
 
           scanner.skipCharAtCursor();
           nodeAnchor = parseAnchorOrAliasTrailer(scanner);
 
-          notLineBreak();
+          resetIndent();
         }
 
       case alias:
         {
           if (nodeTag != null || nodeAnchor != null) {
-            rangedThrow('Alias nodes cannot have an anchor or tag property');
+            return exitIfBlock(
+              'Alias nodes cannot have an anchor or tag property',
+            );
           }
 
           scanner.skipCharAtCursor();
           nodeAlias = parseAnchorOrAliasTrailer(scanner);
-          indentOnExit = skipAndTrackLF();
+          skipAndTrackLF();
 
           // Parsing an alias ignores any tag and anchor
-          return Alias(
-            propStart,
-            scanner.lineInfo().current,
-            indentOnExit,
-            alias: nodeAlias,
-            spanMultipleLines: isMultiline(),
+          return (
+            kind: NodeKind.unknown,
+            property: Alias(
+              startOffset,
+              scanner.lineInfo().current,
+              indentOnExit,
+              alias: nodeAlias,
+              spanMultipleLines: isMultiline(),
+            ),
           );
         }
 
       // Exit immediately since we reached char that isn't a node property
       default:
-        return ParsedProperty.of(
-          propStart,
-          lastWasLineBreak && indentOnExit != null && indentOnExit < minIndent
-              ? scanner.lineInfo().start
-              : scanner.lineInfo().current,
-          spanMultipleLines: isMultiline(),
-          indentOnExit: lastWasLineBreak ? indentOnExit : null,
-          anchor: nodeAnchor,
-          tag: nodeTag,
+        return (
+          kind: nodeKind,
+          property: ParsedProperty.of(
+            startOffset,
+            indentOnExit != null && indentOnExit! < minIndent
+                ? scanner.lineInfo().start
+                : scanner.lineInfo().current,
+            spanMultipleLines: isMultiline(),
+            indentOnExit: indentOnExit,
+            anchor: nodeAnchor,
+            tag: nodeTag,
+          ),
         );
     }
   }
 
   /// Prefer having accurate indent info. Parsing only reaches here if we
   /// managed to parse both the tag and anchor.
-  indentOnExit = skipAndTrackLF();
+  skipAndTrackLF();
 
-  return ParsedProperty.of(
-    propStart,
-    indentOnExit != null && indentOnExit < minIndent
-        ? scanner.lineInfo().start
-        : scanner.lineInfo().current,
-    spanMultipleLines: isMultiline(),
-    indentOnExit: indentOnExit,
-    anchor: nodeAnchor,
-    tag: nodeTag,
+  return (
+    kind: nodeKind,
+    property: ParsedProperty.of(
+      startOffset,
+      indentOnExit != null && indentOnExit! < minIndent
+          ? scanner.lineInfo().start
+          : scanner.lineInfo().current,
+      spanMultipleLines: isMultiline(),
+      indentOnExit: indentOnExit,
+      anchor: nodeAnchor,
+      tag: nodeTag,
+    ),
   );
 }
 
-typedef FlowNodeProperties = ({ParserEvent event, ParsedProperty property});
-
-FlowNodeProperties parseSimpleFlowProps(
+/// Parses node properties of a block node.
+ConcreteProperty parseBlockProperties(
   GraphemeScanner scanner, {
   required int minIndent,
-  required ResolvedTag? Function(
-    RuneOffset start,
-    RuneOffset end,
-    TagShorthand tag,
-  )
-  resolver,
-  required List<YamlComment> comments,
-  bool lastKeyWasJsonLike = false,
+  required TagResolver resolver,
+  required void Function(YamlComment comment) onParseComment,
 }) {
-  void throwHasLessIndent(int lessIndent) {
-    throwWithApproximateRange(
+  final (:property, :kind) = _corePropertyParser(
+    scanner,
+    minIndent: minIndent,
+    resolver: resolver,
+    onParseComment: onParseComment,
+    isBlockContext: true,
+  );
+
+  return (
+    kind: kind,
+    property: property,
+    event: inferNextEvent(
       scanner,
-      message:
-          'Expected at least $minIndent space(s). '
-          'Found $lessIndent space(s)',
-      current: scanner.lineInfo().current,
-      charCountBefore: lessIndent,
-    );
+      isBlockContext: true,
+      lastKeyWasJsonLike: false,
+    ),
+  );
+}
+
+/// Parses properties of a flow node and returns the next possible event after
+/// all the properties have been parsed.
+ConcreteProperty parseFlowProperties(
+  GraphemeScanner scanner, {
+  required int minIndent,
+  required TagResolver resolver,
+  required void Function(YamlComment comment) onParseComment,
+  required bool lastKeyWasJsonLike,
+}) {
+  void throwIfLessIndent(int? currentIndent) {
+    if (currentIndent != null && currentIndent < minIndent) {
+      throwWithApproximateRange(
+        scanner,
+        message:
+            'Expected at least $minIndent space(s). '
+            'Found $currentIndent space(s)',
+        current: scanner.lineInfo().current,
+        charCountBefore: currentIndent,
+      );
+    }
   }
 
-  if (skipToParsableChar(scanner, comments: comments) case int indent
-      when indent < minIndent) {
-    throwHasLessIndent(indent);
-  }
+  // Move to the next parsable non-ws char
+  throwIfLessIndent(
+    skipToParsableChar(scanner, onParseComment: onParseComment),
+  );
 
+  // We can exit immediately if the next event is not a node property event
   if (inferNextEvent(
         scanner,
         isBlockContext: false,
@@ -331,6 +399,7 @@ FlowNodeProperties parseSimpleFlowProps(
 
     return (
       event: e,
+      kind: NodeKind.unknown,
       property: ParsedProperty.empty(
         offset,
         offset,
@@ -340,18 +409,16 @@ FlowNodeProperties parseSimpleFlowProps(
     );
   }
 
-  final property = parseNodeProperties(
+  final (:kind, :property) = _corePropertyParser(
     scanner,
     minIndent: minIndent,
     resolver: resolver,
-    comments: comments,
+    onParseComment: onParseComment,
+    isBlockContext: false,
   );
 
-  if (property case ParsedProperty(
-    indentOnExit: int indent,
-  ) when indent < minIndent) {
-    throwHasLessIndent(indent);
-  }
+  // Flow nodes are lax with indent. Never allow less than min indent.
+  throwIfLessIndent(property.indentOnExit);
 
   return (
     event: inferNextEvent(
@@ -359,6 +426,7 @@ FlowNodeProperties parseSimpleFlowProps(
       isBlockContext: false,
       lastKeyWasJsonLike: lastKeyWasJsonLike,
     ),
+    kind: kind,
     property: property,
   );
 }
