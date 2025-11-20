@@ -3,20 +3,17 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
-import 'package:rookie_yaml/src/parser/document/node_properties.dart';
+import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
-part 'doc_parser_utils.dart';
 part 'document_parser.dart';
 
 /// Represents the type of YAML document based on the use of directives,

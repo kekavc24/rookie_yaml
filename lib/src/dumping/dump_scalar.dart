@@ -7,7 +7,7 @@ bool _useNodeStyleDefault(ScalarStyle? style, String content) =>
     style == ScalarStyle.plain &&
         (content.startsWith('#') || content.trim().length != content.length);
 
-/// Returns a [ScalarStyle] that is valid and can be used to encode a scalar.
+/// Validates and optionally overrides a [ScalarStyle] based on its [NodeStyle].
 ///
 /// [parentNodeStyle] defaults to [NodeStyle.flow] when `null`.
 ///

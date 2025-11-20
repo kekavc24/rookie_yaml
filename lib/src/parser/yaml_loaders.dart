@@ -95,14 +95,16 @@ T? loadDartObject<T>({
   bool throwOnMapDuplicate = false,
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
-}) => loadAsDartObjects(
-  source: source,
-  byteSource: byteSource,
-  dereferenceAliases: dereferenceAliases,
-  throwOnMapDuplicate: throwOnMapDuplicate,
-  resolvers: resolvers,
-  logger: logger,
-).firstOrNull;
+}) =>
+    loadAsDartObjects(
+          source: source,
+          byteSource: byteSource,
+          dereferenceAliases: dereferenceAliases,
+          throwOnMapDuplicate: throwOnMapDuplicate,
+          resolvers: resolvers,
+          logger: logger,
+        ).firstOrNull
+        as T?;
 
 /// Loads every document's root node as a `Dart` object. This function
 /// guarantees that every object returned will be a primitive Dart type or a
@@ -123,7 +125,7 @@ T? loadDartObject<T>({
 /// not be overwritten.
 ///
 /// {@category dart_objects}
-List<dynamic> loadAsDartObjects({
+List<Object?> loadAsDartObjects({
   String? source,
   Iterable<int>? byteSource,
   bool dereferenceAliases = false,
@@ -220,13 +222,13 @@ List<YamlDocument> loadAllDocuments({
 );
 
 /// Loads every document as a `Dart` object.
-List<dynamic> _loadAsDartObject(
+List<Object?> _loadAsDartObject(
   GraphemeScanner scanner, {
   required bool dereferenceAliases,
   required bool throwOnMapDuplicate,
   required List<Resolver>? resolvers,
   required void Function(bool isInfo, String message)? logger,
-}) => _loadYaml<dynamic, dynamic, List<dynamic>, Map<dynamic, dynamic>>(
+}) => _loadYaml<Object?, Object?, Iterable<Object?>, Map<dynamic, dynamic>>(
   DocumentParser(
     scanner,
     aliasFunction: (_, reference, _) =>
@@ -297,7 +299,7 @@ List<YamlDocument> _loadYamlDocuments(
 ///
 /// [O] represents the document, [R] the generic type returned by aliases and
 /// scalars. [S] the list subtype and [M] the map subtype.
-List<O> _loadYaml<O, R, S extends List<R>, M extends Map<R, R?>>(
+List<O> _loadYaml<O, R, S extends Iterable<R>, M extends Map<R, R?>>(
   DocumentParser<R, S, M> parser,
 ) {
   final objects = <O>[];

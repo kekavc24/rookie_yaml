@@ -7,7 +7,7 @@ import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 ///
 /// `lineIndex` - represents the zero-based line index in the source string.<br>
 /// `columnIndex` - represents the zero-based column index within a line.<br>
-/// `utf16Index` - represents the zero-based index in the source string read as
+/// `utfIndex` - represents the zero-based index in the source string read as
 /// a sequence of utf16 characters rather than utf8.
 typedef RuneOffset = ({int lineIndex, int columnIndex, int utfOffset});
 
