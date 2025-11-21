@@ -119,10 +119,6 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
   /// `...` at the end.
   bool docEndExplicit = false;
 
-  /// Tracks whether the root node start on the same line as the directives
-  /// end marker (`---`).
-  bool rootInMarkerLine = false;
-
   /// Tracks whether any directives were declared
   bool hasDirectives = false;
 
@@ -228,10 +224,8 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
     if (_currentIndex == 0) return;
 
     hasDirectives = false;
-    docStartExplicit = false;
+    docStartExplicit = lastDocEndChars == '---';
     docEndExplicit = false;
-
-    rootInMarkerLine = false;
 
     globalTags
       ..clear()

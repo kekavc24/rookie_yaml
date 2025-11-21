@@ -155,15 +155,15 @@ DocumentMarker checkForDocumentMarkers(
 /// Skips any comments and linebreaks until a character that can be parsed
 /// is encountered. Returns `null` if no indent was found.
 ///
-/// If [skipLeading] is `true`, leading white spaces (including tabs) when this
-/// function is called are ignored and treated as separation spaces.
+/// If [leadingAsIndent] is `true`, leading white spaces are treated as indent
+/// as though the previous character.
 ///
 /// You must provide either [comments] or an [onParseComment] [Function]
 int? skipToParsableChar(
   GraphemeScanner scanner, {
   List<YamlComment>? comments,
   void Function(YamlComment comment)? onParseComment,
-  bool skipLeading = true,
+  bool leadingAsIndent = false,
 }) {
   assert(
     comments != null || onParseComment != null,
@@ -173,7 +173,7 @@ int? skipToParsableChar(
   int? indent;
 
   var warmUp = true;
-  var isLeading = skipLeading;
+  var leadingIsIndent = leadingAsIndent;
 
   void addComment(YamlComment comment) =>
       comments != null ? comments.add(comment) : onParseComment!(comment);
@@ -189,7 +189,7 @@ int? skipToParsableChar(
     scanner.skipCharAtCursor();
     warmUp = false;
 
-    if (!isLeading) return;
+    if (leadingIsIndent) return;
 
     indent = null;
     if (scanner.charAtCursor == tab) {
@@ -218,7 +218,7 @@ int? skipToParsableChar(
           if (char == null || !char.isLineBreak()) return indent;
 
           skipCrIfPossible(char, scanner: scanner);
-          isLeading = false;
+          leadingIsIndent = true;
 
           checkIndent();
         }

@@ -110,13 +110,6 @@ folded
 --- ['sequence']
 
 --- {key: value}
-
---- ?
- key
-: value
-
---- - block
-- sequence
 ''';
 
       check(bootstrapDocParser(yaml)).every(
@@ -364,6 +357,32 @@ First document
         ).throwsParserException(
           '"%" cannot be used as the first non-whitespace character in a '
           'non-empty content line',
+        );
+      },
+    );
+
+    test(
+      'Throws when block collections are declared on the directive end marker'
+      ' line',
+      () {
+        const directiveEnd = '--- ';
+        final block = ['? key', '- sequence', ': value'];
+
+        for (final collection in block) {
+          check(
+            () => bootstrapDocParser('$directiveEnd$collection'),
+          ).throwsParserException(
+            'A block collection cannot be declared on the same line as a'
+            ' directive end marker',
+          );
+        }
+
+        // Throws only after the block map has exited and cannot be composed
+        check(
+          () => bootstrapDocParser('$directiveEnd key: value'),
+        ).throwsParserException(
+          'Invalid node state. Expected to find document end "..." or directive'
+          ' end chars "---" ',
         );
       },
     );
