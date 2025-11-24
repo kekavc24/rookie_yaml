@@ -203,6 +203,11 @@ int? skipToParsableChar(
       case space:
         checkIndent();
 
+      case tab when !leadingIsIndent:
+        scanner
+          ..skipWhitespace(skipTabs: true)
+          ..skipCharAtCursor();
+
       case comment:
         {
           final (:onExit, :comment) = parseComment(scanner);
@@ -225,7 +230,7 @@ int? skipToParsableChar(
     }
   }
 
-  return indent;
+  return null;
 }
 
 /// A function to easily create a [TypeResolverTag] on demand
