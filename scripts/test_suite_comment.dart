@@ -18,7 +18,7 @@ final _commentArgParser = ArgParser()
   )
   ..addOption(
     'working-directory',
-    abbr: 'Root directory with repository',
+    help: 'Root directory with repository',
     mandatory: true,
   );
 
