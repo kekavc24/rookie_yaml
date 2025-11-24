@@ -167,7 +167,7 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   MappingDelegate<Obj, Dict> map, {
   required ParserState<Obj, Seq, Dict> state,
 }) {
-  final scanner = state.scanner;
+  final ParserState(:scanner, :onMapDuplicate) = state;
   final MappingDelegate(indent: mapIndent, :indentLevel) = map;
 
   final entryIndentLevel = indentLevel + 1;
@@ -192,8 +192,15 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
     // Only implicit keys can return null when the document ends.
     if (key != null) {
+      if (!map.accept(key.parsed(), value?.parsed())) {
+        onMapDuplicate(
+          key.start,
+          value?.endOffset ?? scanner.lineInfo().current,
+          'A block map cannot contain duplicate entries by the same key',
+        );
+      }
+
       map
-        ..accept(key.parsed(), value?.parsed())
         ..hasLineBreak =
             key.encounteredLineBreak || (value?.encounteredLineBreak ?? false)
         ..updateEndOffset = value?.endOffset ?? key.endOffset!;
