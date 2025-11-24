@@ -27,6 +27,8 @@ jobs:
 
       - name: 🏃🏽 Run test suite, 💬 Add PR comment
         id: runner
+        env:
+          GH_TOKEN: ${{ secrets.BOT_KEY }}
         run: |
           dart pub get
           cd scripts
