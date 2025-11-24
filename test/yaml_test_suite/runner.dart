@@ -62,7 +62,10 @@ void main(List<String> arguments) async {
     final output = DummyWriter.forRunner(directory, saveFailed: saveFailed);
 
     final runner = TestRunner(
-      parseFunction: (yaml) => loadAsDartObjects(source: yaml),
+      parseFunction: (yaml) => loadAsDartObjects(
+        source: yaml,
+        throwOnMapDuplicate: true,
+      ),
       sourceComparator: (parsed, expected) =>
           parsed.toString() == expected.toString(),
       writer: output,
