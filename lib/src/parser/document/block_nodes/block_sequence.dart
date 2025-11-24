@@ -64,16 +64,18 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     );
 
     if (indentOrSeparation != null && indentOrSeparation <= sequenceIndent) {
-      sequence.accept(
-        nullBlockNode(
-          state,
-          indentLevel: entryIndentLevel,
-          indent: sequenceIndent + 1,
-          start: scanner.canChunkMore
-              ? scanner.lineInfo().start
-              : scanner.lineInfo().current,
-        ).parsed(),
+      final empty = nullBlockNode(
+        state,
+        indentLevel: entryIndentLevel,
+        indent: sequenceIndent + 1,
+        start: scanner.canChunkMore
+            ? scanner.lineInfo().start
+            : scanner.lineInfo().current,
       );
+
+      sequence
+        ..accept(empty.parsed())
+        ..updateEndOffset = empty.endOffset;
 
       if (indentOrSeparation < sequenceIndent) {
         return (
@@ -132,5 +134,10 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     }
   } while (scanner.canChunkMore);
 
-  return (blockInfo: emptyScanner, node: sequence as ParserDelegate<Obj>);
+  return (
+    blockInfo: emptyScanner,
+    node:
+        (sequence..updateEndOffset = scanner.lineInfo().current)
+            as ParserDelegate<Obj>,
+  );
 }
