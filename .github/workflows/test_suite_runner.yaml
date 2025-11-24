@@ -25,23 +25,15 @@ jobs:
         with:
           sdk: "stable"
 
-      - name: 🏃🏽 Run test suite
+      - name: 🏃🏽 Run test suite, 💬 Add PR comment
         id: runner
-        run: |
-          dart pub get
-          cd test/yaml_matrix_tests
-          pass_rate=$(dart matrix_runner.dart --no-file-output)
-          echo "$pass_rate"
-          echo "pass_rate=$pass_rate" >> "$GITHUB_OUTPUT"
-
-      - name: 💬 Add PR comment
         env:
           GH_TOKEN: ${{ secrets.BOT_KEY }}
         run: |
-          echo -e "* Current pass rate ([YAML Test Suite](https://github.com/yaml/yaml-test-suite)): \
-            ${{ steps.runner.outputs.pass_rate }}%\n\
-          * Head Commit SHA: ${{ github.event.pull_request.head.sha }}" > body
-
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            -R kekavc24/rookie_yaml \
-            -F body
+          dart pub get
+          cd scripts
+          pwd
+          dart test_suite_comment.dart \
+            --pr ${{ github.event.pull_request.number }} \
+            --tip-SHA ${{ github.event.pull_request.head.sha }} \
+            --working-directory ${{ github.workspace }}

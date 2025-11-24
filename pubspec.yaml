@@ -14,7 +14,7 @@ platforms:
   web:
 
 environment:
-  sdk: ^3.8.0
+  sdk: ^3.9.0
 
 dependencies:
   collection: ^1.19.1
@@ -27,3 +27,8 @@ dev_dependencies:
   lints: ^6.0.0
   path: ^1.9.1
   test: ^1.24.0
+
+  # YAML test suite abstraction
+  yaml_test_suite_runner:
+    git: https://github.com/kekavc24/yaml_test_suite_runner.git
+    version: 0.0.1

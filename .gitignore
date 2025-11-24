@@ -12,6 +12,7 @@ coverage/*
 .vscode/
 
 # Local prototyping
+ASCII-Table.png
 playground.dart
 todo.md
 fake.yaml

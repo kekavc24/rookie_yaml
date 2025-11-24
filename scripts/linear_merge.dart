@@ -4,14 +4,12 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 
-const _repo = 'kekavc24/rookie_yaml';
+import 'utils.dart';
+
 const _defaultBranch = 'main';
 
 /// Test suite badge uri regex
 final _regex = RegExp(r'(^!\[test_suite\].*$)', multiLine: true);
-
-const _label = '![test_suite]';
-const _urlPrefix = 'https://img.shields.io/badge/YAML_Test_Suite';
 
 /// Argument parser to validate args for this script
 final _argParser = ArgParser()
@@ -79,25 +77,34 @@ extension on String {
   }
 }
 
-extension on int {
-  bool get isSuccess => this == 0;
-}
+/// Returns the colour matching the [passRate].
+///
+///   - "red" -> 0 - 49
+///   - "yellow" -> 50 - 75
+///   - "green" -> 76 - 100
+String _colouredRate(String passRate) {
+  final rate = double.tryParse(passRate);
 
-extension on double {
-  String get color => switch (this) {
-    < 50 => 'red',
-    >= 50 && < 75 => 'yellow',
-    _ => 'green',
-  };
+  if (rate != null && rate > 50) {
+    return switch (rate) {
+      >= 50 && <= 75 => 'yellow',
+      _ => 'green',
+    };
+  }
+
+  return 'red';
 }
 
 /// Update the `YAML` test suite [passRate] in the README.
 ///
 /// [directory] refers to path of the directory with the README.
-void _updatePassRate(String directory, double passRate) {
+void _updatePassRate(String directory, String passRate) {
   final file = File(path.join(directory, 'README.md'));
 
-  final replacement = '$_label($_urlPrefix-$passRate%25-${passRate.color})';
+  final replacement =
+      '$testSuiteLabel($testSuiteUrlPrefix'
+      '-$passRate%25-${_colouredRate(passRate)})';
+
   final updated = file.readAsStringSync().replaceFirst(_regex, replacement);
   file.writeAsStringSync(updated);
 }
@@ -111,35 +118,29 @@ void main(List<String> args) {
   );
 
   /// Run command in the current directory and returns output
-  T runCommand<T>(
+  T scopedProcRunner<T>(
     String command, {
     required List<String> args,
     String? messageOnFail,
     T Function(String stdout)? mapper,
     String? dirOverride,
-  }) {
-    final ProcessResult(:exitCode, :stdout, :stderr) = Process.runSync(
-      command,
-      args,
-      workingDirectory: dirOverride ?? directory,
-    );
-
-    if (!exitCode.isSuccess) {
-      throw Exception(messageOnFail ?? stderr);
-    }
-
-    return mapper != null ? mapper(stdout) : stdout as T;
-  }
+  }) => runCommand(
+    command,
+    args: args,
+    directory: dirOverride ?? directory,
+    messageOnFail: messageOnFail,
+    mapper: mapper,
+  );
 
   // Fetch PR info
-  final (:contributor, :repo, :branch, :isExternalRepo) = runCommand(
+  final (:contributor, :repo, :branch, :isExternalRepo) = scopedProcRunner(
     'gh',
     args: [
       'pr',
       'view',
       '$prNumber',
       '--repo',
-      _repo,
+      rootRepository,
       '--json',
       'headRepository',
       '--json',
@@ -159,7 +160,7 @@ void main(List<String> args) {
   if (isExternalRepo) {
     origin = 'forked';
 
-    runCommand(
+    scopedProcRunner(
       'git',
       args: [
         'remote',
@@ -170,26 +171,22 @@ void main(List<String> args) {
     );
   }
 
-  runCommand('git', args: ['fetch', origin]);
+  scopedProcRunner('git', args: ['fetch', origin]);
 
   final actualMergeBranch = '$origin/$branch';
 
   print(actualMergeBranch);
 
-  runCommand('git', args: ['remote', 'show', 'origin']);
+  scopedProcRunner('git', args: ['remote', 'show', 'origin']);
 
-  runCommand('git', args: ['checkout', _defaultBranch]); // Just be safe
+  scopedProcRunner('git', args: ['checkout', _defaultBranch]); // Just be safe
 
   // Most people may find this offputting.
-  runCommand('git', args: ['merge', '--ff-only', actualMergeBranch]);
+  scopedProcRunner('git', args: ['merge', '--ff-only', actualMergeBranch]);
 
   // Check if the head commits match. Injector, no injecting
-  if (runCommand(
-        'git',
-        args: ['rev-parse', 'HEAD'],
-        mapper: (stdout) => stdout.trim(),
-      )
-      case final commitID when commitID != headSHA) {
+  if (scopedProcRunner('git', args: ['rev-parse', 'HEAD']) case final commitID
+      when commitID != headSHA) {
     throw Exception('''
 $actualMergeBranch found in a dirty state.
 Expected tip SHA: $headSHA
@@ -198,33 +195,36 @@ Current tip SHA: $commitID
   }
 
   // Leave bot approval once merge was successful
-  runCommand(
+  scopedProcRunner(
     'gh',
-    args: ['pr', 'review', '--approve', '$prNumber', '--repo', _repo],
+    args: ['pr', 'review', '--approve', '$prNumber', '--repo', rootRepository],
   );
 
   // Regenerate latest test suite pass rate before push
-  final passRate = runCommand(
+  final passRate = scopedProcRunner<String>(
     'dart',
-    args: ['matrix_runner.dart', '--no-file-output'],
-    dirOverride: path.joinAll([directory, 'test', 'yaml_matrix_tests']),
-    mapper: (stdout) => double.parse(stdout.trim()),
+    args: ['runner.dart'],
+    dirOverride: path.joinAll([directory, 'test', 'yaml_test_suite']),
   );
+
+  print('Pass rate: $passRate');
 
   // Update README
   _updatePassRate(directory, passRate);
 
   // Check if we can actually commit it
-  if (runCommand(
+  if (scopedProcRunner<String>(
     'git',
     args: ['status', '--porcelain'],
-    mapper: (stdout) => stdout.trim(),
   ).isNotEmpty) {
-    runCommand('git', args: ['add', 'README.md']);
-    runCommand('git', args: ['commit', '-m', 'Test Suite Update: $passRate%']);
+    scopedProcRunner('git', args: ['add', 'README.md']);
+    scopedProcRunner(
+      'git',
+      args: ['commit', '-m', 'Test Suite Update: $passRate%'],
+    );
   }
 
-  runCommand(
+  scopedProcRunner(
     'git',
     args: ['push', '--force-with-lease', 'origin', _defaultBranch],
   );

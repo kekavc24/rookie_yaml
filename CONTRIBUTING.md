@@ -12,7 +12,7 @@ We are open to contributions from any human irrespective of your skill level, ag
 
 ## How to contribute
 
-1. Identify an open issue. If the issues don't scratch your itch, run the official `YAML` Test Suite using the [guide](./test/yaml_matrix_tests/README.md) and create an issue. Help us bring this parser closer to the spec!
+1. Identify an open issue. If the issues don't scratch your itch, run the official `YAML` Test Suite using the [guide](./test/yaml_test_suite/README.md) and create an issue. Help us bring this parser closer to the spec!
 
 2. Fork this repo. Create a branch. Fix issue, commit using the [commit behaviour guide](#commit-behaviour) and create a PR.
 
