@@ -173,7 +173,6 @@ int? skipToParsableChar(
   int? indent;
 
   var warmUp = true;
-  var leadingIsIndent = leadingAsIndent;
 
   void addComment(YamlComment comment) =>
       comments != null ? comments.add(comment) : onParseComment!(comment);
@@ -189,21 +188,29 @@ int? skipToParsableChar(
     scanner.skipCharAtCursor();
     warmUp = false;
 
-    if (leadingIsIndent) return;
+    if (leadingAsIndent) return;
 
-    indent = null;
     if (scanner.charAtCursor == tab) {
       scanner.skipWhitespace(skipTabs: true);
     }
   }
 
+  skipper:
   while (scanner.canChunkMore) {
-    switch (scanner.charAtCursor) {
+    final char = scanner.charAtCursor;
+
+    switch (char) {
+      case carriageReturn || lineFeed:
+        {
+          skipCrIfPossible(char!, scanner: scanner);
+          checkIndent();
+        }
+
       // Check if leading whitespace can be indent
-      case space:
+      case space when leadingAsIndent:
         checkIndent();
 
-      case tab when !leadingIsIndent:
+      case space || tab when !leadingAsIndent:
         scanner
           ..skipWhitespace(skipTabs: true)
           ..skipCharAtCursor();
@@ -217,20 +224,12 @@ int? skipToParsableChar(
           indent = null; // Guarantees indent recheck
         }
 
-      // Each line break triggers implicit indent inference
-      case int? char:
-        {
-          if (char == null || !char.isLineBreak()) return indent;
-
-          skipCrIfPossible(char, scanner: scanner);
-          leadingIsIndent = true;
-
-          checkIndent();
-        }
+      default:
+        break skipper;
     }
   }
 
-  return null;
+  return indent;
 }
 
 /// A function to easily create a [TypeResolverTag] on demand
