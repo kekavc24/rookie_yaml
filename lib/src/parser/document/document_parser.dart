@@ -84,7 +84,8 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
 
     var rootInDirectiveEndLine = false;
 
-    if (!_parserState.docStartExplicit) {
+    if (!_parserState.docStartExplicit &&
+        (rootIndent == null || rootIndent == 0)) {
       final (
         :yamlDirective,
         :globalTags,
