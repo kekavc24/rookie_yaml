@@ -78,7 +78,7 @@ void main(List<String> args) {
 $diff
 ---
 * Head SHA commit: $headCommit
-* Base Repository Pass Rate: $currentPassRate
+* Base Repository Pass Rate: `$currentPassRate%`
 
 ```yaml
 $summary
