@@ -127,23 +127,19 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         }
 
       default:
-        {
-          if (kind != NodeKind.unknown) {
-            return state.trackAnchor(
-              _flowNodeOfKind(
-                kind,
-                parserState: state,
-                property: property as NodeProperty,
-                flowEvent: event,
-                currentIndentLevel: currentIndentLevel,
-                minIndent: minIndent,
-                isImplicit: isImplicit,
-                forceInline: forceInline,
-              ),
-              property,
-            );
-          }
-        }
+        return state.trackAnchor(
+          _flowNodeOfKind(
+            kind,
+            parserState: state,
+            property: property as NodeProperty,
+            flowEvent: event,
+            currentIndentLevel: currentIndentLevel,
+            minIndent: minIndent,
+            isImplicit: isImplicit,
+            forceInline: forceInline,
+          ),
+          property,
+        );
     }
   }
 
@@ -238,11 +234,14 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       }
 
     default:
-      throwWithRangedOffset(
-        parserState.scanner,
-        message: 'Unknown node kind cannot be parsed!',
-        start: start,
-        end: end,
+      return _ambigousFlowNode(
+        flowEvent,
+        parserState: parserState,
+        property: property,
+        currentIndentLevel: currentIndentLevel,
+        minIndent: minIndent,
+        isImplicit: isImplicit,
+        forceInline: forceInline,
       );
   }
 }

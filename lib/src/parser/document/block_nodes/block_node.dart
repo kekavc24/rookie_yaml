@@ -344,22 +344,20 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
       default:
         {
-          if (kind != NodeKind.unknown) {
-            return _safeBlockState(
-              state,
-              parsed: _blockNodeOfKind(
-                kind,
-                state: state,
-                event: event,
-                property: property as NodeProperty,
-                indentLevel: indentLevel,
-                laxBlockIndent: adjustedLaxIndent,
-                fixedInlineIndent: adjustedInlineIndent,
-                forceInlined: forceInlined,
-                composeImplicitMap: definitelyComposeMap,
-              ),
-            );
-          }
+          return _safeBlockState(
+            state,
+            parsed: _blockNodeOfKind(
+              kind,
+              state: state,
+              event: event,
+              property: property as NodeProperty,
+              indentLevel: indentLevel,
+              laxBlockIndent: adjustedLaxIndent,
+              fixedInlineIndent: adjustedInlineIndent,
+              forceInlined: forceInlined,
+              composeImplicitMap: definitelyComposeMap,
+            ),
+          );
         }
     }
   }
@@ -507,11 +505,15 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       }
 
     default:
-      throwWithRangedOffset(
-        state.scanner,
-        message: 'Unknown node kind cannot be parsed!',
-        start: property.span.start,
-        end: property.span.end,
+      return _ambigousBlockNode(
+        event,
+        parserState: state,
+        property: property,
+        indentLevel: indentLevel,
+        laxBlockIndent: laxBlockIndent,
+        fixedInlineIndent: fixedInlineIndent,
+        forceInlined: forceInlined,
+        composeImplicitMap: composeImplicitMap,
       );
   }
 }
