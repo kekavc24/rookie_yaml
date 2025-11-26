@@ -397,7 +397,7 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required bool composeImplicitMap,
 }) {
   switch (kind) {
-    case NodeKind.set:
+    case NodeKind.set || NodeKind.orderedMap:
       {
         // Be lenient (for now). Treat a set as an iterable too.
         if (event

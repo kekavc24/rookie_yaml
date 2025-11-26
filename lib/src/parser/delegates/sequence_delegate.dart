@@ -69,7 +69,7 @@ final class SequenceDelegate<I, S extends Iterable<I>>
   NodeTag _checkResolvedTag(NodeTag tag) {
     final NodeTag(:suffix) = tag;
 
-    if (isYamlScalarTag(suffix) || (suffix != setTag && isYamlMapTag(suffix))) {
+    if (isYamlScalarTag(suffix) || suffix == mappingTag) {
       throw FormatException('A sequence cannot be resolved as "$suffix" kind');
     }
 

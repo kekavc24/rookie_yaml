@@ -180,7 +180,7 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   final isInline = isImplicit || forceInline;
 
   switch (kind) {
-    case NodeKind.set:
+    case NodeKind.set || NodeKind.orderedMap:
       {
         // Be lenient (for now). Treat a set as an iterable too.
         if (flowEvent == FlowCollectionEvent.startFlowSequence) {

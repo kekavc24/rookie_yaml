@@ -25,13 +25,17 @@ enum NodeKind {
   /// [Scalar]
   scalar,
 
-  /// [Set] or [Sequence] with unique elements
+  /// [Set] or [Sequence] with unique elements. This could also represent a
+  /// [NodeKind.orderedMap] or [NodeKind.mapping].
   set,
 
   /// Normal [Sequence] or [List]
   sequence,
 
-  /// [Mapping] or [Map]
+  /// [NodeKind.mapping] or a [Sequence]/[List] of [NodeKind.mapping].
+  orderedMap,
+
+  /// [Mapping] or [Map].
   mapping,
 
   /// A node whose kind could not be determined from the available information.
@@ -315,7 +319,8 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
 
     return (
       kind: switch (localTag.toString()) {
-        '!!map' || '!!omap' => NodeKind.mapping,
+        '!!map' => NodeKind.mapping,
+        '!!omap' => NodeKind.orderedMap,
         '!!seq' => NodeKind.sequence,
         '!!set' => NodeKind.set,
         _ when isYamlScalarTag(localTag) => NodeKind.scalar,
