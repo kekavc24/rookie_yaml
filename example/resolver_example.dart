@@ -25,7 +25,7 @@ $jsonTag "${json.encode(object).replaceAll('"', r'\"')}"
 
   // Embedded in the scalar
   final decodeJson = loadYamlNode<Scalar>(
-    source: yaml,
+    YamlSource.string(yaml),
     resolvers: [jsonResolver],
   )?.value;
 
@@ -36,7 +36,7 @@ $jsonTag "${json.encode(object).replaceAll('"', r'\"')}"
   /// We can even take this further and load the scalar as the list we have
   /// decoded directly as a Dart object
   final decodedList = loadDartObject<List>(
-    source: yaml,
+    YamlSource.string(yaml),
     resolvers: [jsonResolver],
   );
 

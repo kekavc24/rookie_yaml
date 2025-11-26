@@ -63,7 +63,7 @@ void main(List<String> arguments) async {
 
     final runner = TestRunner(
       parseFunction: (yaml) => loadAsDartObjects(
-        source: yaml,
+        YamlSource.string(yaml),
         throwOnMapDuplicate: true,
       ),
       sourceComparator: (parsed, expected) =>

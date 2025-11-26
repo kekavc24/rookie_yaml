@@ -9,7 +9,7 @@ List<YamlDocument> bootstrapDocParser(
   void Function(bool isInfo, String message)? logger,
   void Function(String message)? onMapDuplicate,
 }) => loadAllDocuments(
-  source: yaml,
+  YamlSource.string(yaml),
   resolvers: resolvers,
   throwOnMapDuplicate: onMapDuplicate == null,
   logger: logger ?? (_, _) {},

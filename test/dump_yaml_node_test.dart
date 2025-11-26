@@ -280,7 +280,10 @@ $globalFromUri
 ''';
 
       check(
-        dumpCompactNode(loadNodes(source: source).first, nodeUnpacker: null),
+        dumpCompactNode(
+          loadNodes(YamlSource.string(source)).first,
+          nodeUnpacker: null,
+        ),
       ).equals('''
 %YAML 1.2
 %TAG !reproducible! !reproducible
@@ -310,7 +313,7 @@ $globalFromUri
 ''';
 
       check(
-        dumpYamlDocuments(loadAllDocuments(source: source)),
+        dumpYamlDocuments(loadAllDocuments(YamlSource.string(source))),
       ).equals('''
 %YAML 1.2
 %RESERVED has no meaning

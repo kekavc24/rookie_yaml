@@ -8,31 +8,41 @@ void main() {
     group('Scalars', () {
       test('Loads string scalars as primitive Dart String', () {
         const string = 'normal';
-        check(loadDartObject(source: string)).isA<String>().equals(string);
+        check(
+          loadDartObject(YamlSource.string(string)),
+        ).isA<String>().equals(string);
       });
 
       test('Loads int scalars as primitive Dart int', () {
         const integer = 24;
 
-        check(loadDartObject(source: '24')).isA<int>().equals(integer);
-        check(loadDartObject(source: '0x18')).isA<int>().equals(integer);
-        check(loadDartObject(source: '0o30')).isA<int>().equals(integer);
+        check(
+          loadDartObject(YamlSource.string('24')),
+        ).isA<int>().equals(integer);
+        check(
+          loadDartObject(YamlSource.string('0x18')),
+        ).isA<int>().equals(integer);
+        check(
+          loadDartObject(YamlSource.string('0o30')),
+        ).isA<int>().equals(integer);
       });
 
       test('Loads float scalars as primitive Dart float', () {
-        check(loadDartObject(source: '24.0')).isA<double>().equals(24.0);
+        check(
+          loadDartObject(YamlSource.string('24.0')),
+        ).isA<double>().equals(24.0);
       });
 
       test('Loads boolean scalars as primitive Dart bool', () {
-        check(loadDartObject(source: 'false')).isA<bool>().isFalse();
-        check(loadDartObject(source: 'true')).isA<bool>().isTrue();
+        check(loadDartObject(YamlSource.string('false'))).isA<bool>().isFalse();
+        check(loadDartObject(YamlSource.string('true'))).isA<bool>().isTrue();
       });
 
       test('Loads null scalars as primitive Dart null', () {
-        check(loadDartObject(source: 'null')).isNull();
-        check(loadDartObject(source: 'NULL')).isNull();
-        check(loadDartObject(source: '~')).isNull();
-        check(loadDartObject(source: '')).isNull();
+        check(loadDartObject(YamlSource.string('null'))).isNull();
+        check(loadDartObject(YamlSource.string('NULL'))).isNull();
+        check(loadDartObject(YamlSource.string('~'))).isNull();
+        check(loadDartObject(YamlSource.string(''))).isNull();
       });
     });
 
@@ -48,7 +58,7 @@ void main() {
       ];
 
       check(
-        loadDartObject(source: list.toString()),
+        loadDartObject(YamlSource.string(list.toString())),
       ).isA<List>().deepEquals(list);
     });
 
@@ -64,7 +74,7 @@ void main() {
 
       check(
         DeepCollectionEquality().equals(
-          loadDartObject(source: map.toString()),
+          loadDartObject(YamlSource.string(map.toString())),
           map,
         ),
       ).isTrue();
@@ -90,12 +100,14 @@ void main() {
       ];
 
       test('Loads node with anchor and aliases', () {
-        check(loadDartObject<List>(source: yaml)).isA<List>().deepEquals(node);
+        check(
+          loadDartObject<List>(YamlSource.string(yaml)),
+        ).isA<List>().deepEquals(node);
       });
 
       test('Dereferences list and map aliases', () {
         final sequence = loadDartObject<List>(
-          source: yaml,
+          YamlSource.string(yaml),
           dereferenceAliases: true,
         );
 
@@ -115,7 +127,9 @@ void main() {
     check(
       loadAsDartObjects(
         // Separate with document end marker!
-        source: documents.map((doc) => '$doc\n...').join('\n').toString(),
+        YamlSource.string(
+          documents.map((doc) => '$doc\n...').join('\n').toString(),
+        ),
       ),
     ).deepEquals(documents);
   });

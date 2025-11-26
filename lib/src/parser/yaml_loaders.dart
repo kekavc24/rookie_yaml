@@ -6,6 +6,15 @@ import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
+/// A generic input class for the [DocumentParser].
+extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
+  /// Create an input source from a byte source.
+  YamlSource.bytes(Iterable<int> source) : this._(source);
+
+  /// Creates an input from a [yaml] source string.
+  YamlSource.string(String yaml) : this._(yaml.runes);
+}
+
 /// Internal logger used when no logger is provided
 final _logger = Logger(level: Level.all);
 
@@ -52,22 +61,8 @@ dynamic _dereferenceAliases(dynamic object, {required bool dereferenceAlias}) =>
 /// instantiated from the [byteSource]'s iterator.
 ///
 /// Throws an [ArgumentError] if both are null.
-GraphemeScanner _defaultScanner(String? source, Iterable<int>? byteSource) {
-  UnicodeIterator iterator;
-
-  if (source != null) {
-    iterator = UnicodeIterator.ofString(source);
-  } else if (byteSource != null) {
-    iterator = UnicodeIterator.ofByteSource(byteSource);
-  } else {
-    throw ArgumentError(
-      'Expected at least a YAML string [source] or an Iterable of bytes'
-      ' [byteSource]',
-    );
-  }
-
-  return GraphemeScanner(iterator);
-}
+GraphemeScanner _defaultScanner(YamlSource yaml) =>
+    GraphemeScanner(UnicodeIterator.ofByteSource(yaml));
 
 /// Loads the first node as a `Dart` object. This function guarantees that
 /// every object returned will be a primitive Dart type or a type inferred
@@ -88,17 +83,15 @@ GraphemeScanner _defaultScanner(String? source, Iterable<int>? byteSource) {
 /// not be overwritten.
 ///
 /// {@category dart_objects}
-T? loadDartObject<T>({
-  String? source,
-  Iterable<int>? byteSource,
+T? loadDartObject<T>(
+  YamlSource source, {
   bool dereferenceAliases = false,
   bool throwOnMapDuplicate = false,
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) =>
     loadAsDartObjects(
-          source: source,
-          byteSource: byteSource,
+          source,
           dereferenceAliases: dereferenceAliases,
           throwOnMapDuplicate: throwOnMapDuplicate,
           resolvers: resolvers,
@@ -125,15 +118,14 @@ T? loadDartObject<T>({
 /// not be overwritten.
 ///
 /// {@category dart_objects}
-List<Object?> loadAsDartObjects({
-  String? source,
-  Iterable<int>? byteSource,
+List<Object?> loadAsDartObjects(
+  YamlSource source, {
   bool dereferenceAliases = false,
   bool throwOnMapDuplicate = false,
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadAsDartObject(
-  _defaultScanner(source, byteSource),
+  _defaultScanner(source),
   dereferenceAliases: dereferenceAliases,
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
@@ -153,15 +145,13 @@ List<Object?> loadAsDartObjects({
 /// not be overwritten.
 ///
 /// {@category yaml_nodes}
-T? loadYamlNode<T extends YamlSourceNode>({
-  String? source,
-  Iterable<int>? byteSource,
+T? loadYamlNode<T extends YamlSourceNode>(
+  YamlSource source, {
   bool throwOnMapDuplicate = false,
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => loadNodes(
-  source: source,
-  byteSource: byteSource,
+  source,
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
   logger: logger,
@@ -180,15 +170,13 @@ T? loadYamlNode<T extends YamlSourceNode>({
 /// not be overwritten.
 ///
 /// {@category yaml_nodes}
-Iterable<YamlSourceNode> loadNodes({
-  String? source,
-  Iterable<int>? byteSource,
+Iterable<YamlSourceNode> loadNodes(
+  YamlSource source, {
   bool throwOnMapDuplicate = false,
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => loadAllDocuments(
-  source: source,
-  byteSource: byteSource,
+  source,
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
   logger: logger,
@@ -208,14 +196,13 @@ Iterable<YamlSourceNode> loadNodes({
 /// not be overwritten.
 ///
 /// {@category yaml_docs}
-List<YamlDocument> loadAllDocuments({
-  String? source,
-  Iterable<int>? byteSource,
+List<YamlDocument> loadAllDocuments(
+  YamlSource source, {
   bool throwOnMapDuplicate = false,
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadYamlDocuments(
-  _defaultScanner(source, byteSource),
+  _defaultScanner(source),
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
   logger: logger,
