@@ -14,7 +14,7 @@ Wow! Nice! This looks clean
 ...
 ''';
 
-final docs = loadAllDocuments(source: yaml);
+final docs = loadAllDocuments(source: YamlSource.string(yaml));
 
 print(docs.length); // 2
 
@@ -46,7 +46,7 @@ Documents with  directive end markers (`---`) and optionally document end marker
 status: Started immediately the marker was seen.
 ''';
 
-final docs = loadAllDocuments(source: yaml);
+final docs = loadAllDocuments(source: YamlSource.string(yaml));
 
 print(docs.length); // 3
 
@@ -72,7 +72,7 @@ Documents with directives. The directives must always end with marker (`---`) ev
 "You can just do this things. Do them with version 1.2+ features"
 ''';
 
-final doc = loadAllDocuments(source: yaml).first;
+final doc = loadAllDocuments(source: YamlSource.string(yaml)).first;
 
 // True
 print(

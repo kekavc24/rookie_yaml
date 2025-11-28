@@ -45,7 +45,7 @@ final expectedMap = {
   ]: {'key': 'value'}
 };
 
-final node = loadYamlNode<Mapping>(source: yaml);
+final node = loadYamlNode<Mapping>(source: YamlSource.string(yaml));
 
 /// Aliases are unpacked as the node they reference
 print(node.toString() == expectedMap.toString()); // True
@@ -57,9 +57,7 @@ print(yamlCollectionEquality.equals(node, expectedMap));
 
 ## Block Maps
 
-Block map nodes are somewhat unique in this aspect. You need to declare the entire node on a new line for properties to be assigned to the node if it degenerates to a map. However, in this case, the first node can never have properties. This is because the parser can never know if the first block scalar is an implicit key to a block map unless it sees the `": "` (colon + space combination).
-
-Future versions of this parser may mitigate this issue.
+Block map nodes are somewhat unique in this aspect. You need to declare the entire node on a new line for properties to be assigned to the node if it degenerates to a map.
 
 ```dart
 // This goes to the entire map
@@ -72,7 +70,7 @@ key: value
 &key-anchor !!str key: value
 ''';
 
-final docs = loadAllDocuments(source: yaml);
+final docs = loadAllDocuments(source: YamlSource.string(yaml));
 
 // Anchor in first document goes to the root map
 print(docs[0].root.anchor != null); // True
@@ -102,7 +100,7 @@ const yaml = '''
 - next
 ''';
 
-final docs = loadAllDocuments(source: yaml);
+final docs = loadAllDocuments(source: YamlSource.string(yaml));
 
 // True
 print(docs.every((d) => d.root.anchorOrAlias != null));
@@ -116,7 +114,7 @@ print(docs.every((d) => d.root.anchorOrAlias != null));
 // Throws
 print(
   loadYamlNode<Mapping>(
-    source: '''
+    source: YamlSource.string('''
 # Invalid use in block map
 
 key: value
@@ -127,20 +125,20 @@ key: value
 &anchor
 ? next-key
 : value
-'''
+'''),
   ),
 );
 
 // Throws
 print(
   loadYamlNode<Mapping>(
-    source: '''
+    source: YamlSource.string('''
 # First key. Properties are inline. Error
 
 &anchor ? key
 
 : value
-'''
+'''),
   ),
 );
 
@@ -153,7 +151,7 @@ print(
 // Throws
 print(
   loadYamlNode<Sequence>(
-    source: '''
+    source: YamlSource.string('''
 # Invalid use in list map
 
 - value
@@ -162,18 +160,18 @@ print(
 
 &anchor
 - anothervalue
-'''
+'''),
   ),
 );
 
 // Throws
 print(
   loadYamlNode<Sequence>(
-    source: '''
+    source: YamlSource.string('''
 # First entry. Properties are inline. Error
 
 &anchor - entry
-'''
+''',
   ),
 );
 

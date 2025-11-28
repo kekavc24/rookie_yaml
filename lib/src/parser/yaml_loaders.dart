@@ -7,6 +7,10 @@ import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// A generic input class for the [DocumentParser].
+///
+/// {@category dart_objects}
+/// {@category yaml_nodes}
+/// {@category yaml_docs}
 extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
   /// Create an input source from a byte source.
   YamlSource.bytes(Iterable<int> source) : this._(source);

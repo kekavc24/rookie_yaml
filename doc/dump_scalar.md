@@ -149,31 +149,6 @@ Woohoo! I have line breaks↓
 ↓
 ```
 
-### String with leading whitespace
-
-Indent for block scalars is inferred from the first line when parsing instead of depending the indent provided by the global lexer/parser. To prevent this, the string is indented further and a block indentation indicator is provided in the block scalar header.
-
-The indentation indicator restricts the parser to consume only `n+m` spaces where:
-
-* `n` - is the number of indentation spaces it is currently pinned to from the parent node/global lexer.
-* `m` - the additional space(s) it needs to consume to determine the block scalar's indent. YAML allows `m` to range from `1-9`. We only emit `1` for our usecase.
-
-```dart
-dumpScalar(
-  " Leading space present\nin the line",
-  dumpingStyle: ScalarStyle.literal,
-);
-```
-
-```yaml
-# In yaml (characters below are visual aids. They are not included):
-# ↓ - for line break
-# · = indent
-|1-
-· Leading space present↓
-·in the line
-```
-
 ## Block Folded Style
 
 Line breaks are always "unfolded" (Peep style's name). Tabs are not normalized. However, this style throws if any non-printable characters are present in the string.
@@ -225,27 +200,6 @@ always! I have line breaks↓
 ↓
 ```
 
-### String with leading whitespace
-
-`ScalarStyle.literal` and `ScalarStyle.folded` are block scalar styles. Indentation indicator is also used in `ScalarStyle.folded`.
-
-```dart
-dumpScalar(
-  " Leading space present\nin the line",
-  dumpingStyle: ScalarStyle.folded,
-);
-```
-
-```yaml
-# Output in yaml (characters below are visual aids. They are not included):
-# ↓ - for line break
-# · = indent
->1-
-· Leading space present↓
-↓
-·in the line
-```
-
 ### String with non-leading indented lines
 
 Line breaks joining indented lines with other lines (indented or not) are never "unfolded" since YAML parsers do not fold such lines.
@@ -279,3 +233,6 @@ Unfolding continues after↓
 ↓
 this line
 ```
+
+> [!NOTE]
+> Block styles with leading whitespace will always be encoded as `ScalarStyle.doubleQuoted` to prevent issues since block styles use the first non-empty line to determine indent.

@@ -9,7 +9,7 @@ YAML allows nodes to be declared using a `block` or `flow` style. You can use `f
 Any node that is not a `Sequence` or `Mapping`. By default, its type is inferred out of the box.
 
 ```dart
-final node = loadYamlNode<Scalar>(source: '24');
+final node = loadYamlNode<Scalar>(source: YamlSource.string('24'));
 print(yamlCollectionEquality.equals(24, node)); // True.
 ```
 
@@ -26,7 +26,7 @@ const yaml = '''
 - in town
 ''';
 
-final node = loadYamlNode<Sequence>(source: yaml);
+final node = loadYamlNode<Sequence>(source: YamlSource.string(yaml));
 
 // True.
 print(
@@ -54,7 +54,7 @@ const mappy = {
 };
 
 // Built-in Dart types as strings are just flow nodes in yaml
-final node = loadYamlNode<Mapping>(source: mappy.toString());
+final node = loadYamlNode<Mapping>(source: YamlSource.string(mappy.toString()));
 
 // True.
 print(yamlCollectionEquality.equals(node, mappy));

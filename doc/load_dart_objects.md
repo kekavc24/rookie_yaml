@@ -4,35 +4,38 @@ The package allows you load a YAML string as a built-in Dart type without worryi
 - `List`
 - `Map`
 
+> [!TIP]
+> Each loader accepts a utility extension type called `YamlSource`. You can pass in the `bytes` for a yaml string or the actual string via the `YamlSource.bytes` and `YamlSource.string` constructors respectively.
+
 ## Loading a scalar as a built-in Dart type
 
 You can load a single Dart object from a YAML source string/bytes by calling `loadDartObject`. It allows you provide a type if are privy to the node present. The function returns a nullable type of the object your provide since the document may be empty.
 
 ```dart
 // Type inferred automatically. A YAML spec philosophy!
-print(loadDartObject<int>(source: '24'));
+print(loadDartObject<int>(source: YamlSource.string('24')));
 
-print(loadDartObject<bool>(source: 'true'));
+print(loadDartObject<bool>(source: YamlSource.string('true')));
 
-print(loadDartObject<double>(source: '24.0'));
+print(loadDartObject<double>(source: YamlSource.string('24.0')));
 
-print(loadDartObject<String>(source: '''
+print(loadDartObject<String>(source: YamlSource.string('''
 >+
  24
-'''));
+''')));
 ```
 
 Any directives, tags, anchors and aliases are stripped.
 
 ```dart
-print(loadDartObject<bool>(source: '''
+print(loadDartObject<bool>(source: YamlSource.string('''
 %YAML 1.2
 %SOME directive
 ---
 !!bool "true"
-'''));
+''')));
 
-print(loadDartObject<String>(source: '&anchor Am I a ship?')); // Prints "Am I a ship?"
+print(loadDartObject<String>(source: YamlSource.string('&anchor Am I a ship?'))); // Prints "Am I a ship?"
 ```
 
 ## Loading a Sequence/Mapping as a built-in Dart List/Map
@@ -45,22 +48,22 @@ This ensures the parser just works out of the box and doesn't trip itself from a
 
 ```dart
 // Dart throws. Casting happens after the list is already List<dynamic> which Dart won't allow.
-print(loadDartObject<List<int>>(source: '[24, 25]'));
+print(loadDartObject<List<int>>(source: YamlSource.string('[24, 25]')));
 
-print(loadDartObject<List>(source: '[24, 25]')); // Okay. [24, 25]
+print(loadDartObject<List>(source: YamlSource.string('[24, 25]'))); // Okay. [24, 25]
 
 // Enforce the cast later instead during iteration!
-print(loadDartObject<List>(source: '[24, 25]')?.cast<int>()); // Okay. [24, 25]
+print(loadDartObject<List>(source: YamlSource.string('[24, 25]'))?.cast<int>()); // Okay. [24, 25]
 
-print(loadDartObject<Map>(source: '{ key: value }')); // Okay. {key: value}
+print(loadDartObject<Map>(source: YamlSource.string('{ key: value }'))); // Okay. {key: value}
 
 // Okay. {24: int, 25: cast}
 print(
   loadDartObject<Map>(
-    source: '''
+    source: YamlSource.string('''
 24: int
 25: cast
-''',
+'''),
   )?.cast<int, String>(),
 );
 ```
@@ -71,10 +74,10 @@ Stripped anchors and aliases are evident in lists/maps. Each node is direct refe
 // Prints: {value: [flow, value], flow: [flow, value]}
 print(
   loadDartObject<Map>(
-    source: '''
+    source: YamlSource.string('''
 &scalar value: &flow-list [ &flow flow, *scalar ]
 *flow : *flow-list
-''',
+'''),
   ),
 );
 ```
@@ -84,27 +87,27 @@ print(
 >
 > ```dart
 >   final list = loadDartObject<List>(
->     source: '''
+>     source: YamlSource.string('''
 > - &list [ flow, &map { key: value } ]
 > - *list
 > - *map
->   ''',
+>   '''),
 >   )!;
-> 
+>
 >   print(list[0] == list[1]); // Same list reference. True
 >   print(list[0][1] == list[2]); // Same map reference. True
 > ```
-> 
+>
 > ```dart
 >   final list = loadDartObject<List>(
->     source: '''
+>     source: YamlSource.string('''
 > - &list [ flow, &map { key: value } ]
 > - *list
 > - *map
->   ''',
+>   '''),
 >     dereferenceAliases: true,
 >   )!;
-> 
+>
 >   print(list[0] == list[1]); // Copies list. False.
 >   print(list[0][1] == list[2]); // Copies map. False
 > ```
@@ -117,7 +120,7 @@ You can also load multiple documents by calling `loadAsDartObjects`. It explicit
 // Prints: [first, second, third]
 print(
   loadDartObjects(
-    source: '''
+    source: YamlSource.string('''
 # This document has no directives but uses doc end chars "..."
 
 "first"
@@ -132,7 +135,7 @@ print(
     # No directives. Direct to node
 
 "third"
-''',
+'''),
   ),
 );
 ```

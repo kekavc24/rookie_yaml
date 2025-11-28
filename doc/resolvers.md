@@ -45,7 +45,7 @@ final yaml =
 ''';
 
 final node = loadYamlNode<Sequence>(
-  source: yaml,
+  source: YamlSource.string(yaml),
   resolvers: [utf16Resolver, base64Resolver],
 );
 
@@ -85,10 +85,10 @@ final safeResolver = Resolver.content(
 final yaml = '$base32Tag $encoded';
 
 // Defaults to string
-print(loadYamlNode(source: yaml, resolvers: [safeResolver]));
+print(loadYamlNode(source: YamlSource.string(yaml), resolvers: [safeResolver]));
 
 // Throws
-print(loadYamlNode(source: yaml, resolvers: [aggressiveResolver]));
+print(loadYamlNode(source: YamlSource.string(yaml), resolvers: [aggressiveResolver]));
 ```
 
 > [!NOTE]
