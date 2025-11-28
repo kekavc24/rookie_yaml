@@ -220,10 +220,7 @@ void main() {
               indent: 0,
               dumpingStyle: ScalarStyle.literal,
             ),
-          ).equals(
-            '|1-\n'
-            '  literal string', // Indented by additional space
-          );
+          ).equals('" literal string"');
         },
       );
 
@@ -281,10 +278,7 @@ void main() {
               indent: 0,
               dumpingStyle: ScalarStyle.folded,
             ),
-          ).equals(
-            '>1-\n'
-            '  folded string', // Indented by additional space
-          );
+          ).equals('" folded string"');
         },
       );
 

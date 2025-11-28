@@ -103,29 +103,6 @@ ScalarStyle _defaultStyle(
   var preferExplicit = false;
 
   switch (style) {
-    // Strictly yaml's double quoted style.
-    case ScalarStyle.doubleQuoted:
-      {
-        final (dqIndent, string) = _joinScalar(
-          unfoldDoubleQuoted(
-            splitLazyChecked(
-              content,
-              replacer: (_, c) => c.normalizeEscapedChars(
-                includeTab: false,
-                includeLineBreaks: false,
-              ),
-              lineOnSplit: () => preferExplicit = true,
-            ),
-          ),
-          indent: indent,
-        );
-
-        return (
-          explicitIfKey: preferExplicit || string.length > _maxImplicitLength,
-          encodedScalar: '"$string${string.endsWith('\n') ? dqIndent : ''}"',
-        );
-      }
-
     // All characters must be printable!
     case ScalarStyle.singleQuoted:
       {
@@ -185,21 +162,12 @@ ScalarStyle _defaultStyle(
         );
       }
 
-    // Block styles. Always explicit if it's a key.
-    default:
+    case ScalarStyle.literal || ScalarStyle.folded:
       {
-        var indentIndicator = 0;
-        var blockIndent = indent;
-
-        /// Both literal and folded styles infer indent from the first
-        /// non-empty line. We need to ensure that line is parsed "as-is"
-        /// without resorting to double quoted.
-        ///
-        /// We can limit a parser to a specific indent using an indent
-        /// indicator.
+        /// Leading spaces may be problematic. We can know the indentation level
+        /// from here.
         if (content.startsWith(' ')) {
-          ++indentIndicator; // Must be 1-9.
-          ++blockIndent; // Cheat whichever parser parses.
+          continue doubleQuoted;
         }
 
         final isBlockFolded = style == ScalarStyle.folded;
@@ -208,7 +176,7 @@ ScalarStyle _defaultStyle(
           isBlockFolded
               ? unfoldBlockFolded(_splitBlockString(content))
               : _splitBlockString(content),
-          indent: blockIndent,
+          indent: indent,
           includeFirst: true,
         ).$2;
 
@@ -222,7 +190,6 @@ ScalarStyle _defaultStyle(
           explicitIfKey: true,
           encodedScalar:
               '${isBlockFolded ? folded.asString() : literal.asString()}'
-              '${indentIndicator == 0 ? '' : indentIndicator}'
               '$chomping'
               /// Never append a header line break if [ScalarStyle.folded] and
               /// unfolded string has a leading line feed.
@@ -233,6 +200,30 @@ ScalarStyle _defaultStyle(
               /// to write characters of this folded block scalar.
               '${!isBlockFolded || !content.startsWith('\n') ? '\n' : ''}'
               '$content',
+        );
+      }
+
+    // Strictly yaml's double quoted style.
+    doubleQuoted:
+    default:
+      {
+        final (dqIndent, string) = _joinScalar(
+          unfoldDoubleQuoted(
+            splitLazyChecked(
+              content,
+              replacer: (_, c) => c.normalizeEscapedChars(
+                includeTab: false,
+                includeLineBreaks: false,
+              ),
+              lineOnSplit: () => preferExplicit = true,
+            ),
+          ),
+          indent: indent,
+        );
+
+        return (
+          explicitIfKey: preferExplicit || string.length > _maxImplicitLength,
+          encodedScalar: '"$string${string.endsWith('\n') ? dqIndent : ''}"',
         );
       }
   }
