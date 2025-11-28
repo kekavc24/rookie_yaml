@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.0
+
+This release bring extensive improvements to the recursive parsing strategy. The parser can now handle a wide variety of edge cases with regards to block nodes and their properties. The recursive parsing strategy has been modelled to match the official YAML grammar and syntax.
+
+- `breaking`:
+  - Added a `YamlSource` extension type. All loaders no longer have the `source` and `byteSource` parameter. `YamlSource` provides named constructors for both with all loaders accepting a single `YamlSource` input.
+
+- `feat`:
+  - Added backward compatibility support for `!!set` and `!!omap` secondary tags.
+  - Added internal support for parsing a node based on its kind resulting in better performance and more contextual errors.
+
+- `refactor:`
+  - `Mapping` and `Sequence` revert to extending `Dart` sdk's `UnmodifiableMapView` and `UnmodifiableListView` respectively.
+  - The parser now bubbles up trivial errors to be caught at the correct recursive level. The errors are now more contextual with more accurate stack traces.
+
+- `fix(parser)`:
+  - Uses the indentation level and not indent when calculating the indent of a block scalar (`ScalarStyle.folded` and `ScalarStyle.literal`) when the indentation indicator was specified.
+  - Empty strings annotated with `!!str` are not inferred as `null`.
+  - Fixes an issue where a document's root block collection with leading spaces was never parsed correctly.
+  - Parser ensures the end offset of a `ScalarStyle.plain` node is set correctly.
+  - Parses a flow node declared just before a terminating flow indicator (`,`, `}`, `]`) correctly instead of throwing.
+  - Parser now handles block/flow nodes declared on the same line as the directives end marker (`---`) correctly.
+
+- `fix(dumper)`:
+  - Forces a block style to be encoded as `ScalarStyle.doubleQuoted` if any leading whitespace (not tabs) is encountered.
+
 ## 0.2.2
 
 - `fix`:
