@@ -1,4 +1,4 @@
-import 'package:logger/logger.dart';
+import 'package:logging/logging.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
@@ -20,12 +20,19 @@ extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
 }
 
 /// Internal logger used when no logger is provided
-final _logger = Logger(level: Level.all);
+final _logger = Logger('rookie_yaml')
+  ..level = Level.INFO
+  ..onRecord.listen(
+    (record) => print(
+      '${record.level == Level.WARNING ? '[WARNING]' : '[INFO]'}: '
+      '${record.message}',
+    ),
+  );
 
 /// Logs [message] based on its status. [message] is always logged with
-/// [Level.info] if [isInfo] is true. Otherwise, logs as warning.
+/// [Level.INFO] if [isInfo] is true. Otherwise, logs as warning.
 void _defaultLogger(bool isInfo, String message) =>
-    isInfo ? _logger.i(message) : _logger.w(message);
+    isInfo ? _logger.info(message) : _logger.warning(message);
 
 /// Throws a [YamlParseException] if [throwOnMapDuplicate] is true. Otherwise,
 /// logs the message at [Level.info].
@@ -45,7 +52,7 @@ void _defaultOnMapDuplicate(
     );
   }
 
-  _logger.i(message);
+  _logger.info(message);
 }
 
 /// Dereferences a [List] or [Map] if [dereferenceAlias] is `true`. Callers of
@@ -293,6 +300,7 @@ List<YamlDocument> _loadYamlDocuments(
 List<O> _loadYaml<O, R, S extends Iterable<R>, M extends Map<R, R?>>(
   DocumentParser<R, S, M> parser,
 ) {
+  hierarchicalLoggingEnabled = true;
   final objects = <O>[];
 
   do {

@@ -65,6 +65,7 @@ void main(List<String> arguments) async {
       parseFunction: (yaml) => loadAsDartObjects(
         YamlSource.string(yaml),
         throwOnMapDuplicate: true,
+        logger: (_, _) {},
       ),
       sourceComparator: (parsed, expected) =>
           parsed.toString() == expected.toString(),
