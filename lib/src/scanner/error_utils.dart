@@ -4,13 +4,17 @@ part of 'grapheme_scanner.dart';
 final class YamlParseException implements Exception {
   YamlParseException(
     this.message, {
-    required this.lineInfo,
+    required this.anchorOffset,
+    required this.offsetOnError,
     required this.highlight,
   });
 
+  /// A possible start offset of the error.
+  final RuneOffset anchorOffset;
+
   /// Last offset before this error was thrown. Typically the offset closely
   /// associated with the error.
-  final RuneOffset lineInfo;
+  final RuneOffset offsetOnError;
 
   /// Error message.
   final String message;
@@ -20,9 +24,9 @@ final class YamlParseException implements Exception {
 
   @override
   String toString() {
-    final (:lineIndex, :columnIndex, :utfOffset) = lineInfo;
+    final (:lineIndex, :columnIndex, :utfOffset) = offsetOnError;
     return 'ParserException'
-        '[Line $lineIndex, Column $columnIndex, Offset $utfOffset]: '
+        '[Line ${lineIndex + 1}, Column $columnIndex, Offset $utfOffset]: '
         '$message\n\n'
         '$highlight';
   }
@@ -137,7 +141,12 @@ Never throwWithSingleOffset(
     indices: {columnIndex},
   );
 
-  throw YamlParseException(message, lineInfo: offset, highlight: highlighted);
+  throw YamlParseException(
+    message,
+    anchorOffset: offset,
+    offsetOnError: offset,
+    highlight: highlighted,
+  );
 }
 
 /// Throws a [YamlParseException] for range of [lines] where the last line has
@@ -145,12 +154,12 @@ Never throwWithSingleOffset(
 /// the first line if [lines] has more than 1 line. Otherwise, the column index
 /// is treated as an column index to the last line.
 Never _rangedThrow(
-  String message,
-  int startIndex,
-  RuneOffset end,
-  List<SourceLine> lines,
-) {
-  var columnIndex = startIndex;
+  String message, {
+  required RuneOffset start,
+  required RuneOffset end,
+  required List<SourceLine> lines,
+}) {
+  var columnIndex = start.columnIndex;
   var length = lines.length - 1;
   final buffer = StringBuffer();
 
@@ -185,7 +194,8 @@ Never _rangedThrow(
 
   throw YamlParseException(
     message,
-    lineInfo: end,
+    anchorOffset: start,
+    offsetOnError: end,
     highlight: buffer.toString(),
   );
 }
@@ -214,9 +224,7 @@ Never throwWithRangedOffset(
   required RuneOffset start,
   required RuneOffset end,
 }) {
-  final (:lineIndex, :columnIndex, :utfOffset) = start;
-
-  if (utfOffset > end.utfOffset) {
+  if (start.utfOffset > end.utfOffset) {
     return throwWithSingleOffset(
       scanner,
       message: message,
@@ -226,12 +234,12 @@ Never throwWithRangedOffset(
 
   return _rangedThrow(
     message,
-    columnIndex,
-    end,
-    _makeLineAvailable(
+    start: start,
+    end: end,
+    lines: _makeLineAvailable(
       scanner,
       end.lineIndex,
-    ).lines(startIndex: lineIndex),
+    ).lines(startIndex: start.lineIndex),
   );
 }
 
@@ -266,5 +274,16 @@ Never throwWithApproximateRange(
     --iterIndex;
   }
 
-  return _rangedThrow(message, max(0, offsetDiff), current, lines);
+  final actualColumn = max(0, offsetDiff);
+
+  return _rangedThrow(
+    message,
+    start: (
+      lineIndex: iterIndex + 1,
+      columnIndex: actualColumn,
+      utfOffset: lines.first.startOffset + actualColumn,
+    ),
+    end: current,
+    lines: lines,
+  );
 }
