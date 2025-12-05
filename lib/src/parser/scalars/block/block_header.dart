@@ -7,8 +7,7 @@ _BlockHeaderInfo _parseBlockHeader(
   GraphemeScanner scanner, {
   required void Function(YamlComment comment) onParseComment,
 }) {
-  var current = scanner.charAtCursor;
-  final isLiteral = _isLiteralIndicator(current);
+  final isLiteral = _isLiteralIndicator(scanner.charAtCursor);
 
   if (isLiteral == null) {
     throwWithSingleOffset(
@@ -18,23 +17,11 @@ _BlockHeaderInfo _parseBlockHeader(
     );
   }
 
-  /// Runs and updates the value at the cursor for evaluation
-  T functionDelegate<T>(T Function() runnable) {
-    final val = runnable();
-    current = scanner.charAtCursor;
-    return val;
-  }
-
-  void skipChar() => functionDelegate(scanner.skipCharAtCursor);
-
-  bool isWhitespace([int? char]) =>
-      (char ?? current).isNotNullAnd((c) => c.isWhiteSpace());
-
   // Skip literal indicator
-  skipChar();
+  scanner.skipCharAtCursor();
 
   // TODO: Should block headers terminate with line break at all times?
-  if (current == null) {
+  if (scanner.charAtCursor == null) {
     return (
       isLiteral: isLiteral,
       chomping: ChompingIndicator.clip, // Default chomping indicator
@@ -42,19 +29,20 @@ _BlockHeaderInfo _parseBlockHeader(
     );
   }
 
-  final (chomping, indentIndicator) = functionDelegate(
-    () => _extractIndicators(scanner),
-  );
+  final (chomping, indentIndicator) = _extractIndicators(scanner);
 
   // Skip whitespace
-  if (isWhitespace()) {
-    functionDelegate(() => scanner.skipWhitespace(skipTabs: true));
-    skipChar(); // Must always skip char at cursor. We peek ahead.
+  if (scanner.charAtCursor case space || tab) {
+    scanner
+      ..skipWhitespace(skipTabs: true)
+      ..skipCharAtCursor();
   }
 
   // Extract any comments
-  if (current == comment) {
-    if (!isWhitespace(scanner.charBeforeCursor)) {
+  if (scanner.charAtCursor.isNotNullAnd((c) => c == comment)) {
+    if (scanner.charBeforeCursor case space || tab) {
+      onParseComment(parseComment(scanner).comment);
+    } else {
       throwWithSingleOffset(
         scanner,
         message:
@@ -62,14 +50,10 @@ _BlockHeaderInfo _parseBlockHeader(
         offset: scanner.lineInfo().current,
       );
     }
-
-    functionDelegate(() => onParseComment(parseComment(scanner).comment));
-  } else if (current == carriageReturn && scanner.charAfter == lineFeed) {
-    skipChar();
   }
 
   // TODO: Should block headers terminate with line break at all times?
-  if (!current.isNullOr((c) => c.isLineBreak())) {
+  if (!scanner.charAtCursor.isNullOr((c) => c.isLineBreak())) {
     _charNotAllowedException(scanner);
   }
 
