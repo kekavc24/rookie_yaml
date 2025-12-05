@@ -71,6 +71,7 @@ final class VerbatimTag extends ResolvedTag {
 
 /// Parses a [VerbatimTag]
 VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
+  final startOffset = scanner.lineInfo().current;
   var charAtCursor = scanner.charAtCursor;
 
   void skipAndMove() {
@@ -111,10 +112,13 @@ VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
   );
   skipAndMove();
 
+  var isLocalTag = false;
+
   // This may be a local tag instead of a global one
   if (charAtCursor == tag) {
     skipAndMove();
     buffer.writeCharCode(tag);
+    isLocalTag = true;
   }
 
   // We can safely extract the remaining as uri characters
@@ -130,6 +134,13 @@ VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
       message: _onNonEmptyVerbatimUri,
       current: scanner.lineInfo().current,
       charCountBefore: buffer.length - 1,
+    );
+  } else if (!isLocalTag && !uri.startsWith('tag:')) {
+    throwWithRangedOffset(
+      scanner,
+      message: 'Expected a tag uri starting the "tag:" uri scheme',
+      start: startOffset,
+      end: scanner.lineInfo().current,
     );
   }
 

@@ -359,6 +359,14 @@ void main() {
         'Verbatim tags are never resolved and should have a non-empty suffix',
       );
     });
+
+    test("Throws if a verbatim tag doesn't start with \"tag:\" scheme", () {
+      check(
+        () => parseVerbatimTag(GraphemeScanner.of('!<my:verbatim>')),
+      ).throwsParserException(
+        'Expected a tag uri starting the "tag:" uri scheme',
+      );
+    });
   });
 
   // TODO: Add tests for nodes with resolved tags. Error if tag cannot
