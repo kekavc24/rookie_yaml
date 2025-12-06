@@ -4,24 +4,24 @@ part of 'block_scalar.dart';
 /// should only include the block and chomping indicators or a comment
 /// restricted to a single line.
 _BlockHeaderInfo _parseBlockHeader(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required void Function(YamlComment comment) onParseComment,
 }) {
-  final isLiteral = _isLiteralIndicator(scanner.charAtCursor);
+  final isLiteral = _isLiteralIndicator(iterator.current);
 
   if (isLiteral == null) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'The current char is not a valid block style indicator',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
   // Skip literal indicator
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   // TODO: Should block headers terminate with line break at all times?
-  if (scanner.charAtCursor == null) {
+  if (iterator.isEOF) {
     return (
       isLiteral: isLiteral,
       chomping: ChompingIndicator.clip, // Default chomping indicator
@@ -29,62 +29,61 @@ _BlockHeaderInfo _parseBlockHeader(
     );
   }
 
-  final (chomping, indentIndicator) = _extractIndicators(scanner);
+  final (chomping, indentIndicator) = _extractIndicators(iterator);
 
   // Skip whitespace
-  if (scanner.charAtCursor case space || tab) {
-    scanner
-      ..skipWhitespace(skipTabs: true)
-      ..skipCharAtCursor();
+  if (iterator.current case space || tab) {
+    skipWhitespace(iterator, skipTabs: true);
+    iterator.nextChar();
   }
 
   // Extract any comments
-  if (scanner.charAtCursor.isNotNullAnd((c) => c == comment)) {
-    if (scanner.charBeforeCursor case space || tab) {
-      onParseComment(parseComment(scanner).comment);
+  if (iterator.current == comment) {
+    if (iterator.before case space || tab) {
+      onParseComment(parseComment(iterator).comment);
     } else {
       throwWithSingleOffset(
-        scanner,
+        iterator,
         message:
             'Expected a whitespace character before the start of the comment',
-        offset: scanner.lineInfo().current,
+        offset: iterator.currentLineInfo.current,
       );
     }
   }
 
   // TODO: Should block headers terminate with line break at all times?
-  if (!scanner.charAtCursor.isNullOr((c) => c.isLineBreak())) {
-    _charNotAllowedException(scanner);
+  if (iterator.isEOF || iterator.current.isLineBreak()) {
+    return (
+      isLiteral: isLiteral,
+      chomping: chomping,
+      indentIndicator: indentIndicator,
+    );
   }
 
-  return (
-    isLiteral: isLiteral,
-    chomping: chomping,
-    indentIndicator: indentIndicator,
-  );
+  _charNotAllowedException(iterator);
 }
 
 const _indentationErr =
     'Invalid block indentation indicator. Value must be between 1 - 9';
 
 /// Parses block indentation and chomping indicators
-_IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
+_IndicatorInfo _extractIndicators(SourceIterator iterator) {
   ChompingIndicator? chomping;
   int? indentIndicator;
 
   // We only read 2 characters
   for (var count = 0; count < 2; count++) {
-    final char = scanner.charAtCursor;
+    final char = iterator.current;
 
-    if (char.isNullOr((c) => c.isLineBreak() || c.isWhiteSpace())) break;
+    if (iteratedIsEOF(char) || char.isLineBreak() || char.isWhiteSpace()) break;
 
-    if (char!.isDigit()) {
+    if (char.isDigit()) {
       // Allows only a single digit between 1 - 9
       if (indentIndicator != null) {
         throwWithApproximateRange(
-          scanner,
+          iterator,
           message: _indentationErr,
-          current: scanner.lineInfo().current,
+          current: iterator.currentLineInfo.current,
           charCountBefore: 1, // Include the previous digit we read
         );
       }
@@ -102,9 +101,9 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
       // We must not see duplicate chomping indicators or any other char
       if (chomping != null) {
         throwWithApproximateRange(
-          scanner,
+          iterator,
           message: 'Duplicate chomping indicators not allowed!',
-          current: scanner.lineInfo().current,
+          current: iterator.currentLineInfo.current,
           charCountBefore: 1, // Include chomping indicator before
         );
       }
@@ -116,11 +115,11 @@ _IndicatorInfo _extractIndicators(GraphemeScanner scanner) {
         /// function parsing the block header
         if (char == comment) break;
 
-        _charNotAllowedException(scanner);
+        _charNotAllowedException(iterator);
       }
     }
 
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
   }
 
   return (chomping ?? ChompingIndicator.clip, indentIndicator);

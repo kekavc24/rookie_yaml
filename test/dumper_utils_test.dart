@@ -5,7 +5,7 @@ import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:test/test.dart';
 
@@ -56,7 +56,7 @@ multiline string.
       // Check single quoted
       parserMatches(
         parseSingleQuoted(
-          GraphemeScanner.of("'$unfolded'"),
+          UnicodeIterator.ofString("'$unfolded'"),
           indent: 0,
           isImplicit: false,
         ),
@@ -66,7 +66,7 @@ multiline string.
       // Check plain.
       parserMatches(
         parsePlain(
-          GraphemeScanner.of(unfolded),
+          UnicodeIterator.ofString(unfolded),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -88,7 +88,7 @@ multiline string.
 
       parserMatches(
         parseBlockStyle(
-          GraphemeScanner.of('>\n$unfolded'),
+          UnicodeIterator.ofString('>\n$unfolded'),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: (_) {},
@@ -104,7 +104,7 @@ multiline string.
 
       parserMatches(
         parseDoubleQuoted(
-          GraphemeScanner.of('"$unfolded"'),
+          UnicodeIterator.ofString('"$unfolded"'),
           indent: 0,
           isImplicit: false,
         ),
@@ -144,7 +144,7 @@ multiline string.
 
         parserMatches(
           parseDoubleQuoted(
-            GraphemeScanner.of('"$unfolded"'),
+            UnicodeIterator.ofString('"$unfolded"'),
             indent: 0,
             isImplicit: false,
           ),
@@ -183,7 +183,7 @@ multiline string.
 
       parserMatches(
         parseBlockStyle(
-          GraphemeScanner.of('>$unfolded'),
+          UnicodeIterator.ofString('>$unfolded'),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: (_) {},

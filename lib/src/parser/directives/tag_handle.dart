@@ -77,30 +77,27 @@ final class TagHandle {
 }
 
 /// Parses a [TagHandle]
-TagHandle parseTagHandle(GraphemeScanner scanner) {
+TagHandle parseTagHandle(SourceIterator iterator) {
   // All tag handles must start with the indicator
-  if (scanner.charAtCursor != tag) {
+  if (iterator.current != tag) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Expected a tag indicator "${tag.asString()}"',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
   TagHandle tagHandle;
 
-  switch (scanner.charAfter) {
+  switch (iterator.peekNextChar()) {
     // Just a single `!`
     case null || space || tab:
       tagHandle = TagHandle.primary();
 
     /// For secondary tags, parse as secondary. Let caller handle the "mess" or
     /// "success" that may follow.
-    ///
-    /// "Success" -> whitespace
-    /// "Mess" -> throw if not whitespace
     case tag:
-      scanner.skipCharAtCursor(); // Present in tag handle object
+      iterator.nextChar(); // Present in tag handle object
       tagHandle = TagHandle.secondary();
 
     // Strictly expect a named tag handle if not primary/secondary
@@ -108,22 +105,23 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
       {
         final namedBuffer = StringBuffer();
 
-        scanner
-          ..takeUntil(
-            includeCharAtCursor: true, // Prefer setting the leading "!"
-            mapper: (c) => c.asString(),
-            onMapped: namedBuffer.write,
-            stopIf: (_, n) => !n.isAlphaNumeric(),
-          )
-          ..skipCharAtCursor();
+        takeFromIteratorUntil(
+          iterator,
+          includeCharAtCursor: true, // Prefer setting the leading "!"
+          mapper: (c) => c.asString(),
+          onMapped: namedBuffer.write,
+          stopIf: (_, n) => !n.isAlphaNumeric(),
+        );
+
+        iterator.nextChar();
 
         /// The named tag must not degenerate to a "!" or "!!". "!" is not
         /// alphanumeric
-        if (scanner.charAtCursor != tag || namedBuffer.length <= 1) {
+        if (iterator.current != tag || namedBuffer.length <= 1) {
           throwWithApproximateRange(
-            scanner,
+            iterator,
             message: 'Invalid/incomplete named tag handle',
-            current: scanner.lineInfo().current,
+            current: iterator.currentLineInfo.current,
 
             // Highlight the buffer named tag only
             charCountBefore: namedBuffer.length,
@@ -135,6 +133,6 @@ TagHandle parseTagHandle(GraphemeScanner scanner) {
       }
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
   return tagHandle;
 }

@@ -2,7 +2,6 @@ import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -53,7 +52,7 @@ typedef TagResolver =
 /// Holds the document parser's top level state
 final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
   ParserState(
-    this.scanner, {
+    this.iterator, {
     required this.aliasFunction,
     required this.listFunction,
     required this.mapFunction,
@@ -67,8 +66,8 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
          return p;
        });
 
-  /// Scanner with source string
-  final GraphemeScanner scanner;
+  /// Byte iterator.
+  final SourceIterator iterator;
 
   /// Alias builder
   final AliasFunction<R> aliasFunction;
@@ -171,7 +170,7 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
     }
 
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: 'Alias is not a valid anchor reference',
       start: span.start,
       end: span.end,
@@ -246,10 +245,11 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
     docEndExplicit = marker == DocumentMarker.documentEnd;
 
     if (docEndExplicit &&
-        scanner.charAtCursor.isNotNullAnd(
-          (c) => c == comment || c.isWhiteSpace() || c.isLineBreak(),
-        )) {
-      skipToParsableChar(scanner, onParseComment: comments.add);
+        !iterator.isEOF &&
+        (iterator.current == comment ||
+            iterator.current.isWhiteSpace() ||
+            iterator.current.isLineBreak())) {
+      skipToParsableChar(iterator, onParseComment: comments.add);
     }
   }
 
@@ -277,14 +277,14 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
         {
           if (!hasGlobalTag) {
             throwWithRangedOffset(
-              scanner,
+              iterator,
               start: start,
               end: end,
               message: 'Named tags must have a corresponding global tag',
             );
           } else if (content.isEmpty) {
             throwWithRangedOffset(
-              scanner,
+              iterator,
               start: start,
               end: end,
               message: 'Named tags must have a non-empty suffix',
@@ -295,9 +295,10 @@ final class ParserState<R, S extends Iterable<R>, M extends Map<R, R?>> {
         }
 
       // Secondary tags limited to tags only supported by YAML
+      // TODO: Throw for yaml tag only
       case TagHandleVariant.secondary when !isYamlTag(localTag):
         throwWithRangedOffset(
-          scanner,
+          iterator,
           message:
               'Invalid secondary tag. Expected any of: '
               '$mappingTag, $orderedMappingTag, '

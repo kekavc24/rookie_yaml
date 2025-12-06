@@ -2,7 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
@@ -32,7 +32,7 @@ a line break''';
 
       check(
         parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(value)),
+          UnicodeIterator.ofString(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -42,7 +42,7 @@ a line break''';
     test('Parses and folds double quoted scalar', () {
       check(
         parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(defaultLineToFold)),
+          UnicodeIterator.ofString(doubleQuoted(defaultLineToFold)),
           indent: 0,
           isImplicit: false,
         ),
@@ -64,7 +64,7 @@ This line will have a space before after folding''';
 
       check(
         parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(value)),
+          UnicodeIterator.ofString(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -82,7 +82,7 @@ C with code.''';
 
       check(
         parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(string)),
+          UnicodeIterator.ofString(doubleQuoted(string)),
           indent: 0,
           isImplicit: false,
         ),
@@ -104,7 +104,7 @@ C with code.''';
 
       check(
         parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(string)),
+          UnicodeIterator.ofString(doubleQuoted(string)),
           indent: 0,
           isImplicit: false,
         ),
@@ -159,7 +159,7 @@ Fun with escapes:
 
       check(
         parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(value)),
+          UnicodeIterator.ofString(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -169,7 +169,7 @@ Fun with escapes:
     test('Throws if leading quote is missing', () {
       check(
         () => parseDoubleQuoted(
-          GraphemeScanner.of('unquoted'),
+          UnicodeIterator.ofString('unquoted'),
           indent: 0,
           isImplicit: false,
         ),
@@ -179,7 +179,7 @@ Fun with escapes:
     test('Throws if trailing quote is missing', () {
       check(
         () => parseDoubleQuoted(
-          GraphemeScanner.of('"unquoted'),
+          UnicodeIterator.ofString('"unquoted'),
           indent: 0,
           isImplicit: false,
         ),
@@ -191,7 +191,7 @@ Fun with escapes:
     test('Throws on premature exit if implicit and no quote', () {
       check(
         () => parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted('unquoted\n')),
+          UnicodeIterator.ofString(doubleQuoted('unquoted\n')),
           indent: 0,
           isImplicit: true,
         ),
@@ -203,7 +203,7 @@ Fun with escapes:
     test('Throws if unknown characters are escaped', () {
       check(
         () => parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted('Unknown escaped \\c')),
+          UnicodeIterator.ofString(doubleQuoted('Unknown escaped \\c')),
           indent: 0,
           isImplicit: true,
         ),
@@ -220,7 +220,7 @@ Fun with escapes:
 
       check(
         () => parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(value)),
+          UnicodeIterator.ofString(doubleQuoted(value)),
           indent: 2,
           isImplicit: false,
         ),
@@ -234,7 +234,7 @@ Fun with escapes:
 
       check(
         () => parseDoubleQuoted(
-          GraphemeScanner.of(doubleQuoted(value)),
+          UnicodeIterator.ofString(doubleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -250,7 +250,7 @@ Fun with escapes:
 
       check(
         parseSingleQuoted(
-          GraphemeScanner.of(singleQuoted(value)),
+          UnicodeIterator.ofString(singleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -260,7 +260,7 @@ Fun with escapes:
     test('Parses and folds a single quoted scalar', () {
       check(
         parseSingleQuoted(
-          GraphemeScanner.of(singleQuoted(defaultLineToFold)),
+          UnicodeIterator.ofString(singleQuoted(defaultLineToFold)),
           indent: 0,
           isImplicit: false,
         ),
@@ -274,7 +274,7 @@ Fun with escapes:
 
       check(
         parseSingleQuoted(
-          GraphemeScanner.of(singleQuoted(value)),
+          UnicodeIterator.ofString(singleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -284,7 +284,7 @@ Fun with escapes:
     test('Throws if leading single quote is missing', () {
       check(
         () => parseSingleQuoted(
-          GraphemeScanner.of('unquoted'),
+          UnicodeIterator.ofString('unquoted'),
           indent: 0,
           isImplicit: false,
         ),
@@ -294,7 +294,7 @@ Fun with escapes:
     test('Throws if trailing single quote is missing', () {
       check(
         () => parseSingleQuoted(
-          GraphemeScanner.of("'unquoted"),
+          UnicodeIterator.ofString("'unquoted"),
           indent: 0,
           isImplicit: false,
         ),
@@ -306,7 +306,7 @@ Fun with escapes:
     test('Throws on premature exit if implicit and no quote', () {
       check(
         () => parseSingleQuoted(
-          GraphemeScanner.of(singleQuoted('unquoted\n')),
+          UnicodeIterator.ofString(singleQuoted('unquoted\n')),
           indent: 0,
           isImplicit: true,
         ),
@@ -318,7 +318,7 @@ Fun with escapes:
     test('Throws if unprintable characters are used', () {
       check(
         () => parseSingleQuoted(
-          GraphemeScanner.of(
+          UnicodeIterator.ofString(
             singleQuoted('unquoted with ${bell.asString()}'),
           ),
           indent: 0,
@@ -339,7 +339,7 @@ Fun with escapes:
 
       check(
         () => parseSingleQuoted(
-          GraphemeScanner.of(singleQuoted(value)),
+          UnicodeIterator.ofString(singleQuoted(value)),
           indent: 2,
           isImplicit: false,
         ),
@@ -353,7 +353,7 @@ Fun with escapes:
 
       check(
         () => parseSingleQuoted(
-          GraphemeScanner.of(singleQuoted(value)),
+          UnicodeIterator.ofString(singleQuoted(value)),
           indent: 0,
           isImplicit: false,
         ),
@@ -369,7 +369,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          GraphemeScanner.of(value),
+          UnicodeIterator.ofString(value),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -381,7 +381,7 @@ Fun with escapes:
     test('Parses and folds plain scalar', () {
       check(
         parsePlain(
-          GraphemeScanner.of(defaultLineToFold),
+          UnicodeIterator.ofString(defaultLineToFold),
           indent: 0,
           isImplicit: false,
           charsOnGreedy: '',
@@ -396,7 +396,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          GraphemeScanner.of('${mappingKey.asString()} '),
+          UnicodeIterator.ofString('${mappingKey.asString()} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -406,7 +406,7 @@ Fun with escapes:
 
       check(
         parsePlain(
-          GraphemeScanner.of('${blockSequenceEntry.asString()} '),
+          UnicodeIterator.ofString('${blockSequenceEntry.asString()} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -417,7 +417,7 @@ Fun with escapes:
       // Assumes we have a missing key!
       check(
         parsePlain(
-          GraphemeScanner.of('${mappingValue.asString()} '),
+          UnicodeIterator.ofString('${mappingValue.asString()} '),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: false,
@@ -433,7 +433,7 @@ Fun with escapes:
       for (final string in flowDelimiters) {
         check(
           parsePlain(
-            GraphemeScanner.of('$prefix$string'),
+            UnicodeIterator.ofString('$prefix$string'),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -448,7 +448,7 @@ Fun with escapes:
 
         check(
           parsePlain(
-            GraphemeScanner.of(curr),
+            UnicodeIterator.ofString(curr),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -469,7 +469,7 @@ Fun with escapes:
       for (final str in restricted) {
         check(
           parsePlain(
-            GraphemeScanner.of('$yaml $str '),
+            UnicodeIterator.ofString('$yaml $str '),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -484,7 +484,7 @@ Fun with escapes:
 
         check(
           parsePlain(
-            GraphemeScanner.of(complete),
+            UnicodeIterator.ofString(complete),
             indent: 0,
             charsOnGreedy: '',
             isImplicit: false,
@@ -507,7 +507,7 @@ Fun with escapes:
 
       check(
           parsePlain(
-            GraphemeScanner.of(yaml),
+            UnicodeIterator.ofString(yaml),
             indent: 2,
             charsOnGreedy: '',
             isImplicit: false,
@@ -528,7 +528,7 @@ This will be ignored!
 
       check(
         parsePlain(
-          GraphemeScanner.of(yaml),
+          UnicodeIterator.ofString(yaml),
           indent: 0,
           charsOnGreedy: '',
           isImplicit: true,

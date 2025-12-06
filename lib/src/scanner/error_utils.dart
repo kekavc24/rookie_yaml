@@ -1,4 +1,4 @@
-part of 'grapheme_scanner.dart';
+part of 'source_iterator.dart';
 
 /// Represents an exception throw when parsing of a YAML source string fails.
 final class YamlParseException implements Exception {
@@ -34,19 +34,16 @@ final class YamlParseException implements Exception {
 
 /// Ensures the current line at the provided [index] is read until a line
 /// terminator is found or no more characters are present (whichever comes
-/// first) and returns the underlying iterator used by the [scanner].
+/// first).
 ///
 /// If [index] is `null`, then the most recent line is buffered until a line
 /// terminator is found.
-SourceIterator _makeLineAvailable(GraphemeScanner scanner, [int? index]) {
-  final iterator = scanner._iterator;
+void _makeLineAvailable(SourceIterator iterator, [int? index]) {
   final lineIndex = index ?? iterator.currentLine;
 
   while (iterator.hasNext && lineIndex >= iterator.currentLine) {
     iterator.nextChar();
   }
-
-  return iterator;
 }
 
 const _caret = '^';
@@ -122,12 +119,12 @@ String _spannedHighlight(Iterable<int> chars, int startIndex) {
 /// Throws a [YamlParseException] pointing to a single char at the specified
 /// [offset].
 Never throwWithSingleOffset(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required String message,
   required RuneOffset offset,
 }) {
   final RuneOffset(:lineIndex, :columnIndex) = offset;
-  final iterator = _makeLineAvailable(scanner, lineIndex);
+  _makeLineAvailable(iterator, lineIndex);
 
   // Include previous line if present
   final lines = iterator.lines(startIndex: max(0, lineIndex - 1));
@@ -203,13 +200,13 @@ Never _rangedThrow(
 /// Throw a [YamlParseException] with the current active line whose characters
 /// are being iterated. The line is highlighted from the start to the end.
 Never throwForCurrentLine(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required String message,
   RuneOffset? end,
 }) {
-  final (:start, :current) = scanner.lineInfo();
+  final (:start, :current) = iterator.currentLineInfo;
   return throwWithRangedOffset(
-    scanner,
+    iterator,
     message: message,
     start: start,
     end: end ?? current,
@@ -219,27 +216,25 @@ Never throwForCurrentLine(
 /// Throws a [YamlParseException] for a source string with the [start] and [end]
 /// offset specified.
 Never throwWithRangedOffset(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required String message,
   required RuneOffset start,
   required RuneOffset end,
 }) {
   if (start.utfOffset > end.utfOffset) {
     return throwWithSingleOffset(
-      scanner,
+      iterator,
       message: message,
       offset: start,
     );
   }
 
+  _makeLineAvailable(iterator, end.lineIndex);
   return _rangedThrow(
     message,
     start: start,
     end: end,
-    lines: _makeLineAvailable(
-      scanner,
-      end.lineIndex,
-    ).lines(startIndex: start.lineIndex),
+    lines: iterator.lines(startIndex: start.lineIndex),
   );
 }
 
@@ -249,13 +244,14 @@ Never throwWithRangedOffset(
 ///
 /// [charCountBefore] doesn't include the character at the [current] offset.
 Never throwWithApproximateRange(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required String message,
   required RuneOffset current,
   required int charCountBefore,
 }) {
   final RuneOffset(:columnIndex, :lineIndex) = current;
-  final linesAvailable = _makeLineAvailable(scanner, lineIndex).lines();
+  _makeLineAvailable(iterator, lineIndex);
+  final linesAvailable = iterator.lines();
 
   final lines = <SourceLine>[linesAvailable.last];
   var offsetDiff = columnIndex - charCountBefore;

@@ -11,23 +11,19 @@ part of 'directives.dart';
 /// Otherwise, always throws since the conditions above all failed when a
 /// non-zero positive indent was encountered.
 bool _skipToNextNonEmptyLine(
-  GraphemeScanner scanner,
+  SourceIterator iterator,
   void Function(YamlComment comment) onParseComment,
 ) {
-  bool canSkip() => scanner.charAtCursor.isNotNullAnd((c) => c.isLineBreak());
+  bool canSkip() => !iterator.isEOF && iterator.current.isLineBreak();
 
   skipper:
   do {
-    final indent = skipToParsableChar(scanner, onParseComment: onParseComment);
+    final indent = skipToParsableChar(iterator, onParseComment: onParseComment);
 
     // Let [parseDirectives] handle this
     if (indent == null) return false;
 
-    switch (scanner.charAtCursor) {
-      // Nothing else. Let top level parser handle this.
-      case null:
-        return false;
-
+    switch (iterator.current) {
       // End parsing
       case directiveEndSingle when indent == 0:
         return false;
@@ -39,9 +35,8 @@ bool _skipToNextNonEmptyLine(
       // Attempt to salvage the current line. This may be an empty line.
       case tab:
         {
-          scanner
-            ..skipWhitespace(skipTabs: true)
-            ..skipCharAtCursor();
+          skipWhitespace(iterator, skipTabs: true);
+          iterator.nextChar();
 
           if (canSkip()) continue skipper;
 
@@ -50,13 +45,20 @@ bool _skipToNextNonEmptyLine(
 
       throwable:
       default:
-        throwForCurrentLine(
-          scanner,
-          message:
-              'Expected a non-indented directive line with directives or a '
-              'directive end marker',
-          end: scanner.lineInfo().current,
-        );
+        {
+          // Nothing else. Let top level parser handle this.
+          if (iterator.isEOF) {
+            break skipper;
+          }
+
+          throwForCurrentLine(
+            iterator,
+            message:
+                'Expected a non-indented directive line with directives or a '
+                'directive end marker',
+            end: iterator.currentLineInfo.current,
+          );
+        }
     }
   } while (canSkip());
 
@@ -74,7 +76,7 @@ String _dumpDirective(Directive directive) {
 /// Internally calls [_parseTagUri].
 String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
   return _parseTagUri(
-    GraphemeScanner(UnicodeIterator.ofString(uri)),
+    UnicodeIterator.ofString(uri),
     allowRestrictedIndicators: allowRestrictedIndicators,
   );
 }
@@ -94,7 +96,7 @@ String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
 /// of an `alias` or `anchor` to/for a [Node] respectively. Defaults
 /// [isVerbatim] and [allowRestrictedIndicators] to `false`.
 String _parseTagUri(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool allowRestrictedIndicators,
   bool includeScheme = false,
   bool isVerbatim = false,
@@ -103,12 +105,12 @@ String _parseTagUri(
   final buffer = existingBuffer ?? StringBuffer();
 
   if (includeScheme) {
-    _parseScheme(buffer, scanner);
+    _parseScheme(buffer, iterator);
   }
 
   tagParser:
-  while (scanner.canChunkMore) {
-    final char = scanner.charAtCursor!;
+  while (!iterator.isEOF) {
+    final char = iterator.current;
 
     switch (char) {
       case lineFeed || carriageReturn || space || tab:
@@ -116,7 +118,7 @@ String _parseTagUri(
 
       // Parse as escaped hex %
       case _directiveIndicator:
-        _parseHexInUri(scanner, buffer);
+        _parseHexInUri(iterator, buffer);
 
       // A verbatim tag ends immediately a ">" is seen
       case _verbatimEnd when isVerbatim:
@@ -129,9 +131,9 @@ String _parseTagUri(
       /// Tag indicators must be escaped when parsing tags
       case tag:
         throwWithSingleOffset(
-          scanner,
+          iterator,
           message: 'Tag indicator must escaped when used as a URI character',
-          offset: scanner.lineInfo().current,
+          offset: iterator.currentLineInfo.current,
         );
 
       case _ when isUriChar(char):
@@ -139,24 +141,25 @@ String _parseTagUri(
 
       default:
         throwWithSingleOffset(
-          scanner,
+          iterator,
           message: 'The current character is not a valid URI character',
-          offset: scanner.lineInfo().current,
+          offset: iterator.currentLineInfo.current,
         );
     }
 
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
   }
 
   return buffer.toString();
 }
 
 /// Parses a URI scheme
-void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
+void _parseScheme(StringBuffer buffer, SourceIterator iterator) {
   int? lastChar;
   const schemeEnd = mappingValue; // ":" char
 
-  scanner.takeUntil(
+  takeFromIteratorUntil(
+    iterator,
     includeCharAtCursor: true,
     mapper: (c) => c,
     onMapped: (s) {
@@ -164,47 +167,48 @@ void _parseScheme(StringBuffer buffer, GraphemeScanner scanner) {
       buffer.writeCharCode(s);
     },
     stopIf: (_, c) {
-      return scanner.charAtCursor == schemeEnd || !isUriChar(c);
+      return iterator.current == schemeEnd || !isUriChar(c);
     },
   );
 
   // We must have a ":" as the last char
   if (lastChar != schemeEnd) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Invalid URI scheme in tag uri',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
   /// Ensure we return in a state where a tag uri can be parsed further
-  if (scanner.charAfter.isNullOr((c) => !isUriChar(c))) {
+  if (iterator.peekNextChar().isNullOr((c) => !isUriChar(c))) {
     throwForCurrentLine(
-      scanner,
+      iterator,
       message: 'Expected at least a uri character after the scheme',
     );
   }
 
-  scanner.skipCharAtCursor(); // Parsing can continue
+  iterator.nextChar(); // Parsing can continue
 }
 
 /// Parses a URI character escaped with `%`
-void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
+void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
   const hexCount = 2;
 
   final hexBuff = StringBuffer('0x');
 
-  if (scanner.takeUntil(
+  if (takeFromIteratorUntil(
+        iterator,
         includeCharAtCursor: false,
-        mapper: (char) => char.asString(),
-        onMapped: hexBuff.write,
+        mapper: (char) => char,
+        onMapped: hexBuff.writeCharCode,
         stopIf: (count, next) => !next.isHexDigit() || count == hexCount,
       ) !=
       hexCount) {
     throwWithApproximateRange(
-      scanner,
+      iterator,
       message: 'Expected at least 2 hex digits',
-      current: scanner.lineInfo().current,
+      current: iterator.currentLineInfo.current,
 
       /// We have highlight the "%" that indicated this is an hex. This will
       /// help provide accurate and contextual information. The buffer
@@ -222,17 +226,18 @@ void _parseHexInUri(GraphemeScanner scanner, StringBuffer uriBuffer) {
 }
 
 /// Parses an alias or anchor suffix.
-String parseAnchorOrAliasTrailer(GraphemeScanner scanner) {
+String parseAnchorOrAliasTrailer(SourceIterator iterator) {
   final buffer = StringBuffer();
 
   // [parseNodeProperties] always skips leading "&" and "*"
   do {
     /// Allows only non-space characters. Prefer quick exit once a flow
     /// delimiter is encountered.
-    if (scanner.charAtCursor case int available
-        when !available.isFlowDelimiter() && available.isNonSpaceChar()) {
-      buffer.writeCharCode(available);
-      scanner.skipCharAtCursor();
+    if (!iterator.isEOF &&
+        !iterator.current.isFlowDelimiter() &&
+        iterator.current.isNonSpaceChar()) {
+      buffer.writeCharCode(iterator.current);
+      iterator.nextChar();
       continue;
     }
 
@@ -242,12 +247,12 @@ String parseAnchorOrAliasTrailer(GraphemeScanner scanner) {
   // Anchor/alias must have at least 1 char after "&"/"*" respectively.
   if (buffer.isEmpty) {
     const message = 'Expected at 1 non-whitespace character';
-    final offset = scanner.lineInfo().current;
+    final offset = iterator.currentLineInfo.current;
 
-    scanner.canChunkMore
-        ? throwWithSingleOffset(scanner, message: message, offset: offset)
+    iterator.hasNext
+        ? throwWithSingleOffset(iterator, message: message, offset: offset)
         : throwWithApproximateRange(
-            scanner,
+            iterator,
             message: message,
             current: offset,
             charCountBefore: 1,

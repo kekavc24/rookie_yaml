@@ -6,7 +6,7 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Attempts to compose and parse a block map using the [keyOrNode] as the
@@ -36,11 +36,11 @@ BlockNode<Obj> composeBlockMapFromScalar<
   required bool composeImplicitMap,
   required int composedMapIndent,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
 
   if (!composeImplicitMap ||
       documentMarker.stopIfParsingDoc ||
-      !scanner.canChunkMore ||
+      iterator.isEOF ||
       keyIsBlock ||
       keyOrNode.encounteredLineBreak) {
     state.trackAnchor(keyOrNode, keyOrMapProperty);
@@ -51,17 +51,17 @@ BlockNode<Obj> composeBlockMapFromScalar<
     );
   }
 
-  if (scanner.charAtCursor != mappingValue) {
+  if (iterator.current != mappingValue) {
     final indentOrSeparation = skipToParsableChar(
-      scanner,
+      iterator,
       onParseComment: comments.add,
     );
 
     // Indent must be null. This must be an inlined key
-    if (!scanner.canChunkMore ||
+    if (iterator.isEOF ||
         indentOrSeparation != null ||
         inferNextEvent(
-              scanner,
+              iterator,
               isBlockContext: true,
               lastKeyWasJsonLike: false,
             ) !=
@@ -81,7 +81,7 @@ BlockNode<Obj> composeBlockMapFromScalar<
   return composeAndParseBlockMap(
     state,
     key: state.trackAnchor(
-      keyOrNode..updateEndOffset = scanner.lineInfo().current,
+      keyOrNode..updateEndOffset = iterator.currentLineInfo.current,
       keyProp,
     ),
     mapProperty: mapProp,
@@ -130,10 +130,10 @@ BlockNode<Obj> composeAndParseBlockMap<
 
   final valueExitIndent = blockInfo.exitIndent;
 
-  final scanner = state.scanner;
+  final iterator = state.iterator;
 
   // Exit if we can't parse more entries.
-  if (!scanner.canChunkMore ||
+  if (iterator.isEOF ||
       blockInfo.docMarker.stopIfParsingDoc ||
       valueExitIndent == null ||
       valueExitIndent < fixedMapIndent) {
@@ -145,10 +145,10 @@ BlockNode<Obj> composeAndParseBlockMap<
     );
   } else if (valueExitIndent > fixedMapIndent) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: "Dangling indent does not belong to the current block map",
       start: node.endOffset!,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 
@@ -167,14 +167,14 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   MappingDelegate<Obj, Dict> map, {
   required ParserState<Obj, Seq, Dict> state,
 }) {
-  final ParserState(:scanner, :onMapDuplicate) = state;
+  final ParserState(:iterator, :onMapDuplicate) = state;
   final MappingDelegate(indent: mapIndent, :indentLevel) = map;
 
   final entryIndentLevel = indentLevel + 1;
 
-  while (scanner.canChunkMore) {
+  while (!iterator.isEOF) {
     final (:blockInfo, node: (key, value)) = switch (inferNextEvent(
-      scanner,
+      iterator,
       isBlockContext: true,
       lastKeyWasJsonLike: false,
     )) {
@@ -195,7 +195,7 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       if (!map.accept(key.parsed(), value?.parsed())) {
         onMapDuplicate(
           key.start,
-          value?.endOffset ?? scanner.lineInfo().current,
+          value?.endOffset ?? iterator.currentLineInfo.current,
           'A block map cannot contain duplicate entries by the same key',
         );
       }
@@ -206,22 +206,22 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         ..updateEndOffset = value?.endOffset ?? key.endOffset!;
     } else {
       // Use start of the current line if document is ending
-      map.updateEndOffset = scanner.lineInfo().start;
+      map.updateEndOffset = iterator.currentLineInfo.start;
     }
 
     final (:docMarker, :exitIndent) = blockInfo;
 
-    if (!scanner.canChunkMore ||
+    if (iterator.isEOF ||
         docMarker.stopIfParsingDoc ||
         exitIndent == null ||
         exitIndent < mapIndent) {
       return (blockInfo: blockInfo, node: map as ParserDelegate<Obj>);
     } else if (exitIndent > mapIndent) {
       throwWithRangedOffset(
-        scanner,
+        iterator,
         message: 'Dangling block node found when parsing block map',
         start: value?.endOffset ?? key!.endOffset!,
-        end: scanner.lineInfo().current,
+        end: iterator.currentLineInfo.current,
       );
     }
   }

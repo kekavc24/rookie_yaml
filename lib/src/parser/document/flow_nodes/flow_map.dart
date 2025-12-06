@@ -3,7 +3,7 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a flow map.
@@ -17,10 +17,11 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int minIndent,
   required bool forceInline,
 }) {
-  final ParserState(:scanner, :comments, :mapFunction, :onMapDuplicate) = state;
+  final ParserState(:iterator, :comments, :mapFunction, :onMapDuplicate) =
+      state;
 
   final map = initFlowCollection(
-    scanner,
+    iterator,
     flowStartIndicator: mappingStart,
     minIndent: minIndent,
     forceInline: forceInline,
@@ -36,12 +37,12 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   );
 
   do {
-    if (scanner.charAtCursor case null || flowEntryEnd || mappingEnd) {
+    if (iterator.current case flowEntryEnd || mappingEnd) {
       break;
     }
 
     final (key, value) = switch (inferNextEvent(
-      scanner,
+      iterator,
       isBlockContext: false,
       lastKeyWasJsonLike: false,
     )) {
@@ -62,7 +63,7 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     if (!map.accept(key.parsed(), value?.parsed())) {
       onMapDuplicate(
         key.start,
-        value?.start ?? scanner.lineInfo().current,
+        value?.start ?? iterator.currentLineInfo.current,
         'A flow map cannot contain duplicate entries by the same key',
       );
     }
@@ -71,14 +72,14 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         key.encounteredLineBreak || (value?.encounteredLineBreak ?? false);
 
     if (!continueToNextEntry(
-      scanner,
+      iterator,
       minIndent: minIndent,
       forceInline: forceInline,
       onParseComment: comments.add,
     )) {
       break;
     }
-  } while (scanner.canChunkMore);
+  } while (!iterator.isEOF);
 
-  return terminateFlowCollection(scanner, map, mappingEnd);
+  return terminateFlowCollection(iterator, map, mappingEnd);
 }

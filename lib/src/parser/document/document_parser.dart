@@ -11,24 +11,24 @@ const rootIndentLevel = seamlessIndentMarker + 1;
 ///
 /// This method is only works for [ScalarStyle.plain]. Any other style is safe.
 void _throwIfBlockUnsafe(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int indent,
   required bool hasDirectives,
   required bool inlineWithDirectiveMarker,
 }) {
-  if (scanner.charAtCursor == directive && indent == 0 && !hasDirectives) {
+  if (iterator.current == directive && indent == 0 && !hasDirectives) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message:
           '"%" cannot be used as the first non-whitespace character in a'
           ' non-empty content line',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   } else if (inlineWithDirectiveMarker &&
-      inferNextEvent(scanner, isBlockContext: true, lastKeyWasJsonLike: false)
+      inferNextEvent(iterator, isBlockContext: true, lastKeyWasJsonLike: false)
           is BlockCollectionEvent) {
     throwForCurrentLine(
-      scanner,
+      iterator,
       message:
           'A block collection cannot be declared on the same line as a'
           ' directive end marker',
@@ -39,7 +39,7 @@ void _throwIfBlockUnsafe(
 /// A [YamlDocument] parser.
 final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
   DocumentParser(
-    GraphemeScanner scanner, {
+    SourceIterator iterator, {
     required AliasFunction<R> aliasFunction,
     required ListFunction<R, S> listFunction,
     required MapFunction<R, M> mapFunction,
@@ -48,7 +48,7 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
     required MapDuplicateHandler onMapDuplicate,
     List<Resolver>? resolvers,
   }) : _parserState = ParserState<R, S, M>(
-         scanner,
+         iterator,
          aliasFunction: aliasFunction,
          listFunction: listFunction,
          mapFunction: mapFunction,
@@ -67,9 +67,9 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
   (bool didParse, T? parsed) parseNext<T>() {
     _parserState.reset();
 
-    final ParserState(:scanner, :comments, :logger) = _parserState;
+    final ParserState(:iterator, :comments, :logger) = _parserState;
 
-    if (!scanner.canChunkMore) return (false, null);
+    if (iterator.isEOF) return (false, null);
 
     GreedyPlain? docMarkerGreedy;
     YamlDirective? version;
@@ -77,7 +77,7 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
     var reserved = <ReservedDirective>[];
 
     var rootIndent = skipToParsableChar(
-      scanner,
+      iterator,
       onParseComment: comments.add,
       leadingAsIndent: !_parserState.docStartExplicit,
     );
@@ -92,7 +92,7 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
         :reservedDirectives,
         :hasDirectiveEnd,
       ) = parseDirectives(
-        scanner,
+        iterator,
         onParseComment: comments.add,
         warningLogger: (message) => logger(false, message),
       );
@@ -105,13 +105,13 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
       /// When directives are absent, we may see dangling "---". Just to be
       /// sure, confirm this wasn't the case.
       if (!hasDirectiveEnd &&
-          scanner.charAtCursor == blockSequenceEntry &&
-          scanner.charAfter == blockSequenceEntry) {
-        final startOnMissing = scanner.lineInfo().current;
+          iterator.current == blockSequenceEntry &&
+          iterator.peekNextChar() == blockSequenceEntry) {
+        final startOnMissing = iterator.currentLineInfo.current;
 
         _parserState.docStartExplicit =
             checkForDocumentMarkers(
-              scanner,
+              iterator,
               onMissing: (c) {
                 docMarkerGreedy = (
                   start: startOnMissing,
@@ -126,16 +126,14 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
 
       if (_parserState.docStartExplicit) {
         // Fast forward to the first ns-char (line break excluded)
-        if (scanner.charAtCursor.isNotNullAnd((c) => c.isWhiteSpace())) {
-          scanner
-            ..skipWhitespace(skipTabs: true)
-            ..skipCharAtCursor();
+        if (iterator.current.isWhiteSpace()) {
+          skipWhitespace(iterator, skipTabs: true);
+          iterator.nextChar();
         }
 
         rootIndent = null;
-        rootInDirectiveEndLine = scanner.charAtCursor.isNotNullAnd(
-          (c) => c != comment && !c.isLineBreak(),
-        );
+        rootInDirectiveEndLine =
+            iterator.current != comment && !iterator.current.isLineBreak();
       }
 
       version = yamlDirective;
@@ -173,13 +171,13 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
       rootInfo = blockInfo;
     } else {
       rootIndent ??= skipToParsableChar(
-        scanner,
+        iterator,
         onParseComment: comments.add,
         leadingAsIndent: !rootInDirectiveEndLine,
       );
 
       _throwIfBlockUnsafe(
-        scanner,
+        iterator,
         indent: rootIndent ?? 0,
         hasDirectives: _parserState.hasDirectives,
         inlineWithDirectiveMarker: rootInDirectiveEndLine,
@@ -202,34 +200,34 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
 
     var docMarker = rootInfo.docMarker;
 
-    if (scanner.canChunkMore && !rootInfo.docMarker.stopIfParsingDoc) {
+    if (!iterator.isEOF && !rootInfo.docMarker.stopIfParsingDoc) {
       /// We must see document end chars and don't care how they are laid within
       /// the document. At this point the document is or should be complete
-      skipToParsableChar(scanner, onParseComment: comments.add);
+      skipToParsableChar(iterator, onParseComment: comments.add);
 
       // We can safely look for doc end chars
-      if (scanner.canChunkMore) {
+      if (!iterator.isEOF) {
         var charBehind = 0;
         docMarker = checkForDocumentMarkers(
-          scanner,
+          iterator,
           onMissing: (b) => charBehind = b.length,
         );
 
         if (!docMarker.stopIfParsingDoc) {
           throwWithApproximateRange(
-            scanner,
+            iterator,
             message:
                 'Invalid node state. Expected to find document end "..."'
                 ' or directive end chars "---" ',
-            current: scanner.lineInfo().current,
-            charCountBefore: scanner.canChunkMore
+            current: iterator.currentLineInfo.current,
+            charCountBefore: iterator.hasNext
                 ? max(charBehind - 1, 0)
                 : charBehind,
           );
         }
       }
 
-      final sourceInfo = scanner.lineInfo();
+      final sourceInfo = iterator.currentLineInfo;
 
       root.updateEndOffset = docMarker.stopIfParsingDoc
           ? sourceInfo.start

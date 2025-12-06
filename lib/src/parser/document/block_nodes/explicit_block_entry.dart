@@ -3,7 +3,7 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses an explicit key/value.
@@ -13,26 +13,26 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int indentLevel,
   required int indent,
   required ParserEvent expectedEvent,
-  required BlockNode<Obj> Function(GraphemeScanner scanner) fallback,
+  required BlockNode<Obj> Function(SourceIterator iterator) fallback,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
 
   if (inferNextEvent(
-        scanner,
+        iterator,
         isBlockContext: true,
         lastKeyWasJsonLike: false,
       ) !=
       expectedEvent) {
-    return fallback(scanner);
+    return fallback(iterator);
   }
 
   final nodeIndentLevel = indentLevel + 1;
-  final explicitCharOffset = scanner.lineInfo().current;
+  final explicitCharOffset = iterator.currentLineInfo.current;
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   final indentOrSeparation = skipToParsableChar(
-    scanner,
+    iterator,
     onParseComment: comments.add,
   );
 
@@ -48,9 +48,9 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         state,
         indentLevel: nodeIndentLevel,
         indent: indent + 1,
-        start: scanner.canChunkMore
-            ? scanner.lineInfo().start
-            : scanner.lineInfo().current,
+        start: iterator.isEOF
+            ? iterator.currentLineInfo.current
+            : iterator.currentLineInfo.start,
       ),
     );
   }
@@ -59,7 +59,7 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     indentOrSeparation,
     blockParentIndent: indent,
     yamlNodeStartOffset: explicitCharOffset.utfOffset,
-    contentOffset: scanner.lineInfo().current.utfOffset,
+    contentOffset: iterator.currentLineInfo.current.utfOffset,
   );
 
   return parseBlockNode(
@@ -89,10 +89,10 @@ BlockEntry<Obj> parseExplicitBlockEntry<
     indentLevel: entryIndentLevel,
     indent: entryIndent,
     expectedEvent: BlockCollectionEvent.startExplicitKey,
-    fallback: (scanner) => throwWithSingleOffset(
-      scanner,
+    fallback: (iterator) => throwWithSingleOffset(
+      iterator,
       message: 'Expected "?" followed by a whitespace',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     ),
   );
 
@@ -100,12 +100,12 @@ BlockEntry<Obj> parseExplicitBlockEntry<
     case int indent:
       {
         if (indent > entryIndent) {
-          final scanner = state.scanner;
+          final scanner = state.iterator;
           throwWithRangedOffset(
             scanner,
             message: 'Dangling node found when parsing explicit entry',
             start: key.endOffset!,
-            end: state.scanner.lineInfo().current,
+            end: state.iterator.currentLineInfo.current,
           );
         } else if (indent < entryIndent) {
           continue valueIsNull;
@@ -116,8 +116,8 @@ BlockEntry<Obj> parseExplicitBlockEntry<
           indentLevel: entryIndentLevel,
           indent: entryIndent,
           expectedEvent: BlockCollectionEvent.startEntryValue,
-          fallback: (scanner) {
-            final (:start, :current) = scanner.lineInfo();
+          fallback: (iterator) {
+            final (:start, :current) = iterator.currentLineInfo;
             return (
               blockInfo: keyInfo,
               node: nullBlockNode(

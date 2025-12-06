@@ -2,7 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
@@ -52,7 +52,7 @@ void main() {
       final logs = <String>[];
       check(
         parseDirectives(
-          GraphemeScanner.of('$directive\n---'),
+          UnicodeIterator.ofString('$directive\n---'),
           onParseComment: (_) {},
           warningLogger: (m) => logs.add(m),
         ).yamlDirective,
@@ -130,7 +130,7 @@ void main() {
       ''';
 
       parseDirectives(
-        GraphemeScanner.of(yaml),
+        UnicodeIterator.ofString(yaml),
         onParseComment: comments.add,
         warningLogger: (_) {},
       );

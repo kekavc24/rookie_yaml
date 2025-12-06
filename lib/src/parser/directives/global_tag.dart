@@ -55,72 +55,62 @@ final class GlobalTag<T> extends SpecificTag<T> implements Directive {
 
 /// Parses a [GlobalTag].
 GlobalTag<dynamic> _parseGlobalTag(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool Function(TagHandle handle) isDuplicate,
 }) {
   // Must have a tag handle present
-  final tagHandle = parseTagHandle(scanner);
+  final tagHandle = parseTagHandle(iterator);
 
   // Exit early if we already a global tag with this handle
   if (isDuplicate(tagHandle)) {
     throwForCurrentLine(
-      scanner,
+      iterator,
       message:
           'A global tag directive with the "${tagHandle.handle}" has already '
           'been declared in this document',
     );
   }
 
-  if (scanner.charAtCursor.isNullOr((c) => !c.isWhiteSpace())) {
+  if (iterator.isEOF || !iterator.current.isWhiteSpace()) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'A global tag must have a separation space after its handle',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
   // Skip whitespace, move cursor to next character
-  scanner
-    ..skipWhitespace(skipTabs: true)
-    ..skipCharAtCursor();
+  skipWhitespace(iterator, skipTabs: true);
+  iterator.nextChar();
 
-  switch (scanner.charAtCursor) {
-    // A prefix represented by a local tag
-    case tag:
-      {
-        scanner.skipCharAtCursor();
+  // A prefix represented by a local tag
+  if (iterator.current == tag) {
+    iterator.nextChar();
 
-        /// A global tag cannot be affected by flow indicators or the tag
-        /// indicator as long we already removed the leading "!". A hack or
-        /// just common sense.
-        return GlobalTag.fromTagShorthand(
-          tagHandle,
-          TagShorthand._(
-            TagHandle.primary(),
-            _parseTagUri(scanner, allowRestrictedIndicators: true),
-          ),
-        );
-      }
-
-    // A normal non-empty/null uri character
-    case int char when isUriChar(char):
-      {
-        return GlobalTag._(
-          tagHandle,
-          _parseTagUri(
-            scanner,
-            allowRestrictedIndicators: true,
-            includeScheme: true,
-          ),
-        );
-      }
-
-    default:
-      throwWithSingleOffset(
-        scanner,
-        message:
-            'A global tag only accepts valid uri characters in its tag prefix',
-        offset: scanner.lineInfo().current,
-      );
+    /// A global tag cannot be affected by flow indicators or the tag
+    /// indicator as long we already removed the leading "!". A hack or
+    /// just common sense.
+    return GlobalTag.fromTagShorthand(
+      tagHandle,
+      TagShorthand._(
+        TagHandle.primary(),
+        _parseTagUri(iterator, allowRestrictedIndicators: true),
+      ),
+    );
+  } else if (isUriChar(iterator.current)) {
+    return GlobalTag._(
+      tagHandle,
+      _parseTagUri(
+        iterator,
+        allowRestrictedIndicators: true,
+        includeScheme: true,
+      ),
+    );
   }
+
+  throwWithSingleOffset(
+    iterator,
+    message: 'A global tag only accepts valid uri characters in its tag prefix',
+    offset: iterator.currentLineInfo.current,
+  );
 }

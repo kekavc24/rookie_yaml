@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
@@ -10,34 +10,34 @@ void main() {
   group('Tag Handles', () {
     test('Parses primary tag handle', () {
       check(
-        parseTagHandle(GraphemeScanner.of('!')),
+        parseTagHandle(UnicodeIterator.ofString('!')),
       ).equals(TagHandle.primary());
     });
 
     test('Parses secondary tag handle, ignore chars ahead', () {
-      final scanner = GraphemeScanner.of('!!ignored');
+      final scanner = UnicodeIterator.ofString('!!ignored');
 
       check(parseTagHandle(scanner)).equals(TagHandle.secondary());
-      check(scanner.canChunkMore).isTrue();
+      check(scanner.isEOF).isFalse();
     });
 
     test('Parses named tag handle', () {
       const named = 'named';
 
       check(
-        parseTagHandle(GraphemeScanner.of('!$named!')),
+        parseTagHandle(UnicodeIterator.ofString('!$named!')),
       ).equals(TagHandle.named(named));
     });
 
     test('Throws if leading char is not a tag indicator', () {
       check(
-        () => parseTagHandle(GraphemeScanner.of('fake')),
+        () => parseTagHandle(UnicodeIterator.ofString('fake')),
       ).throwsParserException('Expected a tag indicator "!"');
     });
 
     test('Throws if primary tag has trailing chars and is not named', () {
       check(
-        () => parseTagHandle(GraphemeScanner.of('!fake')),
+        () => parseTagHandle(UnicodeIterator.ofString('!fake')),
       ).throwsParserException('Invalid/incomplete named tag handle');
     });
   });
@@ -164,7 +164,7 @@ void main() {
       final yaml = '!$suffix "Not to be included"';
 
       check(
-        parseTagShorthand(GraphemeScanner.of(yaml)),
+        parseTagShorthand(UnicodeIterator.ofString(yaml)),
       ).equals(TagShorthand.fromTagUri(TagHandle.primary(), suffix));
     });
 
@@ -173,7 +173,7 @@ void main() {
       final yaml = '!!$suffix "Not to be included"';
 
       check(
-        parseTagShorthand(GraphemeScanner.of(yaml)),
+        parseTagShorthand(UnicodeIterator.ofString(yaml)),
       ).equals(TagShorthand.fromTagUri(TagHandle.secondary(), suffix));
     });
 
@@ -182,7 +182,7 @@ void main() {
       final yaml = '!$suffix!$suffix "Not to be included"';
 
       check(
-        parseTagShorthand(GraphemeScanner.of(yaml)),
+        parseTagShorthand(UnicodeIterator.ofString(yaml)),
       ).equals(TagShorthand.fromTagUri(TagHandle.named(suffix), suffix));
     });
 
@@ -207,7 +207,7 @@ void main() {
           final yaml = '!$tag $node';
 
           check(
-            parseTagShorthand(GraphemeScanner.of(yaml)),
+            parseTagShorthand(UnicodeIterator.ofString(yaml)),
           ).equals(TagShorthand.fromTagUri(TagHandle.primary(), tag));
         }
       },
@@ -217,10 +217,10 @@ void main() {
       const yaml = '!!flow-indicator-in-shorthand';
 
       for (final string in flowDelimiters) {
-        final scanner = GraphemeScanner.of('$yaml$string');
+        final scanner = UnicodeIterator.ofString('$yaml$string');
 
         check(parseTagShorthand(scanner).toString()).equals(yaml);
-        check(scanner.charAtCursor?.asString()).isNotNull().equals(string);
+        check(scanner.current.asString()).equals(string);
       }
     });
 
@@ -229,7 +229,7 @@ void main() {
       final yaml = '!local$offender';
 
       check(
-        () => parseTagShorthand(GraphemeScanner.of(yaml)),
+        () => parseTagShorthand(UnicodeIterator.ofString(yaml)),
       ).throwsParserException('The current character is not a valid URI char');
     });
 
@@ -238,7 +238,7 @@ void main() {
       final yaml = '!!tag-indicator-in-shorthand$offender';
 
       check(
-        () => parseTagShorthand(GraphemeScanner.of(yaml)),
+        () => parseTagShorthand(UnicodeIterator.ofString(yaml)),
       ).throwsParserException(
         'Tag indicator must escaped when used as a URI character',
       );
@@ -248,7 +248,7 @@ void main() {
       const yaml = '!non-alpha-in-named*!ref';
 
       check(
-        () => parseTagShorthand(GraphemeScanner.of(yaml)),
+        () => parseTagShorthand(UnicodeIterator.ofString(yaml)),
       ).throwsParserException(
         'A named tag can only have alphanumeric characters',
       );
@@ -266,7 +266,7 @@ void main() {
 
       for (final tag in tags) {
         check(
-          parseVerbatimTag(GraphemeScanner.of('$tag $ignored')).verbatim,
+          parseVerbatimTag(UnicodeIterator.ofString('$tag $ignored')).verbatim,
         ).equals(tag);
       }
     });
@@ -275,7 +275,7 @@ void main() {
       final node = '<!must-start-with-%21>';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException('A verbatim tag must start with "!"');
     });
 
@@ -283,7 +283,7 @@ void main() {
       final node = '!!must-start-with-%3C>';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException('Expected to find a "<" after "!"');
     });
 
@@ -291,7 +291,7 @@ void main() {
       final node = '!<!must-end-with-%3E';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException(
         'Expected to find a ">" after parsing a verbatim tag',
       );
@@ -301,7 +301,7 @@ void main() {
       final node = '!<!>';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException(
         'Verbatim tags are never resolved and should have a non-empty suffix',
       );
@@ -319,7 +319,7 @@ void main() {
 
       for (final tag in tags) {
         check(
-          parseVerbatimTag(GraphemeScanner.of('$tag $ignored')).verbatim,
+          parseVerbatimTag(UnicodeIterator.ofString('$tag $ignored')).verbatim,
         ).equals(tag);
       }
     });
@@ -328,7 +328,7 @@ void main() {
       final node = '<!must-start-with-%21>';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException('A verbatim tag must start with "!"');
     });
 
@@ -336,7 +336,7 @@ void main() {
       final node = '!!must-start-with-%3C>';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException('Expected to find a "<" after "!"');
     });
 
@@ -344,7 +344,7 @@ void main() {
       final node = '!<!must-end-with-%3E';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException(
         'Expected to find a ">" after parsing a verbatim tag',
       );
@@ -354,7 +354,7 @@ void main() {
       final node = '!<!>';
 
       check(
-        () => parseVerbatimTag(GraphemeScanner.of(node)),
+        () => parseVerbatimTag(UnicodeIterator.ofString(node)),
       ).throwsParserException(
         'Verbatim tags are never resolved and should have a non-empty suffix',
       );
@@ -362,7 +362,7 @@ void main() {
 
     test("Throws if a verbatim tag doesn't start with \"tag:\" scheme", () {
       check(
-        () => parseVerbatimTag(GraphemeScanner.of('!<my:verbatim>')),
+        () => parseVerbatimTag(UnicodeIterator.ofString('!<my:verbatim>')),
       ).throwsParserException(
         'Expected a tag uri starting the "tag:" uri scheme',
       );

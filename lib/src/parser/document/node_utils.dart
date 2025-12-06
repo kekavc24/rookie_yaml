@@ -7,7 +7,6 @@ import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -41,7 +40,7 @@ typedef BlockEntry<Obj> =
 /// is not a match.
 (PreScalar scalar, ScalarDelegate<R> delegate) parseScalar<R>(
   ScalarEvent event, {
-  required GraphemeScanner scanner,
+  required SourceIterator iterator,
   required ScalarFunction<R> scalarFunction,
   required void Function(YamlComment comment) onParseComment,
   required bool isImplicit,
@@ -51,13 +50,13 @@ typedef BlockEntry<Obj> =
   String greedyOnPlain = '',
   RuneOffset? start,
 }) {
-  final scalarStart = start ?? scanner.lineInfo().current;
+  final scalarStart = start ?? iterator.currentLineInfo.current;
 
   final prescalar = switch (event) {
     ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
         when !isImplicit && !isInFlowContext && greedyOnPlain.isEmpty =>
       parseBlockStyle(
-        scanner,
+        iterator,
         minimumIndent: minIndent,
         indentLevel: indentLevel,
         onParseComment: onParseComment,
@@ -65,14 +64,14 @@ typedef BlockEntry<Obj> =
 
     ScalarEvent.startFlowDoubleQuoted when greedyOnPlain.isEmpty =>
       parseDoubleQuoted(
-        scanner,
+        iterator,
         indent: minIndent,
         isImplicit: isImplicit,
       ),
 
     ScalarEvent.startFlowSingleQuoted when greedyOnPlain.isEmpty =>
       parseSingleQuoted(
-        scanner,
+        iterator,
         indent: minIndent,
         isImplicit: isImplicit,
       ),
@@ -80,7 +79,7 @@ typedef BlockEntry<Obj> =
     // We are aware of what character is at the start. Cannot be null
     _ when event == ScalarEvent.startFlowPlain || greedyOnPlain.isNotEmpty =>
       parsePlain(
-        scanner,
+        iterator,
         indent: minIndent,
         charsOnGreedy: greedyOnPlain,
         isImplicit: isImplicit,
@@ -88,7 +87,7 @@ typedef BlockEntry<Obj> =
       ),
 
     _ => throwForCurrentLine(
-      scanner,
+      iterator,
       message: 'Failed to parse block scalar declared in a flow context!',
     ),
   };
@@ -99,7 +98,7 @@ typedef BlockEntry<Obj> =
   /// flow/block map/list handles missing values differently.
   if (prescalar == null) {
     throw throwForCurrentLine(
-      scanner,
+      iterator,
       message: 'Null was returned when parsing a plain scalar!',
     );
   }
@@ -122,20 +121,20 @@ typedef BlockEntry<Obj> =
 /// indicator/character must be indented at least [minIndent] spaces. Throws
 /// otherwise.
 bool nextSafeLineInFlow(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int minIndent,
   required bool forceInline,
   required void Function(YamlComment comment) onParseComment,
 }) {
-  final indent = skipToParsableChar(scanner, onParseComment: onParseComment);
+  final indent = skipToParsableChar(iterator, onParseComment: onParseComment);
 
   if (indent != null) {
     // Must not have line breaks
     if (forceInline) {
       throwWithApproximateRange(
-        scanner,
+        iterator,
         message: 'Found a line break when parsing an inline flow node',
-        current: scanner.lineInfo().current,
+        current: iterator.currentLineInfo.current,
         charCountBefore: indent + 2, // Highlight upto the previous line
       );
     }
@@ -146,13 +145,13 @@ bool nextSafeLineInFlow(
     /// block collection
     if (indent < minIndent) {
       throwWithApproximateRange(
-        scanner,
+        iterator,
         message: 'Expected at least ${minIndent - indent} additional spaces',
-        current: scanner.lineInfo().current,
+        current: iterator.currentLineInfo.current,
         charCountBefore: indent,
       );
     }
-  } else if (!scanner.canChunkMore) {
+  } else if (iterator.isEOF) {
     return false;
   }
 
@@ -162,25 +161,25 @@ bool nextSafeLineInFlow(
 /// Returns `true` if [_parseFlowSequence] or [_parseFlowMap] can parse the
 /// next flow entry or flow map entry respectively.
 bool continueToNextEntry(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int minIndent,
   required bool forceInline,
   required void Function(YamlComment comment) onParseComment,
 }) {
   nextSafeLineInFlow(
-    scanner,
+    iterator,
     minIndent: minIndent,
     forceInline: forceInline,
     onParseComment: onParseComment,
   );
 
-  if (scanner.charAtCursor != flowEntryEnd) {
+  if (iterator.current != flowEntryEnd) {
     return false;
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
   return nextSafeLineInFlow(
-    scanner,
+    iterator,
     minIndent: minIndent,
     forceInline: forceInline,
     onParseComment: onParseComment,
@@ -202,7 +201,7 @@ bool keyIsJsonLike(ParserDelegate? delegate) => switch (delegate) {
 /// matches the corresponding flow collection's start delimiter. Returns the
 /// collection by calling [init].
 T initFlowCollection<R, T extends ParserDelegate<R>>(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int flowStartIndicator,
   required int minIndent,
   required bool forceInline,
@@ -210,11 +209,11 @@ T initFlowCollection<R, T extends ParserDelegate<R>>(
   required int flowEndIndicator,
   required T Function(RuneOffset start) init,
 }) {
-  final current = scanner.lineInfo().current;
+  final current = iterator.currentLineInfo.current;
 
-  if (scanner.charAtCursor != flowStartIndicator) {
+  if (iterator.current != flowStartIndicator) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message:
           'Expected the flow delimiter: '
           '"${flowStartIndicator.asString()}"',
@@ -222,21 +221,21 @@ T initFlowCollection<R, T extends ParserDelegate<R>>(
     );
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   if (!nextSafeLineInFlow(
-    scanner,
+    iterator,
     minIndent: minIndent,
     forceInline: forceInline,
     onParseComment: onParseComment,
   )) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message:
           'Invalid flow collection state. Expected to find: '
           '"${flowEndIndicator.asString()}"',
       start: current,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 
@@ -247,15 +246,15 @@ T initFlowCollection<R, T extends ParserDelegate<R>>(
 /// of the flow collection. If valid, the [flowCollection]'s end offset is
 /// updated and the [delimiter] is skipped.
 D terminateFlowCollection<T, D extends ParserDelegate<T>>(
-  GraphemeScanner scanner,
+  SourceIterator iterator,
   D flowCollection,
   int delimiter,
 ) {
-  final offset = scanner.lineInfo().current;
+  final offset = iterator.currentLineInfo.current;
 
-  if (scanner.charAtCursor != delimiter) {
+  if (iterator.current != delimiter) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message:
           'Invalid flow collection state. Expected '
           '"${delimiter.asString()}"',
@@ -264,7 +263,7 @@ D terminateFlowCollection<T, D extends ParserDelegate<T>>(
   }
 
   flowCollection.updateEndOffset = offset;
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
   return flowCollection;
 }
 

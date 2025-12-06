@@ -75,7 +75,7 @@ YamlDirective _verifyYamlVersion(
 
 /// Parses a [YamlDirective] version number
 YamlDirective _parseYamlDirective(
-  GraphemeScanner scanner,
+  SourceIterator iterator,
   void Function(String message) logger,
 ) {
   final formattedVersion = <int>[];
@@ -87,8 +87,8 @@ YamlDirective _parseYamlDirective(
   var version = versionReset;
 
   versionBuilder:
-  while (scanner.canChunkMore) {
-    final char = scanner.charAtCursor!;
+  while (!iterator.isEOF) {
+    final char = iterator.current;
 
     switch (char) {
       case lineFeed || carriageReturn || space || tab:
@@ -102,16 +102,16 @@ YamlDirective _parseYamlDirective(
           // We must not see the separator if we have no integers
           if (lastChar == null) {
             throwWithSingleOffset(
-              scanner,
+              iterator,
               message: 'A YAML directive cannot start with a version separator',
-              offset: scanner.lineInfo().current,
+              offset: iterator.currentLineInfo.current,
             );
           } else if (lastChar == _versionSeparator) {
             throwWithApproximateRange(
-              scanner,
+              iterator,
               message:
                   'A YAML directive cannot have consecutive version separators',
-              current: scanner.lineInfo().current,
+              current: iterator.currentLineInfo.current,
               charCountBefore: 1, // Highlight previous version separator
             );
           }
@@ -122,16 +122,16 @@ YamlDirective _parseYamlDirective(
 
       default:
         throwWithSingleOffset(
-          scanner,
+          iterator,
           message:
               'A YAML version directive can only have digits separated by'
               ' a "."',
-          offset: scanner.lineInfo().current,
+          offset: iterator.currentLineInfo.current,
         );
     }
 
     lastChar = char;
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
   }
 
   if (version != versionReset) {
@@ -140,7 +140,7 @@ YamlDirective _parseYamlDirective(
 
   if (formattedVersion.length != 2 || lastChar == _versionSeparator) {
     throwForCurrentLine(
-      scanner,
+      iterator,
       message:
           'A YAML version directive can only have 2 integers separated by "."',
     );
@@ -150,6 +150,6 @@ YamlDirective _parseYamlDirective(
     formattedVersion[0],
     formattedVersion[1],
     logger,
-    (m) => throwForCurrentLine(scanner, message: m),
+    (m) => throwForCurrentLine(iterator, message: m),
   );
 }

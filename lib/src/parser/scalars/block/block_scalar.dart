@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -16,14 +15,14 @@ part 'block_utils.dart';
 /// scalar with explicit indicators qualifying it as a block scalar. A plain
 /// and block scalar both use indentation to convey content information.
 PreScalar parseBlockStyle(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int minimumIndent,
   required int indentLevel,
   required void Function(YamlComment comment) onParseComment,
 }) {
   var indentOnExit = seamlessIndentMarker;
   final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(
-    scanner,
+    iterator,
     onParseComment: onParseComment,
   );
 
@@ -37,11 +36,9 @@ PreScalar parseBlockStyle(
     trueIndent = indentLevel + indentIndicator;
   }
 
-  var char = scanner.charAtCursor;
-
   final lineBreaks = <int>[
-    if (!isLiteral && char.isNotNullAnd((c) => c.isLineBreak()))
-      skipCrIfPossible(char!, scanner: scanner),
+    if (!isLiteral && iterator.current.isLineBreak())
+      skipCrIfPossible(iterator.current, iterator: iterator),
   ];
 
   final buffer = ScalarBuffer();
@@ -57,21 +54,21 @@ PreScalar parseBlockStyle(
   var docMarkerType = DocumentMarker.none;
 
   blockParser:
-  while (scanner.canChunkMore) {
+  while (!iterator.isEOF) {
     final indent = trueIndent ?? minimumIndent;
-    char = scanner.charAtCursor!;
+    var char = iterator.current;
 
     switch (char) {
       case carriageReturn || lineFeed:
         {
-          char = skipCrIfPossible(char, scanner: scanner);
+          char = skipCrIfPossible(char, iterator: iterator);
 
           if (didRun) {
             lineBreaks.add(char);
           }
 
-          final scannedIndent = scanner.skipWhitespace(max: indent).length;
-          final charAfter = scanner.charAfter;
+          final scannedIndent = skipWhitespace(iterator, max: indent).length;
+          final charAfter = iterator.peekNextChar();
           final hasCharAfter = charAfter != null;
 
           if (charAfter != carriageReturn && charAfter != lineFeed) {
@@ -83,14 +80,14 @@ PreScalar parseBlockStyle(
             /// end marker is found in a top level scalar
             if (!hasCharAfter || scannedIndent < indent) {
               indentOnExit = scannedIndent;
-              scanner.skipCharAtCursor();
-
-              final lineInfo = scanner.lineInfo();
+              iterator.nextChar();
 
               /// If we have more characters, our actual scalar starts where
               /// the current line starts since the indent change caused the
               /// exit
-              end = hasCharAfter ? lineInfo.start : lineInfo.current;
+              end = hasCharAfter
+                  ? iterator.currentLineInfo.start
+                  : iterator.currentLineInfo.current;
               break blockParser;
             }
 
@@ -101,7 +98,7 @@ PreScalar parseBlockStyle(
                 :isEmptyLine,
                 :startsWithTab,
               ) = _inferIndent(
-                scanner,
+                iterator,
                 contentBuffer: buffer,
                 scannedIndent: scannedIndent,
                 callBeforeTabWrite: () => _maybeFoldLF(
@@ -118,12 +115,12 @@ PreScalar parseBlockStyle(
                 if (previousMaxIndent != null &&
                     previousMaxIndent > inferredIndent) {
                   throwWithApproximateRange(
-                    scanner,
+                    iterator,
                     message:
                         'A previous empty line was more indented with '
                         '$previousMaxIndent space(s). Indent must be at least'
                         ' equal to or greater than this indent.',
-                    current: scanner.lineInfo().current,
+                    current: iterator.currentLineInfo.current,
                     charCountBefore: inferredIndent,
                   );
                 }
@@ -135,17 +132,17 @@ PreScalar parseBlockStyle(
             }
           }
 
-          scanner.skipCharAtCursor();
+          iterator.nextChar();
           didRun = true;
         }
 
       case blockSequenceEntry || period when trueIndent == 0:
         {
           // Ends when we see first "-" of "---" or "." of "..."
-          final maybeEnd = scanner.lineInfo().current;
+          final maybeEnd = iterator.currentLineInfo.current;
 
           docMarkerType = checkForDocumentMarkers(
-            scanner,
+            iterator,
             onMissing: buffer.writeAll,
           );
 
@@ -175,8 +172,9 @@ PreScalar parseBlockStyle(
           buffer.writeChar(char);
 
           // Write the remaining line to the end without including line break
-          final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
-            buffer.writeChar,
+          final OnChunk(:sourceEnded) = iterateAndChunk(
+            iterator,
+            onChar: buffer.writeChar,
             exitIf: (_, curr) => curr.isLineBreak(),
           );
 
@@ -185,11 +183,11 @@ PreScalar parseBlockStyle(
 
       default:
         throwWithSingleOffset(
-          scanner,
+          iterator,
           message:
               'Block scalar styles are restricted to the printable '
               'character set',
-          offset: scanner.lineInfo().current,
+          offset: iterator.currentLineInfo.current,
         );
     }
   }
@@ -205,6 +203,6 @@ PreScalar parseBlockStyle(
     docMarkerType: docMarkerType,
     hasLineBreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
     wroteLineBreak: buffer.wroteLineBreak,
-    end: end ?? scanner.lineInfo().current,
+    end: end ?? iterator.currentLineInfo.current,
   );
 }

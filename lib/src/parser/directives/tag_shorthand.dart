@@ -35,12 +35,12 @@ final class TagShorthand extends SpecificTag<String> {
 }
 
 /// Parses a [TagShorthand]
-TagShorthand parseTagShorthand(GraphemeScanner scanner) {
-  if (scanner.charAtCursor != tag) {
+TagShorthand parseTagShorthand(SourceIterator iterator) {
+  if (iterator.current != tag) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Expected a tag indicator "!"',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
@@ -49,15 +49,15 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
   /// intentional. Any refactors should take that into account.
 
   // *Just a gap*
-  scanner.skipCharAtCursor(); // Ignore leading "!"
+  iterator.nextChar(); // Ignore leading "!"
 
   /// Quickly extract the remaining shorthand characters as valid uri chars
   /// that must be escaped since this is a secondary tag shorthand
-  if (scanner.charAtCursor == tag) {
-    scanner.skipCharAtCursor();
+  if (iterator.current == tag) {
+    iterator.nextChar();
     return TagShorthand._(
       TagHandle.secondary(),
-      _parseTagUri(scanner, allowRestrictedIndicators: false),
+      _parseTagUri(iterator, allowRestrictedIndicators: false),
     );
   }
 
@@ -65,8 +65,8 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
   var hasNonAlphaNumChar = false;
 
   localTagChunker:
-  while (scanner.charAtCursor != null || scanner.canChunkMore) {
-    final char = scanner.charAtCursor!;
+  while (!iterator.isEOF) {
+    final char = iterator.current;
 
     switch (char) {
       case lineFeed || carriageReturn || space || tab:
@@ -81,17 +81,17 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
           /// be too sure though :)
           if (buffer.isEmpty) {
             throwWithSingleOffset(
-              scanner,
+              iterator,
               message:
                   'A named tag must not be empty. Expected at least a single '
                   'alphanumeric character.',
-              offset: scanner.lineInfo().current,
+              offset: iterator.currentLineInfo.current,
             );
           } else if (hasNonAlphaNumChar) {
             throwWithApproximateRange(
-              scanner,
+              iterator,
               message: 'A named tag can only have alphanumeric characters',
-              current: scanner.lineInfo().current,
+              current: iterator.currentLineInfo.current,
 
               /// Highlight the buffered shorthand including the "!" we skipped
               /// at the beginning.
@@ -101,10 +101,10 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
 
           /// The rest can be parsed as tag uri characters with strict
           /// escape requirements
-          scanner.skipCharAtCursor();
+          iterator.nextChar();
           return TagShorthand._(
             TagHandle.named(buffer.toString()),
-            _parseTagUri(scanner, allowRestrictedIndicators: false),
+            _parseTagUri(iterator, allowRestrictedIndicators: false),
           );
         }
 
@@ -115,7 +115,7 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
       case directive:
         {
           _parseTagUri(
-            scanner,
+            iterator,
             allowRestrictedIndicators: false,
             existingBuffer: buffer,
           );
@@ -137,13 +137,13 @@ TagShorthand parseTagShorthand(GraphemeScanner scanner) {
 
       default:
         throwWithSingleOffset(
-          scanner,
+          iterator,
           message: 'The current character is not a valid URI char',
-          offset: scanner.lineInfo().current,
+          offset: iterator.currentLineInfo.current,
         );
     }
 
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
   }
 
   // A local tag does not need to have a character i.e wildcard

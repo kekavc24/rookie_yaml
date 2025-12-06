@@ -1,5 +1,5 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 
 extension ThrowableHelper<T> on Subject<T Function()> {
   void throwsWithMessage<E>(

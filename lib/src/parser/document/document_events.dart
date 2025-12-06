@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// A event that controls the `DocumentParser`'s next parse action
@@ -99,11 +99,11 @@ enum FlowCollectionEvent implements ParserEvent {
 /// Infers a generalized [ParserEvent] that determines how the [DocumentParser]
 /// should parse the next collection of characters.
 ParserEvent inferNextEvent(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool isBlockContext,
   required bool lastKeyWasJsonLike,
 }) {
-  final charAfter = scanner.charAfter;
+  final charAfter = iterator.peekNextChar();
 
   /// Can be allowed after map like indicator such as:
   ///   - "?" -> an explicit key indicator
@@ -112,7 +112,7 @@ ParserEvent inferNextEvent(
     (c) => c.isWhiteSpace() || c.isLineBreak(),
   );
 
-  return switch (scanner.charAtCursor) {
+  return switch (iterator.current) {
     doubleQuote => ScalarEvent.startFlowDoubleQuoted,
     singleQuote => ScalarEvent.startFlowSingleQuoted,
     literal => ScalarEvent.startBlockLiteral,

@@ -1,43 +1,41 @@
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/flow_scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 Never _doubleQuoteException(
-  GraphemeScanner scanner,
+  SourceIterator iterator,
   String message,
 ) => throwWithSingleOffset(
-  scanner,
+  iterator,
 
   // Defaults to a closing quote exceptions
   message: message,
-  offset: scanner.lineInfo().current,
+  offset: iterator.currentLineInfo.current,
 );
 
 Never _closingQuoteException(
-  GraphemeScanner scanner,
+  SourceIterator iterator,
 ) => throwWithApproximateRange(
-  scanner,
+  iterator,
   message: 'Expected a closing quote (") after the last character',
-  current: scanner.lineInfo().current,
-  charCountBefore: scanner.charAtCursor?.isLineBreak() ?? true ? 1 : 0,
+  current: iterator.currentLineInfo.current,
+  charCountBefore: iterator.current.isLineBreak() ? 1 : 0,
 );
 
 /// Parses a `double quoted` scalar
 PreScalar parseDoubleQuoted(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int indent,
   required bool isImplicit,
 }) {
-  final leadingChar = scanner.charAtCursor;
-
-  if (leadingChar != doubleQuote) {
-    _doubleQuoteException(scanner, 'Expected an opening double quote (")');
+  if (iterator.current != doubleQuote) {
+    _doubleQuoteException(iterator, 'Expected an opening double quote (")');
   }
 
   var quoteCount = 1;
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   final buffer = ScalarBuffer();
   var foundLineBreak = false;
@@ -46,7 +44,7 @@ PreScalar parseDoubleQuoted(
   void foldDoubleQuoted() {
     foundLineBreak =
         foldQuotedFlowScalar(
-          scanner,
+          iterator,
           scalarBuffer: buffer,
           minIndent: indent,
           isImplicit: isImplicit,
@@ -56,16 +54,14 @@ PreScalar parseDoubleQuoted(
   }
 
   dQuotedLoop:
-  while (scanner.canChunkMore && quoteCount != 2) {
-    final current = scanner.charAtCursor;
-
-    if (current == null) break;
+  while (!iterator.isEOF && quoteCount != 2) {
+    final current = iterator.current;
 
     switch (current) {
       // Tracks number of times we saw an unescaped `double quote`
       case doubleQuote:
         ++quoteCount;
-        scanner.skipCharAtCursor();
+        iterator.nextChar();
 
       // Implicit keys are restricted to a single line
       case carriageReturn || lineFeed when isImplicit:
@@ -74,22 +70,22 @@ PreScalar parseDoubleQuoted(
       // Attempt to fold or parsed escaped
       case backSlash:
         {
-          if (scanner.charAfter.isNotNullAnd((c) => c.isLineBreak())) {
+          if (iterator.peekNextChar().isNotNullAnd((c) => c.isLineBreak())) {
             foldDoubleQuoted();
             break;
           }
 
-          _parseEscaped(scanner, buffer: buffer);
+          _parseEscaped(iterator, buffer: buffer);
         }
 
       // Ensure the `---` or `...` combination is never used in quoted scalars
       case blockSequenceEntry || period
           when indent == 0 &&
-              scanner.charBeforeCursor.isNotNullAnd((c) => c.isLineBreak()) &&
-              scanner.charAfter == current:
+              iterator.before.isNotNullAnd((c) => c.isLineBreak()) &&
+              iterator.peekNextChar() == current:
         {
           throwIfDocEndInQuoted(
-            scanner,
+            iterator,
             onDocMissing: buffer.writeAll,
             quoteChar: doubleQuote,
           );
@@ -103,8 +99,9 @@ PreScalar parseDoubleQuoted(
         {
           buffer.writeChar(current);
 
-          final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
-            buffer.writeChar,
+          final OnChunk(:sourceEnded) = iterateAndChunk(
+            iterator,
+            onChar: buffer.writeChar,
             exitIf: (_, current) =>
                 current.isWhiteSpace() ||
                 current.isLineBreak() ||
@@ -120,7 +117,7 @@ PreScalar parseDoubleQuoted(
   }
 
   if (quoteCount != 2) {
-    _closingQuoteException(scanner);
+    _closingQuoteException(iterator);
   }
 
   return (
@@ -132,23 +129,22 @@ PreScalar parseDoubleQuoted(
     wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: false,
     indentOnExit: seamlessIndentMarker,
-    end: scanner.lineInfo().current,
+    end: iterator.currentLineInfo.current,
   );
 }
 
-/// Parses an escaped character in a double quoted scalar and returns `true`
-/// only if it is a line break.
+/// Parses an escaped character present in a double quoted string.
 void _parseEscaped(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required ScalarBuffer buffer,
 }) {
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
-  final charAfterEscape = scanner.charAtCursor;
-
-  if (charAfterEscape == null) {
-    _closingQuoteException(scanner);
+  if (iterator.isEOF) {
+    _closingQuoteException(iterator);
   }
+
+  final charAfterEscape = iterator.current;
 
   // Attempt to resolve as an hex
   if (checkHexWidth(charAfterEscape) case int hexWidth) {
@@ -163,36 +159,29 @@ void _parseEscaped(
           : (hexCode! << 4) ^ binary; // Shift 4 bits at a time
     }
 
-    scanner.skipCharAtCursor(); // Point the hex character
+    iterator.nextChar(); // Point the hex character
 
     /// Further reads are safe peeks to prevent us from pointing
     /// the cursor too far ahead. Intentionally expressive rather than using
     /// `scanner.chunkWhile(...)`
-    while (hexToRead > 0 && scanner.canChunkMore) {
-      final hexChar = scanner.charAtCursor;
-
-      if (hexChar == null) {
-        _doubleQuoteException(
-          scanner,
-          'Expected an hexadecimal digit but found nothing',
-        );
-      }
+    while (hexToRead > 0 && !iterator.isEOF) {
+      final hexChar = iterator.current;
 
       if (!hexChar.isHexDigit()) {
-        _doubleQuoteException(scanner, 'Invalid hex digit found!');
+        _doubleQuoteException(iterator, 'Invalid hex digit found!');
       }
 
       --hexToRead;
       convertRollingHex(hexChar.asString());
-      scanner.skipCharAtCursor();
+      iterator.nextChar();
     }
 
     // Must read all expected hex characters to be valid
     if (hexToRead > 0) {
       throwWithApproximateRange(
-        scanner,
+        iterator,
         message: '$hexToRead hex digit(s) are missing.',
-        current: scanner.lineInfo().current,
+        current: iterator.currentLineInfo.current,
 
         /// If no characters were read, we can safely assume the offset will
         /// point to the hex width identifier (x, u or U). In this case, we just
@@ -204,26 +193,16 @@ void _parseEscaped(
 
     buffer.writeChar(hexCode!); // Will never be null if [hexToRead] is 0
     return;
-  }
-
-  /// Resolve raw representations of characters in double quotes. This also
-  /// helps resolves ASCII characters not represented correctly in Dart but the
-  /// caller wants to (maybe?).
-  ///
-  /// The downside/upside (subjective), we implicitly replace any escaped
-  /// characters with their expected `unicode` representations.
-  ///
-  /// TODO: May need more work. For now, just throw.
-  if (resolveDoubleQuotedEscaped(charAfterEscape) case int escaped) {
+  } else if (resolveDoubleQuotedEscaped(charAfterEscape) case int escaped) {
     buffer.writeChar(escaped);
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
     return;
   }
 
   throwWithApproximateRange(
-    scanner,
+    iterator,
     message: 'Unknown escaped character found',
-    current: scanner.lineInfo().current,
+    current: iterator.currentLineInfo.current,
     charCountBefore: 1, // Include the "\"
   );
 }

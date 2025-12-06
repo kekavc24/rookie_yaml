@@ -1,53 +1,45 @@
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/flow_scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a `single quoted` scalar
 PreScalar parseSingleQuoted(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int indent,
   required bool isImplicit,
 }) {
-  if (scanner.charAtCursor != singleQuote) {
+  if (iterator.current != singleQuote) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: "Expected an opening single quote (')",
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   final buffer = ScalarBuffer();
   var quoteCount = 1;
   var foundLineBreak = false;
 
   sQuotedLoop:
-  while (scanner.canChunkMore && quoteCount != 2) {
-    final possibleChar = scanner.charAtCursor;
+  while (!iterator.isEOF && quoteCount != 2) {
+    final char = iterator.current;
 
-    if (possibleChar == null) {
-      throwWithSingleOffset(
-        scanner,
-        message: "Expected a closing single quote (')",
-        offset: scanner.lineInfo().current,
-      );
-    }
-
-    switch (possibleChar) {
+    switch (char) {
       case singleQuote:
         {
           // Single quotes can also be a form of escaping.
-          if (scanner.charAfter == singleQuote) {
+          if (iterator.peekNextChar() == singleQuote) {
             buffer.writeChar(singleQuote);
-            scanner.skipCharAtCursor(); // Skip the quote escaping it
+            iterator.nextChar();
           } else {
             ++quoteCount;
           }
 
-          scanner.skipCharAtCursor(); // Skip quote normally
+          iterator.nextChar(); // Skip quote normally
         }
 
       case carriageReturn || lineFeed when isImplicit:
@@ -56,11 +48,11 @@ PreScalar parseSingleQuoted(
       // Ensure the `---` or `...` combination is never used in quoted scalars
       case blockSequenceEntry || period
           when indent == 0 &&
-              scanner.charBeforeCursor.isNotNullAnd((c) => c.isLineBreak()) &&
-              scanner.charAfter == possibleChar:
+              iterator.before.isNotNullAnd((c) => c.isLineBreak()) &&
+              iterator.peekNextChar() == char:
         {
           throwIfDocEndInQuoted(
-            scanner,
+            iterator,
             onDocMissing: buffer.writeAll,
             quoteChar: singleQuote,
           );
@@ -71,7 +63,7 @@ PreScalar parseSingleQuoted(
         {
           foundLineBreak =
               foldQuotedFlowScalar(
-                scanner,
+                iterator,
                 scalarBuffer: buffer,
                 minIndent: indent,
                 isImplicit: isImplicit,
@@ -82,28 +74,28 @@ PreScalar parseSingleQuoted(
       // Single quoted style is restricted to printable characters.
       default:
         {
-          if (!possibleChar.isPrintable()) {
+          if (!char.isPrintable()) {
             throwWithSingleOffset(
-              scanner,
+              iterator,
               message:
                   'Single-quoted scalars are restricted to printable '
                   'characters only',
-              offset: scanner.lineInfo().current,
+              offset: iterator.currentLineInfo.current,
             );
           }
 
-          buffer.writeChar(possibleChar);
-          scanner.skipCharAtCursor();
+          buffer.writeChar(char);
+          iterator.nextChar();
         }
     }
   }
 
   if (quoteCount != 2) {
     throwWithApproximateRange(
-      scanner,
+      iterator,
       message: "Expected a closing single quote (') after the last character",
-      current: scanner.lineInfo().current,
-      charCountBefore: scanner.charAtCursor?.isLineBreak() ?? true ? 1 : 0,
+      current: iterator.currentLineInfo.current,
+      charCountBefore: iterator.current.isLineBreak() ? 1 : 0,
     );
   }
 
@@ -116,6 +108,6 @@ PreScalar parseSingleQuoted(
     wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: false,
     indentOnExit: seamlessIndentMarker,
-    end: scanner.lineInfo().current,
+    end: iterator.currentLineInfo.current,
   );
 }

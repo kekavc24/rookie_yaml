@@ -1,4 +1,3 @@
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 
 const _pattern = '# ';
@@ -41,17 +40,18 @@ final class YamlComment implements Comparable<YamlComment> {
 }
 
 /// Parses a `YAML` comment
-({ChunkInfo onExit, YamlComment comment}) parseComment(
-  GraphemeScanner scanner, {
+({OnChunk onExit, YamlComment comment}) parseComment(
+  SourceIterator iterator, {
   String? prepend,
 }) {
   final buffer = StringBuffer(prepend ?? '');
 
-  final start = scanner.lineInfo().current;
+  final start = iterator.currentLineInfo.current;
 
   /// A comment forces us to read the entire line till the end.
-  final chunkInfo = scanner.bufferChunk(
-    (char) => buffer.writeCharCode(char),
+  final chunkInfo = iterateAndChunk(
+    iterator,
+    onChar: buffer.writeCharCode,
     exitIf: (_, current) => current.isLineBreak(),
   );
 
@@ -61,16 +61,11 @@ final class YamlComment implements Comparable<YamlComment> {
     comment = comment.replaceFirst(_pattern, '');
   }
 
-  if (chunkInfo.sourceEnded &&
-      !(chunkInfo.charOnExit?.isLineBreak() ?? false)) {
-    scanner.skipCharAtCursor();
-  }
-
   return (
     onExit: chunkInfo,
     comment: YamlComment(
       comment,
-      commentSpan: (start: start, end: scanner.lineInfo().current),
+      commentSpan: (start: start, end: iterator.currentLineInfo.current),
     ),
   );
 }

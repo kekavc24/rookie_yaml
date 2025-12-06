@@ -2,7 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
@@ -396,19 +396,19 @@ First document
 My node starts here
 ''';
 
-      final scanner = GraphemeScanner.of(yaml);
+      final scanner = UnicodeIterator.ofString(yaml);
 
       check(skipToParsableChar(scanner, onParseComment: (_) {})).equals(0);
-      check(scanner.charAtCursor.asString()).equals('M');
+      check(scanner.current.asString()).equals('M');
     });
 
     test('Skips leading whitespace as', () {
       const yaml = ' My node starts here';
 
-      final scanner = GraphemeScanner.of(yaml);
+      final scanner = UnicodeIterator.ofString(yaml);
 
       check(skipToParsableChar(scanner, onParseComment: (_) {})).isNull();
-      check(scanner.charAtCursor.asString()).equals('M');
+      check(scanner.current.asString()).equals('M');
     });
 
     test('Skips to the next parsable char even with comments', () {
@@ -421,10 +421,10 @@ My node starts here
 
       final comments = <YamlComment>[];
 
-      final scanner = GraphemeScanner.of(yaml);
+      final scanner = UnicodeIterator.ofString(yaml);
 
       check(skipToParsableChar(scanner, comments: comments)).equals(0);
-      check(scanner.charAtCursor.asString()).equals('M');
+      check(scanner.current.asString()).equals('M');
       check(comments.map((e) => e.comment)).deepEquals([
         'This is a comment',
         'This is another',

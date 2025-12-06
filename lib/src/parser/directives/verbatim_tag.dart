@@ -70,90 +70,80 @@ final class VerbatimTag extends ResolvedTag {
 }
 
 /// Parses a [VerbatimTag]
-VerbatimTag parseVerbatimTag(GraphemeScanner scanner) {
-  final startOffset = scanner.lineInfo().current;
-  var charAtCursor = scanner.charAtCursor;
-
-  void skipAndMove() {
-    scanner.skipCharAtCursor();
-    charAtCursor = scanner.charAtCursor;
-  }
-
+VerbatimTag parseVerbatimTag(SourceIterator iterator) {
+  final startOffset = iterator.currentLineInfo.current;
   final buffer = StringBuffer();
 
-  void isNotNullNorMatches({
+  void isEndOrMatches({
     required bool Function(int char) matcher,
     required String errorOnMismatch,
   }) {
-    if (charAtCursor.isNullOr(matcher)) {
+    if (iterator.isEOF || matcher(iterator.current)) {
       throwWithSingleOffset(
-        scanner,
+        iterator,
         message: errorOnMismatch,
-        offset: scanner.lineInfo().current,
+        offset: iterator.currentLineInfo.current,
       );
     }
 
-    buffer.writeCharCode(charAtCursor!);
+    buffer.writeCharCode(iterator.current);
+    iterator.nextChar();
   }
 
   // Must start with a leading "!"
-  isNotNullNorMatches(
+  isEndOrMatches(
     matcher: (char) => char != tag,
     errorOnMismatch: 'A verbatim tag must start with "!"',
   );
-  skipAndMove();
 
   // Must be followed by an opening bracket "<"
-  isNotNullNorMatches(
+  isEndOrMatches(
     matcher: (char) => char != verbatimStart,
     errorOnMismatch:
         'Expected to find a "${verbatimStart.asString()}"'
         ' after "!"',
   );
-  skipAndMove();
 
   var isLocalTag = false;
 
   // This may be a local tag instead of a global one
-  if (charAtCursor == tag) {
-    skipAndMove();
+  if (iterator.current == tag) {
+    iterator.nextChar();
     buffer.writeCharCode(tag);
     isLocalTag = true;
   }
 
   // We can safely extract the remaining as uri characters
   final uri = _parseTagUri(
-    scanner,
+    iterator,
     allowRestrictedIndicators: true,
     isVerbatim: true,
   );
 
   if (uri.isEmpty) {
     throwWithApproximateRange(
-      scanner,
+      iterator,
       message: _onNonEmptyVerbatimUri,
-      current: scanner.lineInfo().current,
+      current: iterator.currentLineInfo.current,
       charCountBefore: buffer.length - 1,
     );
   } else if (!isLocalTag && !uri.startsWith('tag:')) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: 'Expected a tag uri starting the "tag:" uri scheme',
       start: startOffset,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 
-  charAtCursor = scanner.charAtCursor;
   buffer.write(uri);
 
-  isNotNullNorMatches(
+  isEndOrMatches(
     matcher: (char) => char != _verbatimEnd,
     errorOnMismatch:
         'Expected to find a "${_verbatimEnd.asString()}"'
         ' after parsing a verbatim tag',
   );
-  skipAndMove();
 
   return VerbatimTag._(buffer.toString());
 }

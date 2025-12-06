@@ -1,6 +1,5 @@
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/flow/flow_scalar_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -27,7 +26,7 @@ const _style = ScalarStyle.plain;
 
 /// Parses a `plain` scalar
 PreScalar? parsePlain(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int indent,
   required String charsOnGreedy,
   required bool isImplicit,
@@ -48,13 +47,12 @@ PreScalar? parsePlain(
   ///
   /// See:
   /// https://yaml.org/spec/1.2.2/#733-plain-style:~:text=Plain%20scalars%20must%20not%20begin%20with%20most%20indicators%2C%20as%20this%20would%20cause%20ambiguity%20with%20other%20YAML%20constructs.%20However%2C%20the%20%E2%80%9C%3A%E2%80%9D%2C%20%E2%80%9C%3F%E2%80%9D%20and%20%E2%80%9C%2D%E2%80%9D%20indicators%20may%20be%20used%20as%20the%20first%20character%20if%20followed%20by%20a%20non%2Dspace%20%E2%80%9Csafe%E2%80%9D%20character%2C%20as%20this%20causes%20no%20ambiguity.
-  final firstChar = scanner.charAtCursor;
+  final firstChar = iterator.current;
 
   if (greedyChars.isEmpty && _mustNotBeFirst.contains(firstChar)) {
-    if (scanner.charAfter case space || tab) {
+    if (iterator.peekNextChar() case space || tab) {
       // Intentionally expressive with if statement! We eval once.
       if (firstChar == mappingValue) {
-        // TODO: Pass in null when refactoring scalar
         return (
           content: '',
           scalarStyle: _style,
@@ -64,7 +62,7 @@ PreScalar? parsePlain(
           wroteLineBreak: false,
           indentDidChange: false,
           indentOnExit: seamlessIndentMarker,
-          end: scanner.lineInfo().current,
+          end: iterator.currentLineInfo.current,
         );
       }
 
@@ -80,15 +78,11 @@ PreScalar? parsePlain(
   RuneOffset? end;
 
   chunker:
-  while (scanner.canChunkMore) {
-    final char = scanner.charAtCursor;
+  while (!iterator.isEOF) {
+    final char = iterator.current;
 
-    if (char == null) {
-      break;
-    }
-
-    final charBefore = scanner.charBeforeCursor;
-    var charAfter = scanner.charAfter;
+    final charBefore = iterator.before;
+    var charAfter = iterator.peekNextChar();
 
     switch (char) {
       /// Check for the document end markers first always
@@ -97,10 +91,10 @@ PreScalar? parsePlain(
               charBefore.isNotNullAnd((c) => c.isLineBreak()) &&
               charAfter == char:
         {
-          final maybeEnd = scanner.lineInfo().current;
+          final maybeEnd = iterator.currentLineInfo.current;
 
           docMarkerType = checkForDocumentMarkers(
-            scanner,
+            iterator,
             onMissing: (greedy) => buffer.writeAll(greedy),
           );
 
@@ -141,7 +135,7 @@ PreScalar? parsePlain(
       case space || tab || carriageReturn || lineFeed:
         {
           final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
-            scanner,
+            iterator,
             scalarBuffer: buffer,
             minIndent: indent,
             isImplicit: isImplicit,
@@ -150,8 +144,8 @@ PreScalar? parsePlain(
           );
 
           if (indentDidChange) {
-            final (:start, :current) = scanner.lineInfo();
-            end = scanner.canChunkMore ? start : current;
+            final (:start, :current) = iterator.currentLineInfo;
+            end = iterator.isEOF ? start : current;
             indentOnExit = foldIndent;
             break chunker;
           }
@@ -176,8 +170,9 @@ PreScalar? parsePlain(
 
           buffer.writeChar(char);
 
-          final ChunkInfo(:sourceEnded) = scanner.bufferChunk(
-            buffer.writeChar,
+          final OnChunk(:sourceEnded) = iterateAndChunk(
+            iterator,
+            onChar: buffer.writeChar,
             exitIf: (_, curr) =>
                 _delimiters.contains(curr) || curr.isFlowDelimiter(),
           );
@@ -188,7 +183,7 @@ PreScalar? parsePlain(
   }
 
   return (
-    /// Cannot have leading and trailing whitespace (line breaks included).
+    // Cannot have leading and trailing whitespace (line breaks included).
     content: buffer.bufferedContent().trim(),
     scalarStyle: _style,
     scalarIndent: indent,
@@ -197,6 +192,6 @@ PreScalar? parsePlain(
     hasLineBreak: foundLineBreak,
     wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: indentOnExit != seamlessIndentMarker,
-    end: end ?? scanner.lineInfo().current,
+    end: end ?? iterator.currentLineInfo.current,
   );
 }

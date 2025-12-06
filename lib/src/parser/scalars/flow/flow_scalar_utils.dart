@@ -1,7 +1,7 @@
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 typedef FoldFlowInfo = ({
@@ -13,24 +13,24 @@ typedef FoldFlowInfo = ({
 /// Throws if document/directive end markers are encountered while parsing a
 /// scalar that is [ScalarStyle.doubleQuoted] or [ScalarStyle.singleQuoted].
 void throwIfDocEndInQuoted(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required void Function(List<int> chars) onDocMissing,
   required int quoteChar,
 }) {
-  final start = scanner.lineInfo().current;
+  final start = iterator.currentLineInfo.current;
 
   if (checkForDocumentMarkers(
-        scanner,
+        iterator,
         onMissing: onDocMissing,
       )
-      case DocumentMarker marker when marker.stopIfParsingDoc) {
+      case DocumentMarker.directiveEnd || DocumentMarker.documentEnd) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message:
           'Expected a (${quoteChar.asString()}) before the current document'
           ' was terminated',
       start: start,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 }
@@ -40,7 +40,7 @@ void throwIfDocEndInQuoted(
 ///
 /// See [escaped linebreak](https://yaml.org/spec/1.2.2/#731-double-quoted-style:~:text=In%20a%20multi,at%20arbitrary%20positions.)
 ({bool indentDidChange, int indentOnExit, bool exit}) _ignoreEscapedLineBreak(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required ScalarBuffer buffer,
   required List<int> bufferedWhitespace,
   required int minIndent,
@@ -50,51 +50,53 @@ void throwIfDocEndInQuoted(
     bufferedWhitespace.clear();
 
     // Skip to linebreak.
-    scanner.skipCharAtCursor();
-    skipCrIfPossible(scanner.charAtCursor!, scanner: scanner);
+    iterator.nextChar();
+    skipCrIfPossible(iterator.current, iterator: iterator);
 
-    if (!scanner.canChunkMore) break;
+    if (!iterator.hasNext) break;
 
     // Determine indent
-    final indent = scanner.skipWhitespace(max: minIndent).length;
-    scanner.skipCharAtCursor();
+    final indent = skipWhitespace(iterator, max: minIndent).length;
+    iterator.nextChar();
 
     if (indent < minIndent) {
       return (indentDidChange: true, indentOnExit: indent, exit: true);
     }
 
     // Capture whitespace incase the next char combination is "\" + linebreak.
-    if (scanner.charAtCursor case int char when char == space || char == tab) {
-      bufferedWhitespace.add(char);
-      scanner
-        ..skipWhitespace(skipTabs: true, previouslyRead: bufferedWhitespace)
-        ..skipCharAtCursor();
+    if (iterator.current case space || tab) {
+      bufferedWhitespace.add(iterator.current);
+
+      skipWhitespace(
+        iterator,
+        skipTabs: true,
+        previouslyRead: bufferedWhitespace,
+      );
+      iterator.nextChar();
     }
-  } while (scanner.charAtCursor == slash &&
-      scanner.charAfter.isNotNullAnd((c) => c.isLineBreak()));
+  } while (iterator.current == slash &&
+      iterator.peekNextChar().isNotNullAnd((c) => c.isLineBreak()));
 
   bufferedWhitespace.clear(); // Also escaped.
 
   return (
     indentDidChange: false,
     indentOnExit: seamlessIndentMarker,
-    exit: scanner.charAtCursor.isNullOr(
-      (c) => !c.isWhiteSpace() || !c.isLineBreak(),
-    ),
+    exit: !iterator.current.isWhiteSpace() || !iterator.current.isLineBreak(),
   );
 }
 
 /// Folds a [ScalarStyle.singleQuoted] or [ScalarStyle.doubleQuoted] flow
 /// scalar.
 bool foldQuotedFlowScalar(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required ScalarBuffer scalarBuffer,
   required int minIndent,
   required bool isImplicit,
   bool resumeOnEscapedLineBreak = false,
 }) {
   final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
-    scanner,
+    iterator,
     scalarBuffer: scalarBuffer,
     minIndent: minIndent,
     isImplicit: isImplicit,
@@ -104,11 +106,11 @@ bool foldQuotedFlowScalar(
   // Quoted scalar never allow an indent change before seeing closing quote
   if (indentDidChange) {
     throwWithApproximateRange(
-      scanner,
+      iterator,
       message:
           'Invalid indent! Expected $minIndent space(s), found $foldIndent'
           ' space(s)',
-      current: scanner.lineInfo().current,
+      current: iterator.currentLineInfo.current,
       charCountBefore: foldIndent,
     );
   }
@@ -120,10 +122,9 @@ bool foldQuotedFlowScalar(
 /// spans more than 1 line.
 ///
 /// [resumeOnEscapedLineBreak] should only be provided when parsing a [Scalar]
-/// with [ScalarStyle.doubleQuoted] which allows `\n` to be escaped. See
-/// [parseDoubleQuoted]
+/// with [ScalarStyle.doubleQuoted] which allows `\n` to be escaped.
 FoldFlowInfo foldFlowScalar(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required ScalarBuffer scalarBuffer,
   required int minIndent,
   required bool isImplicit,
@@ -136,8 +137,8 @@ FoldFlowInfo foldFlowScalar(
   var didFold = false;
 
   folding:
-  while (scanner.canChunkMore) {
-    var current = scanner.charAtCursor;
+  while (!iterator.isEOF) {
+    var current = iterator.current;
 
     switch (current) {
       case carriageReturn || lineFeed when !isImplicit:
@@ -166,39 +167,40 @@ FoldFlowInfo foldFlowScalar(
 
           /// Fold continuously until we encounter a char that is not a
           /// linebreak or whitespace.
-          while (current != null && current.isLineBreak()) {
-            current = skipCrIfPossible(current, scanner: scanner);
+          while (current.isLineBreak()) {
+            current = skipCrIfPossible(current, iterator: iterator);
             bufferedWhitespace.clear();
 
             // Ensure we fold cautiously. Skip indent first
-            final indent = scanner.skipWhitespace(max: minIndent).length;
-            scanner.skipCharAtCursor();
+            final indent = skipWhitespace(iterator, max: minIndent).length;
+            iterator.nextChar();
 
-            current = scanner.charAtCursor;
+            current = iterator.current;
 
             final isDifferentScalar = indent < minIndent;
 
             /// We don't want to impede on the next scalar by consuming its
             /// content
-            if (current != null &&
+            if (!iteratedIsEOF(current) &&
                 current.isWhiteSpace() &&
                 !isDifferentScalar) {
-              if (matchesPlain(scanner.charAfter)) {
+              if (matchesPlain(iterator.peekNextChar())) {
                 foldCurrent(null);
-                scanner.skipCharAtCursor();
+                iterator.nextChar();
                 break folding;
               }
 
               bufferedWhitespace.add(current);
 
-              scanner
-                ..skipWhitespace(
-                  skipTabs: true,
-                  previouslyRead: bufferedWhitespace,
-                )
-                ..skipCharAtCursor();
+              skipWhitespace(
+                iterator,
+                skipTabs: true,
+                previouslyRead: bufferedWhitespace,
+              );
 
-              current = scanner.charAtCursor;
+              iterator.nextChar();
+
+              current = iterator.current;
             }
 
             /// It could be consecutive line breaks with no indent that made us
@@ -206,8 +208,8 @@ FoldFlowInfo foldFlowScalar(
             ///
             /// It doesn't matter if the line break was escaped. Resume the
             /// folding.
-            if (current != null && current.isLineBreak()) {
-              current = skipCrIfPossible(current, scanner: scanner);
+            if (!iteratedIsEOF(current) && current.isLineBreak()) {
+              current = skipCrIfPossible(current, iterator: iterator);
               foldCurrent(current);
               lastWasLineBreak = true;
               continue;
@@ -236,11 +238,11 @@ FoldFlowInfo foldFlowScalar(
 
       case space || tab:
         {
-          scanner.skipCharAtCursor();
+          iterator.nextChar();
 
           // Match " :" or " #". These assumes the plain scalar is a key.
-          if (matchesPlain(scanner.charAtCursor)) break folding;
-          bufferedWhitespace.add(current!);
+          if (matchesPlain(iterator.peekNextChar())) break folding;
+          bufferedWhitespace.add(current);
         }
 
       default:
@@ -249,13 +251,13 @@ FoldFlowInfo foldFlowScalar(
           /// escaped. All other flow styles should return false!
           if (resumeOnEscapedLineBreak &&
               current == backSlash &&
-              scanner.charAfter.isNotNullAnd((c) => c.isLineBreak())) {
+              iterator.peekNextChar().isNotNullAnd((c) => c.isLineBreak())) {
             final (
               :indentDidChange,
               :indentOnExit,
               :exit,
             ) = _ignoreEscapedLineBreak(
-              scanner,
+              iterator,
               buffer: scalarBuffer,
               bufferedWhitespace: bufferedWhitespace,
               minIndent: minIndent,

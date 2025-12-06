@@ -7,14 +7,14 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// Parses a flow scalar based on the current scalar [event].
 ScalarDelegate<R> parseFlowScalar<R>(
   ScalarEvent event, {
-  required GraphemeScanner scanner,
+  required SourceIterator iterator,
   required ScalarFunction<R> scalarFunction,
   required void Function(YamlComment comment) onParseComment,
   required bool isInline,
@@ -23,7 +23,7 @@ ScalarDelegate<R> parseFlowScalar<R>(
 }) {
   final (prescalar, delegate) = parseScalar(
     event,
-    scanner: scanner,
+    iterator: iterator,
     scalarFunction: scalarFunction,
     onParseComment: onParseComment,
     isImplicit: isInline,
@@ -45,18 +45,18 @@ ScalarDelegate<R> parseFlowScalar<R>(
     // Flow node only ends after parsing a flow delimiter
     if (docMarkerType.stopIfParsingDoc) {
       throwForCurrentLine(
-        scanner,
+        iterator,
         message:
             'Premature document termination when parsing flow map '
             'entry',
       );
     } else if (indentDidChange && indentOnExit < minIndent) {
       throwWithApproximateRange(
-        scanner,
+        iterator,
         message:
             'Indent change detected when parsing plain scalar. Expected'
             ' $minIndent space(s) but found $indentOnExit space(s)',
-        current: scanner.lineInfo().current,
+        current: iterator.currentLineInfo.current,
         charCountBefore: indentOnExit,
       );
     }
@@ -82,10 +82,10 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int collectionDelimiter,
   bool lastKeyWasJsonLike = false,
 }) {
-  final ParserState(:scanner) = state;
+  final ParserState(:iterator) = state;
 
   final (:event, :kind, :property) = parseFlowProperties(
-    scanner,
+    iterator,
     minIndent: minIndent,
     resolver: state.resolveTag,
     onParseComment: state.comments.add,
@@ -94,21 +94,21 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
   if (!event.isFlowContext) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Block nodes are not allowed in flow collections',
       offset: property.span.start,
     );
   } else if (property.parsedAny) {
     if (property.isMultiline &&
         (isImplicit || forceInline) &&
-        scanner.charAtCursor.isNullOr(
-          (c) => c != collectionDelimiter && c != flowEntryEnd,
-        )) {
+        (!iterator.isEOF &&
+            iterator.current != collectionDelimiter &&
+            iterator.current != flowEntryEnd)) {
       throwWithRangedOffset(
-        scanner,
+        iterator,
         message: 'Flow node cannot span multiple lines when implicit',
         start: property.span.start,
-        end: scanner.lineInfo().current,
+        end: iterator.currentLineInfo.current,
       );
     }
 
@@ -213,11 +213,11 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
     case NodeKind.scalar:
       {
-        final ParserState(:scanner, :scalarFunction, :comments) = parserState;
+        final ParserState(:iterator, :scalarFunction, :comments) = parserState;
         return switch (flowEvent) {
           ScalarEvent e => parseFlowScalar(
             e,
-            scanner: scanner,
+            iterator: iterator,
             scalarFunction: scalarFunction,
             onParseComment: comments.add,
             isInline: isInline,
@@ -263,12 +263,12 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       {
         // Explicit keys cannot have leading properties
         if (property.parsedAny) {
-          final scanner = parserState.scanner;
+          final iterator = parserState.iterator;
           throwWithRangedOffset(
-            parserState.scanner,
+            iterator,
             message: 'Explicit compact flow entry cannot have properties',
             start: property.span.start,
-            end: scanner.lineInfo().current,
+            end: iterator.currentLineInfo.current,
           );
         }
 
@@ -296,7 +296,7 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       {
         return parseFlowScalar(
           scalarEvent,
-          scanner: parserState.scanner,
+          iterator: parserState.iterator,
           scalarFunction: parserState.scalarFunction,
           onParseComment: parserState.comments.add,
           isInline: isImplicit || forceInline,
@@ -323,7 +323,7 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
           indent: minIndent,
           startOffset: property.span.start,
           resolver: parserState.scalarFunction,
-        )..updateEndOffset = parserState.scanner.lineInfo().current;
+        )..updateEndOffset = parserState.iterator.currentLineInfo.current;
       }
   }
 }

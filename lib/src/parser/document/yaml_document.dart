@@ -9,7 +9,6 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -56,11 +55,11 @@ enum YamlDocType {
   static YamlDocType inferType({
     required bool hasDirectives,
     required bool isDocStartExplicit,
-  }) => switch (hasDirectives) {
-    true => YamlDocType.directiveDoc,
-    _ when isDocStartExplicit => YamlDocType.explicit,
-    _ => YamlDocType.bare,
-  };
+  }) => hasDirectives
+      ? YamlDocType.directiveDoc
+      : isDocStartExplicit
+      ? YamlDocType.explicit
+      : YamlDocType.bare;
 }
 
 /// A document representing the entire `YAML` string or a single

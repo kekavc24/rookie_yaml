@@ -3,7 +3,6 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -76,19 +75,19 @@ R _parseExplicitFlow<
   )
   onExplicitKey,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
 
-  final keyStart = scanner.lineInfo().current;
+  final keyStart = iterator.currentLineInfo.current;
 
-  if (scanner.charAtCursor != mappingKey) {
+  if (iterator.current != mappingKey) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Expected an explicit key indicator "?"',
       offset: keyStart,
     );
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   final key = parseFlowNode(
     state,
@@ -99,17 +98,17 @@ R _parseExplicitFlow<
     collectionDelimiter: mappingEnd,
   );
 
-  key.updateEndOffset = scanner.lineInfo().current;
+  key.updateEndOffset = iterator.currentLineInfo.current;
 
   ParserDelegate<Obj>? value;
 
   if (inferNextEvent(
-        scanner,
+        iterator,
         isBlockContext: false,
         lastKeyWasJsonLike: keyIsJsonLike(key),
       ) ==
       FlowCollectionEvent.startEntryValue) {
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
     value = parseFlowNode(
       state,
       currentIndentLevel: indentLevel + 1,
@@ -131,13 +130,13 @@ parseImplicitEntry<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int minIndent,
   required bool forceInline,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
 
-  if (scanner.charAtCursor case flowEntryEnd || mappingEnd) {
+  if (iterator.current case flowEntryEnd || mappingEnd) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Expected the start of an implicit flow key but found',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
@@ -156,40 +155,40 @@ parseImplicitEntry<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
   // Value must be parsed in a safe state
   if (!nextSafeLineInFlow(
-    scanner,
+    iterator,
     minIndent: minIndent,
     forceInline: forceInline,
     onParseComment: comments.add,
   )) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: expectedCharErr,
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
   // Move end offset ahead for key
-  parsedKey.updateEndOffset = scanner.lineInfo().current;
+  parsedKey.updateEndOffset = iterator.currentLineInfo.current;
 
-  if (scanner.charAtCursor case null || flowEntryEnd || mappingEnd) {
+  if (iterator.current case flowEntryEnd || mappingEnd) {
     return (parsedKey, null);
   }
 
   // We must see ":"
   if (inferNextEvent(
-        scanner,
+        iterator,
         isBlockContext: false,
         lastKeyWasJsonLike: keyIsJsonLike(parsedKey),
       ) !=
       FlowCollectionEvent.startEntryValue) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: expectedCharErr,
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   return (
     parsedKey,

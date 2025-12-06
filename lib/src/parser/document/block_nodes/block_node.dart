@@ -9,7 +9,6 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -18,7 +17,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 ///
 /// A leading explicit key signifies the start of a block map.
 void _throwIfInlineInBlock(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool isInline,
   required ParsedProperty property,
   required RuneOffset currentOffset,
@@ -26,7 +25,7 @@ void _throwIfInlineInBlock(
 }) {
   if (isInline || (property.parsedAny && !property.isMultiline)) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message:
           '$identifier cannot be forced to be implicit or have inline '
           'properties before its indicator',
@@ -37,26 +36,26 @@ void _throwIfInlineInBlock(
 }
 
 void _throwIfInlineExplicitKey(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool isInline,
   required ParsedProperty property,
 }) => _throwIfInlineInBlock(
-  scanner,
+  iterator,
   isInline: isInline,
   property: property,
-  currentOffset: scanner.lineInfo().current,
+  currentOffset: iterator.currentLineInfo.current,
   identifier: 'An explicit key',
 );
 
 void _inlineIfInlineBlockSequence(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool isInline,
   required ParsedProperty property,
 }) => _throwIfInlineInBlock(
-  scanner,
+  iterator,
   isInline: isInline,
   property: property,
-  currentOffset: scanner.lineInfo().current,
+  currentOffset: iterator.currentLineInfo.current,
   identifier: 'A block sequence',
 );
 
@@ -64,7 +63,7 @@ void _inlineIfInlineBlockSequence(
 /// while considering the current step indent obtained from the
 /// [propertyExitIndent].
 ({int adjustedLaxIndent, int adjustedInlineIndent}) _adjustBlockIndent(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required RuneOffset propertyStartOffset,
   required int? inferredIndentFromParent,
   required int? propertyExitIndent,
@@ -122,10 +121,10 @@ void _inlineIfInlineBlockSequence(
   ///   - Example "8.20 Node Types"
   if (hasParentIndent && propertyExitIndent > adjustedFixedInline) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: 'A block node cannot be indented more that its properties',
       start: propertyStartOffset,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 
@@ -169,17 +168,17 @@ BlockNode<Obj> _safeBlockState<
   Seq extends Iterable<Obj>,
   Dict extends Map<Obj, Obj?>
 >(ParserState<Obj, Seq, Dict> state, {required BlockNode<Obj> parsed}) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
   final (:blockInfo, :node) = parsed;
 
-  if (scanner.canChunkMore &&
+  if (!iterator.isEOF &&
       !blockInfo.docMarker.stopIfParsingDoc &&
       (blockInfo.exitIndent == seamlessIndentMarker ||
-          scanner.charAtCursor == comment)) {
+          iterator.current == comment)) {
     return (
       blockInfo: (
         docMarker: blockInfo.docMarker,
-        exitIndent: skipToParsableChar(scanner, onParseComment: comments.add),
+        exitIndent: skipToParsableChar(iterator, onParseComment: comments.add),
       ),
       node: node,
     );
@@ -216,10 +215,10 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required bool composeImplicitMap,
   bool canComposeMapIfMultiline = false,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
 
   final (:event, :kind, :property) = parseBlockProperties(
-    scanner,
+    iterator,
     minIndent: laxBlockIndent,
     resolver: state.resolveTag,
     onParseComment: comments.add,
@@ -227,8 +226,6 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
   // Exit immediately if we see an indent less than than the min required
   if (property.indentOnExit case int indent when indent < laxBlockIndent) {
-    final (:start, :current) = scanner.lineInfo();
-
     return (
       blockInfo: (exitIndent: indent, docMarker: DocumentMarker.none),
       node: emptyBlockNode(
@@ -236,10 +233,10 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         property: property,
         indentLevel: indentLevel,
         indent: laxBlockIndent,
-        end: scanner.canChunkMore ? start : current,
+        end: iterator.currentLineInfo.start,
       ),
     );
-  } else if (!scanner.canChunkMore) {
+  } else if (iterator.isEOF) {
     return (
       blockInfo: emptyScanner,
       node: emptyBlockNode(
@@ -247,20 +244,20 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         property: property,
         indentLevel: indentLevel,
         indent: laxBlockIndent,
-        end: scanner.lineInfo().current,
+        end: iterator.currentLineInfo.current,
       ),
     );
   } else if (forceInlined && property.isMultiline) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: 'Implicit block nodes cannot span multiple lines',
       start: property.span.start,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 
   final (:adjustedLaxIndent, :adjustedInlineIndent) = _adjustBlockIndent(
-    scanner,
+    iterator,
     inferredIndentFromParent: inferredFromParent,
     propertyStartOffset: property.span.start,
     propertyExitIndent: property.indentOnExit,
@@ -293,13 +290,13 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     if (event is NodePropertyEvent) {
       if (!definitelyComposeMap || property is Alias) {
         throwWithRangedOffset(
-          scanner,
+          iterator,
           message:
               'Invalid block node state. Duplicate properties implied the'
               ' start of a block map but a block map cannot be composed in the'
               ' current state',
           start: property.span.start,
-          end: scanner.lineInfo().current,
+          end: iterator.currentLineInfo.current,
         );
       }
 
@@ -412,7 +409,7 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       {
         if (event == BlockCollectionEvent.startExplicitKey) {
           _throwIfInlineExplicitKey(
-            state.scanner,
+            state.iterator,
             isInline: forceInlined,
             property: property,
           );
@@ -437,7 +434,7 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
         if (event == BlockCollectionEvent.startBlockListEntry) {
           _inlineIfInlineBlockSequence(
-            state.scanner,
+            state.iterator,
             isInline: forceInlined,
             property: property,
           );
@@ -471,10 +468,10 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         // We must have a block sequence
         if (sequence == null) {
           throwWithRangedOffset(
-            state.scanner,
+            state.iterator,
             message: 'Expected the start of a blocl/flow sequence',
             start: property.span.start,
-            end: state.scanner.lineInfo().current,
+            end: state.iterator.currentLineInfo.current,
           );
         }
 
@@ -497,10 +494,10 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         }
 
         throwWithRangedOffset(
-          state.scanner,
+          state.iterator,
           message: 'Expected the start of a valid scalar',
           start: property.span.start,
-          end: state.scanner.lineInfo().current,
+          end: state.iterator.currentLineInfo.current,
         );
       }
 
@@ -531,16 +528,16 @@ _ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required bool forceInlined,
   required bool composeImplicitMap,
 }) {
-  final ParserState(:scanner) = parserState;
+  final ParserState(:iterator) = parserState;
 
   switch (event) {
     case BlockCollectionEvent.startExplicitKey:
       {
         _throwIfInlineInBlock(
-          scanner,
+          iterator,
           isInline: forceInlined,
           property: property,
-          currentOffset: scanner.lineInfo().current,
+          currentOffset: iterator.currentLineInfo.current,
           identifier: 'An explicit key',
         );
 
@@ -549,7 +546,7 @@ _ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
             collectionStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
-            start: parserState.scanner.lineInfo().current,
+            start: parserState.iterator.currentLineInfo.current,
             mapResolver: parserState.mapFunction,
           ),
           state: parserState,
@@ -562,10 +559,10 @@ _ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     case BlockCollectionEvent.startBlockListEntry:
       {
         _throwIfInlineInBlock(
-          scanner,
+          iterator,
           isInline: forceInlined,
           property: property,
-          currentOffset: scanner.lineInfo().current,
+          currentOffset: iterator.currentLineInfo.current,
           identifier: 'A block sequence',
         );
 

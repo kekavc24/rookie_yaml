@@ -1,7 +1,11 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/dumping/dumping.dart';
+
+part 'character_encoding.dart';
+part 'encoding_utils.dart';
+part 'error_utils.dart';
 
 /// Custom offset information.
 ///
@@ -41,10 +45,15 @@ final class SourceLine {
   String toString() => String.fromCharCodes(chars);
 }
 
-/// An iterator that iterates over any source parsable YAML source string
+/// An iterator that iterates over any parsable YAML source string.
+///
+/// `[NOTE]`: This class does not subclass [Iterator]. This is intentional.
 abstract interface class SourceIterator {
-  /// Returns `true` if a char is present after the [current] char.
+  /// Whether a char is present after the [current] char.
   bool get hasNext;
+
+  /// Character before [current].
+  int? get before;
 
   /// Current character. Always points to the first character when this
   /// iterator is instantianted.
@@ -54,16 +63,23 @@ abstract interface class SourceIterator {
   /// other than the first char.
   int get current;
 
-  /// Returns the index of the current line
+  /// Whether the underlying byte source has been iterated to completion.
+  bool get isEOF;
+
+  /// Index of the current line
   int get currentLine;
 
   /// Moves the iterator forward.
   ///
   /// Eagerly throws an [Error] rather than an [Exception] if called without
-  /// checking [hasNext].
+  /// checking [hasNext]. Ideally, a subclass may implement a heuristic that
+  /// allows [current] to be skipped if it is the last character allowing
+  /// [isEOF] to provide fine grained information on the current state of the
+  /// iterator.
   void nextChar();
 
-  /// Returns a non-null code point if the next character is present.
+  /// Peeks ahead and returns the next character which may be `null` if no
+  /// more characters are present.
   int? peekNextChar();
 
   /// Returns the current line information which includes the start position
@@ -100,18 +116,17 @@ final class UnicodeIterator implements SourceIterator {
     _lines.add(const SourceLine(0, 0, chars: []));
   }
 
-  /// Creates a [UnicodeIterator] that uses the [RuneIterator] of the [source]
-  /// string.
+  /// Creates a [UnicodeIterator] that uses the underlying code units to iterate
+  /// the string [source].
   UnicodeIterator.ofString(String source) : this._(source.runes.iterator);
 
-  /// Creates a [UnicodeIterator] that synchronously reads the entire file from
-  /// the [filePath] provided and uses the [Iterator] from its bytes.
-  UnicodeIterator.ofByteSource(Iterable<int> source) : this._(source.iterator);
+  /// Creates a [UnicodeIterator] that iterates a sequence of utf bytes.
+  UnicodeIterator.ofBytes(Iterable<int> source) : this._(source.iterator);
 
   /// Actual iterator being read.
   final Iterator<int> _iterator;
 
-  /// [Line]s lazily buffered while iterating.
+  /// [SourceLine]s lazily buffered while iterating.
   final _lines = <SourceLine>[];
 
   /// UTF-16 unicode characters buffered for single [Line]. Always handed off
@@ -136,6 +151,8 @@ final class UnicodeIterator implements SourceIterator {
   /// Column index of the current character
   int _columnIndex = 0;
 
+  int? _charBefore;
+
   /// Current character
   int _currentChar = -1;
 
@@ -146,7 +163,13 @@ final class UnicodeIterator implements SourceIterator {
   bool get hasNext => _hasNext;
 
   @override
+  int? get before => _charBefore;
+
+  @override
   int get current => _currentChar;
+
+  @override
+  bool get isEOF => _currentChar == -1;
 
   @override
   int get currentLine => _lineIndex;
@@ -171,6 +194,7 @@ final class UnicodeIterator implements SourceIterator {
       _bufferedRunes.add(_currentChar);
     }
 
+    _charBefore = _currentChar;
     _currentChar = _nextChar;
     _hasNext = _iterator.moveNext();
     _nextChar = _hasNext ? _iterator.current : -1;
@@ -256,4 +280,127 @@ final class UnicodeIterator implements SourceIterator {
   /// Displays the current chunk within a line that is being iterated.
   @override
   String toString() => String.fromCharCodes(_bufferedRunes);
+}
+
+/// Whether a [char] from a [SourceIterator] is not a valid unicode character.
+bool iteratedIsEOF(int? char) => char == null || char < 0;
+
+/// Skips any whitespace and returns the whitespace characters skipped. If
+/// [skipTabs] is `true`, then tabs `\t` will also be skipped.
+///
+/// [previouslyRead] must be mutable.
+List<int> skipWhitespace(
+  SourceIterator iterator, {
+  bool skipTabs = false,
+  int? max,
+  List<int>? previouslyRead,
+}) {
+  final buffer = previouslyRead ?? [];
+  final hasMax = max != null;
+
+  bool isMatch(int? char) {
+    if (char == null) return false;
+    return skipTabs ? char.isWhiteSpace() : char.isIndent();
+  }
+
+  while (iterator.hasNext &&
+      !(hasMax && buffer.length >= max) &&
+      isMatch(iterator.peekNextChar())) {
+    iterator.nextChar();
+    buffer.add(iterator.current);
+  }
+
+  return buffer;
+}
+
+/// Returns the number of characters taken until a character failed the
+/// [stopIf] test, that is, evaluated to `false`.
+///
+/// [includeCharAtCursor] adds the current character present when
+/// `iterator.current` is called on the cursor only if it is not `null`. The
+/// [mapper] function is applied and value made available using [onMapped].
+int takeFromIteratorUntil<T>(
+  SourceIterator iterator, {
+  required bool includeCharAtCursor,
+  required T Function(int char) mapper,
+  required void Function(T mapped) onMapped,
+  required bool Function(int count, int possibleNext) stopIf,
+}) {
+  var taken = 0;
+
+  if (includeCharAtCursor && iterator.current != -1) {
+    onMapped(mapper(iterator.current));
+    ++taken;
+  }
+
+  /// Ensures we always leave the iterator in a safe state and prevents
+  /// iterating the same character multiple times.
+  do {
+    if (iterator.peekNextChar() case int char) {
+      if (stopIf(taken, char)) {
+        break;
+      }
+
+      onMapped(mapper(char));
+      ++taken;
+    }
+
+    iterator.nextChar();
+  } while (iterator.hasNext);
+
+  return taken;
+}
+
+/// Represents information returned after a call to `bufferChunk` method
+/// of the [SourceIterator]
+///
+/// `sourceEnded` - indicates if the entire string source was scanned.
+///
+/// `lineEnded` - indicates if an entire line was scanned, that is, until a
+/// line feed was encountered.
+///
+/// `charOnExit` - indicates the character that triggered the `bufferChunk`
+/// exit. Typically, the current character when `GraphemeScanner.charAtCursor`
+/// is called.
+typedef OnChunk = ({bool sourceEnded, int? charOnExit});
+
+/// Reads and buffers all characters that fail the [exitIf] predicate or until
+/// the end of the current line, that is, until the line's [lineFeed] is emitted
+/// and no more characters are present in the line (whichever condition comes
+/// first).
+///
+/// This function guarantees that it will leave the [iterator] in a safe state
+/// if no more characters are present.
+OnChunk iterateAndChunk(
+  SourceIterator iterator, {
+  required void Function(int char) onChar,
+  required bool Function(int? previous, int current) exitIf,
+}) {
+  int? maybeCharOnExit;
+  var evalChatArCursor = false;
+
+  // Iterate as long as we can buffer characters
+  while (iterator.hasNext) {
+    iterator.nextChar();
+
+    maybeCharOnExit = iterator.current;
+
+    if (exitIf(iterator.before, maybeCharOnExit)) {
+      evalChatArCursor = true;
+      break;
+    }
+
+    onChar(maybeCharOnExit);
+  }
+
+  final sourceEnded = !evalChatArCursor && !iterator.hasNext;
+
+  if (sourceEnded && !iterator.isEOF) {
+    iterator.nextChar(); // Skip completely
+  }
+
+  return (
+    sourceEnded: sourceEnded,
+    charOnExit: maybeCharOnExit,
+  );
 }

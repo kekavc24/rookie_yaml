@@ -8,7 +8,6 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -45,7 +44,7 @@ BlockNode<Obj> composeBlockMapStrict<
 
   if (node is! MappingDelegate) {
     throwWithRangedOffset(
-      state.scanner,
+      state.iterator,
       message:
           'Expected an (implied) block map with property '
           '"${property.tag ?? property.anchor}"',
@@ -76,9 +75,9 @@ parseBlockWildCard<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     keyOrNode: nullScalarDelegate(
       indentLevel: indentLevel,
       indent: laxIndent,
-      startOffset: state.scanner.lineInfo().current,
+      startOffset: state.iterator.currentLineInfo.current,
       resolver: state.scalarFunction,
-    )..updateEndOffset = state.scanner.lineInfo().current,
+    )..updateEndOffset = state.iterator.currentLineInfo.current,
     keyOrMapProperty: property,
     indentOnExit: property.indentOnExit,
     documentMarker: DocumentMarker.none,
@@ -91,7 +90,7 @@ parseBlockWildCard<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       collectionStyle: NodeStyle.block,
       indentLevel: indentLevel,
       indent: inlineFixedIndent,
-      start: state.scanner.lineInfo().current,
+      start: state.iterator.currentLineInfo.current,
       mapResolver: state.mapFunction,
     ),
     state: state,
@@ -117,10 +116,10 @@ parseBlockWildCard<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     composedMapIndent: inlineFixedIndent,
   ),
   _ => throwWithRangedOffset(
-    state.scanner,
+    state.iterator,
     message: 'Block node found in a unparsable state',
     start: property.span.start,
-    end: state.scanner.lineInfo().current,
+    end: state.iterator.currentLineInfo.current,
   ),
 };
 
@@ -158,15 +157,15 @@ BlockNode<Obj> parseFlowNodeInBlock<
       forceInline: isInline,
     ),
     _ => throwWithRangedOffset(
-      state.scanner,
+      state.iterator,
       message: 'Invalid flow node state. Expected "{" or "]"',
       start: flowProperty.span.start,
-      end: state.scanner.lineInfo().current,
+      end: state.iterator.currentLineInfo.current,
     ),
   };
 
   final indentOfNextNode = skipToParsableChar(
-    state.scanner,
+    state.iterator,
     comments: state.comments,
   );
 
@@ -199,7 +198,7 @@ parseBlockScalar<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   String greedyOnPlain = '',
   RuneOffset? start,
 }) {
-  final ParserState(:scanner, :comments, :scalarFunction) = state;
+  final ParserState(:iterator, :comments, :scalarFunction) = state;
 
   final (
     PreScalar(
@@ -211,7 +210,7 @@ parseBlockScalar<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     delegate,
   ) = parseScalar(
     event,
-    scanner: scanner,
+    iterator: iterator,
     scalarFunction: scalarFunction,
     onParseComment: comments.add,
     isImplicit: isImplicit,

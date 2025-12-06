@@ -2,7 +2,6 @@ import 'package:logging/logging.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -37,7 +36,7 @@ void _defaultLogger(bool isInfo, String message) =>
 /// Throws a [YamlParseException] if [throwOnMapDuplicate] is true. Otherwise,
 /// logs the message at [Level.info].
 void _defaultOnMapDuplicate(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required RuneOffset start,
   required RuneOffset end,
   required String message,
@@ -45,7 +44,7 @@ void _defaultOnMapDuplicate(
 }) {
   if (throwOnMapDuplicate) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: message,
       start: start,
       end: end,
@@ -61,19 +60,6 @@ void _defaultOnMapDuplicate(
 /// and just passes the reference around.
 dynamic _dereferenceAliases(dynamic object, {required bool dereferenceAlias}) =>
     dereferenceAlias ? deepCopyReference(object) : object;
-
-/// Instantiates a [GraphemeScanner] with [UnicodeIterator] that uses a
-/// [source] string or [byteSource] as a source of UTF code points.
-///
-/// If [source] is not null, a [UnicodeIterator] is instantiated from a
-/// [RuneIterator]'s iterator.
-///
-/// If [source] is null and [byteSource] is not null, a [UnicodeIterator] is
-/// instantiated from the [byteSource]'s iterator.
-///
-/// Throws an [ArgumentError] if both are null.
-GraphemeScanner _defaultScanner(YamlSource yaml) =>
-    GraphemeScanner(UnicodeIterator.ofByteSource(yaml));
 
 /// Loads the first node as a `Dart` object. This function guarantees that
 /// every object returned will be a primitive Dart type or a type inferred
@@ -136,7 +122,7 @@ List<Object?> loadAsDartObjects(
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadAsDartObject(
-  _defaultScanner(source),
+  UnicodeIterator.ofBytes(source),
   dereferenceAliases: dereferenceAliases,
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
@@ -213,7 +199,7 @@ List<YamlDocument> loadAllDocuments(
   List<Resolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadYamlDocuments(
-  _defaultScanner(source),
+  UnicodeIterator.ofBytes(source),
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
   logger: logger,
@@ -221,14 +207,14 @@ List<YamlDocument> loadAllDocuments(
 
 /// Loads every document as a `Dart` object.
 List<Object?> _loadAsDartObject(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool dereferenceAliases,
   required bool throwOnMapDuplicate,
   required List<Resolver>? resolvers,
   required void Function(bool isInfo, String message)? logger,
 }) => _loadYaml<Object?, Object?, Iterable<Object?>, Map<dynamic, dynamic>>(
   DocumentParser(
-    scanner,
+    iterator,
     aliasFunction: (_, reference, _) =>
         _dereferenceAliases(reference, dereferenceAlias: dereferenceAliases),
     listFunction: (buffer, _, _, _, _) => buffer,
@@ -239,7 +225,7 @@ List<Object?> _loadAsDartObject(
     resolvers: resolvers,
     logger: logger ?? _defaultLogger,
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
-      scanner,
+      iterator,
       start: keyStart,
       end: keyEnd,
       message: message,
@@ -251,13 +237,13 @@ List<Object?> _loadAsDartObject(
 /// Loads every document as a [YamlDocument] and each root node as a
 /// [YamlSourceNode].
 List<YamlDocument> _loadYamlDocuments(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required bool throwOnMapDuplicate,
   required List<Resolver>? resolvers,
   required void Function(bool isInfo, String message)? logger,
 }) => _loadYaml<YamlDocument, YamlSourceNode, Sequence, Mapping>(
   DocumentParser(
-    scanner,
+    iterator,
     aliasFunction: (alias, reference, nodeSpan) =>
         AliasNode(alias, reference, nodeSpan: nodeSpan),
     listFunction: (buffer, listStyle, tag, anchor, nodeSpan) => Sequence(
@@ -284,7 +270,7 @@ List<YamlDocument> _loadYamlDocuments(
     resolvers: resolvers,
     logger: logger ?? _defaultLogger,
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
-      scanner,
+      iterator,
       start: keyStart,
       end: keyEnd,
       message: message,

@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses an implicit key and its value if present.
@@ -27,7 +27,7 @@ BlockEntry<Obj> parseImplicitBlockEntry<
     composeImplicitMap: false,
   );
 
-  final scanner = state.scanner;
+  final iterator = state.iterator;
 
   /// We parsed the directive end "---" or document end "..." chars. We have no
   /// key. We reached the end of the doc and parsed the key as that char
@@ -39,16 +39,15 @@ BlockEntry<Obj> parseImplicitBlockEntry<
     /// no indent change if quoted). This is a key that should *NEVER*
     /// spill into the next line.
     throwWithApproximateRange(
-      scanner,
+      iterator,
       message: 'Implicit block keys are restricted to a single line',
-      current: scanner.lineInfo().current,
+      current: iterator.currentLineInfo.current,
       charCountBefore: indent + 1,
     );
-  } else if (scanner.charAtCursor.isNotNullAnd((c) => c.isWhiteSpace())) {
+  } else if (iterator.current.isWhiteSpace()) {
     // Skip any separation space
-    scanner
-      ..skipWhitespace(skipTabs: true)
-      ..skipCharAtCursor();
+    skipWhitespace(iterator, skipTabs: true);
+    iterator.nextChar();
   }
 
   // Value's node info acts as this entire entry's info
@@ -73,27 +72,27 @@ parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int keyIndentLevel,
   required int keyIndent,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
 
   ParserEvent eventCallback() =>
-      inferNextEvent(scanner, isBlockContext: true, lastKeyWasJsonLike: false);
+      inferNextEvent(iterator, isBlockContext: true, lastKeyWasJsonLike: false);
 
-  final indicatorOffset = scanner.lineInfo().current;
+  final indicatorOffset = iterator.currentLineInfo.current;
 
   if (eventCallback() != BlockCollectionEvent.startEntryValue) {
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'Expected to find ":" before the value',
       offset: indicatorOffset,
     );
   }
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   /// It's better if we determine the actual state of the value here before
   /// handing this off to [parseBlockNode]
   var indentOrSeparation = skipToParsableChar(
-    scanner,
+    iterator,
     onParseComment: comments.add,
   );
 
@@ -113,7 +112,7 @@ parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   ///
   /// However, as always, this may change in the near future.
   if (hasIndent && indentOrSeparation <= keyIndent) {
-    final (:start, :current) = scanner.lineInfo();
+    final (:start, :current) = iterator.currentLineInfo;
 
     return (
       blockInfo: (
@@ -125,18 +124,18 @@ parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         indent: keyIndent,
         startOffset: indicatorOffset,
         resolver: state.scalarFunction,
-      )..updateEndOffset = scanner.canChunkMore ? start : current,
+      )..updateEndOffset = iterator.isEOF ? current : start,
     );
   } else if (eventCallback()
       case BlockCollectionEvent.startBlockListEntry ||
           BlockCollectionEvent.startExplicitKey when !hasIndent) {
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message:
           'The block collections must start on a new line when used as '
           'values of an implicit key',
       start: indicatorOffset,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 

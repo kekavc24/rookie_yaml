@@ -1,6 +1,5 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -83,16 +82,10 @@ const directiveEndSingle = blockSequenceEntry;
 /// May throw if non-whitespace characters are declared in the same line as
 /// document end markers (`...`).
 DocumentMarker checkForDocumentMarkers(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required void Function(List<int> buffered) onMissing,
 }) {
-  var charAtCursor = scanner.charAtCursor;
   final markers = <int>[];
-
-  void pointToNext() {
-    scanner.skipCharAtCursor();
-    charAtCursor = scanner.charAtCursor;
-  }
 
   /// Document markers, that `...` and `---` have no indent. They must be
   /// top level. Check before falling back to checking if it is a top level
@@ -101,11 +94,12 @@ DocumentMarker checkForDocumentMarkers(
   /// We insist on it being top level because the markers have no indent
   /// before. They have a -1 indent at this point or zero depending on how
   /// far along the parsing this is called.
-  if (charAtCursor case docEndSingle || directiveEndSingle) {
+  if (iterator.current case docEndSingle || directiveEndSingle) {
     const expectedCount = 3;
-    final match = charAtCursor;
+    final match = iterator.current;
 
-    final skipped = scanner.takeUntil(
+    final skipped = takeFromIteratorUntil(
+      iterator,
       includeCharAtCursor: true,
       mapper: (v) => v,
       onMapped: (v) => markers.add(v),
@@ -114,25 +108,27 @@ DocumentMarker checkForDocumentMarkers(
       },
     );
 
-    pointToNext();
+    iterator.nextChar();
 
     if (skipped == expectedCount) {
       /// YAML insists document markers should not have any characters
       /// after unless its just whitespace or comments.
       if (match == docEndSingle) {
-        if (charAtCursor.isNotNullAnd((c) => c.isWhiteSpace())) {
-          scanner.skipWhitespace(skipTabs: true);
-          pointToNext();
+        if (!iterator.isEOF && iterator.current.isWhiteSpace()) {
+          skipWhitespace(iterator, skipTabs: true);
+          iterator.nextChar();
         }
 
-        if (charAtCursor.isNullOr((c) => c.isLineBreak() || c == comment)) {
+        if (iterator.isEOF ||
+            iterator.current == comment ||
+            iterator.current.isLineBreak()) {
           return DocumentMarker.documentEnd;
         }
 
-        final (:start, :current) = scanner.lineInfo();
+        final (:start, :current) = iterator.currentLineInfo;
 
         throwWithRangedOffset(
-          scanner,
+          iterator,
           message:
               'Document end markers "..." can only have whitespace/comments'
               ' after',
@@ -141,8 +137,9 @@ DocumentMarker checkForDocumentMarkers(
         );
       }
 
-      // Directives end markers can have either
-      if (charAtCursor.isNullOr((c) => c.isLineBreak() || c.isWhiteSpace())) {
+      if (iterator.isEOF ||
+          iterator.current.isLineBreak() ||
+          iterator.current.isWhiteSpace()) {
         return DocumentMarker.directiveEnd;
       }
     }
@@ -160,7 +157,7 @@ DocumentMarker checkForDocumentMarkers(
 ///
 /// You must provide either [comments] or an [onParseComment] [Function]
 int? skipToParsableChar(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   List<YamlComment>? comments,
   void Function(YamlComment comment)? onParseComment,
   bool leadingAsIndent = false,
@@ -178,31 +175,32 @@ int? skipToParsableChar(
       comments != null ? comments.add(comment) : onParseComment!(comment);
 
   void checkIndent() {
-    indent = scanner.takeUntil(
-      includeCharAtCursor: warmUp && scanner.charAtCursor == space,
+    indent = takeFromIteratorUntil(
+      iterator,
+      includeCharAtCursor: warmUp && iterator.current == space,
       mapper: (c) => c,
       onMapped: (_) {},
       stopIf: (_, possibleNext) => !possibleNext.isIndent(),
     );
 
-    scanner.skipCharAtCursor();
+    if (iterator.isEOF) return;
+
+    iterator.nextChar();
     warmUp = false;
 
     if (leadingAsIndent) return;
 
-    if (scanner.charAtCursor == tab) {
-      scanner.skipWhitespace(skipTabs: true);
+    if (iterator.current == tab) {
+      skipWhitespace(iterator, skipTabs: true);
     }
   }
 
   skipper:
-  while (scanner.canChunkMore) {
-    final char = scanner.charAtCursor;
-
-    switch (char) {
+  while (!iterator.isEOF) {
+    switch (iterator.current) {
       case carriageReturn || lineFeed:
         {
-          skipCrIfPossible(char!, scanner: scanner);
+          skipCrIfPossible(iterator.current, iterator: iterator);
           checkIndent();
         }
 
@@ -211,13 +209,12 @@ int? skipToParsableChar(
         checkIndent();
 
       case space || tab when !leadingAsIndent:
-        scanner
-          ..skipWhitespace(skipTabs: true)
-          ..skipCharAtCursor();
+        skipWhitespace(iterator, skipTabs: true);
+        iterator.nextChar();
 
       case comment:
         {
-          final (:onExit, :comment) = parseComment(scanner);
+          final (:onExit, :comment) = parseComment(iterator);
           addComment(comment);
 
           if (onExit.sourceEnded) return null;

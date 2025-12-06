@@ -1,4 +1,4 @@
-part of 'grapheme_scanner.dart';
+part of 'source_iterator.dart';
 
 //
 // Line breaks

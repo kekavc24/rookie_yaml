@@ -34,11 +34,11 @@ ChompingIndicator? _resolveChompingIndicator(int char) {
   };
 }
 
-Never _charNotAllowedException(GraphemeScanner scanner) =>
+Never _charNotAllowedException(SourceIterator iterator) =>
     throwWithSingleOffset(
-      scanner,
+      iterator,
       message: 'The current character is not allowed in block scalar header',
-      offset: scanner.lineInfo().current,
+      offset: iterator.currentLineInfo.current,
     );
 
 /// Chomps the trailing line breaks of a parsed block scalar.
@@ -81,12 +81,12 @@ void _chompLineBreaks(
 
 /// Skips the carriage return `\r` in a `\r\n` combination and returns the
 /// line feed `\n`.
-int skipCrIfPossible(int lineBreak, {required GraphemeScanner scanner}) {
+int skipCrIfPossible(int lineBreak, {required SourceIterator iterator}) {
   var maybeCR = lineBreak;
 
-  if (maybeCR == carriageReturn && scanner.charAfter == lineFeed) {
+  if (maybeCR == carriageReturn && iterator.peekNextChar() == lineFeed) {
     maybeCR = lineFeed;
-    scanner.skipCharAtCursor();
+    iterator.nextChar();
   }
 
   return maybeCR;
@@ -128,15 +128,15 @@ void _maybeFoldLF(
 /// be null if the line was empty, that is, no characters or all characters
 /// are just white space characters.
 ({int inferredIndent, bool isEmptyLine, bool startsWithTab}) _inferIndent(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required ScalarBuffer contentBuffer,
   required int scannedIndent,
   required void Function() callBeforeTabWrite,
 }) {
   var startsWithTab = false;
-  final canBeIndent = scannedIndent + scanner.skipWhitespace().length;
+  final canBeIndent = scannedIndent + skipWhitespace(iterator).length;
 
-  final charAfter = scanner.charAfter;
+  final charAfter = iterator.peekNextChar();
 
   /// We have to be sure that is not empty.
   ///
@@ -155,7 +155,8 @@ void _maybeFoldLF(
   /// See: https://yaml.org/spec/1.2.2/#62-separation-spaces
   if (charAfter == tab) {
     callBeforeTabWrite();
-    scanner.takeUntil(
+    takeFromIteratorUntil(
+      iterator,
       includeCharAtCursor: false,
       mapper: (rc) => rc,
       onMapped: contentBuffer.writeChar,
@@ -163,7 +164,7 @@ void _maybeFoldLF(
     );
 
     // This line cannot be used to determine the
-    if (scanner.charAfter.isNotNullAnd((c) => c.isLineBreak())) {
+    if (iterator.peekNextChar().isNotNullAnd((c) => c.isLineBreak())) {
       return (
         inferredIndent: canBeIndent,
         isEmptyLine: true,

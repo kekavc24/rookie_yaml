@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:test/test.dart';
 
@@ -29,7 +29,7 @@ $indent
       for (final block in defaultBlockIndicators) {
         check(
           parseBlockStyle(
-            GraphemeScanner.of('$block$trailing'),
+            UnicodeIterator.ofString('$block$trailing'),
             minimumIndent: 0,
             indentLevel: 0,
             onParseComment: comments.add,
@@ -53,7 +53,7 @@ $indent
 
       for (final block in defaultBlockIndicators) {
         parseBlockStyle(
-          GraphemeScanner.of('$block$trailing'),
+          UnicodeIterator.ofString('$block$trailing'),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -68,7 +68,7 @@ $indent
       for (final block in defaultBlockIndicators) {
         check(
             parseBlockStyle(
-              GraphemeScanner.of(block),
+              UnicodeIterator.ofString(block),
               minimumIndent: 0,
               indentLevel: 0,
               onParseComment: comments.add,
@@ -83,7 +83,7 @@ $indent
       // 0 is a single digit. Will check range before throwing
       check(
         () => parseBlockStyle(
-          GraphemeScanner.of('|0\n'),
+          UnicodeIterator.ofString('|0\n'),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -98,7 +98,7 @@ $indent
       /// We expect a chomping indicator
       check(
         () => parseBlockStyle(
-          GraphemeScanner.of('|10\n'),
+          UnicodeIterator.ofString('|10\n'),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -115,7 +115,7 @@ $indent
 
       check(
         () => parseBlockStyle(
-          GraphemeScanner.of(yaml),
+          UnicodeIterator.ofString(yaml),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -132,7 +132,7 @@ $indent
 
       check(
         () => parseBlockStyle(
-          GraphemeScanner.of(yaml),
+          UnicodeIterator.ofString(yaml),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -151,7 +151,7 @@ $indent
       for (final str in defaultBlockIndicators) {
         check(
             parseBlockStyle(
-              GraphemeScanner.of('$str$lessIndented'),
+              UnicodeIterator.ofString('$str$lessIndented'),
               minimumIndent: 0,
               indentLevel: 0,
               onParseComment: comments.add,
@@ -171,7 +171,7 @@ $indent
       for (final str in defaultBlockIndicators) {
         check(
           () => parseBlockStyle(
-            GraphemeScanner.of(
+            UnicodeIterator.ofString(
               '$str'
               '\n'
               '$emptyLineIsMoreIndented',
@@ -201,7 +201,7 @@ $indent
 
       check(
           parseBlockStyle(
-            GraphemeScanner.of(scalar),
+            UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
             onParseComment: comments.add,
@@ -227,7 +227,7 @@ $indent
 
       check(
           parseBlockStyle(
-            GraphemeScanner.of(scalar),
+            UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
             onParseComment: comments.add,
@@ -246,7 +246,7 @@ $indent
 
       check(
         parseBlockStyle(
-          GraphemeScanner.of(scalar),
+          UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -263,7 +263,7 @@ $indent
 
       check(
         parseBlockStyle(
-          GraphemeScanner.of(scalar),
+          UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -280,7 +280,7 @@ $indent
 
       check(
         parseBlockStyle(
-          GraphemeScanner.of(scalar),
+          UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -301,7 +301,7 @@ $indent
 
       check(
           parseBlockStyle(
-            GraphemeScanner.of(scalar),
+            UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
             onParseComment: comments.add,
@@ -345,7 +345,7 @@ $indent
 
       check(
           parseBlockStyle(
-            GraphemeScanner.of(scalar),
+            UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
             onParseComment: comments.add,
@@ -364,7 +364,7 @@ $indent
 
       check(
         parseBlockStyle(
-          GraphemeScanner.of(scalar),
+          UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -381,7 +381,7 @@ $indent
 
       check(
         parseBlockStyle(
-          GraphemeScanner.of(scalar),
+          UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,
@@ -398,7 +398,7 @@ $indent
 
       check(
         parseBlockStyle(
-          GraphemeScanner.of(scalar),
+          UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
           onParseComment: comments.add,

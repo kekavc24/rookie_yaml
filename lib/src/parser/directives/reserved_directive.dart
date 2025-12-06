@@ -36,7 +36,7 @@ final class _ReservedImpl extends ReservedDirective {
 /// Parses a [ReservedDirective]
 ReservedDirective _parseReservedDirective(
   String name, {
-  required GraphemeScanner scanner,
+  required SourceIterator iterator,
 }) {
   final params = <String>[];
   final buffer = StringBuffer();
@@ -48,8 +48,6 @@ ReservedDirective _parseReservedDirective(
     }
   }
 
-  var current = scanner.charAtCursor;
-
   /// Reserved directives are prone to endless grouped token consumption between
   /// with whitespace. YAML allows comments in directives (tricky). The
   /// condition below may seem unorthodox. It's simple.
@@ -60,41 +58,27 @@ ReservedDirective _parseReservedDirective(
   ///   3. If (2) stands (we never reached the end of the line), check if the
   ///      captured non-null [current] is a comment only if the char before was
   ///      non-null and a separation space (tab/space).
-  while (scanner.canChunkMore &&
-      current.isNotNullAnd(
-        (cursor) =>
-            !cursor.isLineBreak() &&
-            !(cursor == comment &&
-                scanner.charBeforeCursor.isNotNullAnd((c) => c.isWhiteSpace())),
-      )) {
-    // Intentional switch case use!
-    switch (current) {
-      // Skip separation lines. Includes tabs. Save current parameter.
-      case space || tab:
-        {
-          scanner.skipWhitespace(skipTabs: true);
-          flushBuffer();
-        }
-
-      default:
-        {
-          // Parameters only allow alpha-numeric characters. Cannot be null here
-          if (!current!.isPrintable()) {
-            throwWithSingleOffset(
-              scanner,
-              message:
-                  'Only printable characters are allowed in a directive '
-                  'parameter',
-              offset: scanner.lineInfo().current,
-            );
-          }
-
-          buffer.writeCharCode(current);
-        }
+  while (!iterator.isEOF &&
+      !iterator.current.isLineBreak() &&
+      !(iterator.current == comment &&
+          iterator.before.isNotNullAnd((c) => c.isWhiteSpace()))) {
+    // Skip separation lines (include tabs). Save current parameter.
+    if (iterator.current case space || tab) {
+      skipWhitespace(iterator, skipTabs: true);
+      flushBuffer();
+    } else if (iterator.current.isPrintable()) {
+      buffer.writeCharCode(iterator.current);
+    } else {
+      throwWithSingleOffset(
+        iterator,
+        message:
+            'Only printable characters are allowed in a directive '
+            'parameter',
+        offset: iterator.currentLineInfo.current,
+      );
     }
 
-    scanner.skipCharAtCursor();
-    current = scanner.charAtCursor;
+    iterator.nextChar();
   }
 
   flushBuffer(); // Just incase

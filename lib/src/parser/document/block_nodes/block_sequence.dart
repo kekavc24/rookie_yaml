@@ -3,22 +3,22 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Checks if the next block sequence entry is a valid entry or just a
 /// directive end marker. Returns `null` if the next entry is a valid block
 /// node. Otherwise, throws if the next node is not a
 /// [DocumentMarker.directiveEnd].
-DocumentMarker? _sequenceNodeOrMarker(GraphemeScanner scanner, int indent) {
-  final current = scanner.charAtCursor;
-  final next = scanner.charAfter;
+DocumentMarker? _sequenceNodeOrMarker(SourceIterator iterator, int indent) {
+  final current = iterator.current;
+  final next = iterator.peekNextChar();
 
   switch (current) {
     // Be gracious and check if we have doc end chars here
     case blockSequenceEntry || period when indent == 0 && next == current:
       {
-        if (checkForDocumentMarkers(scanner, onMissing: (_) {})
+        if (checkForDocumentMarkers(iterator, onMissing: (_) {})
             case DocumentMarker docType when docType.stopIfParsingDoc) {
           return docType;
         }
@@ -33,9 +33,9 @@ DocumentMarker? _sequenceNodeOrMarker(GraphemeScanner scanner, int indent) {
     invalid:
     default:
       throwForCurrentLine(
-        scanner,
+        iterator,
         message: 'Expected a "- " at the start of the next entry',
-        end: scanner.lineInfo().current,
+        end: iterator.currentLineInfo.current,
       );
   }
 }
@@ -46,20 +46,20 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   SequenceDelegate<Obj, Seq> sequence, {
   required ParserState<Obj, Seq, Dict> state,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
   final SequenceDelegate(indent: sequenceIndent, :indentLevel) = sequence;
 
   final entryIndent = sequenceIndent + 1;
   final entryIndentLevel = indentLevel + 1;
 
   do {
-    final indicatorOffset = scanner.lineInfo().current;
-    scanner.skipCharAtCursor();
+    final indicatorOffset = iterator.currentLineInfo.current;
+    iterator.nextChar();
 
     /// Be mechanical. Call [parseBlockNode] only after we determine the
     /// correct indent range for this node.
     final indentOrSeparation = skipToParsableChar(
-      scanner,
+      iterator,
       onParseComment: comments.add,
     );
 
@@ -68,9 +68,9 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         state,
         indentLevel: entryIndentLevel,
         indent: sequenceIndent + 1,
-        start: scanner.canChunkMore
-            ? scanner.lineInfo().start
-            : scanner.lineInfo().current,
+        start: iterator.isEOF
+            ? iterator.currentLineInfo.current
+            : iterator.currentLineInfo.start,
       );
 
       sequence
@@ -91,7 +91,7 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         indentOrSeparation,
         blockParentIndent: sequenceIndent,
         yamlNodeStartOffset: indicatorOffset.utfOffset,
-        contentOffset: scanner.lineInfo().current.utfOffset,
+        contentOffset: iterator.currentLineInfo.current.utfOffset,
       );
 
       final (:blockInfo, :node) = parseBlockNode(
@@ -111,33 +111,33 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
       final (:docMarker, :exitIndent) = blockInfo;
 
-      if (!scanner.canChunkMore ||
+      if (iterator.isEOF ||
           docMarker.stopIfParsingDoc ||
           (exitIndent != null && exitIndent < sequenceIndent)) {
         return (blockInfo: blockInfo, node: sequence as ParserDelegate<Obj>);
       } else if (exitIndent != null && exitIndent > sequenceIndent) {
         throwWithSingleOffset(
-          scanner,
+          iterator,
           message: 'Invalid block list entry found',
-          offset: scanner.lineInfo().current,
+          offset: iterator.currentLineInfo.current,
         );
       }
     }
 
     // In case we see "---" or "..." before the next node
-    if (_sequenceNodeOrMarker(scanner, sequenceIndent)
+    if (_sequenceNodeOrMarker(iterator, sequenceIndent)
         case DocumentMarker marker) {
       return (
         blockInfo: (docMarker: marker, exitIndent: null),
         node: sequence as ParserDelegate<Obj>,
       );
     }
-  } while (scanner.canChunkMore);
+  } while (!iterator.isEOF);
 
   return (
     blockInfo: emptyScanner,
     node:
-        (sequence..updateEndOffset = scanner.lineInfo().current)
+        (sequence..updateEndOffset = iterator.currentLineInfo.current)
             as ParserDelegate<Obj>,
   );
 }

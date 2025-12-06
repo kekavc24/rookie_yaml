@@ -2,7 +2,6 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
@@ -150,13 +149,13 @@ typedef ConcreteProperty = ({
 /// comments encountered when skipping to the next parsable char declared on a
 /// new line.
 _Property _corePropertyParser(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int minIndent,
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
   required bool isBlockContext,
 }) {
-  final startOffset = scanner.lineInfo().current;
+  final startOffset = iterator.currentLineInfo.current;
 
   var nodeKind = NodeKind.unknown;
 
@@ -170,7 +169,7 @@ _Property _corePropertyParser(
   bool isMultiline() => lfCount > 0;
 
   void skipAndTrackLF() {
-    indentOnExit = skipToParsableChar(scanner, onParseComment: onParseComment);
+    indentOnExit = skipToParsableChar(iterator, onParseComment: onParseComment);
     if (indentOnExit != null) ++lfCount;
   }
 
@@ -184,7 +183,7 @@ _Property _corePropertyParser(
         kind: nodeKind,
         property: NodeProperty(
           startOffset,
-          scanner.lineInfo().start,
+          iterator.currentLineInfo.start,
           indentOnExit,
           spanMultipleLines: true, // Obviously :)
           anchor: nodeAnchor,
@@ -194,10 +193,10 @@ _Property _corePropertyParser(
     }
 
     throwWithRangedOffset(
-      scanner,
+      iterator,
       message: error,
       start: startOffset,
-      end: scanner.lineInfo().current,
+      end: iterator.currentLineInfo.current,
     );
   }
 
@@ -206,13 +205,12 @@ _Property _corePropertyParser(
   ///   - Alias only
   ///
   /// The two options above are mutually exclusive.
-  while (scanner.canChunkMore && (nodeTag == null || nodeAnchor == null)) {
-    switch (scanner.charAtCursor) {
+  while (!iterator.isEOF && (nodeTag == null || nodeAnchor == null)) {
+    switch (iterator.current) {
       case space || tab:
         {
-          scanner
-            ..skipWhitespace(skipTabs: true) // Separation space
-            ..skipCharAtCursor();
+          skipWhitespace(iterator, skipTabs: true); // Separation space
+          iterator.nextChar();
         }
 
       case lineFeed || carriageReturn || comment:
@@ -222,7 +220,7 @@ _Property _corePropertyParser(
           final hasNoIndent = indentOnExit == null;
 
           if (hasNoIndent || indentOnExit! < minIndent) {
-            final (:start, :current) = scanner.lineInfo();
+            final (:start, :current) = iterator.currentLineInfo;
 
             return (
               kind: nodeKind,
@@ -244,14 +242,14 @@ _Property _corePropertyParser(
             return exitIfBlock(
               'A node can only have a single tag property',
             );
-          } else if (scanner.charAfter == verbatimStart) {
-            nodeTag = parseVerbatimTag(scanner);
+          } else if (iterator.peekNextChar() == verbatimStart) {
+            nodeTag = parseVerbatimTag(iterator);
           } else {
-            final tagStart = scanner.lineInfo().current;
-            final shorthand = parseTagShorthand(scanner);
+            final tagStart = iterator.currentLineInfo.current;
+            final shorthand = parseTagShorthand(iterator);
             final (:kind, :tag) = resolver(
               tagStart,
-              scanner.lineInfo().current,
+              iterator.currentLineInfo.current,
               shorthand,
             );
             nodeKind = kind;
@@ -267,8 +265,8 @@ _Property _corePropertyParser(
             return exitIfBlock('A node can only have a single anchor property');
           }
 
-          scanner.skipCharAtCursor();
-          nodeAnchor = parseAnchorOrAliasTrailer(scanner);
+          iterator.nextChar();
+          nodeAnchor = parseAnchorOrAliasTrailer(iterator);
 
           resetIndent();
         }
@@ -281,8 +279,8 @@ _Property _corePropertyParser(
             );
           }
 
-          scanner.skipCharAtCursor();
-          nodeAlias = parseAnchorOrAliasTrailer(scanner);
+          iterator.nextChar();
+          nodeAlias = parseAnchorOrAliasTrailer(iterator);
           skipAndTrackLF();
 
           // Parsing an alias ignores any tag and anchor
@@ -290,7 +288,7 @@ _Property _corePropertyParser(
             kind: NodeKind.unknown,
             property: Alias(
               startOffset,
-              scanner.lineInfo().current,
+              iterator.currentLineInfo.current,
               indentOnExit,
               alias: nodeAlias,
               spanMultipleLines: isMultiline(),
@@ -305,8 +303,8 @@ _Property _corePropertyParser(
           property: ParsedProperty.of(
             startOffset,
             indentOnExit != null && indentOnExit! < minIndent
-                ? scanner.lineInfo().start
-                : scanner.lineInfo().current,
+                ? iterator.currentLineInfo.start
+                : iterator.currentLineInfo.current,
             spanMultipleLines: isMultiline(),
             indentOnExit: indentOnExit,
             anchor: nodeAnchor,
@@ -325,8 +323,8 @@ _Property _corePropertyParser(
     property: ParsedProperty.of(
       startOffset,
       indentOnExit != null && indentOnExit! < minIndent
-          ? scanner.lineInfo().start
-          : scanner.lineInfo().current,
+          ? iterator.currentLineInfo.start
+          : iterator.currentLineInfo.current,
       spanMultipleLines: isMultiline(),
       indentOnExit: indentOnExit,
       anchor: nodeAnchor,
@@ -337,13 +335,13 @@ _Property _corePropertyParser(
 
 /// Parses node properties of a block node.
 ConcreteProperty parseBlockProperties(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int minIndent,
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
 }) {
   final (:property, :kind) = _corePropertyParser(
-    scanner,
+    iterator,
     minIndent: minIndent,
     resolver: resolver,
     onParseComment: onParseComment,
@@ -354,7 +352,7 @@ ConcreteProperty parseBlockProperties(
     kind: kind,
     property: property,
     event: inferNextEvent(
-      scanner,
+      iterator,
       isBlockContext: true,
       lastKeyWasJsonLike: false,
     ),
@@ -364,7 +362,7 @@ ConcreteProperty parseBlockProperties(
 /// Parses properties of a flow node and returns the next possible event after
 /// all the properties have been parsed.
 ConcreteProperty parseFlowProperties(
-  GraphemeScanner scanner, {
+  SourceIterator iterator, {
   required int minIndent,
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
@@ -373,11 +371,11 @@ ConcreteProperty parseFlowProperties(
   void throwIfLessIndent(int? currentIndent) {
     if (currentIndent != null && currentIndent < minIndent) {
       throwWithApproximateRange(
-        scanner,
+        iterator,
         message:
             'Expected at least $minIndent space(s). '
             'Found $currentIndent space(s)',
-        current: scanner.lineInfo().current,
+        current: iterator.currentLineInfo.current,
         charCountBefore: currentIndent,
       );
     }
@@ -385,17 +383,17 @@ ConcreteProperty parseFlowProperties(
 
   // Move to the next parsable non-ws char
   throwIfLessIndent(
-    skipToParsableChar(scanner, onParseComment: onParseComment),
+    skipToParsableChar(iterator, onParseComment: onParseComment),
   );
 
   // We can exit immediately if the next event is not a node property event
   if (inferNextEvent(
-        scanner,
+        iterator,
         isBlockContext: false,
         lastKeyWasJsonLike: lastKeyWasJsonLike,
       )
       case ParserEvent e when e is! NodePropertyEvent) {
-    final offset = scanner.lineInfo().current;
+    final offset = iterator.currentLineInfo.current;
 
     return (
       event: e,
@@ -410,7 +408,7 @@ ConcreteProperty parseFlowProperties(
   }
 
   final (:kind, :property) = _corePropertyParser(
-    scanner,
+    iterator,
     minIndent: minIndent,
     resolver: resolver,
     onParseComment: onParseComment,
@@ -422,7 +420,7 @@ ConcreteProperty parseFlowProperties(
 
   return (
     event: inferNextEvent(
-      scanner,
+      iterator,
       isBlockContext: false,
       lastKeyWasJsonLike: lastKeyWasJsonLike,
     ),

@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
-import 'package:rookie_yaml/src/scanner/grapheme_scanner.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a flow sequence entry using the current parser [state].
@@ -18,9 +18,9 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
   required int minIndent,
   required bool forceInline,
 }) {
-  final ParserState(:scanner, :comments) = state;
+  final ParserState(:iterator, :comments) = state;
   final peekEvent = inferNextEvent(
-    scanner,
+    iterator,
     isBlockContext: false,
     lastKeyWasJsonLike: false,
   );
@@ -45,21 +45,21 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
   );
 
   // Track if we switched lines
-  final lineIndex = scanner.lineInfo().current.lineIndex;
+  final lineIndex = iterator.currentLineInfo.current.lineIndex;
 
   /// Normally a list is a wildcard. We must assume that we parsed
   /// an implicit key unless we never see ":". Encountering a
   /// linebreak means the current flow node cannot be an implicit key.
   if (!nextSafeLineInFlow(
-        scanner,
+        iterator,
         minIndent: minIndent,
         forceInline: forceInline,
         onParseComment: comments.add,
       ) ||
-      (scanner.lineInfo().current.lineIndex != lineIndex) ||
+      (iterator.currentLineInfo.current.lineIndex != lineIndex) ||
       keyOrElement.encounteredLineBreak ||
       inferNextEvent(
-            scanner,
+            iterator,
             isBlockContext: false,
             lastKeyWasJsonLike: keyIsJsonLike(keyOrElement),
           ) !=
@@ -69,7 +69,7 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
 
   // TODO: Throw if key has properties
 
-  scanner.skipCharAtCursor();
+  iterator.nextChar();
 
   // We want this value inline. Override implicit and force inline param.
   final value = parseFlowNode(
@@ -107,11 +107,11 @@ parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required bool forceInline,
   NodeKind kind = NodeKind.sequence,
 }) {
-  final ParserState(:scanner, :comments, :listFunction, :onMapDuplicate) =
+  final ParserState(:iterator, :comments, :listFunction, :onMapDuplicate) =
       state;
 
   final sequence = initFlowCollection(
-    scanner,
+    iterator,
     flowStartIndicator: flowSequenceStart,
     minIndent: minIndent,
     forceInline: forceInline,
@@ -128,7 +128,7 @@ parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   );
 
   do {
-    if (scanner.charAtCursor case null || flowEntryEnd || flowSequenceEnd) {
+    if (iterator.current case flowEntryEnd || flowSequenceEnd) {
       break;
     }
 
@@ -144,14 +144,14 @@ parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       ..hasLineBreak = entry.encounteredLineBreak;
 
     if (!continueToNextEntry(
-      scanner,
+      iterator,
       minIndent: minIndent,
       forceInline: forceInline,
       onParseComment: comments.add,
     )) {
       break;
     }
-  } while (scanner.canChunkMore);
+  } while (!iterator.isEOF);
 
-  return terminateFlowCollection(scanner, sequence, flowSequenceEnd);
+  return terminateFlowCollection(iterator, sequence, flowSequenceEnd);
 }
