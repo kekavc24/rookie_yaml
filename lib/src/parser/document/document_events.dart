@@ -159,3 +159,10 @@ ParserEvent inferNextEvent(
     _ => ScalarEvent.startFlowPlain,
   };
 }
+
+/// Infers the next block event.
+ParserEvent inferBlockEvent(SourceIterator iterator) => inferNextEvent(
+  iterator,
+  isBlockContext: true,
+  lastKeyWasJsonLike: false,
+);

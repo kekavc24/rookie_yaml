@@ -449,7 +449,8 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
               resolver: state.listFunction,
             ),
             state: state,
-          );
+            levelWithBlockMap: false,
+          ).sequence;
 
           state.trackAnchor(sequence.node, property);
         } else if (event == FlowCollectionEvent.startFlowSequence) {
@@ -575,7 +576,8 @@ _ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
             resolver: parserState.listFunction,
           ),
           state: parserState,
-        );
+          levelWithBlockMap: false,
+        ).sequence;
 
         parserState.trackAnchor(sequence.node, property);
         return sequence;

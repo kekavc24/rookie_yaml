@@ -113,6 +113,87 @@ key2:
       );
     });
 
+    test('Parses block map with block sequences on the same indent level as'
+        ' their explict key and value', () {
+      check(
+        bootstrapDocParser('''
+?
+- explicit key
+- next
+:
+- explicit value
+- next
+
+--key: value
+---another: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          ['explicit key', 'next']: ['explicit value', 'next'],
+          '--key': 'value',
+          '---another': 'value',
+        }.toString(),
+      );
+
+      check(
+        bootstrapDocParser('''
+?
+- ?
+  - key
+:
+- ?
+  :
+  - value
+?
+:
+- value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          [
+            {
+              ['key']: null,
+            },
+          ]: [
+            {
+              null: ['value'],
+            },
+          ],
+          null: ['value'],
+        }.toString(),
+      );
+    });
+
+    test('Parses block map with block sequences on the same indent level as'
+        ' their implicit key and value', () {
+      check(
+        bootstrapDocParser('''
+implicit key:
+- value
+- next
+-key: value
+---another: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          'implicit key': ['value', 'next'],
+          '-key': 'value',
+          '---another': 'value',
+        }.toString(),
+      );
+
+      check(
+        bootstrapDocParser('''
+:
+- value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          null: ['value'],
+        }.toString(),
+      );
+    });
+
     test('Throws if dangling ":" is not inline with "?"', () {
       const yaml = '''
 ?   - extremely indented block list

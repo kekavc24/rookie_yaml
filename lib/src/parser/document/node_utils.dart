@@ -33,6 +33,10 @@ typedef BlockNode<T> = BlockNodeBuilder<ParserDelegate<T>>;
 typedef BlockEntry<Obj> =
     BlockNodeBuilder<(ParserDelegate<Obj>? key, ParserDelegate<Obj>? value)>;
 
+/// Callback for a block map entry that has been fully parsed.
+typedef OnBlockMapEntry<Obj> =
+    void Function(ParserDelegate<Obj> key, ParserDelegate<Obj>? value);
+
 /// Parses a [Scalar].
 ///
 /// [greedyOnPlain] is only ever passed when the first two plain scalar

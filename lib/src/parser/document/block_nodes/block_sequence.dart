@@ -6,11 +6,27 @@ import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
+typedef _SequenceState = ({
+  bool parentCanRecover,
+  String? greedyPlain,
+  DocumentMarker? marker,
+});
+
 /// Checks if the next block sequence entry is a valid entry or just a
 /// directive end marker. Returns `null` if the next entry is a valid block
 /// node. Otherwise, throws if the next node is not a
 /// [DocumentMarker.directiveEnd].
-DocumentMarker? _sequenceNodeOrMarker(SourceIterator iterator, int indent) {
+_SequenceState _sequenceNodeOrMarker(
+  SourceIterator iterator, {
+  required int indent,
+  required bool isLevelWithParent,
+}) {
+  Never notSequence() => throwForCurrentLine(
+    iterator,
+    message: 'Expected a "- " at the start of the next entry',
+    end: iterator.currentLineInfo.current,
+  );
+
   final current = iterator.current;
   final next = iterator.peekNextChar();
 
@@ -18,33 +34,52 @@ DocumentMarker? _sequenceNodeOrMarker(SourceIterator iterator, int indent) {
     // Be gracious and check if we have doc end chars here
     case blockSequenceEntry || period when indent == 0 && next == current:
       {
-        if (checkForDocumentMarkers(iterator, onMissing: (_) {})
-            case DocumentMarker docType when docType.stopIfParsingDoc) {
-          return docType;
+        final buffer = StringBuffer();
+        final marker = checkForDocumentMarkers(
+          iterator,
+          onMissing: null,
+          writer: buffer.writeCharCode,
+        );
+
+        if (marker.stopIfParsingDoc) {
+          return (parentCanRecover: false, greedyPlain: null, marker: marker);
+        } else if (isLevelWithParent) {
+          return (
+            parentCanRecover: true,
+            greedyPlain: buffer.toString(),
+            marker: null,
+          );
         }
 
-        continue invalid;
+        notSequence();
       }
 
     case blockSequenceEntry
         when next.isNullOr((c) => c.isWhiteSpace() || c.isLineBreak()):
-      return null;
+      return (parentCanRecover: false, greedyPlain: null, marker: null);
 
-    invalid:
     default:
-      throwForCurrentLine(
-        iterator,
-        message: 'Expected a "- " at the start of the next entry',
-        end: iterator.currentLineInfo.current,
-      );
+      {
+        if (isLevelWithParent) {
+          return (parentCanRecover: true, greedyPlain: null, marker: null);
+        }
+
+        notSequence();
+      }
   }
 }
 
 /// Parses a block sequence.
-BlockNode<Obj>
+///
+/// If [levelWithBlockMap] is `true`, the block sequence will not throw but
+/// allows the nearest block parent to recover from the current parser state.
+/// This ensures a block sequence on the same indent level as an implicit key or
+/// explicit key/value will be parsed correctly.
+({String? greedyOnPlain, BlockNode<Obj> sequence})
 parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   SequenceDelegate<Obj, Seq> sequence, {
   required ParserState<Obj, Seq, Dict> state,
+  required bool levelWithBlockMap,
 }) {
   final ParserState(:iterator, :comments) = state;
   final SequenceDelegate(indent: sequenceIndent, :indentLevel) = sequence;
@@ -79,11 +114,14 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
       if (indentOrSeparation < sequenceIndent) {
         return (
-          blockInfo: (
-            docMarker: DocumentMarker.none,
-            exitIndent: indentOrSeparation,
+          greedyOnPlain: null,
+          sequence: (
+            blockInfo: (
+              docMarker: DocumentMarker.none,
+              exitIndent: indentOrSeparation,
+            ),
+            node: sequence as ParserDelegate<Obj>,
           ),
-          node: sequence as ParserDelegate<Obj>,
         );
       }
     } else {
@@ -114,7 +152,13 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       if (iterator.isEOF ||
           docMarker.stopIfParsingDoc ||
           (exitIndent != null && exitIndent < sequenceIndent)) {
-        return (blockInfo: blockInfo, node: sequence as ParserDelegate<Obj>);
+        return (
+          greedyOnPlain: null,
+          sequence: (
+            blockInfo: blockInfo,
+            node: sequence as ParserDelegate<Obj>,
+          ),
+        );
       } else if (exitIndent != null && exitIndent > sequenceIndent) {
         throwWithSingleOffset(
           iterator,
@@ -124,20 +168,43 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       }
     }
 
-    // In case we see "---" or "..." before the next node
-    if (_sequenceNodeOrMarker(iterator, sequenceIndent)
-        case DocumentMarker marker) {
+    // Check if the current state can parse a sequence further
+    final (:parentCanRecover, :marker, :greedyPlain) = _sequenceNodeOrMarker(
+      iterator,
+      indent: sequenceIndent,
+      isLevelWithParent: levelWithBlockMap,
+    );
+
+    if (parentCanRecover) {
       return (
-        blockInfo: (docMarker: marker, exitIndent: null),
-        node: sequence as ParserDelegate<Obj>,
+        greedyOnPlain: greedyPlain,
+        sequence: (
+          blockInfo: (
+            docMarker: DocumentMarker.none,
+            exitIndent: sequenceIndent,
+          ),
+          node: sequence as ParserDelegate<Obj>,
+        ),
+      );
+    } else if (marker != null) {
+      // In case we see "---" or "..." before the next node
+      return (
+        greedyOnPlain: null,
+        sequence: (
+          blockInfo: (docMarker: marker, exitIndent: null),
+          node: sequence as ParserDelegate<Obj>,
+        ),
       );
     }
   } while (!iterator.isEOF);
 
   return (
-    blockInfo: emptyScanner,
-    node:
-        (sequence..updateEndOffset = iterator.currentLineInfo.current)
-            as ParserDelegate<Obj>,
+    greedyOnPlain: null,
+    sequence: (
+      blockInfo: emptyScanner,
+      node:
+          (sequence..updateEndOffset = iterator.currentLineInfo.current)
+              as ParserDelegate<Obj>,
+    ),
   );
 }

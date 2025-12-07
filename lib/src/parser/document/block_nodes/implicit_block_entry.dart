@@ -1,5 +1,6 @@
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/special_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
@@ -8,7 +9,7 @@ import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses an implicit key and its value if present.
-BlockEntry<Obj> parseImplicitBlockEntry<
+BlockInfo parseImplicitBlockEntry<
   Obj,
   Seq extends Iterable<Obj>,
   Dict extends Map<Obj, Obj?>
@@ -16,6 +17,7 @@ BlockEntry<Obj> parseImplicitBlockEntry<
   ParserState<Obj, Seq, Dict> state, {
   required int keyIndent,
   required int keyIndentLevel,
+  required OnBlockMapEntry<Obj> onImplicitEntry,
 }) {
   final (:blockInfo, node: key) = parseBlockNode(
     state,
@@ -32,7 +34,7 @@ BlockEntry<Obj> parseImplicitBlockEntry<
   /// We parsed the directive end "---" or document end "..." chars. We have no
   /// key. We reached the end of the doc and parsed the key as that char
   if (blockInfo.docMarker.stopIfParsingDoc) {
-    return (blockInfo: blockInfo, node: (null, null));
+    return blockInfo;
   } else if (blockInfo.exitIndent case int? indent
       when indent != null && indent != seamlessIndentMarker) {
     /// The exit indent *MUST* be null or be seamless (parsed completely with
@@ -51,13 +53,13 @@ BlockEntry<Obj> parseImplicitBlockEntry<
   }
 
   // Value's node info acts as this entire entry's info
-  final (blockInfo: entryInfo, node: value) = parseImplicitValue(
+  return parseImplicitValue(
     state,
     keyIndentLevel: keyIndentLevel,
     keyIndent: keyIndent,
+    onValue: (implicitValue) => onImplicitEntry(key, implicitValue),
+    onEntryValue: onImplicitEntry,
   );
-
-  return (blockInfo: entryInfo, node: (key, value));
 }
 
 /// Parses an implicit value.
@@ -66,16 +68,17 @@ BlockEntry<Obj> parseImplicitBlockEntry<
 /// to parse the first entry without necessarily explicitly calling
 /// [parseImplicitBlockEntry] which allows a block map to be loosely composed
 /// without relying on [parseBlockMap].
-BlockNode<Obj>
+BlockInfo
 parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   ParserState<Obj, Seq, Dict> state, {
   required int keyIndentLevel,
   required int keyIndent,
+  required void Function(ParserDelegate<Obj> implicitValue) onValue,
+  required OnBlockMapEntry<Obj> onEntryValue,
 }) {
   final ParserState(:iterator, :comments) = state;
 
-  ParserEvent eventCallback() =>
-      inferNextEvent(iterator, isBlockContext: true, lastKeyWasJsonLike: false);
+  ParserEvent eventCallback() => inferBlockEvent(iterator);
 
   final indicatorOffset = iterator.currentLineInfo.current;
 
@@ -97,35 +100,36 @@ parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   );
 
   final hasIndent = indentOrSeparation != null;
+  final valueIndent = keyIndent + 1;
 
-  /// We are not going to support block lists with the same indent as parent.
-  /// This is intentional and subjective. Block lists having the same indent
-  /// as the parent is not "human-readable". I understand the reasoning in the
-  /// spec as "- " being considered indent but *I think* that should be in the
-  /// context of parsing nested nodes.
-  ///
-  /// key:
-  /// - value # What prevents me from thinking this is a key? The "- "?
-  ///         # Surely adding a single space doesn't waste any time? :)
-  /// - value
-  /// another-key: value
-  ///
-  /// However, as always, this may change in the near future.
-  if (hasIndent && indentOrSeparation <= keyIndent) {
-    final (:start, :current) = iterator.currentLineInfo;
+  // Exit if we cannot parse an implicit value as a block node
+  if (hasIndent && indentOrSeparation < valueIndent) {
+    // Check if we should exit or recover and parse a block sequence.
+    if (iterator.isEOF ||
+        indentOrSeparation < keyIndent ||
+        eventCallback() != BlockCollectionEvent.startBlockListEntry) {
+      onValue(
+        nullScalarDelegate(
+            indentLevel: keyIndentLevel,
+            indent: keyIndent,
+            startOffset: indicatorOffset,
+            resolver: state.scalarFunction,
+          )
+          ..updateEndOffset = iterator.isEOF
+              ? iterator.currentLineInfo.current
+              : iterator.currentLineInfo.start,
+      );
+      return (docMarker: DocumentMarker.none, exitIndent: indentOrSeparation);
+    }
 
-    return (
-      blockInfo: (
-        exitIndent: indentOrSeparation,
-        docMarker: DocumentMarker.none,
-      ),
-      node: nullScalarDelegate(
-        indentLevel: keyIndentLevel,
-        indent: keyIndent,
-        startOffset: indicatorOffset,
-        resolver: state.scalarFunction,
-      )..updateEndOffset = iterator.isEOF ? current : start,
-    );
+    return parseSpecialBlockSequence(
+      state,
+      keyIndent: keyIndent,
+      keyIndentLevel: keyIndentLevel,
+      property: null,
+      onSequence: onValue,
+      onNextImplicitEntry: onEntryValue,
+    ).blockInfo;
   } else if (eventCallback()
       case BlockCollectionEvent.startBlockListEntry ||
           BlockCollectionEvent.startExplicitKey when !hasIndent) {
@@ -139,27 +143,34 @@ parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     );
   }
 
-  final defaultIndent = keyIndent + 1;
-
-  /// We want to allow this value to degenerate to a block map itself if it
-  /// spans multiple lines. This cannot be determined here lest we duplicate
-  /// code. (PS: Duplication isn't an issue. [parseBlockNode] can handle this
-  /// effortlessly).
-  ///
-  /// A value can also degenerate to a block map if its property is multiline.
-  /// That's why we tell this function:
-  ///   - We don't expect it to (but it can) be inline -> [forceInline]
-  ///   - Compose if this value itself is multiline -> [composeImplicitMap]
-  ///   - Compose if *YOU* ("parseBlockNode") happen to note it is multiline
-  ///     -> [canComposeMapIfMultiline]
-  return parseBlockNode(
+  // Coin toss really.
+  return composeSpecialBlockSequence(
     state,
-    indentLevel: keyIndentLevel,
-    inferredFromParent: indentOrSeparation,
-    laxBlockIndent: defaultIndent,
-    fixedInlineIndent: defaultIndent,
-    forceInlined: false,
-    composeImplicitMap: hasIndent,
-    canComposeMapIfMultiline: true,
-  );
+
+    /// We want to allow this value to degenerate to a block map itself if it
+    /// spans multiple lines. This cannot be determined here lest we duplicate
+    /// code. (PS: Duplication isn't an issue. [parseBlockNode] can handle this
+    /// effortlessly).
+    ///
+    /// A value can also degenerate to a block map if its property is multiline.
+    /// That's why we tell this function:
+    ///   - We don't expect it to (but it can) be inline -> [forceInline]
+    ///   - Compose if this value itself is multiline -> [composeImplicitMap]
+    ///   - Compose if *YOU* ("parseBlockNode") happen to note it is multiline
+    ///     -> [canComposeMapIfMultiline]
+    blockNode: parseBlockNode(
+      state,
+      indentLevel: keyIndentLevel,
+      inferredFromParent: indentOrSeparation,
+      laxBlockIndent: valueIndent,
+      fixedInlineIndent: valueIndent,
+      forceInlined: false,
+      composeImplicitMap: hasIndent,
+      canComposeMapIfMultiline: true,
+    ),
+    keyIndent: keyIndent,
+    keyIndentLevel: keyIndentLevel,
+    onSequenceOrBlockNode: onValue,
+    onNextImplicitEntry: onEntryValue,
+  ).blockInfo;
 }
