@@ -11,6 +11,7 @@ ScalarDelegate<T> nullScalarDelegate<T>({
   indent: indent,
   start: startOffset,
   scalarResolver: resolver,
+  isNullDelegate: true,
 );
 
 /// A delegate that resolves to a [Scalar].
@@ -20,6 +21,7 @@ final class ScalarDelegate<T> extends ParserDelegate<T> {
     required super.indent,
     required super.start,
     required this.scalarResolver,
+    this.isNullDelegate = false,
     PreScalar? prescalar,
   }) : content = prescalar?.content ?? '',
        wroteLineBreak = prescalar?.wroteLineBreak ?? false,
@@ -30,6 +32,9 @@ final class ScalarDelegate<T> extends ParserDelegate<T> {
     _hasLineBreak = prescalar.hasLineBreak;
     _end = prescalar.end;
   }
+
+  /// Whether this is a non-existent null.
+  final bool isNullDelegate;
 
   /// Parsed content
   final String content;

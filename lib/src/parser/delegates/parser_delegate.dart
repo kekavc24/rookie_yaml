@@ -75,6 +75,8 @@ abstract base class ParserDelegate<T> {
   /// End offset
   RuneOffset? get endOffset => _end;
 
+  ParsedProperty? _property;
+
   /// Updates the end offset of a node. The [end] must be equal to or greater
   /// than the [start]
   set updateEndOffset(RuneOffset? end) {
@@ -114,7 +116,7 @@ abstract base class ParserDelegate<T> {
   /// Updates a node's properties. Throws an [ArgumentError] if this delegate
   /// has a tag, alias or anchor.
   set updateNodeProperties(ParsedProperty? property) {
-    if (!(property?.parsedAny ?? false)) return;
+    if (property == null || !property.parsedAny) return;
 
     if (hasProperties) {
       throw ArgumentError(
@@ -122,7 +124,41 @@ abstract base class ParserDelegate<T> {
       );
     }
 
-    switch (property) {
+    start = property.span.start;
+    _hasLineBreak = _hasLineBreak || property.isMultiline;
+    _property = property;
+  }
+
+  /// Validates the parsed [_tag].
+  NodeTag _checkResolvedTag(NodeTag tag);
+
+  /// Resolved tag
+  ResolvedTag? _tag;
+
+  /// Anchor
+  String? _anchor;
+
+  /// Alias
+  String? _alias;
+
+  /// Tracks if a line break was encountered
+  bool _hasLineBreak = false;
+
+  /// Whether a line break was encountered while parsing.
+  bool get encounteredLineBreak => _hasLineBreak;
+
+  /// Whether any properties are present
+  bool get hasProperties =>
+      _property != null || _tag != null || _anchor != null || _alias != null;
+
+  ParsedProperty? get property => _property;
+
+  set hasLineBreak(bool foundLineBreak) =>
+      _hasLineBreak = _hasLineBreak || foundLineBreak;
+
+  /// Validates if parsed properties are valid only when [parsed] is called.
+  void _resolveProperties() {
+    switch (_property) {
       case Alias(:final alias):
         _alias = alias;
 
@@ -154,41 +190,24 @@ abstract base class ParserDelegate<T> {
         return;
     }
 
-    start = property!.span.start;
-    _hasLineBreak = _hasLineBreak || property.isMultiline;
+    _property = null;
   }
-
-  /// Validates the parsed [_tag].
-  NodeTag _checkResolvedTag(NodeTag tag);
-
-  /// Resolved tag
-  ResolvedTag? _tag;
-
-  /// Anchor
-  String? _anchor;
-
-  /// Alias
-  String? _alias;
-
-  /// Tracks if a line break was encountered
-  bool _hasLineBreak = false;
-
-  /// Whether a line break was encountered while parsing.
-  bool get encounteredLineBreak => _hasLineBreak;
-
-  /// Whether any properties are present
-  bool get hasProperties => _tag != null || _anchor != null || _alias != null;
-
-  set hasLineBreak(bool foundLineBreak) =>
-      _hasLineBreak = _hasLineBreak || foundLineBreak;
 
   /// A resolved node.
   T? _resolved;
 
+  /// Whether a node's delegate was resolved.
+  bool _isResolved = false;
+
   /// Returns the object's [T] whose source information this delegate is
   /// assigned to track.
   T parsed() {
-    _resolved ??= _resolver();
+    if (!_isResolved) {
+      _resolveProperties();
+      _resolved ??= _resolver();
+      _isResolved = true;
+    }
+
     return _resolved as T;
   }
 
