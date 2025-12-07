@@ -109,17 +109,15 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
           iterator.peekNextChar() == blockSequenceEntry) {
         final startOnMissing = iterator.currentLineInfo.current;
 
-        _parserState.docStartExplicit =
-            checkForDocumentMarkers(
-              iterator,
-              onMissing: (c) {
-                docMarkerGreedy = (
-                  start: startOnMissing,
-                  greedChars: c.map((e) => e.asString()).join(),
-                );
-              },
-            ) ==
-            DocumentMarker.directiveEnd;
+        final marker = checkForDocumentMarkers(
+          iterator,
+          onMissing: null,
+          writer: (_) {},
+        );
+
+        marker == DocumentMarker.directiveEnd
+            ? _parserState.docStartExplicit = true
+            : docMarkerGreedy = (start: startOnMissing, greedChars: '--');
       } else {
         _parserState.docStartExplicit = hasDirectiveEnd;
       }
@@ -152,7 +150,7 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
 
     /// If we attempted to check for doc markers and found none
     if (docMarkerGreedy != null) {
-      final (:start, :greedChars) = docMarkerGreedy!;
+      final (:start, :greedChars) = docMarkerGreedy;
 
       final (:blockInfo, :node) = parseBlockScalar(
         _parserState,

@@ -77,15 +77,45 @@ const docEndSingle = period;
 /// Single char for directives end marker, `---`
 const directiveEndSingle = blockSequenceEntry;
 
+typedef _Writer = void Function(int char);
+typedef _OnBuffered = void Function();
+
+(_Writer writer, _OnBuffered onBuffered) _docMarkerHelper({
+  required void Function(List<int> buffered) onMissing,
+  required void Function(int char)? writer,
+}) {
+  if (writer != null) return (writer, () {});
+  final buffer = <int>[];
+  return (buffer.add, () => onMissing(buffer));
+}
+
 /// Checks and returns if the next sequence of characters are valid
 /// [DocumentMarker]. Defaults to [DocumentMarker.none] if not true.
 /// May throw if non-whitespace characters are declared in the same line as
 /// document end markers (`...`).
+///
+/// Various parse functions maintain a buffer that may (not) accept characters.
+/// Each parse function can plug a callback to this check depending the
+/// sensitivity of its buffer. [onMissing] and [writer] are mutually exclusive.
+///
+/// Parse functions that provide [onMissing] usually maintain a buffer that
+/// contains meaningful content which cannot be tainted if we parse any
+/// document markers but can accept these characters if no document markers
+/// are seen. Under the hood, this function buffers these characters and hands
+/// them back to the function if no document markers are seen.
+///
+/// If [writer] is provided, this function assumes that the caller will handle
+/// the characters as they come and never buffers the character on their
+/// behalf.
 DocumentMarker checkForDocumentMarkers(
   SourceIterator iterator, {
-  required void Function(List<int> buffered) onMissing,
+  required void Function(List<int> buffered)? onMissing,
+  void Function(int char)? writer,
 }) {
-  final markers = <int>[];
+  final (writeOnChar, onBufferred) = _docMarkerHelper(
+    onMissing: onMissing ?? (_) {},
+    writer: writer,
+  );
 
   /// Document markers, that `...` and `---` have no indent. They must be
   /// top level. Check before falling back to checking if it is a top level
@@ -102,7 +132,7 @@ DocumentMarker checkForDocumentMarkers(
       iterator,
       includeCharAtCursor: true,
       mapper: (v) => v,
-      onMapped: (v) => markers.add(v),
+      onMapped: writeOnChar,
       stopIf: (count, possibleNext) {
         return count == expectedCount || possibleNext != match;
       },
@@ -145,7 +175,7 @@ DocumentMarker checkForDocumentMarkers(
     }
   }
 
-  onMissing(markers);
+  onBufferred();
   return DocumentMarker.none;
 }
 
