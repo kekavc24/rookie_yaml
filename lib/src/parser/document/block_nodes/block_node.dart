@@ -217,7 +217,7 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 }) {
   final ParserState(:iterator, :comments) = state;
 
-  final (:event, :kind, :property) = parseBlockProperties(
+  final (:event, :property) = parseBlockProperties(
     iterator,
     minIndent: laxBlockIndent,
     resolver: state.resolveTag,
@@ -288,7 +288,7 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     /// property is seen only if it was declared on a new line. Check if the
     /// node can degenerate to an implicit map.
     if (event is NodePropertyEvent) {
-      if (!definitelyComposeMap || property is Alias) {
+      if (!definitelyComposeMap || property.isAlias) {
         throwWithRangedOffset(
           iterator,
           message:
@@ -344,7 +344,7 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
           return _safeBlockState(
             state,
             parsed: _blockNodeOfKind(
-              kind,
+              property.kind,
               state: state,
               event: event,
               property: property as NodeProperty,

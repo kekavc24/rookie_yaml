@@ -35,6 +35,7 @@ sealed class ParsedProperty {
     required int? indentOnExit,
     required String? anchor,
     required ResolvedTag? tag,
+    required NodeKind kind,
   }) {
     if (tag != null || anchor != null) {
       return NodeProperty(
@@ -44,6 +45,7 @@ sealed class ParsedProperty {
         spanMultipleLines: spanMultipleLines,
         anchor: anchor,
         tag: tag,
+        kind: kind,
       );
     }
 
@@ -55,8 +57,7 @@ sealed class ParsedProperty {
     );
   }
 
-  /// Returns a start [RuneOffset] (inclusive) and an end [RuneOffset]
-  /// (exclusive).
+  /// Start [RuneOffset] (inclusive) and an end [RuneOffset] (exclusive).
   final RuneSpan span;
 
   /// The current indent after all the properties have been parsed.
@@ -65,14 +66,16 @@ sealed class ParsedProperty {
   /// can be parsed.
   final int? indentOnExit;
 
-  /// Returns `true` if any `tag`, `anchor` or `alias` was parsed. Otherwise,
-  /// `false`.
+  /// Whether any `tag`, `anchor` or `alias` was parsed.
   bool get parsedAny;
 
-  /// Returns `true` if an `alias` was parsed. Otherwise, `false`.
+  /// Whether this property is an alias.
   bool get isAlias => false;
 
-  /// Returns `true` if a property spanned multiple lines.
+  /// Kind of node being parsed
+  NodeKind get kind => NodeKind.unknown;
+
+  /// Whether the property spanned multiple lines.
   final bool isMultiline;
 }
 
@@ -98,6 +101,7 @@ final class NodeProperty extends ParsedProperty {
     required super.spanMultipleLines,
     required this.anchor,
     required this.tag,
+    required this.kind,
   });
 
   /// Node's anchor
@@ -105,6 +109,9 @@ final class NodeProperty extends ParsedProperty {
 
   /// Node's resolved tag
   final ResolvedTag? tag;
+
+  @override
+  final NodeKind kind;
 
   @override
   bool get parsedAny => anchor != null || tag != null;
@@ -130,11 +137,8 @@ final class Alias extends ParsedProperty {
   bool get isAlias => true;
 }
 
-typedef _Property = ({ParsedProperty property, NodeKind kind});
-
 typedef ConcreteProperty = ({
   ParserEvent event,
-  NodeKind kind,
   ParsedProperty property,
 });
 
@@ -148,7 +152,7 @@ typedef ConcreteProperty = ({
 /// new line has a lesser indent than [minIndent]. [onParseComment] adds
 /// comments encountered when skipping to the next parsable char declared on a
 /// new line.
-_Property _corePropertyParser(
+ParsedProperty _corePropertyParser(
   SourceIterator iterator, {
   required int minIndent,
   required TagResolver resolver,
@@ -175,20 +179,18 @@ _Property _corePropertyParser(
 
   void resetIndent() => indentOnExit = null;
 
-  _Property exitIfBlock(String error) {
+  NodeProperty exitIfBlock(String error) {
     /// Block node can have a lifeline in cases where a node spans multiple
     /// lines. The properties may belong to a
     if (isBlockContext && indentOnExit != null) {
-      return (
+      return NodeProperty(
+        startOffset,
+        iterator.currentLineInfo.start,
+        indentOnExit,
+        spanMultipleLines: true, // Obviously :)
+        anchor: nodeAnchor,
+        tag: nodeTag,
         kind: nodeKind,
-        property: NodeProperty(
-          startOffset,
-          iterator.currentLineInfo.start,
-          indentOnExit,
-          spanMultipleLines: true, // Obviously :)
-          anchor: nodeAnchor,
-          tag: nodeTag,
-        ),
       );
     }
 
@@ -222,16 +224,14 @@ _Property _corePropertyParser(
           if (hasNoIndent || indentOnExit! < minIndent) {
             final (:start, :current) = iterator.currentLineInfo;
 
-            return (
+            return ParsedProperty.of(
+              start,
+              hasNoIndent ? current : start,
+              spanMultipleLines: isMultiline(),
+              indentOnExit: indentOnExit,
+              anchor: nodeAnchor,
+              tag: nodeTag,
               kind: nodeKind,
-              property: ParsedProperty.of(
-                start,
-                hasNoIndent ? current : start,
-                spanMultipleLines: isMultiline(),
-                indentOnExit: indentOnExit,
-                anchor: nodeAnchor,
-                tag: nodeTag,
-              ),
             );
           }
         }
@@ -284,32 +284,27 @@ _Property _corePropertyParser(
           skipAndTrackLF();
 
           // Parsing an alias ignores any tag and anchor
-          return (
-            kind: NodeKind.unknown,
-            property: Alias(
-              startOffset,
-              iterator.currentLineInfo.current,
-              indentOnExit,
-              alias: nodeAlias,
-              spanMultipleLines: isMultiline(),
-            ),
+          return Alias(
+            startOffset,
+            iterator.currentLineInfo.current,
+            indentOnExit,
+            alias: nodeAlias,
+            spanMultipleLines: isMultiline(),
           );
         }
 
       // Exit immediately since we reached char that isn't a node property
       default:
-        return (
+        return ParsedProperty.of(
+          startOffset,
+          indentOnExit != null && indentOnExit! < minIndent
+              ? iterator.currentLineInfo.start
+              : iterator.currentLineInfo.current,
+          spanMultipleLines: isMultiline(),
+          indentOnExit: indentOnExit,
+          anchor: nodeAnchor,
+          tag: nodeTag,
           kind: nodeKind,
-          property: ParsedProperty.of(
-            startOffset,
-            indentOnExit != null && indentOnExit! < minIndent
-                ? iterator.currentLineInfo.start
-                : iterator.currentLineInfo.current,
-            spanMultipleLines: isMultiline(),
-            indentOnExit: indentOnExit,
-            anchor: nodeAnchor,
-            tag: nodeTag,
-          ),
         );
     }
   }
@@ -318,18 +313,16 @@ _Property _corePropertyParser(
   /// managed to parse both the tag and anchor.
   skipAndTrackLF();
 
-  return (
+  return ParsedProperty.of(
+    startOffset,
+    indentOnExit != null && indentOnExit! < minIndent
+        ? iterator.currentLineInfo.start
+        : iterator.currentLineInfo.current,
+    spanMultipleLines: isMultiline(),
+    indentOnExit: indentOnExit,
+    anchor: nodeAnchor,
+    tag: nodeTag,
     kind: nodeKind,
-    property: ParsedProperty.of(
-      startOffset,
-      indentOnExit != null && indentOnExit! < minIndent
-          ? iterator.currentLineInfo.start
-          : iterator.currentLineInfo.current,
-      spanMultipleLines: isMultiline(),
-      indentOnExit: indentOnExit,
-      anchor: nodeAnchor,
-      tag: nodeTag,
-    ),
   );
 }
 
@@ -340,7 +333,7 @@ ConcreteProperty parseBlockProperties(
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
 }) {
-  final (:property, :kind) = _corePropertyParser(
+  final property = _corePropertyParser(
     iterator,
     minIndent: minIndent,
     resolver: resolver,
@@ -349,7 +342,6 @@ ConcreteProperty parseBlockProperties(
   );
 
   return (
-    kind: kind,
     property: property,
     event: inferNextEvent(
       iterator,
@@ -397,7 +389,6 @@ ConcreteProperty parseFlowProperties(
 
     return (
       event: e,
-      kind: NodeKind.unknown,
       property: ParsedProperty.empty(
         offset,
         offset,
@@ -407,7 +398,7 @@ ConcreteProperty parseFlowProperties(
     );
   }
 
-  final (:kind, :property) = _corePropertyParser(
+  final property = _corePropertyParser(
     iterator,
     minIndent: minIndent,
     resolver: resolver,
@@ -424,7 +415,6 @@ ConcreteProperty parseFlowProperties(
       isBlockContext: false,
       lastKeyWasJsonLike: lastKeyWasJsonLike,
     ),
-    kind: kind,
     property: property,
   );
 }

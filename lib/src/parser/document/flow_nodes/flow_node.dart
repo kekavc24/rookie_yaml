@@ -84,7 +84,7 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 }) {
   final ParserState(:iterator) = state;
 
-  final (:event, :kind, :property) = parseFlowProperties(
+  final (:event, :property) = parseFlowProperties(
     iterator,
     minIndent: minIndent,
     resolver: state.resolveTag,
@@ -129,7 +129,7 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       default:
         return state.trackAnchor(
           _flowNodeOfKind(
-            kind,
+            property.kind,
             parserState: state,
             property: property as NodeProperty,
             flowEvent: event,
