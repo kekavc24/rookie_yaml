@@ -107,17 +107,21 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
       if (!hasDirectiveEnd &&
           iterator.current == blockSequenceEntry &&
           iterator.peekNextChar() == blockSequenceEntry) {
+        var greedy = 0;
         final startOnMissing = iterator.currentLineInfo.current;
 
         final marker = checkForDocumentMarkers(
           iterator,
           onMissing: null,
-          writer: (_) {},
+          writer: (_) => ++greedy,
         );
 
         marker == DocumentMarker.directiveEnd
             ? _parserState.docStartExplicit = true
-            : docMarkerGreedy = (start: startOnMissing, greedChars: '--');
+            : docMarkerGreedy = (
+                start: startOnMissing,
+                greedChars: '-' * greedy,
+              );
       } else {
         _parserState.docStartExplicit = hasDirectiveEnd;
       }
