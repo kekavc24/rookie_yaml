@@ -213,6 +213,7 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
         docMarker = checkForDocumentMarkers(
           iterator,
           onMissing: (b) => charBehind = b.length,
+          throwIfDocEndInvalid: true,
         );
 
         if (!docMarker.stopIfParsingDoc) {

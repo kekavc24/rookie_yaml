@@ -109,6 +109,7 @@ typedef _OnBuffered = void Function();
 /// behalf.
 DocumentMarker checkForDocumentMarkers(
   SourceIterator iterator, {
+  bool throwIfDocEndInvalid = false,
   required void Function(List<int> buffered)? onMissing,
   void Function(int char)? writer,
 }) {
@@ -153,6 +154,9 @@ DocumentMarker checkForDocumentMarkers(
             iterator.current == comment ||
             iterator.current.isLineBreak()) {
           return DocumentMarker.documentEnd;
+        } else if (!throwIfDocEndInvalid) {
+          onBufferred();
+          return DocumentMarker.none;
         }
 
         final (:start, :current) = iterator.currentLineInfo;
