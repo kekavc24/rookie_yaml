@@ -239,10 +239,13 @@ FoldFlowInfo foldFlowScalar(
       case space || tab:
         {
           iterator.nextChar();
+          bufferedWhitespace.add(current);
 
           // Match " :" or " #". These assumes the plain scalar is a key.
-          if (matchesPlain(iterator.peekNextChar())) break folding;
-          bufferedWhitespace.add(current);
+          if (matchesPlain(iterator.current)) {
+            scalarBuffer.writeAll(bufferedWhitespace);
+            break folding;
+          }
         }
 
       default:
