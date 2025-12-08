@@ -1,4 +1,5 @@
 import 'package:args/args.dart';
+import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 import 'package:yaml_test_suite_runner/yaml_test_suite_runner.dart';
 
@@ -60,6 +61,7 @@ void main(List<String> arguments) async {
     }
 
     final output = DummyWriter.forRunner(directory, saveFailed: saveFailed);
+    final equality = DeepCollectionEquality();
 
     final runner = TestRunner(
       parseFunction: (yaml) => loadAsDartObjects(
@@ -68,6 +70,7 @@ void main(List<String> arguments) async {
         logger: (_, _) {},
       ),
       sourceComparator: (parsed, expected) =>
+          equality.equals(parsed, expected) ||
           parsed.toString() == expected.toString(),
       writer: output,
     );
