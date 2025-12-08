@@ -10,10 +10,6 @@ part 'block_header.dart';
 part 'block_utils.dart';
 
 /// Parses a block style scalar, that is `folded` or `literal`.
-///
-/// Returns a [PlainStyleInfo] record since a block style scalar is a plain
-/// scalar with explicit indicators qualifying it as a block scalar. A plain
-/// and block scalar both use indentation to convey content information.
 PreScalar parseBlockStyle(
   SourceIterator iterator, {
   required int minimumIndent,
@@ -33,7 +29,7 @@ PreScalar parseBlockStyle(
   /// If not null, we know the indent. Otherwise we have to infer from the
   /// first non-empty line.
   if (indentIndicator != null) {
-    trueIndent = indentLevel + indentIndicator;
+    trueIndent = max(0, indentLevel) + indentIndicator;
   }
 
   final lineBreaks = <int>[
