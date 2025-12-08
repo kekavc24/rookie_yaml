@@ -160,7 +160,7 @@ parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     ///     -> [canComposeMapIfMultiline]
     blockNode: parseBlockNode(
       state,
-      indentLevel: keyIndentLevel,
+      indentLevel: hasIndent ? keyIndentLevel + 1 : keyIndentLevel,
       inferredFromParent: indentOrSeparation,
       laxBlockIndent: valueIndent,
       fixedInlineIndent: valueIndent,

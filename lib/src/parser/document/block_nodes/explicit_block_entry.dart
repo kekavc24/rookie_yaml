@@ -25,7 +25,6 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     return (ignoreValueIfKey: true, blockInfo: fallback(iterator));
   }
 
-  final nodeIndentLevel = indentLevel + 1;
   final explicitCharOffset = iterator.currentLineInfo.current;
 
   iterator.nextChar();
@@ -35,15 +34,16 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     onParseComment: comments.add,
   );
 
+  final isNextLevel = indentOrSeparation != null;
   final expectedLaxIndent = indent + 1;
 
   /// The indent is on the same level as "?" or ":". This may also indicate
   /// that we are now pointing to the next key that may be implicit or explicit
-  if (indentOrSeparation != null && indentOrSeparation < expectedLaxIndent) {
+  if (isNextLevel && indentOrSeparation < expectedLaxIndent) {
     final ignoreValue = indentOrSeparation < indent;
     final explicit = nullBlockNode(
       state,
-      indentLevel: nodeIndentLevel,
+      indentLevel: indentLevel,
       indent: indent + 1,
       start: iterator.isEOF
           ? iterator.currentLineInfo.current
@@ -88,7 +88,7 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     state,
     blockNode: parseBlockNode(
       state,
-      indentLevel: nodeIndentLevel,
+      indentLevel: isNextLevel ? indentLevel + 1 : indentLevel,
       inferredFromParent: indentOrSeparation,
       laxBlockIndent: indent + 1,
       fixedInlineIndent: inlineFixedIndent,

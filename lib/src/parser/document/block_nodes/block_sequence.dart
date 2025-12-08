@@ -97,7 +97,9 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       onParseComment: comments.add,
     );
 
-    if (indentOrSeparation != null && indentOrSeparation <= sequenceIndent) {
+    final isNextLevel = indentOrSeparation != null;
+
+    if (isNextLevel && indentOrSeparation <= sequenceIndent) {
       final empty = nullBlockNode(
         state,
         indentLevel: indentLevel,
@@ -133,7 +135,7 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
       final (:blockInfo, :node) = parseBlockNode(
         state,
-        indentLevel: indentLevel,
+        indentLevel: isNextLevel ? indentLevel + 1 : indentLevel,
         inferredFromParent: indentOrSeparation,
         laxBlockIndent: entryIndent,
         fixedInlineIndent: inlineFixedIndent,

@@ -116,9 +116,6 @@ BlockNode<Obj> composeAndParseBlockMap<
     mapResolver: state.mapFunction,
   );
 
-  // Key move one level deeper than the map
-  key.indentLevel += 1;
-
   final blockInfo = parseImplicitValue(
     state,
     keyIndent: fixedMapIndent,
@@ -196,8 +193,6 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       ..updateEndOffset = value?.endOffset ?? key.endOffset!;
   }
 
-  final entryIndentLevel = indentLevel + 1;
-
   while (!iterator.isEOF) {
     final blockInfo = switch (inferNextEvent(
       iterator,
@@ -207,13 +202,13 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
       BlockCollectionEvent.startExplicitKey => parseExplicitBlockEntry(
         state,
         entryIndent: mapIndent,
-        entryIndentLevel: entryIndentLevel,
+        entryIndentLevel: indentLevel,
         onExplicitEntry: onParseEntry,
       ),
       _ => parseImplicitBlockEntry(
         state,
         keyIndent: mapIndent,
-        keyIndentLevel: entryIndentLevel,
+        keyIndentLevel: indentLevel,
         onImplicitEntry: onParseEntry,
       ),
     };
