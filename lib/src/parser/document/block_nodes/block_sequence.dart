@@ -85,7 +85,6 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   final SequenceDelegate(indent: sequenceIndent, :indentLevel) = sequence;
 
   final entryIndent = sequenceIndent + 1;
-  final entryIndentLevel = indentLevel + 1;
 
   do {
     final indicatorOffset = iterator.currentLineInfo.current;
@@ -101,7 +100,7 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     if (indentOrSeparation != null && indentOrSeparation <= sequenceIndent) {
       final empty = nullBlockNode(
         state,
-        indentLevel: entryIndentLevel,
+        indentLevel: indentLevel,
         indent: sequenceIndent + 1,
         start: iterator.isEOF
             ? iterator.currentLineInfo.current
@@ -134,7 +133,7 @@ parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
       final (:blockInfo, :node) = parseBlockNode(
         state,
-        indentLevel: entryIndentLevel,
+        indentLevel: indentLevel,
         inferredFromParent: indentOrSeparation,
         laxBlockIndent: entryIndent,
         fixedInlineIndent: inlineFixedIndent,
