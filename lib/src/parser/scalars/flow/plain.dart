@@ -88,7 +88,7 @@ PreScalar? parsePlain(
       /// Check for the document end markers first always
       case blockSequenceEntry || period
           when indent == 0 &&
-              charBefore.isNotNullAnd((c) => c.isLineBreak()) &&
+              charBefore.isNullOr((c) => c.isLineBreak()) &&
               charAfter == char:
         {
           final maybeEnd = iterator.currentLineInfo.current;
