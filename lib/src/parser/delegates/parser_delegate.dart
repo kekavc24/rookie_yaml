@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';

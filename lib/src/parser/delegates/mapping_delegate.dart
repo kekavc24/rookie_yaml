@@ -13,7 +13,10 @@ final class MappingDelegate<I, M extends Map<I, I?>> extends ParserDelegate<M> {
   final NodeStyle collectionStyle;
 
   /// Map backing this delegate
-  final _map = <I, I?>{};
+  final _map = LinkedHashMap<I, I?>(
+    equals: yamlCollectionEquality.equals,
+    hashCode: yamlCollectionEquality.hash,
+  );
 
   /// A dynamic resolver function assigned at runtime by the [DocumentParser].
   final MapFunction<I, M> mapResolver;
