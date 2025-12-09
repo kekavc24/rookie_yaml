@@ -108,8 +108,9 @@ void _inlineIfInlineBlockSequence(
   ///   - node
   ///
   /// # Invalid. Cannot be more indented!
-  /// - !!seq
-  ///         - node
+  /// ?
+  ///   !!seq
+  ///      - node
   ///
   /// # Invalid
   /// -

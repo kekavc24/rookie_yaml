@@ -25,8 +25,7 @@ void _throwIfBlockUnsafe(
       offset: iterator.currentLineInfo.current,
     );
   } else if (inlineWithDirectiveMarker &&
-      inferNextEvent(iterator, isBlockContext: true, lastKeyWasJsonLike: false)
-          is BlockCollectionEvent) {
+      inferBlockEvent(iterator) is BlockCollectionEvent) {
     throwForCurrentLine(
       iterator,
       message:

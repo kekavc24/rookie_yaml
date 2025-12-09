@@ -341,14 +341,7 @@ ConcreteProperty parseBlockProperties(
     isBlockContext: true,
   );
 
-  return (
-    property: property,
-    event: inferNextEvent(
-      iterator,
-      isBlockContext: true,
-      lastKeyWasJsonLike: false,
-    ),
-  );
+  return (property: property, event: inferBlockEvent(iterator));
 }
 
 /// Parses properties of a flow node and returns the next possible event after

@@ -6,8 +6,6 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Information after a special block sequence has been parsed.
@@ -158,17 +156,6 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<
     composedMapIndent: -1,
     greedyOnPlain: greedyOnPlain,
   );
-
-  // Highly unlikely but we **MUST** be sure.
-  if (keyInfo.docMarker.stopIfParsingDoc ||
-      keyInfo.exitIndent != seamlessIndentMarker) {
-    throwWithRangedOffset(
-      iterator,
-      message: 'Invalid implicit plain key found',
-      start: implicitKey.start,
-      end: implicitKey.endOffset!,
-    );
-  }
 
   return (
     parsedNextImplicitKey: true,

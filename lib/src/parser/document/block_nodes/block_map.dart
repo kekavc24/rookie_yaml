@@ -60,12 +60,7 @@ BlockNode<Obj> composeBlockMapFromScalar<
     // Indent must be null. This must be an inlined key
     if (iterator.isEOF ||
         indentOrSeparation != null ||
-        inferNextEvent(
-              iterator,
-              isBlockContext: true,
-              lastKeyWasJsonLike: false,
-            ) !=
-            BlockCollectionEvent.startEntryValue) {
+        inferBlockEvent(iterator) != BlockCollectionEvent.startEntryValue) {
       state.trackAnchor(keyOrNode, keyOrMapProperty);
       return (
         blockInfo: (exitIndent: indentOrSeparation, docMarker: documentMarker),
@@ -194,11 +189,7 @@ parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   }
 
   while (!iterator.isEOF) {
-    final blockInfo = switch (inferNextEvent(
-      iterator,
-      isBlockContext: true,
-      lastKeyWasJsonLike: false,
-    )) {
+    final blockInfo = switch (inferBlockEvent(iterator)) {
       BlockCollectionEvent.startExplicitKey => parseExplicitBlockEntry(
         state,
         entryIndent: mapIndent,
