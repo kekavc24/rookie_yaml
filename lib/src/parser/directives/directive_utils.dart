@@ -229,20 +229,15 @@ void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
 String parseAnchorOrAliasTrailer(SourceIterator iterator) {
   final buffer = StringBuffer();
 
-  // [parseNodeProperties] always skips leading "&" and "*"
-  do {
-    /// Allows only non-space characters. Prefer quick exit once a flow
-    /// delimiter is encountered.
-    if (!iterator.isEOF &&
-        !iterator.current.isFlowDelimiter() &&
-        iterator.current.isNonSpaceChar()) {
-      buffer.writeCharCode(iterator.current);
-      iterator.nextChar();
-      continue;
-    }
-
-    break;
-  } while (true);
+  /// Allows only non-space characters. Prefer quick exit once a flow
+  /// delimiter is encountered.
+  while (!iterator.isEOF &&
+      !iterator.current.isFlowDelimiter() &&
+      iterator.current.isNonSpaceChar()) {
+    buffer.writeCharCode(iterator.current);
+    iterator.nextChar();
+    continue;
+  }
 
   // Anchor/alias must have at least 1 char after "&"/"*" respectively.
   if (buffer.isEmpty) {
