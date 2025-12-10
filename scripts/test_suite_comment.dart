@@ -87,7 +87,17 @@ $summary
 
   runCommand(
     'gh',
-    args: ['pr', 'comment', pr, '-R', rootRepository, '-F', tempFile],
+    args: [
+      'pr',
+      'comment',
+      pr,
+      '--edit-last',
+      '--create-if-none',
+      '-R',
+      rootRepository,
+      '-F',
+      tempFile,
+    ],
     directory: directory,
   );
 }
