@@ -91,10 +91,6 @@ String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
 /// [isVerbatim] - indicates whether a tag uri for a [VerbatimTag] is being
 /// parsed. When `true`, the closing `>` is allowed and parsing terminates
 /// after it is encountered.
-///
-/// [isAnchorOrAlias] - treats the uri characters being parsed as characters
-/// of an `alias` or `anchor` to/for a [Node] respectively. Defaults
-/// [isVerbatim] and [allowRestrictedIndicators] to `false`.
 String _parseTagUri(
   SourceIterator iterator, {
   required bool allowRestrictedIndicators,
@@ -212,12 +208,7 @@ void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
 
       /// We have highlight the "%" that indicated this is an hex. This will
       /// help provide accurate and contextual information. The buffer
-      /// indicates how many characters we have read so far. Its baseline is 2,
-      /// such that:
-      ///   - If we read 1 char, (3 - 2) = 1. So we have to highlight 1 char
-      ///     behind.
-      ///   - If we read 0 chars, (2 - 2) = 0. So have to highlight 0 chars
-      ///     behind.
+      /// indicates how many characters we have read so far.
       charCountBefore: hexBuff.length - hexCount,
     );
   }
