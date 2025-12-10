@@ -10,7 +10,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 ///
 /// If [forceInline] is `true`, the map must be declared on the same line
 /// with no line breaks and throws if otherwise.
-MappingDelegate<Obj, Dict>
+ParserDelegate<Obj>
 parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   ParserState<Obj, Seq, Dict> state, {
   required int indentLevel,
@@ -81,5 +81,6 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     }
   } while (!iterator.isEOF);
 
-  return terminateFlowCollection(iterator, map, mappingEnd);
+  return terminateFlowCollection(iterator, map, mappingEnd)
+      as ParserDelegate<Obj>;
 }

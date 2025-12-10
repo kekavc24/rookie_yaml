@@ -175,75 +175,53 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   final (:start, :end) = property.span; // Always use property offset
   final isInline = isImplicit || forceInline;
 
-  switch (kind) {
-    case NodeKind.set || NodeKind.orderedMap:
-      {
-        // Be lenient (for now). Treat a set as an iterable too.
-        if (flowEvent == FlowCollectionEvent.startFlowSequence) {
-          continue sequence;
-        }
-
-        continue mapping;
-      }
-
-    mapping:
-    case NodeKind.mapping:
-      {
-        return parseFlowMap(
-              parserState,
-              indentLevel: currentIndentLevel,
-              minIndent: minIndent,
-              forceInline: isInline,
-            )
-            as ParserDelegate<Obj>;
-      }
-
-    sequence:
-    case NodeKind.sequence:
-      {
-        return parseFlowSequence(
-              parserState,
-              indentLevel: currentIndentLevel,
-              minIndent: minIndent,
-              forceInline: isInline,
-              kind: kind,
-            )
-            as ParserDelegate<Obj>;
-      }
-
-    case NodeKind.scalar:
-      {
-        final ParserState(:iterator, :scalarFunction, :comments) = parserState;
-        return switch (flowEvent) {
-          ScalarEvent e => parseFlowScalar(
-            e,
-            iterator: iterator,
-            scalarFunction: scalarFunction,
-            onParseComment: comments.add,
-            isInline: isInline,
-            indentLevel: currentIndentLevel,
-            minIndent: minIndent,
-          ),
-          _ => nullScalarDelegate(
-            indentLevel: currentIndentLevel,
-            indent: minIndent,
-            startOffset: start,
-            resolver: scalarFunction,
-          )..updateEndOffset = end,
-        };
-      }
-
-    default:
-      return _ambigousFlowNode(
-        flowEvent,
-        parserState: parserState,
-        property: property,
-        currentIndentLevel: currentIndentLevel,
-        minIndent: minIndent,
-        isImplicit: isImplicit,
-        forceInline: forceInline,
-      );
-  }
+  return parseNodeOfKind(
+    kind,
+    sequenceOnMatchSetOrOrderedMap: () =>
+        flowEvent == FlowCollectionEvent.startFlowSequence,
+    onMatchMapping: () => parseFlowMap(
+      parserState,
+      indentLevel: currentIndentLevel,
+      minIndent: minIndent,
+      forceInline: isInline,
+    ),
+    onMatchSequence: () => parseFlowSequence(
+      parserState,
+      indentLevel: currentIndentLevel,
+      minIndent: minIndent,
+      forceInline: isInline,
+      kind: kind,
+    ),
+    onMatchScalar: () {
+      final ParserState(:iterator, :scalarFunction, :comments) = parserState;
+      return switch (flowEvent) {
+        ScalarEvent e => parseFlowScalar(
+          e,
+          iterator: iterator,
+          scalarFunction: scalarFunction,
+          onParseComment: comments.add,
+          isInline: isInline,
+          indentLevel: currentIndentLevel,
+          minIndent: minIndent,
+        ),
+        _ => nullScalarDelegate(
+          indentLevel: currentIndentLevel,
+          indent: minIndent,
+          startOffset: start,
+          resolver: scalarFunction,
+        )..updateEndOffset = end,
+      };
+    },
+    defaultFallback: () => _ambigousFlowNode(
+      flowEvent,
+      parserState: parserState,
+      property: property,
+      currentIndentLevel: currentIndentLevel,
+      minIndent: minIndent,
+      isImplicit: isImplicit,
+      forceInline: forceInline,
+    ),
+  );
 }
 
 /// Parses a flow node using the current [parserState] and heavily relies on
@@ -284,12 +262,11 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     case FlowCollectionEvent.startFlowMap:
       {
         return parseFlowMap(
-              parserState,
-              indentLevel: currentIndentLevel,
-              minIndent: minIndent,
-              forceInline: isImplicit || forceInline,
-            )
-            as ParserDelegate<Obj>;
+          parserState,
+          indentLevel: currentIndentLevel,
+          minIndent: minIndent,
+          forceInline: isImplicit || forceInline,
+        );
       }
 
     case ScalarEvent scalarEvent:
@@ -308,12 +285,11 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     case FlowCollectionEvent.startFlowSequence:
       {
         return parseFlowSequence(
-              parserState,
-              indentLevel: currentIndentLevel,
-              minIndent: minIndent,
-              forceInline: isImplicit || forceInline,
-            )
-            as ParserDelegate<Obj>;
+          parserState,
+          indentLevel: currentIndentLevel,
+          minIndent: minIndent,
+          forceInline: isImplicit || forceInline,
+        );
       }
 
     default:

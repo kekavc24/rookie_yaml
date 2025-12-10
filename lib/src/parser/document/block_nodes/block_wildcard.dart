@@ -172,7 +172,7 @@ BlockNode<Obj> parseFlowNodeInBlock<
   // Some flow collections can be used as keys like scalars.
   return composeBlockMapFromScalar(
     state,
-    keyOrNode: flow as ParserDelegate<Obj>,
+    keyOrNode: flow,
     keyOrMapProperty: flowProperty,
     indentOnExit: indentOfNextNode,
     documentMarker: DocumentMarker.none,

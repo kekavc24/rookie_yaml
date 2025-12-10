@@ -391,131 +391,112 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int fixedInlineIndent,
   required bool forceInlined,
   required bool composeImplicitMap,
-}) {
-  switch (kind) {
-    case NodeKind.set || NodeKind.orderedMap:
-      {
-        // Be lenient (for now). Treat a set as an iterable too.
-        if (event
-            case BlockCollectionEvent.startBlockListEntry ||
-                FlowCollectionEvent.startFlowSequence) {
-          continue sequence;
-        }
-
-        continue mapping;
-      }
-
-    mapping:
-    case NodeKind.mapping:
-      {
-        if (event == BlockCollectionEvent.startExplicitKey) {
-          _throwIfInlineExplicitKey(
-            state.iterator,
-            isInline: forceInlined,
-            property: property,
-          );
-        }
-
-        // Parse wildcard but expect a map
-        return composeBlockMapStrict(
-          state,
-          indentLevel: indentLevel,
-          laxIndent: laxBlockIndent,
-          inlineFixedIndent: fixedInlineIndent,
-          property: property,
-          isInline: forceInlined,
-          composeImplicitMap: composeImplicitMap,
-        );
-      }
-
-    sequence:
-    case NodeKind.sequence:
-      {
-        BlockNode<Obj>? sequence;
-
-        if (event == BlockCollectionEvent.startBlockListEntry) {
-          _inlineIfInlineBlockSequence(
-            state.iterator,
-            isInline: forceInlined,
-            property: property,
-          );
-
-          sequence = parseBlockSequence(
-            SequenceDelegate.byKind(
-              kind: kind,
-              style: NodeStyle.block,
-              indent: fixedInlineIndent,
-              indentLevel: indentLevel,
-              start: property.span.start,
-              resolver: state.listFunction,
-            ),
-            state: state,
-            levelWithBlockMap: false,
-          ).sequence;
-
-          state.trackAnchor(sequence.node, property);
-        } else if (event == FlowCollectionEvent.startFlowSequence) {
-          sequence = parseFlowNodeInBlock(
-            state,
-            event: event as FlowCollectionEvent,
-            indentLevel: indentLevel,
-            indent: laxBlockIndent,
-            isInline: forceInlined,
-            composeImplicitMap: composeImplicitMap,
-            flowProperty: property,
-            composedMapIndent: fixedInlineIndent,
-          );
-        }
-
-        // We must have a block sequence
-        if (sequence == null) {
-          throwWithRangedOffset(
-            state.iterator,
-            message: 'Expected the start of a block/flow sequence',
-            start: property.span.start,
-            end: state.iterator.currentLineInfo.current,
-          );
-        }
-
-        return sequence;
-      }
-
-    case NodeKind.scalar:
-      {
-        if (event case ScalarEvent() || BlockCollectionEvent.startEntryValue) {
-          return parseBlockWildCard(
-            state,
-            event: event,
-            indentLevel: indentLevel,
-            laxIndent: laxBlockIndent,
-            inlineFixedIndent: fixedInlineIndent,
-            property: property,
-            isInline: forceInlined,
-            composeImplicitMap: composeImplicitMap,
-          );
-        }
-
-        throwWithRangedOffset(
-          state.iterator,
-          message: 'Expected the start of a valid scalar',
-          start: property.span.start,
-          end: state.iterator.currentLineInfo.current,
-        );
-      }
-
-    default:
-      return _ambigousBlockNode(
-        event,
-        parserState: state,
+}) => parseNodeOfKind(
+  kind,
+  sequenceOnMatchSetOrOrderedMap: () =>
+      event == BlockCollectionEvent.startBlockListEntry ||
+      event == FlowCollectionEvent.startFlowSequence,
+  onMatchMapping: () {
+    if (event == BlockCollectionEvent.startExplicitKey) {
+      _throwIfInlineExplicitKey(
+        state.iterator,
+        isInline: forceInlined,
         property: property,
+      );
+    }
+
+    // Parse wildcard but expect a map
+    return composeBlockMapStrict(
+      state,
+      indentLevel: indentLevel,
+      laxIndent: laxBlockIndent,
+      inlineFixedIndent: fixedInlineIndent,
+      property: property,
+      isInline: forceInlined,
+      composeImplicitMap: composeImplicitMap,
+    );
+  },
+  onMatchSequence: () {
+    BlockNode<Obj>? sequence;
+
+    if (event == BlockCollectionEvent.startBlockListEntry) {
+      _inlineIfInlineBlockSequence(
+        state.iterator,
+        isInline: forceInlined,
+        property: property,
+      );
+
+      sequence = parseBlockSequence(
+        SequenceDelegate.byKind(
+          kind: kind,
+          style: NodeStyle.block,
+          indent: fixedInlineIndent,
+          indentLevel: indentLevel,
+          start: property.span.start,
+          resolver: state.listFunction,
+        ),
+        state: state,
+        levelWithBlockMap: false,
+      ).sequence;
+
+      state.trackAnchor(sequence.node, property);
+    } else if (event == FlowCollectionEvent.startFlowSequence) {
+      sequence = parseFlowNodeInBlock(
+        state,
+        event: event as FlowCollectionEvent,
         indentLevel: indentLevel,
-        laxBlockIndent: laxBlockIndent,
-        fixedInlineIndent: fixedInlineIndent,
-        forceInlined: forceInlined,
+        indent: laxBlockIndent,
+        isInline: forceInlined,
+        composeImplicitMap: composeImplicitMap,
+        flowProperty: property,
+        composedMapIndent: fixedInlineIndent,
+      );
+    }
+
+    // We must have a block sequence
+    if (sequence == null) {
+      throwWithRangedOffset(
+        state.iterator,
+        message: 'Expected the start of a block/flow sequence',
+        start: property.span.start,
+        end: state.iterator.currentLineInfo.current,
+      );
+    }
+
+    return sequence;
+  },
+  onMatchScalar: () {
+    if (event case ScalarEvent() || BlockCollectionEvent.startEntryValue) {
+      return parseBlockWildCard(
+        state,
+        event: event,
+        indentLevel: indentLevel,
+        laxIndent: laxBlockIndent,
+        inlineFixedIndent: fixedInlineIndent,
+        property: property,
+        isInline: forceInlined,
         composeImplicitMap: composeImplicitMap,
       );
-  }
-}
+    }
+
+    throwWithRangedOffset(
+      state.iterator,
+      message: 'Expected the start of a valid scalar',
+      start: property.span.start,
+      end: state.iterator.currentLineInfo.current,
+    );
+  },
+  defaultFallback: () => _ambigousBlockNode(
+    event,
+    parserState: state,
+    property: property,
+    indentLevel: indentLevel,
+    laxBlockIndent: laxBlockIndent,
+    fixedInlineIndent: fixedInlineIndent,
+    forceInlined: forceInlined,
+    composeImplicitMap: composeImplicitMap,
+  ),
+);
 
 /// Parses a block node using the current [parserState] and heavily relies on
 /// the current [event] to determine the next course of action.

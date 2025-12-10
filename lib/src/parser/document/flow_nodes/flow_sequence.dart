@@ -99,7 +99,7 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
 ///
 /// If [forceInline] is `true`, the sequence must be declared on the same line
 /// with no line breaks and throws if otherwise.
-SequenceDelegate<Obj, Seq>
+ParserDelegate<Obj>
 parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   ParserState<Obj, Seq, Dict> state, {
   required int indentLevel,
@@ -153,5 +153,6 @@ parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     }
   } while (!iterator.isEOF);
 
-  return terminateFlowCollection(iterator, sequence, flowSequenceEnd);
+  return terminateFlowCollection(iterator, sequence, flowSequenceEnd)
+      as ParserDelegate<Obj>;
 }
