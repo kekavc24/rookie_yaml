@@ -1,4 +1,4 @@
-The package allows you load a YAML string as a built-in Dart type without worrying about any wrapper classes that act as a bridge. Built-in types also supported by YAML include:
+The package allows you to load a YAML string as a built-in Dart type without worrying about any wrapper classes that act as a bridge. Built-in types also supported by YAML include:
 
 - `int`, `double`, `bool`, `null`, `String`
 - `List`
@@ -9,7 +9,7 @@ The package allows you load a YAML string as a built-in Dart type without worryi
 
 ## Loading a scalar as a built-in Dart type
 
-You can load a single Dart object from a YAML source string/bytes by calling `loadDartObject`. It allows you provide a type if are privy to the node present. The function returns a nullable type of the object your provide since the document may be empty.
+You can load a single Dart object from a YAML source string/bytes by calling `loadDartObject` which also accepts type params. The function returns a nullable type of the object your provide since the document may be empty.
 
 ```dart
 // Type inferred automatically. A YAML spec philosophy!

@@ -38,7 +38,8 @@ The secondary tag handle `!!` is limited to tags below which all resolve to the 
 
 ## Contribution
 
-See [guide][contribute] on how to make contributions to this repository.
+- See [guide][contribute] on how to make contributions to this repository.
+- Run [test suite guide][test_suite] and look for bugs to fix.
 
 [yaml]: https://yaml.org/spec/1.2.2/
 [coverage]: https://coveralls.io/repos/github/kekavc24/rookie_yaml/badge.svg?branch=main
@@ -46,3 +47,4 @@ See [guide][contribute] on how to make contributions to this repository.
 [dart_pub_downloads]: https://img.shields.io/pub/dm/rookie_yaml.svg
 [guide]: https://pub.dev/documentation/rookie_yaml/latest/topics/intro-topic.html
 [contribute]: CONTRIBUTING.md
+[test_suite]: ./test/yaml_test_suite/README.md
