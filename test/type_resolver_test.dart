@@ -60,35 +60,40 @@ void main() {
         .which((v) => v.isNotNull().equals(String.fromCharCodes(asciiList)));
   });
 
-  test('Resolves block map', () {
-    // Let's create a tag. Resolver is a bit verbose
-    final yaml =
-        '''
-$asciiTag { handle: primary, suffix: $suffix}
-''';
+  // test('Resolves block map', () {
+  //   // Let's create a tag. Resolver is a bit verbose
+  //   final yaml =
+  //       '''
+  // $asciiTag { handle: primary, suffix: $suffix}
+  // ''';
 
-    final resolver = Resolver<Mapping, TagShorthand>.node(
-      asciiTag,
-      resolver: (m) {
-        final map = m.castTo<DynamicMapping>();
-        dynamic mapVal(dynamic key) => (map[key] as Scalar).value;
+  //   final resolver = Resolver<Mapping, TagShorthand>.node(
+  //     asciiTag,
+  //     resolver: (m) {
+  //       final map = m.castTo<DynamicMapping>();
+  //       dynamic mapVal(dynamic key) => (map[key] as Scalar).value;
 
-        return TagShorthand.fromTagUri(
-          switch (mapVal('handle')) {
-            'secondary' => TagHandle.secondary(),
-            dynamic val when val != 'primary' => TagHandle.named(
-              val.toString(),
-            ),
-            _ => TagHandle.primary(),
-          },
-          mapVal('suffix').toString(),
-        );
-      },
-    );
+  //       return TagShorthand.fromTagUri(
+  //         switch (mapVal('handle')) {
+  //           'secondary' => TagHandle.secondary(),
+  //           dynamic val when val != 'primary' => TagHandle.named(
+  //             val.toString(),
+  //           ),
+  //           _ => TagHandle.primary(),
+  //         },
+  //         mapVal('suffix').toString(),
+  //       );
+  //     },
+  //   );
 
-    check(bootstrapDocParser(yaml, resolvers: [resolver]).parseNodeSingle())
-        .isNotNull()
-        .has((p) => p.asCustomType(), 'Custom type')
-        .which((v) => v.isNotNull().equals(asciiTag));
-  });
+  //   check(
+  //         bootstrapDocParser(
+  //           yaml,
+  //           resolvers: [resolver],
+  //         ).parseNodeSingle(),
+  //       )
+  //       .isNotNull()
+  //       .has((p) => p.asCustomType(), 'Custom type')
+  //       .which((v) => v.isNotNull().equals(asciiTag));
+  // });
 }

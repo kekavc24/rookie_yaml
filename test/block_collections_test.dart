@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
@@ -113,85 +114,38 @@ key2:
       );
     });
 
-    test('Parses block map with block sequences on the same indent level as'
-        ' their explict key and value', () {
-      check(
-        bootstrapDocParser('''
-?
-- explicit key
-- next
-:
-- explicit value
-- next
+    test('Throws if duplicate keys are found', () {
+      void checkDuplicate(String yaml) {
+        check(
+          () => loadDartObject(
+            YamlSource.string(yaml),
+            throwOnMapDuplicate: true,
+          ),
+        ).throwsParserException(
+          'A block map cannot contain duplicate entries by the same key',
+        );
+      }
 
---key: value
----another: value
-''').nodeAsSimpleString(),
-      ).equals(
-        {
-          ['explicit key', 'next']: ['explicit value', 'next'],
-          '--key': 'value',
-          '---another': 'value',
-        }.toString(),
-      );
+      checkDuplicate('''
+key: value
+key: value
+''');
 
-      check(
-        bootstrapDocParser('''
-?
-- ?
-  - key
-:
-- ?
-  :
-  - value
-?
-:
-- value
-''').nodeAsSimpleString(),
-      ).equals(
-        {
-          [
-            {
-              ['key']: null,
-            },
-          ]: [
-            {
-              null: ['value'],
-            },
-          ],
-          null: ['value'],
-        }.toString(),
-      );
-    });
+      checkDuplicate('''
+key: value
+? key
+''');
 
-    test('Parses block map with block sequences on the same indent level as'
-        ' their implicit key and value', () {
-      check(
-        bootstrapDocParser('''
-implicit key:
-- value
-- next
--key: value
----another: value
-''').nodeAsSimpleString(),
-      ).equals(
-        {
-          'implicit key': ['value', 'next'],
-          '-key': 'value',
-          '---another': 'value',
-        }.toString(),
-      );
+      checkDuplicate('''
+[key]: value
+? [key]
+: value
+''');
 
-      check(
-        bootstrapDocParser('''
-:
-- value
-''').nodeAsSimpleString(),
-      ).equals(
-        {
-          null: ['value'],
-        }.toString(),
-      );
+      checkDuplicate('''
+{flow}: key
+? ? flow
+''');
     });
 
     test('Throws if dangling ":" is not inline with "?"', () {
@@ -402,6 +356,159 @@ implicit:
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException('Invalid block list entry found');
+    });
+  });
+
+  group('Special Block Sequence', () {
+    test('Variant [1]', () {
+      check(
+        bootstrapDocParser('''
+?
+- explicit key
+- next
+:
+- explicit value
+- next
+
+--key: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          ['explicit key', 'next']: ['explicit value', 'next'],
+          '--key': 'value',
+        }.toString(),
+      );
+    });
+
+    test('Variant [2]', () {
+      check(
+        bootstrapDocParser('''
+?
+- explicit key
+- next
+:
+- explicit value
+- next
+
+---another: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          ['explicit key', 'next']: ['explicit value', 'next'],
+          '---another': 'value',
+        }.toString(),
+      );
+    });
+
+    test('Variant [3]', () {
+      check(
+        bootstrapDocParser('''
+?
+- ?
+  - key
+:
+- ?
+  :
+  - value
+?
+:
+- value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          [
+            {
+              ['key']: null,
+            },
+          ]: [
+            {
+              null: ['value'],
+            },
+          ],
+          null: ['value'],
+        }.toString(),
+      );
+    });
+
+    test('Variant [4]', () {
+      check(
+        bootstrapDocParser('''
+implicit key:
+- value
+- next
+-key: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          'implicit key': ['value', 'next'],
+          '-key': 'value',
+        }.toString(),
+      );
+    });
+
+    test('Variant [5]', () {
+      check(
+        bootstrapDocParser('''
+:
+- value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          null: ['value'],
+        }.toString(),
+      );
+    });
+
+    test('Variant [6]', () {
+      check(
+        bootstrapDocParser('''
+implicit key:
+- value
+- next
+---variant: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          'implicit key': ['value', 'next'],
+          '---variant': 'value',
+        }.toString(),
+      );
+    });
+
+    test('Variant [7]', () {
+      check(
+        bootstrapDocParser('''
+implicit key: !!seq
+- value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          'implicit key': ['value'],
+        }.toString(),
+      );
+
+      check(
+        bootstrapDocParser('''
+? !!seq
+- value
+: !!seq
+- value
+''').nodeAsSimpleString(),
+      ).equals(
+        {
+          ['value']: ['value'],
+        }.toString(),
+      );
+    });
+
+    test('Variant [8]', () {
+      check(
+        () => bootstrapDocParser('''
+key:
+- value
+---not sequence
+'''),
+      ).throwsParserException('Expected to find ":" before the value');
     });
   });
 }

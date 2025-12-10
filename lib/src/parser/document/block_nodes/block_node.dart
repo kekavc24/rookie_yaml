@@ -471,7 +471,7 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         if (sequence == null) {
           throwWithRangedOffset(
             state.iterator,
-            message: 'Expected the start of a blocl/flow sequence',
+            message: 'Expected the start of a block/flow sequence',
             start: property.span.start,
             end: state.iterator.currentLineInfo.current,
           );

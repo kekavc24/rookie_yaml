@@ -47,8 +47,8 @@ ScalarDelegate<R> parseFlowScalar<R>(
       throwForCurrentLine(
         iterator,
         message:
-            'Premature document termination when parsing flow map '
-            'entry',
+            'Premature document termination after parsing a plain flow'
+            ' scalar',
       );
     } else if (indentDidChange && indentOnExit < minIndent) {
       throwWithApproximateRange(
@@ -266,7 +266,7 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
           final iterator = parserState.iterator;
           throwWithRangedOffset(
             iterator,
-            message: 'Explicit compact flow entry cannot have properties',
+            message: 'An explicit compact flow entry cannot have properties',
             start: property.span.start,
             end: iterator.currentLineInfo.current,
           );

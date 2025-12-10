@@ -5,6 +5,7 @@ import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
+import 'helpers/exception_helpers.dart';
 import 'helpers/model_helpers.dart';
 
 void main() {
@@ -309,5 +310,148 @@ void main() {
     //               ..has((v) => v[integer], 'Integer key').isNotNull(),
     //           );
     //     });
+  });
+
+  group('Sequences', () {
+    test('Variant [1]', () {
+      check(
+        bootstrapDocParser('''
+!!seq
+- sequence
+''').parseNodeSingle(),
+      ).isNotNull().isA<Sequence>().hasTag(
+        yamlGlobalTag,
+        suffix: sequenceTag,
+      );
+
+      check(
+        bootstrapDocParser('''
+!!seq [flow]
+''').parseNodeSingle(),
+      ).isNotNull().isA<Sequence>().hasTag(
+        yamlGlobalTag,
+        suffix: sequenceTag,
+      );
+    });
+
+    test('Variant [2]', () {
+      check(
+          bootstrapDocParser('''
+- !!seq
+  - block
+''').parseNodeSingle(),
+        ).isNotNull().isA<Sequence>()
+        ..hasTag(
+          yamlGlobalTag,
+          suffix: sequenceTag,
+        )
+        ..which(
+          (s) => s.first.isA<Sequence>()
+            ..hasTag(
+              yamlGlobalTag,
+              suffix: sequenceTag,
+            ),
+        );
+    });
+
+    test('Variant [3]', () {
+      check(
+          bootstrapDocParser('[ !!seq [flow] ]').parseNodeSingle(),
+        ).isNotNull().isA<Sequence>()
+        ..hasTag(
+          yamlGlobalTag,
+          suffix: sequenceTag,
+        )
+        ..which(
+          (s) => s.first.isA<Sequence>()
+            ..hasTag(
+              yamlGlobalTag,
+              suffix: sequenceTag,
+            ),
+        );
+    });
+  });
+
+  group('Mappings', () {
+    test('Variant [1]', () {
+      check(
+        bootstrapDocParser('''
+!!map
+key: value
+''').parseNodeSingle(),
+      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+    });
+
+    test('Variant [2]', () {
+      check(
+        bootstrapDocParser('''
+!!map
+: value
+''').parseNodeSingle(),
+      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+    });
+
+    test('Variant [3]', () {
+      check(
+        bootstrapDocParser('''
+!!map
+? key
+''').parseNodeSingle(),
+      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+    });
+
+    test('Variant [4]', () {
+      check(
+            bootstrapDocParser('''
+- &anchor value
+- !!map
+  *anchor : value
+''').parseNodeSingle(),
+          )
+          .isNotNull()
+          .isA<Sequence>()
+          .has((s) => s[1], 'Block of alias key')
+          .isA<Mapping>()
+          .hasTag(yamlGlobalTag, suffix: mappingTag);
+    });
+
+    test('Variant [5]', () {
+      check(
+        bootstrapDocParser('!!map {flow: map}').parseNodeSingle(),
+      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+    });
+  });
+
+  group('Exceptions', () {
+    test('Invalid scalar', () {
+      check(
+        () => bootstrapDocParser('!!str {  }'),
+      ).throwsParserException('Expected the start of a valid scalar');
+    });
+
+    test('Invalid sequence: Flow variant', () {
+      check(
+        () => bootstrapDocParser('[ !!seq value ]'),
+      ).throwsParserException('Expected the flow delimiter: "["');
+    });
+
+    test('Invalid sequence: Block variant', () {
+      check(
+        () => bootstrapDocParser('!!seq value'),
+      ).throwsParserException('Expected the start of a block/flow sequence');
+    });
+
+    test('Invalid map: Flow variant', () {
+      check(
+        () => bootstrapDocParser('[ !!map value ]'),
+      ).throwsParserException('Expected the flow delimiter: "{"');
+    });
+
+    test('Invalid map: Block variant', () {
+      check(() => bootstrapDocParser('!!map value')).throwsParserException(
+        'Expected an (implied) block map with property '
+        '"!<tag:yaml.org,2002:map>"',
+      );
+    });
   });
 }

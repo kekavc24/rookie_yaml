@@ -179,7 +179,234 @@ $seqTag
           'Trailing elements',
         ).every((e) => e.hasTag(yamlGlobalTag, suffix: mappingTag));
     });
+  });
 
+  group('Anchors & alias', () {
+    test('Parses simple anchor and alias', () {
+      const yaml = '''
+&a key: &b [ &c value ]
+
+*b : &d { *a : *b }
+
+*c :
+  &e
+  - ? *a
+    : *b
+  - *c
+
+*d : *e
+''';
+
+      check(
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).equals(
+        {
+          'key': ['value'],
+
+          ['value']: {
+            'key': ['value'],
+          },
+
+          'value': [
+            {
+              'key': ['value'],
+            },
+            'value',
+          ],
+
+          {
+            'key': ['value'],
+          }: [
+            {
+              'key': ['value'],
+            },
+            'value',
+          ],
+        }.toString(),
+      );
+    });
+
+    test('References flow key before entire entry is parsed', () {
+      const yaml = '''
+{
+  &flow-key key: *flow-key ,
+
+  &seq-key another: [
+    *flow-key ,
+
+    &multi-line-entry
+    {key: *seq-key} ,
+
+    *multi-line-entry ,
+
+    &for-key key: *for-key
+  ],
+
+  *multi-line-entry
+}
+''';
+
+      check(
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).equals(
+        {
+          'key': 'key',
+          'another': [
+            'key',
+            {'key': 'another'},
+            {'key': 'another'},
+            {'key': 'key'},
+          ],
+          {'key': 'another'}: null,
+        }.toString(),
+      );
+    });
+
+    test('References block key before entire entry is parsed', () {
+      const yaml = '''
+&key key: *key
+
+? &another another
+: *another
+''';
+
+      check(
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).equals(
+        {'key': 'key', 'another': 'another'}.toString(),
+      );
+    });
+
+    test('Parses trailing flow sequence aliases', () {
+      const yaml = '''
+[
+  &anchor value,
+
+  [ *anchor ], # Single trailing
+  [ *anchor , *anchor ],
+  *anchor
+]
+''';
+
+      check(
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).equals(
+        [
+          'value',
+          ['value'],
+          ['value', 'value'],
+          'value',
+        ].toString(),
+      );
+    });
+
+    test('Parses compact block map with alias as key in block sequence', () {
+      const yaml = '''
+- &anchor value
+- *anchor
+- *anchor : *anchor
+''';
+
+      check(
+        bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).equals(
+        [
+          'value',
+          'value',
+          {'value': 'value'},
+        ].toString(),
+      );
+    });
+  });
+
+  group(
+    'Uses the minimum indent if a node is less indented than '
+    'its properties',
+    () {
+      test('Variant [1]', () {
+        check(
+          bootstrapDocParser('''
+-     !too-indented
+  - hello
+''').nodeAsSimpleString(),
+        ).equals(
+          [
+            ['hello'],
+          ].toString(),
+        );
+      });
+
+      test('Variant [2]', () {
+        check(
+          bootstrapDocParser('''
+?     !too-indented
+  - hello
+:             !even-further-indented
+  - hello
+''').nodeAsSimpleString(),
+        ).equals(
+          {
+            ['hello']: ['hello'],
+          }.toString(),
+        );
+      });
+
+      test('Variant [3]', () {
+        check(
+          bootstrapDocParser('''
+implicit:     !even-in-implicit
+  - hello
+''').nodeAsSimpleString(),
+        ).equals(
+          {
+            'implicit': ['hello'],
+          }.toString(),
+        );
+      });
+    },
+  );
+
+  group('Attempts to compose a block map if multiple multiline properties '
+      'are seen', () {
+    test('Variant [1]', () {
+      check(
+        bootstrapDocParser('''
+&must-be-map
+&definitely key: value
+''').nodeAsSimpleString(),
+      ).equals(
+        {'key': 'value'}.toString(),
+      );
+    });
+
+    test('Variant [2]', () {
+      check(
+        bootstrapDocParser('''
+- &anchor key
+- &map
+  *anchor : value
+''').nodeAsSimpleString(),
+      ).equals(
+        [
+          'key',
+          {'key': 'value'},
+        ].toString(),
+      );
+    });
+
+    test('Variant [3]: Throws if impossible', () {
+      check(
+        () => bootstrapDocParser('''
+&throw
+&not key
+'''),
+      ).throwsParserException(
+        'Expected an (implied) block map with property "throw"',
+      );
+    });
+  });
+
+  group('Exceptions', () {
     test('Throws when an unknown secondary tag is used', () {
       final tag = '!!unknown-tag';
       final yaml = '$tag ignored :)';
@@ -337,144 +564,6 @@ implicit-2: is-an-error}
 ''').parseNodeSingle(),
       ).throwsParserException('Expected a "- " at the start of the next entry');
     });
-  });
-
-  group('Anchors & alias', () {
-    test('Parses simple anchor and alias', () {
-      const yaml = '''
-&a key: &b [ &c value ]
-
-*b : &d { *a : *b }
-
-*c :
-  &e
-  - ? *a
-    : *b
-  - *c
-
-*d : *e
-''';
-
-      check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals(
-        {
-          'key': ['value'],
-
-          ['value']: {
-            'key': ['value'],
-          },
-
-          'value': [
-            {
-              'key': ['value'],
-            },
-            'value',
-          ],
-
-          {
-            'key': ['value'],
-          }: [
-            {
-              'key': ['value'],
-            },
-            'value',
-          ],
-        }.toString(),
-      );
-    });
-
-    test('References flow key before entire entry is parsed', () {
-      const yaml = '''
-{
-  &flow-key key: *flow-key ,
-
-  &seq-key another: [
-    *flow-key ,
-
-    &multi-line-entry
-    {key: *seq-key} ,
-
-    *multi-line-entry ,
-
-    &for-key key: *for-key
-  ],
-
-  *multi-line-entry
-}
-''';
-
-      check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals(
-        {
-          'key': 'key',
-          'another': [
-            'key',
-            {'key': 'another'},
-            {'key': 'another'},
-            {'key': 'key'},
-          ],
-          {'key': 'another'}: null,
-        }.toString(),
-      );
-    });
-
-    test('References block key before entire entry is parsed', () {
-      const yaml = '''
-&key key: *key
-
-? &another another
-: *another
-''';
-
-      check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals(
-        {'key': 'key', 'another': 'another'}.toString(),
-      );
-    });
-
-    test('Parses trailing flow sequence aliases', () {
-      const yaml = '''
-[
-  &anchor value,
-
-  [ *anchor ], # Single trailing
-  [ *anchor , *anchor ],
-  *anchor
-]
-''';
-
-      check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals(
-        [
-          'value',
-          ['value'],
-          ['value', 'value'],
-          'value',
-        ].toString(),
-      );
-    });
-
-    test('Parses compact block map with alias as key in block sequence', () {
-      const yaml = '''
-- &anchor value
-- *anchor
-- *anchor : *anchor
-''';
-
-      check(
-        bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals(
-        [
-          'value',
-          'value',
-          {'value': 'value'},
-        ].toString(),
-      );
-    });
 
     test('Throws when non-existent alias is used', () {
       const alias = 'value';
@@ -495,6 +584,63 @@ implicit-2: is-an-error}
       check(
         () => bootstrapDocParser(yaml).parseNodeSingle(),
       ).throwsParserException('Invalid flow collection state. Expected "]"');
+    });
+
+    test('Throws when a multiline property is less indented than its '
+        'block node', () {
+      const message =
+          'A block node cannot be indented more that its'
+          ' properties';
+
+      for (final parent in const ['?', '-']) {
+        check(
+          () => bootstrapDocParser('''
+$parent 
+  &invalid
+    - value
+'''),
+        ).throwsParserException(message);
+
+        check(
+          () => bootstrapDocParser('''
+$parent
+  &invalid
+    ? value
+'''),
+        ).throwsParserException(message);
+
+        check(
+          () => bootstrapDocParser('''
+$parent
+  &invalid
+    > 
+     value
+'''),
+        ).throwsParserException(message);
+
+        check(
+          () => bootstrapDocParser('''
+$parent
+  &invalid
+    | 
+      value
+'''),
+        ).throwsParserException(message);
+      }
+    });
+
+    test("Throws when block node has an anchor or tag after an alias", () {
+      check(
+        () => bootstrapDocParser('''
+key:
+  *alias
+  &anchor
+'''),
+      ).throwsParserException(
+        'Invalid block node state. Duplicate properties implied the'
+        ' start of a block map but a block map cannot be composed in the'
+        ' current state',
+      );
     });
   });
 }

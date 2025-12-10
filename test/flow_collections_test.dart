@@ -89,57 +89,6 @@ void main() {
         }.toString(),
       );
     });
-
-    test("Throws if flow map doesn't start/end with map delimiters", () {
-      check(
-        () => bootstrapDocParser('}').nodeAsSimpleString(),
-      ).throwsParserException(
-        'Invalid flow node state. Expected "{" or "]"',
-      );
-
-      check(
-        () => bootstrapDocParser('{').nodeAsSimpleString(),
-      ).throwsParserException(
-        'Invalid flow collection state. Expected to find: "}"',
-      );
-    });
-
-    test('Throws if duplicate keys are found', () {
-      const yaml = '{key: value, key: value}';
-
-      check(
-        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).throwsParserException(
-        'A flow map cannot contain duplicate entries by the same key',
-      );
-    });
-
-    test('Throws if "," is declared before key', () {
-      const err = 'Invalid flow collection state. Expected "}"';
-
-      check(
-        () => bootstrapDocParser('{,}').nodeAsSimpleString(),
-      ).throwsParserException(err);
-
-      check(
-        () => bootstrapDocParser('{key,,}').nodeAsSimpleString(),
-      ).throwsParserException(err);
-    });
-
-    test("Throws if implicit key spans multiple lines", () {
-      check(
-        () => bootstrapDocParser(
-          '{'
-          'implicit-key-not-inline'
-          '\n splits-here'
-          ': value'
-          '}',
-        ).nodeAsSimpleString(),
-      ).throwsParserException(
-        'Expected a next flow entry indicator "," or a map value indicator ":" '
-        'or a terminating delimiter "}"',
-      );
-    });
   });
 
   group('Flow Sequences', () {
@@ -178,6 +127,67 @@ implicit: pair,
         ].toString(),
       );
     });
+  });
+
+  group('Exceptions', () {
+    test("Throws if flow map doesn't start/end with map delimiters", () {
+      check(
+        () => bootstrapDocParser('{ !key ? key }').nodeAsSimpleString(),
+      ).throwsParserException(
+        'An explicit compact flow entry cannot have properties',
+      );
+    });
+
+    test("Throws if flow map doesn't start/end with map delimiters", () {
+      check(
+        () => bootstrapDocParser('}').nodeAsSimpleString(),
+      ).throwsParserException(
+        'Invalid flow node state. Expected "{" or "]"',
+      );
+
+      check(
+        () => bootstrapDocParser('{').nodeAsSimpleString(),
+      ).throwsParserException(
+        'Invalid flow collection state. Expected to find: "}"',
+      );
+    });
+
+    test('Throws if duplicate keys are found', () {
+      check(
+        () => bootstrapDocParser(
+          '{key: value, key: value}',
+        ).nodeAsSimpleString(),
+      ).throwsParserException(
+        'A flow map cannot contain duplicate entries by the same key',
+      );
+    });
+
+    test('Throws if "," is declared before key', () {
+      const err = 'Invalid flow collection state. Expected "}"';
+
+      check(
+        () => bootstrapDocParser('{,}').nodeAsSimpleString(),
+      ).throwsParserException(err);
+
+      check(
+        () => bootstrapDocParser('{key,,}').nodeAsSimpleString(),
+      ).throwsParserException(err);
+    });
+
+    test("Throws if implicit key spans multiple lines", () {
+      check(
+        () => bootstrapDocParser(
+          '{'
+          'implicit-key-not-inline'
+          '\n splits-here'
+          ': value'
+          '}',
+        ).nodeAsSimpleString(),
+      ).throwsParserException(
+        'Expected a next flow entry indicator "," or a map value indicator ":" '
+        'or a terminating delimiter "}"',
+      );
+    });
 
     test(
       "Throws if flow sequence doesn't start/end with sequence delimiters",
@@ -195,15 +205,71 @@ implicit: pair,
     );
 
     test('Throws if "," is declared before entry', () {
-      check(
-        () => bootstrapDocParser('[,]').nodeAsSimpleString(),
-      ).throwsParserException('Invalid flow collection state. Expected "]"');
+      const error = 'Invalid flow collection state. Expected "]"';
 
       check(
-        () => bootstrapDocParser(
-          '[value,,]',
-        ).nodeAsSimpleString(),
-      ).throwsParserException('Invalid flow collection state. Expected "]"');
+        () => bootstrapDocParser('[,]').nodeAsSimpleString(),
+      ).throwsParserException(error);
+
+      check(
+        () => bootstrapDocParser('[value,,]').nodeAsSimpleString(),
+      ).throwsParserException(error);
     });
+
+    test(
+      'Flow collection in block: Throws if indent is less than minimum'
+      ' allowed',
+      () {
+        check(
+          () => bootstrapDocParser('''
+- - [
+      plain
+  scalar
+   ]
+          ''').parseNodeSingle(),
+        ).throwsParserException(
+          'Indent change detected when parsing plain scalar. Expected'
+          ' 3 space(s) but found 2 space(s)',
+        );
+      },
+    );
+
+    test('Throws when document end chars are used in a flow collection', () {
+      const error =
+          'Premature document termination after parsing a plain flow scalar';
+
+      check(
+        () => bootstrapDocParser('''
+{ ? plain
+...
+}
+          ''').parseNodeSingle(),
+      ).throwsParserException(error);
+
+      check(
+        () => bootstrapDocParser('''
+[ plain
+...
+]
+          ''').parseNodeSingle(),
+      ).throwsParserException(error);
+    });
+
+    test(
+      'Throws when block nodes are used in flow collections',
+      () {
+        for (final char in const ['>', '|', '-']) {
+          check(
+            () => bootstrapDocParser('''
+[ $char
+    block
+]
+          ''').parseNodeSingle(),
+          ).throwsParserException(
+            'Block nodes are not allowed in flow collections',
+          );
+        }
+      },
+    );
   });
 }
