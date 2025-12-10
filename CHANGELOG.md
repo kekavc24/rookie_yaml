@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.1
+
+This release focuses on adding support for more YAML features and the internal test coverage making it a solid alternative to existing YAML parsers.
+
+`breaking` (temporary):
+  - Dart values can no longer be used as keys when a parsed `YamlSourceNode` is a `Mapping`.
+
+`feat`:
+  - Added a plausible start offset of the error to `YamlParserException`.
+  - Improved support for block sequences declared on the same level as their block map key.
+
+`fix`:
+  - Ensures verbatim tags begin with the `tag:` uri prefix if they are not declared as local tags.
+  - Fixes an issue where document end or directive end markers were parsed as a plain scalar when the document was empty.
+  - Fixes an issue with leading unfoldable line break in `ScalarStyle.folded`.
+  - Flow scalars can now recover when invalid document end/directive end markers are present.
+
 ## 0.3.0
 
 This release bring extensive improvements to the recursive parsing strategy. The parser can now handle a wide variety of edge cases with regards to block nodes and their properties. The recursive parsing strategy has been modelled to match the official YAML grammar and syntax.
