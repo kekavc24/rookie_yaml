@@ -129,7 +129,7 @@ ParserEvent inferNextEvent(
                 charAfter.isNotNullAnd((c) => c.isFlowDelimiter())) =>
       FlowCollectionEvent.startEntryValue,
 
-    blockSequenceEntry when canBeSeparation && isBlockContext =>
+    blockSequenceEntry when canBeSeparation =>
       BlockCollectionEvent.startBlockListEntry,
 
     mappingKey when isBlockContext && canBeSeparation =>
