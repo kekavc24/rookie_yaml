@@ -98,13 +98,6 @@ sealed class YamlSourceNode extends CompactYamlNode {
 ///
 /// {@category resolvers}
 extension CustomResolved on YamlSourceNode {
-  /// Returns a custom resolved format if any [NodeResolver] is present. The
-  /// [YamlSourceNode] is formatted each time this method is called.
-  T? asCustomType<T>() => switch (tag) {
-    NodeResolver(:final resolver) => resolver(this) as T,
-    _ => null,
-  };
-
   /// Casts a generic [YamlSourceNode] to a valid (and known) subtype
   T castTo<T extends YamlSourceNode>() => this as T;
 }

@@ -72,7 +72,7 @@ resolvedTagInfo(ResolvedTag tag) {
   }
 
   final nodeTag = switch (tag) {
-    TypeResolverTag(:final resolvedTag) => resolvedTag,
+    ContentResolver(:final resolvedTag) => resolvedTag,
     _ => tag as NodeTag,
   };
 
