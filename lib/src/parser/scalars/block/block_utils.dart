@@ -52,7 +52,8 @@ Never _charNotAllowedException(SourceIterator iterator) =>
 /// [ChompingIndicator.keep] - no trailing line break is trimmed.
 void _chompLineBreaks(
   ChompingIndicator indicator, {
-  required ScalarBuffer contentBuffer,
+  required CharWriter buffer,
+  required bool wroteToBuffer,
   required List<int> lineBreaks,
 }) {
   // Exclude line breaks from content by default
@@ -71,12 +72,12 @@ void _chompLineBreaks(
     /// %20a%20block%20scalar%20consists%20only%20of%20empty%20lines%2C%20
     /// then%20these%20lines%20are%20considered%20as%20trailing%20lines%20and
     /// %20hence%20are%20affected%20by%20chomping"
-    if (contentBuffer.isEmpty) return;
+    if (!wroteToBuffer) return;
     countToWrite = 1; // Trailing line breaks after final one are ignored
   }
 
   /// Keep all trailing empty lines after for `keep` indicator
-  contentBuffer.writeAll(lineBreaks.take(countToWrite));
+  bufferHelper(lineBreaks.take(countToWrite), buffer);
 }
 
 /// Skips the carriage return `\r` in a `\r\n` combination and returns the
@@ -95,8 +96,9 @@ int skipCrIfPossible(int lineBreak, {required SourceIterator iterator}) {
 /// Folds line breaks only if [isLiteral] and [lastNonEmptyWasIndented] are `
 /// false`. Line breaks between indented lines are never folded.
 void _maybeFoldLF(
-  ScalarBuffer contentBuffer, {
+  CharWriter buffer, {
   required bool isLiteral,
+  required bool wroteToBuffer,
   required bool lastNonEmptyWasIndented,
   required List<int> lineBreaks,
 }) {
@@ -116,11 +118,11 @@ void _maybeFoldLF(
     /// However, if followed by a `\n`, `YAML` implies it should be folded from
     /// the docs.
     toWrite = lineBreaks.length == 1
-        ? [if (contentBuffer.isNotEmpty) space]
+        ? [if (wroteToBuffer) space]
         : lineBreaks.skip(1);
   }
 
-  contentBuffer.writeAll(toWrite);
+  bufferHelper(toWrite, buffer);
   lineBreaks.clear();
 }
 
@@ -129,7 +131,7 @@ void _maybeFoldLF(
 /// are just white space characters.
 ({int inferredIndent, bool isEmptyLine, bool startsWithTab}) _inferIndent(
   SourceIterator iterator, {
-  required ScalarBuffer contentBuffer,
+  required CharWriter buffer,
   required int scannedIndent,
   required void Function() callBeforeTabWrite,
 }) {
@@ -159,7 +161,7 @@ void _maybeFoldLF(
       iterator,
       includeCharAtCursor: false,
       mapper: (rc) => rc,
-      onMapped: contentBuffer.writeChar,
+      onMapped: buffer,
       stopIf: (_, possibleNext) => !possibleNext.isWhiteSpace(),
     );
 

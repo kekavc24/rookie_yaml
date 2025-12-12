@@ -19,10 +19,7 @@ void throwIfDocEndInQuoted(
 }) {
   final start = iterator.currentLineInfo.current;
 
-  if (checkForDocumentMarkers(
-        iterator,
-        onMissing: onDocMissing,
-      )
+  if (checkForDocumentMarkers(iterator, onMissing: onDocMissing)
       case DocumentMarker.directiveEnd || DocumentMarker.documentEnd) {
     throwWithRangedOffset(
       iterator,
@@ -41,12 +38,12 @@ void throwIfDocEndInQuoted(
 /// See [escaped linebreak](https://yaml.org/spec/1.2.2/#731-double-quoted-style:~:text=In%20a%20multi,at%20arbitrary%20positions.)
 ({bool indentDidChange, int indentOnExit, bool exit}) _ignoreEscapedLineBreak(
   SourceIterator iterator, {
-  required ScalarBuffer buffer,
+  required CharWriter scalarBuffer,
   required List<int> bufferedWhitespace,
   required int minIndent,
 }) {
   do {
-    buffer.writeAll(bufferedWhitespace);
+    bufferHelper(bufferedWhitespace, scalarBuffer);
     bufferedWhitespace.clear();
 
     // Skip to linebreak.
@@ -90,7 +87,7 @@ void throwIfDocEndInQuoted(
 /// scalar.
 bool foldQuotedFlowScalar(
   SourceIterator iterator, {
-  required ScalarBuffer scalarBuffer,
+  required CharWriter scalarBuffer,
   required int minIndent,
   required bool isImplicit,
   bool resumeOnEscapedLineBreak = false,
@@ -125,7 +122,7 @@ bool foldQuotedFlowScalar(
 /// with [ScalarStyle.doubleQuoted] which allows `\n` to be escaped.
 FoldFlowInfo foldFlowScalar(
   SourceIterator iterator, {
-  required ScalarBuffer scalarBuffer,
+  required CharWriter scalarBuffer,
   required int minIndent,
   required bool isImplicit,
   bool resumeOnEscapedLineBreak = false,
@@ -147,10 +144,9 @@ FoldFlowInfo foldFlowScalar(
           var lastWasLineBreak = false;
 
           void foldCurrent(int? current) {
-            scalarBuffer.writeChar(
+            scalarBuffer(
               lastWasLineBreak || current != null ? lineFeed : space,
             );
-
             bufferedWhitespace.clear();
           }
 
@@ -243,7 +239,7 @@ FoldFlowInfo foldFlowScalar(
 
           // Match " :" or " #". These assumes the plain scalar is a key.
           if (matchesPlain(iterator.current)) {
-            scalarBuffer.writeAll(bufferedWhitespace);
+            bufferHelper(bufferedWhitespace, scalarBuffer);
             break folding;
           }
         }
@@ -261,7 +257,7 @@ FoldFlowInfo foldFlowScalar(
               :exit,
             ) = _ignoreEscapedLineBreak(
               iterator,
-              buffer: scalarBuffer,
+              scalarBuffer: scalarBuffer,
               bufferedWhitespace: bufferedWhitespace,
               minIndent: minIndent,
             );
@@ -277,7 +273,7 @@ FoldFlowInfo foldFlowScalar(
             break;
           }
 
-          scalarBuffer.writeAll(bufferedWhitespace);
+          bufferHelper(bufferedWhitespace, scalarBuffer);
           break folding;
         }
     }

@@ -4,15 +4,14 @@ import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-/// Characters that must not be parsed as the first character in a plain scalar
+/// Characters that must not be parsed as the first character in a plain scalar.
 final _mustNotBeFirst = <int>{
   mappingKey,
   mappingValue,
   blockSequenceEntry,
 };
 
-/// Characters that disrupt normal buffering of characters that have no
-/// meaning in/affect a plain scalar.
+/// Characters that disrupt normal buffering of characters in a plain scalar.
 final _delimiters = <int>{
   lineFeed,
   carriageReturn,
@@ -22,9 +21,12 @@ final _delimiters = <int>{
   comment,
 };
 
-const _style = ScalarStyle.plain;
-
-/// Parses a `plain` scalar
+/// Parses a scalar with [ScalarStyle.plain].
+///
+/// This is the parser's low level implementation for parsing a double quoted
+/// scalar which returns a [PreScalar]. This is intentional. The delegate that
+/// will be assigned to this function will contain more context on how this
+/// scalar will be resolved.
 PreScalar? parsePlain(
   SourceIterator iterator, {
   required int indent,
@@ -32,50 +34,72 @@ PreScalar? parsePlain(
   required bool isImplicit,
   required bool isInFlowContext,
 }) {
-  var greedyChars = charsOnGreedy;
-  var indentOnExit = seamlessIndentMarker;
+  final buffer = ScalarBuffer();
 
-  /// We need to ensure our chunking is definite to prevent unnecessary cycles
-  /// wasted on checking if a plain scalar was a:
-  ///   - Explicit key indicated by `?`
-  ///   - Block entry indicated by `-`
-  ///   - Maps to a value `:`
-  ///
-  /// Mapping to a value using `:` can be rechecked within the loop as YAML
-  /// strictly emphasizes this must not happen within scalar. If so, assume
-  /// it's a key.
-  ///
-  /// See:
-  /// https://yaml.org/spec/1.2.2/#733-plain-style:~:text=Plain%20scalars%20must%20not%20begin%20with%20most%20indicators%2C%20as%20this%20would%20cause%20ambiguity%20with%20other%20YAML%20constructs.%20However%2C%20the%20%E2%80%9C%3A%E2%80%9D%2C%20%E2%80%9C%3F%E2%80%9D%20and%20%E2%80%9C%2D%E2%80%9D%20indicators%20may%20be%20used%20as%20the%20first%20character%20if%20followed%20by%20a%20non%2Dspace%20%E2%80%9Csafe%E2%80%9D%20character%2C%20as%20this%20causes%20no%20ambiguity.
-  final firstChar = iterator.current;
+  return plainParser(
+    iterator,
+    buffer: buffer.writeChar,
+    indent: indent,
+    charsOnGreedy: charsOnGreedy,
+    isImplicit: isImplicit,
+    isInFlowContext: isInFlowContext,
+    onParsingComplete: (info) => (
+      // Cannot have leading and trailing whitespace (line breaks included).
+      content: buffer.bufferedContent().trim(),
+      scalarInfo: info,
+      wroteLineBreak: buffer.wroteLineBreak,
+    ),
+  );
+}
 
-  if (greedyChars.isEmpty && _mustNotBeFirst.contains(firstChar)) {
-    if (iterator.peekNextChar() case space || tab) {
-      // Intentionally expressive with if statement! We eval once.
-      if (firstChar == mappingValue) {
-        return (
-          content: '',
-          scalarStyle: _style,
-          scalarIndent: indent,
-          docMarkerType: DocumentMarker.none,
-          hasLineBreak: false,
-          wroteLineBreak: false,
-          indentDidChange: false,
-          indentOnExit: seamlessIndentMarker,
-          end: iterator.currentLineInfo.current,
-        );
-      }
-
-      // Return null for the other two indicators
-      return null;
-    }
+/// Parses the plain scalar. [charsOnGreedy] may represent the leading
+/// `--` of a directive end marker that were consumed by the top level parser as
+/// it tried to parse a [DocumentMarker.directiveEnd] production. This is
+/// because a plain scalar has no explicit markers that signifiy its start or
+/// termination. It relies on indentation like a block scalar.
+///
+/// Unlike other parse functions for a scalar, this may return `null` if the
+/// top level parser did not handle the leading `(? | -) + (s-whitespace)`
+/// production correctly.
+///
+/// Calls [buffer] for every byte/utf code unit that it reads as valid content
+/// from the [iterator]. Always calls [onParsingComplete] and returns the
+/// object [T] after the closing quote has been skipped.
+T? plainParser<T>(
+  SourceIterator iterator, {
+  required CharWriter buffer,
+  required int indent,
+  required String charsOnGreedy,
+  required bool isImplicit,
+  required bool isInFlowContext,
+  required OnParsedScalar<T> onParsingComplete,
+}) {
+  //  Ensure we don't have a `(? | - | : ) + (s-whitespace)` production.
+  if (charsOnGreedy.isEmpty &&
+      _mustNotBeFirst.contains(iterator.current) &&
+      iterator.peekNextChar().isNotNullAnd((c) => c.isWhiteSpace())) {
+    return iterator.current != mappingValue
+        ? null
+        : onParsingComplete(
+            (
+              scalarStyle: ScalarStyle.plain,
+              scalarIndent: indent,
+              docMarkerType: DocumentMarker.none,
+              hasLineBreak: false,
+              indentOnExit: seamlessIndentMarker,
+              indentDidChange: false,
+              end: iterator.currentLineInfo.current,
+            ),
+          );
   }
 
-  final buffer = ScalarBuffer(StringBuffer(greedyChars));
+  // Will always be empty or '--' or '---' but not a directive end marker.
+  bufferHelper(charsOnGreedy.codeUnits, buffer);
 
   var docMarkerType = DocumentMarker.none;
   var foundLineBreak = false;
-  RuneOffset? end;
+  var end = iterator.currentLineInfo.current;
+  var indentOnExit = seamlessIndentMarker;
 
   chunker:
   while (!iterator.isEOF) {
@@ -95,7 +119,7 @@ PreScalar? parsePlain(
 
           docMarkerType = checkForDocumentMarkers(
             iterator,
-            onMissing: (greedy) => buffer.writeAll(greedy),
+            onMissing: (greedy) => bufferHelper(greedy, buffer),
           );
 
           if (docMarkerType.stopIfParsingDoc) {
@@ -158,23 +182,12 @@ PreScalar? parsePlain(
 
       default:
         {
-          /// Compensate for any comments that were extracted before this. We
-          /// want to ensure we fold based on the last line break of the
-          /// comment(s) we extracted.
-          ///
-          ///
-          // if (extractedComment) {
-          //   buffer.write(WhiteSpace.space.string);
-          //   extractedComment = false;
-          // }
-
-          buffer.writeChar(char);
+          buffer(char);
 
           final OnChunk(:sourceEnded) = iterateAndChunk(
             iterator,
-            onChar: buffer.writeChar,
-            exitIf: (_, curr) =>
-                _delimiters.contains(curr) || curr.isFlowDelimiter(),
+            onChar: buffer,
+            exitIf: (_, c) => _delimiters.contains(c) || c.isFlowDelimiter(),
           );
 
           if (sourceEnded) break chunker;
@@ -182,16 +195,13 @@ PreScalar? parsePlain(
     }
   }
 
-  return (
-    // Cannot have leading and trailing whitespace (line breaks included).
-    content: buffer.bufferedContent().trim(),
-    scalarStyle: _style,
+  return onParsingComplete((
+    scalarStyle: ScalarStyle.plain,
     scalarIndent: indent,
     docMarkerType: docMarkerType,
     indentOnExit: indentOnExit,
     hasLineBreak: foundLineBreak,
-    wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: indentOnExit != seamlessIndentMarker,
-    end: end ?? iterator.currentLineInfo.current,
-  );
+    end: end,
+  ));
 }

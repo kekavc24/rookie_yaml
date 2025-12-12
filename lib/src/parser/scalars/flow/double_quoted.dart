@@ -24,11 +24,43 @@ Never _closingQuoteException(
   charCountBefore: iterator.current.isLineBreak() ? 1 : 0,
 );
 
-/// Parses a `double quoted` scalar
+/// Parses a scalar with [ScalarStyle.doubleQuoted].
+///
+/// This is the parser's low level implementation for parsing a double quoted
+/// scalar which returns a [PreScalar]. This is intentional. The delegate that
+/// will be assigned to this function will contain more context on how this
+/// scalar will be resolved.
 PreScalar parseDoubleQuoted(
   SourceIterator iterator, {
   required int indent,
   required bool isImplicit,
+}) {
+  final buffer = ScalarBuffer();
+
+  return doubleQuotedParser<PreScalar>(
+    iterator,
+    buffer: buffer.writeChar,
+    indent: indent,
+    isImplicit: isImplicit,
+    onParsingComplete: (info) => (
+      content: buffer.bufferedContent(),
+      scalarInfo: info,
+      wroteLineBreak: buffer.wroteLineBreak,
+    ),
+  );
+}
+
+/// Parses the double quoted scalar.
+///
+/// Calls [buffer] for every byte/utf code unit that it reads as valid content
+/// from the [iterator]. Always calls [onParsingComplete] and returns the
+/// object [T] after the closing quote has been skipped.
+T doubleQuotedParser<T>(
+  SourceIterator iterator, {
+  required CharWriter buffer,
+  required int indent,
+  required bool isImplicit,
+  required OnParsedScalar<T> onParsingComplete,
 }) {
   if (iterator.current != doubleQuote) {
     _doubleQuoteException(iterator, 'Expected an opening double quote (")');
@@ -36,11 +68,9 @@ PreScalar parseDoubleQuoted(
 
   var quoteCount = 1;
   iterator.nextChar();
-
-  final buffer = ScalarBuffer();
   var foundLineBreak = false;
 
-  /// Code reusability in loop
+  // Inject variables directly
   void foldDoubleQuoted() {
     foundLineBreak =
         foldQuotedFlowScalar(
@@ -86,7 +116,7 @@ PreScalar parseDoubleQuoted(
         {
           throwIfDocEndInQuoted(
             iterator,
-            onDocMissing: buffer.writeAll,
+            onDocMissing: (missed) => bufferHelper(missed, buffer),
             quoteChar: doubleQuote,
           );
         }
@@ -97,11 +127,11 @@ PreScalar parseDoubleQuoted(
 
       default:
         {
-          buffer.writeChar(current);
+          buffer(current);
 
           final OnChunk(:sourceEnded) = iterateAndChunk(
             iterator,
-            onChar: buffer.writeChar,
+            onChar: buffer,
             exitIf: (_, current) =>
                 current.isWhiteSpace() ||
                 current.isLineBreak() ||
@@ -120,23 +150,23 @@ PreScalar parseDoubleQuoted(
     _closingQuoteException(iterator);
   }
 
-  return (
-    content: buffer.bufferedContent(),
-    scalarStyle: ScalarStyle.doubleQuoted,
-    scalarIndent: indent,
-    docMarkerType: DocumentMarker.none,
-    hasLineBreak: foundLineBreak,
-    wroteLineBreak: buffer.wroteLineBreak,
-    indentDidChange: false,
-    indentOnExit: seamlessIndentMarker,
-    end: iterator.currentLineInfo.current,
+  return onParsingComplete(
+    (
+      scalarStyle: ScalarStyle.doubleQuoted,
+      scalarIndent: indent,
+      docMarkerType: DocumentMarker.none,
+      hasLineBreak: foundLineBreak,
+      indentDidChange: false,
+      indentOnExit: seamlessIndentMarker,
+      end: iterator.currentLineInfo.current,
+    ),
   );
 }
 
 /// Parses an escaped character present in a double quoted string.
 void _parseEscaped(
   SourceIterator iterator, {
-  required ScalarBuffer buffer,
+  required CharWriter buffer,
 }) {
   iterator.nextChar();
 
@@ -191,10 +221,10 @@ void _parseEscaped(
       );
     }
 
-    buffer.writeChar(hexCode!); // Will never be null if [hexToRead] is 0
+    buffer(hexCode!); // Will never be null if [hexToRead] is 0
     return;
   } else if (resolveDoubleQuotedEscaped(charAfterEscape) case int escaped) {
-    buffer.writeChar(escaped);
+    buffer(escaped);
     iterator.nextChar();
     return;
   }

@@ -4,11 +4,43 @@ import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-/// Parses a `single quoted` scalar
+/// Parses a scalar with [ScalarStyle.singleQuoted].
+///
+/// This is the parser's low level implementation for parsing a double quoted
+/// scalar which returns a [PreScalar]. This is intentional. The delegate that
+/// will be assigned to this function will contain more context on how this
+/// scalar will be resolved.
 PreScalar parseSingleQuoted(
   SourceIterator iterator, {
   required int indent,
   required bool isImplicit,
+}) {
+  final buffer = ScalarBuffer();
+
+  return singleQuotedParser(
+    iterator,
+    buffer: buffer.writeChar,
+    indent: indent,
+    isImplicit: isImplicit,
+    onParsingComplete: (info) => (
+      content: buffer.bufferedContent(),
+      wroteLineBreak: buffer.wroteLineBreak,
+      scalarInfo: info,
+    ),
+  );
+}
+
+/// Parses the single quoted scalar.
+///
+/// Calls [buffer] for every byte/utf code unit that it reads as valid content
+/// from the [iterator]. Always calls [onParsingComplete] and returns the
+/// object [T] after the closing quote has been skipped.
+T singleQuotedParser<T>(
+  SourceIterator iterator, {
+  required CharWriter buffer,
+  required int indent,
+  required bool isImplicit,
+  required OnParsedScalar<T> onParsingComplete,
 }) {
   if (iterator.current != singleQuote) {
     throwWithSingleOffset(
@@ -20,7 +52,6 @@ PreScalar parseSingleQuoted(
 
   iterator.nextChar();
 
-  final buffer = ScalarBuffer();
   var quoteCount = 1;
   var foundLineBreak = false;
 
@@ -33,7 +64,7 @@ PreScalar parseSingleQuoted(
         {
           // Single quotes can also be a form of escaping.
           if (iterator.peekNextChar() == singleQuote) {
-            buffer.writeChar(singleQuote);
+            buffer(singleQuote);
             iterator.nextChar();
           } else {
             ++quoteCount;
@@ -53,7 +84,7 @@ PreScalar parseSingleQuoted(
         {
           throwIfDocEndInQuoted(
             iterator,
-            onDocMissing: buffer.writeAll,
+            onDocMissing: (missing) => bufferHelper(missing, buffer),
             quoteChar: singleQuote,
           );
         }
@@ -84,7 +115,7 @@ PreScalar parseSingleQuoted(
             );
           }
 
-          buffer.writeChar(char);
+          buffer(char);
           iterator.nextChar();
         }
     }
@@ -99,15 +130,13 @@ PreScalar parseSingleQuoted(
     );
   }
 
-  return (
-    content: buffer.bufferedContent(),
+  return onParsingComplete((
     scalarStyle: ScalarStyle.singleQuoted,
     scalarIndent: indent,
     docMarkerType: DocumentMarker.none,
     hasLineBreak: foundLineBreak,
-    wroteLineBreak: buffer.wroteLineBreak,
     indentDidChange: false,
     indentOnExit: seamlessIndentMarker,
     end: iterator.currentLineInfo.current,
-  );
+  ));
 }

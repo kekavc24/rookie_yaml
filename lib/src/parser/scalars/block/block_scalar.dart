@@ -9,20 +9,68 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 part 'block_header.dart';
 part 'block_utils.dart';
 
-/// Parses a block style scalar, that is `folded` or `literal`.
-PreScalar parseBlockStyle(
+/// Parses a block scalar. Specifically, [ScalarStyle.literal] or
+/// [ScalarStyle.folded].
+///
+/// [onParseComment] ensures comments in a block scalar's header are not
+/// discarded but written to the top level parser.
+///
+/// [minimumIndent] is the minimum indent imposed by the nearest block parent.
+/// It should be noted that this indent is a suggestion as the block scalar
+/// determines its indent from the first non-empty line.
+///
+/// This is the parser's low level implementation for parsing a double quoted
+/// scalar which returns a [PreScalar]. This is intentional. The delegate that
+/// will be assigned to this function will contain more context on how this
+/// scalar will be resolved.
+PreScalar parseBlockScalar(
   SourceIterator iterator, {
   required int minimumIndent,
   required int indentLevel,
   required void Function(YamlComment comment) onParseComment,
 }) {
+  final buffer = ScalarBuffer();
+
+  return blockScalarParser(
+    iterator,
+    charBuffer: buffer.writeChar,
+    minimumIndent: minimumIndent,
+    indentLevel: indentLevel,
+    onParseComment: onParseComment,
+    onParsingComplete: (info) => (
+      content: buffer.bufferedContent(),
+      scalarInfo: info,
+      wroteLineBreak: buffer.wroteLineBreak,
+    ),
+  );
+}
+
+/// Parses the block scalar.
+///
+/// Calls [charBuffer] for every byte/utf code unit that it reads as valid content
+/// from the [iterator]. Always calls [onParsingComplete] and returns the
+/// object [T] after the closing quote has been skipped.
+T blockScalarParser<T>(
+  SourceIterator iterator, {
+  required CharWriter charBuffer,
+  required int minimumIndent,
+  required int indentLevel,
+  required void Function(YamlComment comment) onParseComment,
+  required OnParsedScalar<T> onParsingComplete,
+}) {
+  var wroteToBuffer = false;
+
+  // TODO: Use a call exactly once util class? Meh for now
+  void blockBuffer(int char) {
+    wroteToBuffer = true;
+    charBuffer(char);
+  }
+
   var indentOnExit = seamlessIndentMarker;
   final (:isLiteral, :chomping, :indentIndicator) = _parseBlockHeader(
     iterator,
     onParseComment: onParseComment,
   );
-
-  final style = isLiteral ? ScalarStyle.literal : ScalarStyle.folded;
 
   int? trueIndent;
 
@@ -37,8 +85,6 @@ PreScalar parseBlockStyle(
       skipCrIfPossible(iterator.current, iterator: iterator),
   ];
 
-  final buffer = ScalarBuffer();
-
   var lastWasIndented = false;
   var didRun = false;
 
@@ -46,8 +92,8 @@ PreScalar parseBlockStyle(
   /// non-empty line.
   int? previousMaxIndent;
 
-  RuneOffset? end;
   var docMarkerType = DocumentMarker.none;
+  var end = iterator.currentLineInfo.current;
 
   blockParser:
   while (!iterator.isEOF) {
@@ -95,11 +141,12 @@ PreScalar parseBlockStyle(
                 :startsWithTab,
               ) = _inferIndent(
                 iterator,
-                contentBuffer: buffer,
+                buffer: blockBuffer,
                 scannedIndent: scannedIndent,
                 callBeforeTabWrite: () => _maybeFoldLF(
-                  buffer,
+                  blockBuffer,
                   isLiteral: isLiteral,
+                  wroteToBuffer: wroteToBuffer,
                   lastNonEmptyWasIndented: false, // Not possible with no indent
                   lineBreaks: lineBreaks,
                 ),
@@ -139,7 +186,7 @@ PreScalar parseBlockStyle(
 
           docMarkerType = checkForDocumentMarkers(
             iterator,
-            onMissing: buffer.writeAll,
+            onMissing: (chars) => bufferHelper(chars, blockBuffer),
           );
 
           if (docMarkerType.stopIfParsingDoc) {
@@ -152,28 +199,29 @@ PreScalar parseBlockStyle(
       case _ when char.isPrintable():
         {
           if (char.isWhiteSpace()) {
-            if (isLiteral || buffer.isNotEmpty || lineBreaks.length > 1) {
-              buffer.writeAll(lineBreaks);
+            if (isLiteral || wroteToBuffer || lineBreaks.length > 1) {
+              bufferHelper(lineBreaks, blockBuffer);
             }
 
             lastWasIndented = true;
             lineBreaks.clear();
           } else {
             _maybeFoldLF(
-              buffer,
+              blockBuffer,
               isLiteral: isLiteral,
+              wroteToBuffer: wroteToBuffer,
               lastNonEmptyWasIndented: lastWasIndented,
               lineBreaks: lineBreaks,
             );
             lastWasIndented = false;
           }
 
-          buffer.writeChar(char);
+          blockBuffer(char);
 
           // Write the remaining line to the end without including line break
           final OnChunk(:sourceEnded) = iterateAndChunk(
             iterator,
-            onChar: buffer.writeChar,
+            onChar: blockBuffer,
             exitIf: (_, curr) => curr.isLineBreak(),
           );
 
@@ -191,17 +239,20 @@ PreScalar parseBlockStyle(
     }
   }
 
-  _chompLineBreaks(chomping, contentBuffer: buffer, lineBreaks: lineBreaks);
+  _chompLineBreaks(
+    chomping,
+    buffer: blockBuffer,
+    wroteToBuffer: wroteToBuffer,
+    lineBreaks: lineBreaks,
+  );
 
-  return (
-    content: buffer.bufferedContent(),
-    scalarStyle: style,
+  return onParsingComplete((
+    scalarStyle: isLiteral ? ScalarStyle.literal : ScalarStyle.folded,
     scalarIndent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
     indentDidChange: indentOnExit != seamlessIndentMarker,
     docMarkerType: docMarkerType,
-    hasLineBreak: indentOnExit != seamlessIndentMarker || buffer.isNotEmpty,
-    wroteLineBreak: buffer.wroteLineBreak,
-    end: end ?? iterator.currentLineInfo.current,
-  );
+    hasLineBreak: indentOnExit != seamlessIndentMarker || wroteToBuffer,
+    end: end,
+  ));
 }
