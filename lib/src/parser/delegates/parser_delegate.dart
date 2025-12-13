@@ -1,8 +1,9 @@
 import 'dart:collection';
 
+import 'package:meta/meta.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -42,12 +43,10 @@ typedef YamlObjectBuilder<S, I, O> =
 typedef YamlCollectionBuilder<I, O> = YamlObjectBuilder<NodeStyle, I, O>;
 
 /// A builder function for [List] or [Sequence].
-typedef ListFunction<I, C extends Iterable<I>> =
-    YamlCollectionBuilder<Iterable<I>, C>;
+typedef ListFunction<I> = YamlCollectionBuilder<Iterable<I>, I>;
 
 /// A builder function for [Map] or [Mapping]
-typedef MapFunction<I, C extends Map<I, I?>> =
-    YamlCollectionBuilder<Map<I, I?>, C>;
+typedef MapFunction<I> = YamlCollectionBuilder<Map<I, I?>, I>;
 
 /// A builder function for a scalar or a Dart built-in type that is not a [Map]
 /// or [List]
@@ -55,7 +54,7 @@ typedef ScalarFunction<T> = YamlObjectBuilder<ScalarStyle, ScalarValue, T>;
 
 /// A delegate that stores parser information when parsing nodes of the `YAML`
 /// tree.
-abstract base class ParserDelegate<T> {
+sealed class ParserDelegate<T> {
   ParserDelegate({
     required this.indentLevel,
     required this.indent,
@@ -81,6 +80,7 @@ abstract base class ParserDelegate<T> {
 
   /// Updates the end offset of a node. The [end] must be equal to or greater
   /// than the [start]
+  @nonVirtual
   set updateEndOffset(RuneOffset? end) {
     if (end == null) return;
 
@@ -103,20 +103,9 @@ abstract base class ParserDelegate<T> {
     }
   }
 
-  /// Throws if the end offset was never set. Otherwise, returns the non-null
-  /// [endOffset].
-  RuneOffset _ensureEndIsSet() {
-    if (_end == null) {
-      throw StateError(
-        '[$runtimeType] with start offset $start has no valid end offset',
-      );
-    }
-
-    return _end!;
-  }
-
   /// Updates a node's properties. Throws an [ArgumentError] if this delegate
   /// has a tag, alias or anchor.
+  @nonVirtual
   set updateNodeProperties(ParsedProperty? property) {
     if (property == null || !property.parsedAny) return;
 
@@ -131,9 +120,6 @@ abstract base class ParserDelegate<T> {
     _property = property;
   }
 
-  /// Validates the parsed [_tag].
-  NodeTag _checkResolvedTag(NodeTag tag);
-
   /// Resolved tag
   ResolvedTag? _tag;
 
@@ -147,16 +133,57 @@ abstract base class ParserDelegate<T> {
   bool _hasLineBreak = false;
 
   /// Whether a line break was encountered while parsing.
+  @nonVirtual
   bool get encounteredLineBreak => _hasLineBreak;
 
   /// Whether any properties are present
+  @nonVirtual
   bool get hasProperties =>
       _property != null || _tag != null || _anchor != null || _alias != null;
 
+  @nonVirtual
   ParsedProperty? get property => _property;
 
+  @nonVirtual
   set hasLineBreak(bool foundLineBreak) =>
       _hasLineBreak = _hasLineBreak || foundLineBreak;
+
+  /// A resolved node.
+  T? _resolved;
+
+  /// Whether a node's delegate was resolved.
+  bool _isResolved = false;
+
+  /// Resolves the object [T] whose source information this delegate is
+  /// assigned to track.
+  T parsed() {
+    if (!_isResolved) {
+      _resolver();
+    }
+
+    return _resolved as T;
+  }
+
+  /// Resolves the actual object [T] for internal delegates
+  void _resolver();
+}
+
+/// A mixin that resolves and caches the object [T] for a delegate.
+base mixin _ResolvingCache<T> on ParserDelegate<T> {
+  /// Throws if the end offset was never set. Otherwise, returns the non-null
+  /// [endOffset].
+  RuneOffset _ensureEndIsSet() {
+    if (_end == null) {
+      throw StateError(
+        '[$runtimeType] with start offset $start has no valid end offset',
+      );
+    }
+
+    return _end!;
+  }
+
+  /// Validates the parsed [_tag].
+  NodeTag _checkResolvedTag(NodeTag tag);
 
   /// Validates if parsed properties are valid only when [parsed] is called.
   void _resolveProperties() {
@@ -167,11 +194,11 @@ abstract base class ParserDelegate<T> {
       case NodeProperty(:final anchor, :final tag):
         {
           switch (tag) {
-            case TypeResolverTag(:final resolvedTag):
+            case ContentResolver(:final resolvedTag):
               {
-                /// Cannot override the captured tag; only validate it.
-                /// Non-specific tags not allowed in cannot be resolved to a
-                /// type other than YAML defaults.
+                /// Cannot override the captured tag; only validate it. This
+                /// allows a non-specific tag to be captured and resolved by
+                /// any scalar.
                 _checkResolvedTag(resolvedTag);
                 _tag = tag;
               }
@@ -195,26 +222,15 @@ abstract base class ParserDelegate<T> {
     _property = null;
   }
 
-  /// A resolved node.
-  T? _resolved;
-
-  /// Whether a node's delegate was resolved.
-  bool _isResolved = false;
-
-  /// Returns the object's [T] whose source information this delegate is
-  /// assigned to track.
-  T parsed() {
-    if (!_isResolved) {
-      _resolveProperties();
-      _resolved ??= _resolver();
-      _isResolved = true;
-    }
-
-    return _resolved as T;
+  @override
+  void _resolver() {
+    _resolveProperties();
+    _isResolved = true;
+    _resolved = _resolveObject();
   }
 
-  /// Resolves the actual object [T].
-  T _resolver();
+  /// Resolves the actual object.
+  T _resolveObject();
 }
 
 /// A builder function for an [Alias] or any referenced Dart-built in type.
@@ -222,7 +238,8 @@ typedef AliasFunction<Ref> =
     Ref Function(String alias, Ref reference, RuneSpan nodeSpan);
 
 /// Represents a delegate that resolves to an [AliasNode]
-final class AliasDelegate<Ref> extends ParserDelegate<Ref> {
+final class AliasDelegate<Ref> extends ParserDelegate<Ref>
+    with _ResolvingCache<Ref> {
   AliasDelegate(
     this._reference, {
     required super.indentLevel,
@@ -242,7 +259,7 @@ final class AliasDelegate<Ref> extends ParserDelegate<Ref> {
       throw FormatException('An alias cannot have a "${tag.suffix}" kind');
 
   @override
-  Ref _resolver() => refResolver(_alias ?? '', _reference, (
+  Ref _resolveObject() => refResolver(_alias ?? '', _reference, (
     start: start,
     end: _ensureEndIsSet(),
   ));
