@@ -1,5 +1,7 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -12,6 +14,7 @@ sealed class ParsedProperty {
     RuneOffset end,
     this.indentOnExit, {
     required bool spanMultipleLines,
+    required this.kind,
   }) : assert(
          end.utfOffset >= start.utfOffset,
          'Invalid start and end offset to a [ParsedProperty]',
@@ -36,6 +39,7 @@ sealed class ParsedProperty {
     required String? anchor,
     required ResolvedTag? tag,
     required NodeKind kind,
+    required CustomResolver? customResolver,
   }) {
     if (tag != null || anchor != null) {
       return NodeProperty(
@@ -46,6 +50,7 @@ sealed class ParsedProperty {
         anchor: anchor,
         tag: tag,
         kind: kind,
+        customResolver: customResolver,
       );
     }
 
@@ -66,14 +71,14 @@ sealed class ParsedProperty {
   /// can be parsed.
   final int? indentOnExit;
 
+  /// Kind of node being parsed
+  final NodeKind kind;
+
   /// Whether any `tag`, `anchor` or `alias` was parsed.
   bool get parsedAny;
 
   /// Whether this property is an alias.
   bool get isAlias => false;
-
-  /// Kind of node being parsed
-  NodeKind get kind => NodeKind.unknown;
 
   /// Whether the property spanned multiple lines.
   final bool isMultiline;
@@ -86,7 +91,7 @@ final class _Empty extends ParsedProperty {
     super.end,
     super.indentOnExit, {
     required super.spanMultipleLines,
-  });
+  }) : super(kind: NodeKind.unknown());
 
   @override
   bool get parsedAny => false;
@@ -101,17 +106,18 @@ final class NodeProperty extends ParsedProperty {
     required super.spanMultipleLines,
     required this.anchor,
     required this.tag,
-    required this.kind,
+    required super.kind,
+    required this.customResolver,
   });
 
-  /// Node's anchor
+  /// Node's anchor.
   final String? anchor;
 
-  /// Node's resolved tag
+  /// Node's resolved tag.
   final ResolvedTag? tag;
 
-  @override
-  final NodeKind kind;
+  /// A custom resolver for a node.
+  final CustomResolver? customResolver;
 
   @override
   bool get parsedAny => anchor != null || tag != null;
@@ -125,7 +131,7 @@ final class Alias extends ParsedProperty {
     super.indentOnExit, {
     required super.spanMultipleLines,
     required this.alias,
-  });
+  }) : super(kind: NodeKind.unknown());
 
   /// Node being aliased
   final String alias;
@@ -161,10 +167,12 @@ ParsedProperty _corePropertyParser(
 }) {
   final startOffset = iterator.currentLineInfo.current;
 
-  var nodeKind = NodeKind.unknown;
+  var nodeKind = NodeKind.unknown();
 
   String? nodeAnchor;
   ResolvedTag? nodeTag;
+  CustomResolver? nodeResolver;
+
   String? nodeAlias;
   int? indentOnExit;
 
@@ -191,6 +199,7 @@ ParsedProperty _corePropertyParser(
         anchor: nodeAnchor,
         tag: nodeTag,
         kind: nodeKind,
+        customResolver: nodeResolver,
       );
     }
 
@@ -232,6 +241,7 @@ ParsedProperty _corePropertyParser(
               anchor: nodeAnchor,
               tag: nodeTag,
               kind: nodeKind,
+              customResolver: nodeResolver,
             );
           }
         }
@@ -247,13 +257,14 @@ ParsedProperty _corePropertyParser(
           } else {
             final tagStart = iterator.currentLineInfo.current;
             final shorthand = parseTagShorthand(iterator);
-            final (:kind, :tag) = resolver(
+            final (:kind, :tag, :customResolver) = resolver(
               tagStart,
               iterator.currentLineInfo.current,
               shorthand,
             );
             nodeKind = kind;
             nodeTag = tag;
+            nodeResolver = customResolver;
           }
 
           resetIndent();
@@ -305,6 +316,7 @@ ParsedProperty _corePropertyParser(
           anchor: nodeAnchor,
           tag: nodeTag,
           kind: nodeKind,
+          customResolver: nodeResolver,
         );
     }
   }
@@ -323,6 +335,7 @@ ParsedProperty _corePropertyParser(
     anchor: nodeAnchor,
     tag: nodeTag,
     kind: nodeKind,
+    customResolver: nodeResolver,
   );
 }
 

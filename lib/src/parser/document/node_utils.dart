@@ -37,48 +37,6 @@ typedef BlockEntry<Obj> =
 typedef OnBlockMapEntry<Obj> =
     void Function(ParserDelegate<Obj> key, ParserDelegate<Obj>? value);
 
-/// Parses a node based on its [kind].
-///
-/// This is a template for both block and flow nodes which can choose a quick
-/// parsing path when a [NodeKind] was inferred from its resolved tag.
-///
-/// [sequenceOnMatchSetOrOrderedMap] callback returns a `bool` because a set
-/// or ordered map can be parsed as a sequence or mapping.
-@pragma("vm:prefer-inline")
-T parseNodeOfKind<T>(
-  NodeKind kind, {
-  required bool Function() sequenceOnMatchSetOrOrderedMap,
-  required T Function() onMatchMapping,
-  required T Function() onMatchSequence,
-  required T Function() onMatchScalar,
-  required T Function() defaultFallback,
-}) {
-  switch (kind) {
-    case NodeKind.set || NodeKind.orderedMap:
-      {
-        if (sequenceOnMatchSetOrOrderedMap()) {
-          continue sequence;
-        }
-
-        continue mapping;
-      }
-
-    mapping:
-    case NodeKind.mapping:
-      return onMatchMapping();
-
-    sequence:
-    case NodeKind.sequence:
-      return onMatchSequence();
-
-    case NodeKind.scalar:
-      return onMatchScalar();
-
-    default:
-      return defaultFallback();
-  }
-}
-
 /// Parses a [Scalar].
 ///
 /// [greedyOnPlain] is only ever passed when the first two plain scalar

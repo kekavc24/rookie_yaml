@@ -263,51 +263,6 @@ int? skipToParsableChar(
   return indent;
 }
 
-/// A function to easily create a [TypeResolverTag] on demand
-typedef ResolverCreator = TypeResolverTag Function(NodeTag tag);
-
-/// A wrapper class used to define a [TagShorthand] that the parser associates
-/// with a [TypeResolverTag] to infer the kind for a [YamlSourceNode] or
-/// [String] content from [Scalar] to valid output [O].
-///
-/// {@category resolvers}
-final class Resolver<I, O> {
-  Resolver._(TagShorthand tag, this.creator)
-    : assert(
-        !tag.isNonSpecific,
-        'Non-specific tags cannot be overridden to a kind. '
-        'Only the parser can perform this action!',
-      ),
-      target = tag;
-
-  /// Suffix associated with a [TypeResolverTag]
-  final TagShorthand target;
-
-  /// Function to create a [TypeResolverTag] once a matching suffix is
-  /// encountered
-  final ResolverCreator creator;
-
-  /// Creates a [ContentResolver] as its [TypeResolverTag]
-  Resolver.content(
-    TagShorthand tag, {
-    required O? Function(String input) contentResolver,
-    required String Function(O input) toYamlSafe,
-  }) : this._(
-         tag,
-         (tag) => ContentResolver(
-           tag,
-           resolver: contentResolver,
-           toYamlSafe: (s) => toYamlSafe(s as O),
-         ),
-       );
-
-  /// Creates a [NodeResolver] as its [TypeResolverTag]
-  Resolver.node(
-    TagShorthand tag, {
-    required O Function(YamlSourceNode input) resolver,
-  }) : this._(tag, (tag) => NodeResolver(tag, resolver: resolver));
-}
-
 /// Recursively copies all elements of a [Map] or [List]
 Object? deepCopyReference(Object? object) {
   switch (object) {

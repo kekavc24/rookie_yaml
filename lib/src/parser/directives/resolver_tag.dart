@@ -17,7 +17,7 @@ final class ContentResolver<O> extends ResolvedTag {
     this.acceptNullAsValue = false,
   });
 
-  /// 
+  /// Maps the scalar's content.
   final O? Function(String content) resolver;
 
   /// Maps the [O] object back to a dumpable string.
