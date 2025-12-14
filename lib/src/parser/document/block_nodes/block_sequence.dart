@@ -75,14 +75,13 @@ _SequenceState _sequenceNodeOrMarker(
 /// allows the nearest block parent to recover from the current parser state.
 /// This ensures a block sequence on the same indent level as an implicit key or
 /// explicit key/value will be parsed correctly.
-({String? greedyOnPlain, BlockNode<Obj> sequence})
-parseBlockSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  SequenceDelegate<Obj, Seq> sequence, {
-  required ParserState<Obj, Seq, Dict> state,
+({String? greedyOnPlain, BlockNode<Obj> sequence}) parseBlockSequence<Obj>(
+  SequenceLikeDelegate<Obj, Obj> sequence, {
+  required ParserState<Obj> state,
   required bool levelWithBlockMap,
 }) {
   final ParserState(:iterator, :comments) = state;
-  final SequenceDelegate(indent: sequenceIndent, :indentLevel) = sequence;
+  final SequenceLikeDelegate(indent: sequenceIndent, :indentLevel) = sequence;
 
   final entryIndent = sequenceIndent + 1;
 

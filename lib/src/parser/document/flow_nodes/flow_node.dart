@@ -5,6 +5,8 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -21,7 +23,7 @@ ScalarDelegate<R> parseFlowScalar<R>(
   required int indentLevel,
   required int minIndent,
 }) {
-  final (prescalar, delegate) = parseScalar(
+  final (info, delegate) = parseScalar(
     event,
     iterator: iterator,
     scalarFunction: scalarFunction,
@@ -36,7 +38,7 @@ ScalarDelegate<R> parseFlowScalar<R>(
   /// in the content. Additionally, if not implicit, it can be affected by
   /// indent changes since it has a block-like structure. Neither should be
   /// allowed.
-  if (prescalar case PreScalar(
+  if (info case ParsedScalarInfo(
     scalarStyle: ScalarStyle.plain,
     :final indentOnExit,
     :final indentDidChange,
@@ -72,9 +74,8 @@ ScalarDelegate<R> parseFlowScalar<R>(
 ///
 /// [minIndent] represents the minimum indent the flow node needs to adhere to
 /// when embedded in a block node. Indent, by default, is moot in flow nodes.
-ParserDelegate<Obj>
-parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> parseFlowNode<Obj>(
+  ParserState<Obj> state, {
   required int currentIndentLevel,
   required int minIndent,
   required bool isImplicit,
@@ -96,7 +97,7 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     throwWithSingleOffset(
       iterator,
       message: 'Block nodes are not allowed in flow collections',
-      offset: property.span.start,
+      offset: iterator.currentLineInfo.current,
     );
   } else if (property.parsedAny) {
     if (property.isMultiline &&
@@ -161,10 +162,9 @@ parseFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 ///
 /// Throws if [kind] is [NodeKind.unknown]. Prefer calling [_ambigousFlowNode]
 /// instead.
-ParserDelegate<Obj>
-_flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
+ParserDelegate<Obj> _flowNodeOfKind<Obj>(
   NodeKind kind, {
-  required ParserState<Obj, Seq, Dict> parserState,
+  required ParserState<Obj> parserState,
   required NodeProperty property,
   required ParserEvent flowEvent,
   required int currentIndentLevel,
@@ -174,6 +174,19 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 }) {
   final (:start, :end) = property.span; // Always use property offset
   final isInline = isImplicit || forceInline;
+
+  if (kind is CustomKind) {
+    return customFlowNode(
+      kind,
+      state: parserState,
+      property: property,
+      flowEvent: flowEvent,
+      currentIndentLevel: currentIndentLevel,
+      minIndent: minIndent,
+      isImplicit: isImplicit,
+      forceInline: forceInline,
+    );
+  }
 
   return parseNodeOfKind(
     kind,
@@ -226,10 +239,9 @@ _flowNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
 /// Parses a flow node using the current [parserState] and heavily relies on
 /// the current [event] to determine the next course of action.
-ParserDelegate<Obj>
-_ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
+ParserDelegate<Obj> _ambigousFlowNode<Obj>(
   ParserEvent event, {
-  required ParserState<Obj, Seq, Dict> parserState,
+  required ParserState<Obj> parserState,
   required ParsedProperty property,
   required int currentIndentLevel,
   required int minIndent,
@@ -251,12 +263,11 @@ _ambigousFlowNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         }
 
         return parseExplicitAsFlowMap(
-              parserState,
-              indentLevel: currentIndentLevel,
-              minIndent: minIndent,
-              forceInline: forceInline,
-            )
-            as ParserDelegate<Obj>;
+          parserState,
+          indentLevel: currentIndentLevel,
+          minIndent: minIndent,
+          forceInline: forceInline,
+        );
       }
 
     case FlowCollectionEvent.startFlowMap:

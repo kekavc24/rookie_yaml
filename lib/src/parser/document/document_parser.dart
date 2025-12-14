@@ -36,17 +36,18 @@ void _throwIfBlockUnsafe(
 }
 
 /// A [YamlDocument] parser.
-final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
+final class DocumentParser<R> {
   DocumentParser(
     SourceIterator iterator, {
     required AliasFunction<R> aliasFunction,
-    required ListFunction<R, S> listFunction,
-    required MapFunction<R, M> mapFunction,
+    required ListFunction<R> listFunction,
+    required MapFunction<R> mapFunction,
     required ScalarFunction<R> scalarFunction,
     required ParserLogger logger,
     required MapDuplicateHandler onMapDuplicate,
-    List<Resolver>? resolvers,
-  }) : _parserState = ParserState<R, S, M>(
+    List<ScalarResolver>? resolvers,
+    Map<TagShorthand, CustomResolver>? nodeResolvers,
+  }) : _parserState = ParserState<R>(
          iterator,
          aliasFunction: aliasFunction,
          listFunction: listFunction,
@@ -55,9 +56,10 @@ final class DocumentParser<R, S extends Iterable<R>, M extends Map<R, R?>> {
          logger: logger,
          onMapDuplicate: onMapDuplicate,
          resolvers: resolvers,
+         customResolvers: nodeResolvers
        );
 
-  final ParserState<R, S, M> _parserState;
+  final ParserState<R> _parserState;
 
   /// Parses the next [YamlDocument] if present in the YAML string.
   ///

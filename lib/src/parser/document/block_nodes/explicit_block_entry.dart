@@ -9,9 +9,8 @@ import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses an explicit key/value.
-({bool ignoreValueIfKey, BlockInfo blockInfo})
-_parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+({bool ignoreValueIfKey, BlockInfo blockInfo}) _parseExplicit<R, Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int indent,
   required ParserEvent expectedEvent,
@@ -105,12 +104,8 @@ _parseExplicit<R, Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 }
 
 /// Parses an explicit block key and its value (if present).
-BlockInfo parseExplicitBlockEntry<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+BlockInfo parseExplicitBlockEntry<Obj>(
+  ParserState<Obj> state, {
   required int entryIndent,
   required int entryIndentLevel,
   required OnBlockMapEntry<Obj> onExplicitEntry,

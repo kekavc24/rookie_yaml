@@ -1,3 +1,4 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
@@ -5,7 +6,9 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/implicit_block_entry
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Information after a special block sequence has been parsed.
@@ -15,6 +18,37 @@ typedef SpecialBlockSequenceInfo = ({
   bool parsedNextImplicitKey,
   BlockInfo blockInfo,
 });
+
+/// Creates a [SequenceLikeDelegate] based on its kind.
+///
+/// An [IterableToObjectDelegate] may be returned if the parser was instructed
+/// to treat a specific tag embedded in the node's [property] as a [CustomKind].
+/// Otherwise, a generic [SequenceDelegate] is returned.
+SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
+  ParsedProperty? property, {
+  required RuneOffset start,
+  required int indent,
+  required int indentLevel,
+  required ListFunction<Obj> defaultSequence,
+}) {
+  // Check if this special sequence was annotated with custom properties
+  if (property case NodeProperty(
+    kind: CustomKind.iterable,
+    customResolver: ObjectFromIterable<Obj>(:final onCustomIterable),
+  )) {
+    return onCustomIterable(NodeStyle.block, indentLevel, indent, start)
+        as SequenceLikeDelegate<Obj, Obj>;
+  }
+
+  return SequenceDelegate.byKind(
+    kind: property?.kind ?? YamlKind.sequence,
+    style: NodeStyle.block,
+    indent: indent,
+    indentLevel: indentLevel,
+    start: start,
+    resolver: defaultSequence,
+  );
+}
 
 /// Attempts to parse a block sequence on the same indent level as its implicit
 /// key or explicit key/value.
@@ -46,12 +80,8 @@ typedef SpecialBlockSequenceInfo = ({
 /// -- key: value
 /// ---another: key
 /// ```
-SpecialBlockSequenceInfo composeSpecialBlockSequence<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+SpecialBlockSequenceInfo composeSpecialBlockSequence<Obj>(
+  ParserState<Obj> state, {
   required BlockNode<Obj> blockNode,
   required int keyIndent,
   required int keyIndentLevel,
@@ -110,12 +140,8 @@ SpecialBlockSequenceInfo composeSpecialBlockSequence<
 /// -- key: value
 /// ---another: key
 /// ```
-SpecialBlockSequenceInfo parseSpecialBlockSequence<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
+  ParserState<Obj> state, {
   required int keyIndent,
   required int keyIndentLevel,
   required ParsedProperty? property,
@@ -125,13 +151,12 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<
   final ParserState(:iterator) = state;
 
   final (:greedyOnPlain, :sequence) = parseBlockSequence(
-    SequenceDelegate.byKind(
-      kind: property?.kind ?? NodeKind.sequence,
-      style: NodeStyle.block,
+    _delegateHelper<Obj>(
+      property,
+      start: property?.span.start ?? iterator.currentLineInfo.current,
       indent: keyIndent,
       indentLevel: keyIndentLevel,
-      start: property?.span.start ?? iterator.currentLineInfo.current,
-      resolver: state.listFunction,
+      defaultSequence: state.listFunction,
     )..updateNodeProperties = property,
     state: state,
     levelWithBlockMap: true,

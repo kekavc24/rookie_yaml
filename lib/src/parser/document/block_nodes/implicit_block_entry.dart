@@ -9,12 +9,8 @@ import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses an implicit key and its value if present.
-BlockInfo parseImplicitBlockEntry<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+BlockInfo parseImplicitBlockEntry<Obj>(
+  ParserState<Obj> state, {
   required int keyIndent,
   required int keyIndentLevel,
   required OnBlockMapEntry<Obj> onImplicitEntry,
@@ -68,9 +64,8 @@ BlockInfo parseImplicitBlockEntry<
 /// to parse the first entry without necessarily explicitly calling
 /// [parseImplicitBlockEntry] which allows a block map to be loosely composed
 /// without relying on [parseBlockMap].
-BlockInfo
-parseImplicitValue<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+BlockInfo parseImplicitValue<Obj>(
+  ParserState<Obj> state, {
   required int keyIndentLevel,
   required int keyIndent,
   required void Function(ParserDelegate<Obj> implicitValue) onValue,

@@ -1,19 +1,17 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a flow sequence entry using the current parser [state].
-ParserDelegate<Obj> _parseFlowSequenceEntry<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> _parseFlowSequenceEntry<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
@@ -27,12 +25,11 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
 
   if (peekEvent == FlowCollectionEvent.startExplicitKey) {
     return parseExplicitAsFlowMap(
-          state,
-          indentLevel: indentLevel,
-          minIndent: minIndent,
-          forceInline: forceInline,
-        )
-        as ParserDelegate<Obj>;
+      state,
+      indentLevel: indentLevel,
+      minIndent: minIndent,
+      forceInline: forceInline,
+    );
   }
 
   final keyOrElement = parseFlowNode(
@@ -82,7 +79,7 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
   );
 
   final map =
-      MappingDelegate<Obj, Dict>(
+      MappingDelegate(
           collectionStyle: NodeStyle.flow,
           indentLevel: indentLevel,
           indent: minIndent,
@@ -99,13 +96,13 @@ ParserDelegate<Obj> _parseFlowSequenceEntry<
 ///
 /// If [forceInline] is `true`, the sequence must be declared on the same line
 /// with no line breaks and throws if otherwise.
-ParserDelegate<Obj>
-parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> parseFlowSequence<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
-  NodeKind kind = NodeKind.sequence,
+  NodeKind kind = YamlKind.sequence,
+  OnCustomList<Obj>? asCustomList,
 }) {
   final ParserState(:iterator, :comments, :listFunction, :onMapDuplicate) =
       state;
@@ -117,14 +114,21 @@ parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     forceInline: forceInline,
     onParseComment: comments.add,
     flowEndIndicator: flowSequenceEnd,
-    init: (start) => SequenceDelegate.byKind(
-      style: NodeStyle.flow,
-      indentLevel: indentLevel,
-      indent: minIndent,
-      start: start,
-      resolver: listFunction,
-      kind: kind,
-    ),
+    init: (start) {
+      if (asCustomList != null) {
+        return asCustomList(NodeStyle.flow, indentLevel, minIndent, start)
+            as SequenceLikeDelegate<Obj, Obj>;
+      }
+
+      return SequenceDelegate.byKind(
+        style: NodeStyle.flow,
+        indentLevel: indentLevel,
+        indent: minIndent,
+        start: start,
+        resolver: listFunction,
+        kind: kind,
+      );
+    },
   );
 
   do {
@@ -153,6 +157,5 @@ parseFlowSequence<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     }
   } while (!iterator.isEOF);
 
-  return terminateFlowCollection(iterator, sequence, flowSequenceEnd)
-      as ParserDelegate<Obj>;
+  return terminateFlowCollection(iterator, sequence, flowSequenceEnd);
 }

@@ -7,6 +7,8 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart'
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -16,7 +18,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 /// properties are on the same line the "?" or "-" respectively.
 ///
 /// A leading explicit key signifies the start of a block map.
-void _throwIfInlineInBlock(
+void throwIfInlineInBlock(
   SourceIterator iterator, {
   required bool isInline,
   required ParsedProperty property,
@@ -39,7 +41,7 @@ void _throwIfInlineExplicitKey(
   SourceIterator iterator, {
   required bool isInline,
   required ParsedProperty property,
-}) => _throwIfInlineInBlock(
+}) => throwIfInlineInBlock(
   iterator,
   isInline: isInline,
   property: property,
@@ -51,7 +53,7 @@ void _inlineIfInlineBlockSequence(
   SourceIterator iterator, {
   required bool isInline,
   required ParsedProperty property,
-}) => _throwIfInlineInBlock(
+}) => throwIfInlineInBlock(
   iterator,
   isInline: isInline,
   property: property,
@@ -164,11 +166,10 @@ void _inlineIfInlineBlockSequence(
 
 /// Checks and ensures the [parsed] block node leaves the parser in a state
 /// where the next block node can be deduced or parsed easily.
-BlockNode<Obj> _safeBlockState<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(ParserState<Obj, Seq, Dict> state, {required BlockNode<Obj> parsed}) {
+BlockNode<Obj> _safeBlockState<Obj>(
+  ParserState<Obj> state, {
+  required BlockNode<Obj> parsed,
+}) {
   final ParserState(:iterator, :comments) = state;
   final (:blockInfo, :node) = parsed;
 
@@ -205,9 +206,8 @@ BlockNode<Obj> _safeBlockState<
 /// [fixedInlineIndent] =  ([laxBlockIndent] - 1) +  `m`
 ///   where `m` is the number of characters after the "-", "?" or ":"
 ///   (inclusive).
-BlockNode<Obj>
-parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> parseBlockNode<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int? inferredFromParent,
   required int laxBlockIndent,
@@ -380,10 +380,9 @@ parseBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 ///
 /// Throws if [kind] is [NodeKind.unknown]. Prefer calling [_ambigousBlockNode]
 /// instead.
-BlockNode<Obj>
-_blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
+BlockNode<Obj> _blockNodeOfKind<Obj>(
   NodeKind kind, {
-  required ParserState<Obj, Seq, Dict> state,
+  required ParserState<Obj> state,
   required ParserEvent event,
   required NodeProperty property,
   required int indentLevel,
@@ -391,85 +390,38 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   required int fixedInlineIndent,
   required bool forceInlined,
   required bool composeImplicitMap,
-}) => parseNodeOfKind(
-  kind,
-  sequenceOnMatchSetOrOrderedMap: () =>
-      event == BlockCollectionEvent.startBlockListEntry ||
-      event == FlowCollectionEvent.startFlowSequence,
-  onMatchMapping: () {
-    if (event == BlockCollectionEvent.startExplicitKey) {
-      _throwIfInlineExplicitKey(
-        state.iterator,
-        isInline: forceInlined,
-        property: property,
-      );
-    }
-
-    // Parse wildcard but expect a map
-    return composeBlockMapStrict(
-      state,
-      indentLevel: indentLevel,
-      laxIndent: laxBlockIndent,
-      inlineFixedIndent: fixedInlineIndent,
+}) {
+  if (kind is CustomKind) {
+    return customBlockNode(
+      kind,
+      state: state,
+      event: event,
       property: property,
-      isInline: forceInlined,
+      indentLevel: indentLevel,
+      laxBlockIndent: laxBlockIndent,
+      fixedInlineIndent: fixedInlineIndent,
+      forceInlined: forceInlined,
       composeImplicitMap: composeImplicitMap,
     );
-  },
-  onMatchSequence: () {
-    BlockNode<Obj>? sequence;
+  }
 
-    if (event == BlockCollectionEvent.startBlockListEntry) {
-      _inlineIfInlineBlockSequence(
-        state.iterator,
-        isInline: forceInlined,
-        property: property,
-      );
+  return parseNodeOfKind(
+    kind,
+    sequenceOnMatchSetOrOrderedMap: () =>
+        event == BlockCollectionEvent.startBlockListEntry ||
+        event == FlowCollectionEvent.startFlowSequence,
+    onMatchMapping: () {
+      if (event == BlockCollectionEvent.startExplicitKey) {
+        _throwIfInlineExplicitKey(
+          state.iterator,
+          isInline: forceInlined,
+          property: property,
+        );
+      }
 
-      sequence = parseBlockSequence(
-        SequenceDelegate.byKind(
-          kind: kind,
-          style: NodeStyle.block,
-          indent: fixedInlineIndent,
-          indentLevel: indentLevel,
-          start: property.span.start,
-          resolver: state.listFunction,
-        ),
-        state: state,
-        levelWithBlockMap: false,
-      ).sequence;
-
-      state.trackAnchor(sequence.node, property);
-    } else if (event == FlowCollectionEvent.startFlowSequence) {
-      sequence = parseFlowNodeInBlock(
+      // Parse wildcard but expect a map
+      return composeBlockMapStrict(
         state,
-        event: event as FlowCollectionEvent,
-        indentLevel: indentLevel,
-        indent: laxBlockIndent,
-        isInline: forceInlined,
-        composeImplicitMap: composeImplicitMap,
-        flowProperty: property,
-        composedMapIndent: fixedInlineIndent,
-      );
-    }
-
-    // We must have a block sequence
-    if (sequence == null) {
-      throwWithRangedOffset(
-        state.iterator,
-        message: 'Expected the start of a block/flow sequence',
-        start: property.span.start,
-        end: state.iterator.currentLineInfo.current,
-      );
-    }
-
-    return sequence;
-  },
-  onMatchScalar: () {
-    if (event case ScalarEvent() || BlockCollectionEvent.startEntryValue) {
-      return parseBlockWildCard(
-        state,
-        event: event,
         indentLevel: indentLevel,
         laxIndent: laxBlockIndent,
         inlineFixedIndent: fixedInlineIndent,
@@ -477,33 +429,95 @@ _blockNodeOfKind<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
         isInline: forceInlined,
         composeImplicitMap: composeImplicitMap,
       );
-    }
+    },
+    onMatchSequence: () {
+      BlockNode<Obj>? sequence;
 
-    throwWithRangedOffset(
-      state.iterator,
-      message: 'Expected the start of a valid scalar',
-      start: property.span.start,
-      end: state.iterator.currentLineInfo.current,
-    );
-  },
-  defaultFallback: () => _ambigousBlockNode(
-    event,
-    parserState: state,
-    property: property,
-    indentLevel: indentLevel,
-    laxBlockIndent: laxBlockIndent,
-    fixedInlineIndent: fixedInlineIndent,
-    forceInlined: forceInlined,
-    composeImplicitMap: composeImplicitMap,
-  ),
-);
+      if (event == BlockCollectionEvent.startBlockListEntry) {
+        _inlineIfInlineBlockSequence(
+          state.iterator,
+          isInline: forceInlined,
+          property: property,
+        );
+
+        sequence = parseBlockSequence(
+          SequenceDelegate.byKind(
+            kind: kind,
+            style: NodeStyle.block,
+            indent: fixedInlineIndent,
+            indentLevel: indentLevel,
+            start: property.span.start,
+            resolver: state.listFunction,
+          ),
+          state: state,
+          levelWithBlockMap: false,
+        ).sequence;
+
+        state.trackAnchor(sequence.node, property);
+      } else if (event == FlowCollectionEvent.startFlowSequence) {
+        sequence = parseFlowNodeInBlock(
+          state,
+          event: event as FlowCollectionEvent,
+          indentLevel: indentLevel,
+          indent: laxBlockIndent,
+          isInline: forceInlined,
+          composeImplicitMap: composeImplicitMap,
+          flowProperty: property,
+          composedMapIndent: fixedInlineIndent,
+        );
+      }
+
+      // We must have a block sequence
+      if (sequence == null) {
+        throwWithRangedOffset(
+          state.iterator,
+          message: 'Expected the start of a block/flow sequence',
+          start: property.span.start,
+          end: state.iterator.currentLineInfo.current,
+        );
+      }
+
+      return sequence;
+    },
+    onMatchScalar: () {
+      if (event case ScalarEvent() || BlockCollectionEvent.startEntryValue) {
+        return parseBlockWildCard(
+          state,
+          event: event,
+          indentLevel: indentLevel,
+          laxIndent: laxBlockIndent,
+          inlineFixedIndent: fixedInlineIndent,
+          property: property,
+          isInline: forceInlined,
+          composeImplicitMap: composeImplicitMap,
+        );
+      }
+
+      throwWithRangedOffset(
+        state.iterator,
+        message: 'Expected the start of a valid scalar',
+        start: property.span.start,
+        end: state.iterator.currentLineInfo.current,
+      );
+    },
+    defaultFallback: () => _ambigousBlockNode(
+      event,
+      parserState: state,
+      property: property,
+      indentLevel: indentLevel,
+      laxBlockIndent: laxBlockIndent,
+      fixedInlineIndent: fixedInlineIndent,
+      forceInlined: forceInlined,
+      composeImplicitMap: composeImplicitMap,
+    ),
+  );
+}
 
 /// Parses a block node using the current [parserState] and heavily relies on
 /// the current [event] to determine the next course of action.
-BlockNode<Obj>
-_ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
+BlockNode<Obj> _ambigousBlockNode<Obj>(
   ParserEvent event, {
-  required ParserState<Obj, Seq, Dict> parserState,
+  required ParserState<Obj> parserState,
   required ParsedProperty property,
   required int indentLevel,
   required int laxBlockIndent,
@@ -516,12 +530,10 @@ _ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   switch (event) {
     case BlockCollectionEvent.startExplicitKey:
       {
-        _throwIfInlineInBlock(
+        _throwIfInlineExplicitKey(
           iterator,
           isInline: forceInlined,
           property: property,
-          currentOffset: iterator.currentLineInfo.current,
-          identifier: 'An explicit key',
         );
 
         final map = parseBlockMap(
@@ -541,12 +553,10 @@ _ambigousBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
     case BlockCollectionEvent.startBlockListEntry:
       {
-        _throwIfInlineInBlock(
+        _inlineIfInlineBlockSequence(
           iterator,
           isInline: forceInlined,
           property: property,
-          currentOffset: iterator.currentLineInfo.current,
-          identifier: 'A block sequence',
         );
 
         final sequence = parseBlockSequence(

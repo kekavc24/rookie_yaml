@@ -1,3 +1,4 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
@@ -10,15 +11,14 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 ///
 /// If [forceInline] is `true`, the map must be declared on the same line
 /// with no line breaks and throws if otherwise.
-ParserDelegate<Obj>
-parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> parseFlowMap<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
+  OnCustomMap<Obj>? asCustomMap,
 }) {
-  final ParserState(:iterator, :comments, :mapFunction, :onMapDuplicate) =
-      state;
+  final ParserState(:iterator, :comments, :onMapDuplicate) = state;
 
   final map = initFlowCollection(
     iterator,
@@ -27,13 +27,20 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     forceInline: forceInline,
     onParseComment: comments.add,
     flowEndIndicator: mappingEnd,
-    init: (start) => MappingDelegate<Obj, Dict>(
-      collectionStyle: NodeStyle.flow,
-      indentLevel: indentLevel,
-      indent: minIndent,
-      start: start,
-      mapResolver: mapFunction,
-    ),
+    init: (start) {
+      if (asCustomMap != null) {
+        return asCustomMap(NodeStyle.flow, indentLevel, minIndent, start)
+            as MapLikeDelegate<Obj, Obj>;
+      }
+
+      return MappingDelegate(
+        collectionStyle: NodeStyle.flow,
+        indentLevel: indentLevel,
+        indent: minIndent,
+        start: start,
+        mapResolver: state.mapFunction,
+      );
+    },
   );
 
   do {
@@ -81,6 +88,5 @@ parseFlowMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     }
   } while (!iterator.isEOF);
 
-  return terminateFlowCollection(iterator, map, mappingEnd)
-      as ParserDelegate<Obj>;
+  return terminateFlowCollection(iterator, map, mappingEnd);
 }

@@ -1,3 +1,4 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
@@ -13,12 +14,8 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Composes a block node using the current [event] and throws if it is not a
 /// block map.
-BlockNode<Obj> composeBlockMapStrict<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> composeBlockMapStrict<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int laxIndent,
   required int inlineFixedIndent,
@@ -42,7 +39,7 @@ BlockNode<Obj> composeBlockMapStrict<
 
   final node = mapInfo.node;
 
-  if (node is! MappingDelegate) {
+  if (node is! MapLikeDelegate) {
     throwWithRangedOffset(
       state.iterator,
       message:
@@ -59,9 +56,8 @@ BlockNode<Obj> composeBlockMapStrict<
 }
 
 /// Parses a valid block node matching the [event].
-BlockNode<Obj>
-parseBlockWildCard<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> parseBlockWildCard<Obj>(
+  ParserState<Obj> state, {
   required ParserEvent event,
   required int indentLevel,
   required int laxIndent,
@@ -128,12 +124,8 @@ parseBlockWildCard<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 ///
 /// If [composeImplicitMap] is `true` and the flow collection was inline then
 /// a block map may be composed.
-BlockNode<Obj> parseFlowNodeInBlock<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> parseFlowNodeInBlock<Obj>(
+  ParserState<Obj> state, {
   required FlowCollectionEvent event,
   required int indentLevel,
   required int indent,
@@ -141,6 +133,8 @@ BlockNode<Obj> parseFlowNodeInBlock<
   required bool composeImplicitMap,
   required int composedMapIndent,
   required ParsedProperty flowProperty,
+  OnCustomList<Obj>? asCustomList,
+  OnCustomMap<Obj>? asCustomMap,
 }) {
   // All flow events must be start of flow map or sequence
   final flow = switch (event) {
@@ -149,12 +143,14 @@ BlockNode<Obj> parseFlowNodeInBlock<
       indentLevel: indentLevel,
       minIndent: indent,
       forceInline: isInline,
+      asCustomMap: asCustomMap,
     ),
     FlowCollectionEvent.startFlowSequence => parseFlowSequence(
       state,
       indentLevel: indentLevel,
       minIndent: indent,
       forceInline: isInline,
+      asCustomList: asCustomList,
     ),
     _ => throwWithRangedOffset(
       state.iterator,
@@ -185,9 +181,8 @@ BlockNode<Obj> parseFlowNodeInBlock<
 /// Parses a block scalar based on the current scalar [event] and optionally
 /// composes a block if [composeImplicitMap] is `true` and the [Scalar] is a
 /// flow scalar.
-BlockNode<Obj>
-parseBlockScalar<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> parseBlockScalar<Obj>(
+  ParserState<Obj> state, {
   required ScalarEvent event,
   required int minIndent,
   required int indentLevel,
@@ -200,15 +195,7 @@ parseBlockScalar<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 }) {
   final ParserState(:iterator, :comments, :scalarFunction) = state;
 
-  final (
-    PreScalar(
-      :docMarkerType,
-      :indentDidChange,
-      :indentOnExit,
-      :hasLineBreak,
-    ),
-    delegate,
-  ) = parseScalar(
+  final (info, delegate) = parseScalar(
     event,
     iterator: iterator,
     scalarFunction: scalarFunction,
@@ -225,11 +212,11 @@ parseBlockScalar<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
     state,
     keyOrNode: delegate,
     keyOrMapProperty: scalarProperty,
-    indentOnExit: indentOnExit,
-    documentMarker: docMarkerType,
+    indentOnExit: info.indentOnExit,
+    documentMarker: info.docMarkerType,
 
     // Plain scalar behaved like a block scalar if indent changed.
-    keyIsBlock: !event.isFlowContext || indentDidChange,
+    keyIsBlock: !event.isFlowContext || info.indentDidChange,
     composeImplicitMap: composeImplicitMap,
     composedMapIndent: composedMapIndent,
   );

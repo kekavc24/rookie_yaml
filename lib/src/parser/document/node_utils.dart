@@ -42,7 +42,7 @@ typedef OnBlockMapEntry<Obj> =
 /// [greedyOnPlain] is only ever passed when the first two plain scalar
 /// characters resemble the directive end markers `---` but the last char
 /// is not a match.
-(PreScalar scalar, ScalarDelegate<R> delegate) parseScalar<R>(
+(ParsedScalarInfo info, ScalarDelegate<R> delegate) parseScalar<R>(
   ScalarEvent event, {
   required SourceIterator iterator,
   required ScalarFunction<R> scalarFunction,
@@ -59,7 +59,7 @@ typedef OnBlockMapEntry<Obj> =
   final prescalar = switch (event) {
     ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
         when !isImplicit && !isInFlowContext && greedyOnPlain.isEmpty =>
-      parseBlockStyle(
+      parseBlockScalar(
         iterator,
         minimumIndent: minIndent,
         indentLevel: indentLevel,
@@ -108,7 +108,7 @@ typedef OnBlockMapEntry<Obj> =
   }
 
   return (
-    prescalar,
+    prescalar.scalarInfo,
     ScalarDelegate(
       indentLevel: indentLevel,
       indent: minIndent,
@@ -272,9 +272,8 @@ D terminateFlowCollection<Obj, D extends ParserDelegate<Obj>>(
 }
 
 /// Creates a `null` delegate.
-ParserDelegate<Obj>
-nullBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> nullBlockNode<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int indent,
   required RuneOffset start,
@@ -292,9 +291,8 @@ nullBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 );
 
 /// Creates a `null` delegate only if [property] is not an [Alias].
-ParserDelegate<Obj>
-emptyBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> emptyBlockNode<Obj>(
+  ParserState<Obj> state, {
   required ParsedProperty property,
   required int indentLevel,
   required int indent,
@@ -362,7 +360,7 @@ emptyBlockNode<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
   ///  block
   ///
   /// # With literal. Applies to folded. We give "+1". Indent determined
-  /// # while parsing as recommended by YAML. See [parseBlockStyle]
+  /// # while parsing as recommended by YAML. See [parseBlockScalar]
   /// ? |
   ///     block
   ///

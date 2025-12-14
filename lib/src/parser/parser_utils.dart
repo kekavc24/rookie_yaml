@@ -1,4 +1,3 @@
-import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -9,10 +8,22 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 /// scalar was parsed successfully without an indent change.
 const seamlessIndentMarker = -2;
 
-typedef PreScalar = ({
-  /// Buffered content
-  String content,
+/// Callback for writing utf code units from a [SourceIterator].
+typedef CharWriter = void Function(int char);
 
+/// Emits all externally [buffered] utf code units to a [writer].
+void bufferHelper(Iterable<int> buffered, CharWriter writer) {
+  for (final char in buffered) {
+    writer(char);
+  }
+}
+
+/// Callback for a low level scalar parse function after the scalar has been
+/// completely parsed.
+typedef OnParsedScalar<T> = T Function(ParsedScalarInfo info);
+
+/// Scalar info from a low level scalar parse function.
+typedef ParsedScalarInfo = ({
   /// [Scalar]'s scalarstyle
   ScalarStyle scalarStyle,
 
@@ -45,16 +56,6 @@ typedef PreScalar = ({
   /// the content and folded
   bool hasLineBreak,
 
-  /// Indicates if the actual formatted content itself has a line break.
-  ///
-  /// Do not confuse this with `hasLineBreak`. Some scalars fold line breaks
-  /// which are never written to the buffer. Specifically,
-  /// [ScalarStyle.doubleQuoted] allow line breaks to be escaped. In this case,
-  /// the string may be concantenated without ever folding the line break to a
-  /// space. This information may be crucial to how we infer the kind
-  /// (Dart type) since most (, if not all,) types are inline.
-  bool wroteLineBreak,
-
   /// Always `true` for block(-like) styles, that is, `plain`, `literal` and
   /// `folded` if an indent change triggered the end of its parsing
   bool indentDidChange,
@@ -69,6 +70,27 @@ typedef PreScalar = ({
 
   /// End offset of the scalar (exclusive)
   RuneOffset end,
+});
+
+/// Precursor of an actual scalar before the top level parser resolves it.
+/// However, this object may never be instantiated if the scalar has a custom
+/// resolver.
+typedef PreScalar = ({
+  /// Buffered content
+  String content,
+
+  /// Scalar's info
+  ParsedScalarInfo scalarInfo,
+
+  /// Indicates if the actual formatted content itself has a line break.
+  ///
+  /// Do not confuse this with `hasLineBreak`. Some scalars fold line breaks
+  /// which are never written to the buffer. Specifically,
+  /// [ScalarStyle.doubleQuoted] allow line breaks to be escaped. In this case,
+  /// the string may be concantenated without ever folding the line break to a
+  /// space. This information may be crucial to how we infer the kind
+  /// (Dart type) since most (, if not all,) types are inline.
+  bool wroteLineBreak,
 });
 
 /// Single char for document end marker, `...`

@@ -11,12 +11,8 @@ typedef FlowMapEntry<T> = ParsedEntry<T>;
 
 /// Parses an explicit flow key and its value (if present) and composes a
 /// compact flow map.
-MappingDelegate<Obj, Dict> parseExplicitAsFlowMap<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+ParserDelegate<Obj> parseExplicitAsFlowMap<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
@@ -42,9 +38,8 @@ MappingDelegate<Obj, Dict> parseExplicitAsFlowMap<
 
 /// Parses an explicit flow key and its value (if present) using the current
 /// parser [state].
-FlowMapEntry<Obj>
-parseExplicitEntry<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+FlowMapEntry<Obj> parseExplicitEntry<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
@@ -58,13 +53,8 @@ parseExplicitEntry<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
 
 /// Parses an explicit flow key in arbitrary flow contexts and composes an
 /// object [R] using the [onExplicitKey] callback.
-R _parseExplicitFlow<
-  R,
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+R _parseExplicitFlow<R, Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
@@ -123,9 +113,8 @@ R _parseExplicitFlow<
 }
 
 /// Parses an implicit flow key and its value if present.
-FlowMapEntry<Obj>
-parseImplicitEntry<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  ParserState<Obj, Seq, Dict> state, {
+FlowMapEntry<Obj> parseImplicitEntry<Obj>(
+  ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
   required bool forceInline,

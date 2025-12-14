@@ -1,4 +1,5 @@
 import 'package:logging/logging.dart';
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
@@ -70,9 +71,11 @@ dynamic _dereferenceAliases(dynamic object, {required bool dereferenceAlias}) =>
 /// occurs when the parser actually needs the node.
 ///
 /// [resolvers] enable the parser to accept a collection of [ContentResolver]
-/// to directly manipulate parsed content of a parsed scalar. Providing a
-/// [NodeResolver] is useless because the returned type will never be a
-/// [YamlSourceNode].
+/// to directly manipulate parsed content of a parsed scalar.
+///
+/// [nodeResolvers] allow you to configure how the parser treats nodes
+/// annotated with specific [TagShorthand]s. Each node can only be resolved
+/// by a specific tag since a node is restricted to one kind when parsing.
 ///
 /// If [throwOnMapDuplicate] is `true`, the parser exits immediately a
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
@@ -84,7 +87,8 @@ T? loadDartObject<T>(
   YamlSource source, {
   bool dereferenceAliases = false,
   bool throwOnMapDuplicate = false,
-  List<Resolver>? resolvers,
+  List<ScalarResolver>? resolvers,
+  Map<TagShorthand, CustomResolver>? nodeResolvers,
   void Function(bool isInfo, String message)? logger,
 }) =>
     loadAsDartObjects(
@@ -92,6 +96,7 @@ T? loadDartObject<T>(
           dereferenceAliases: dereferenceAliases,
           throwOnMapDuplicate: throwOnMapDuplicate,
           resolvers: resolvers,
+          nodeResolvers: nodeResolvers,
           logger: logger,
         ).firstOrNull
         as T?;
@@ -105,9 +110,11 @@ T? loadDartObject<T>(
 /// occurs when the parser actually needs the node.
 ///
 /// [resolvers] enable the parser to accept a collection of [ContentResolver]
-/// to directly manipulate parsed content of a parsed scalar. Providing a
-/// [NodeResolver] is useless because none of returned types will never be a
-/// [YamlSourceNode].
+/// to directly manipulate parsed content of a parsed scalar.
+///
+/// [nodeResolvers] allow you to configure how the parser treats nodes
+/// annotated with specific [TagShorthand]s. Each node can only be resolved
+/// by a specific tag since a node is restricted to one kind when parsing.
 ///
 /// If [throwOnMapDuplicate] is `true`, the parser exits immediately a
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
@@ -119,13 +126,15 @@ List<Object?> loadAsDartObjects(
   YamlSource source, {
   bool dereferenceAliases = false,
   bool throwOnMapDuplicate = false,
-  List<Resolver>? resolvers,
+  List<ScalarResolver>? resolvers,
+  Map<TagShorthand, CustomResolver>? nodeResolvers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadAsDartObject(
   UnicodeIterator.ofBytes(source),
   dereferenceAliases: dereferenceAliases,
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
+  nodeResolvers: nodeResolvers,
   logger: logger,
 );
 
@@ -145,7 +154,7 @@ List<Object?> loadAsDartObjects(
 T? loadYamlNode<T extends YamlSourceNode>(
   YamlSource source, {
   bool throwOnMapDuplicate = false,
-  List<Resolver>? resolvers,
+  List<ScalarResolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => loadNodes(
   source,
@@ -157,9 +166,7 @@ T? loadYamlNode<T extends YamlSourceNode>(
 /// Loads every document's root node as a [YamlSourceNode].
 ///
 /// [resolvers] enable the parser to accept a collection of [ContentResolver]
-/// to directly manipulate parsed content before instantiating a [Scalar]
-/// and/or [NodeResolver] to manipulate a parsed [YamlSourceNode] later by
-/// calling its `asCustomType` method after parsing has been completed.
+/// to directly manipulate parsed content before instantiating a [Scalar].
 ///
 /// If [throwOnMapDuplicate] is `true`, the parser exits immediately a
 /// duplicate key is parsed within a map. Otherwise, the parser logs the
@@ -170,7 +177,7 @@ T? loadYamlNode<T extends YamlSourceNode>(
 Iterable<YamlSourceNode> loadNodes(
   YamlSource source, {
   bool throwOnMapDuplicate = false,
-  List<Resolver>? resolvers,
+  List<ScalarResolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => loadAllDocuments(
   source,
@@ -196,7 +203,7 @@ Iterable<YamlSourceNode> loadNodes(
 List<YamlDocument> loadAllDocuments(
   YamlSource source, {
   bool throwOnMapDuplicate = false,
-  List<Resolver>? resolvers,
+  List<ScalarResolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadYamlDocuments(
   UnicodeIterator.ofBytes(source),
@@ -210,9 +217,10 @@ List<Object?> _loadAsDartObject(
   SourceIterator iterator, {
   required bool dereferenceAliases,
   required bool throwOnMapDuplicate,
-  required List<Resolver>? resolvers,
+  required List<ScalarResolver>? resolvers,
+  required Map<TagShorthand, CustomResolver>? nodeResolvers,
   required void Function(bool isInfo, String message)? logger,
-}) => _loadYaml<Object?, Object?, Iterable<Object?>, Map<dynamic, dynamic>>(
+}) => _loadYaml<Object?, Object?>(
   DocumentParser(
     iterator,
     aliasFunction: (_, reference, _) =>
@@ -223,6 +231,7 @@ List<Object?> _loadAsDartObject(
     // Extract the type inferred at the scalar level.
     scalarFunction: (inferred, _, _, _, _) => inferred.value,
     resolvers: resolvers,
+    nodeResolvers: nodeResolvers,
     logger: logger ?? _defaultLogger,
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
       iterator,
@@ -239,9 +248,9 @@ List<Object?> _loadAsDartObject(
 List<YamlDocument> _loadYamlDocuments(
   SourceIterator iterator, {
   required bool throwOnMapDuplicate,
-  required List<Resolver>? resolvers,
+  required List<ScalarResolver>? resolvers,
   required void Function(bool isInfo, String message)? logger,
-}) => _loadYaml<YamlDocument, YamlSourceNode, Sequence, Mapping>(
+}) => _loadYaml<YamlDocument, YamlSourceNode>(
   DocumentParser(
     iterator,
     aliasFunction: (alias, reference, nodeSpan) =>
@@ -279,13 +288,9 @@ List<YamlDocument> _loadYamlDocuments(
   ),
 );
 
-/// Loads all yaml documents using the provided [parser].
-///
-/// [O] represents the document, [R] the generic type returned by aliases and
-/// scalars. [S] the list subtype and [M] the map subtype.
-List<O> _loadYaml<O, R, S extends Iterable<R>, M extends Map<R, R?>>(
-  DocumentParser<R, S, M> parser,
-) {
+/// Loads all yaml documents using the provided [parser] with [O] representing
+/// the document and [R] representing the root node of the document.
+List<O> _loadYaml<O, R>(DocumentParser<R> parser) {
   hierarchicalLoggingEnabled = true;
   final objects = <O>[];
 

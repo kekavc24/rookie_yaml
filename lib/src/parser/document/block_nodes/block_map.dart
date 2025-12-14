@@ -22,12 +22,8 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 ///   - [documentMarker] is [DocumentMarker.directiveEnd] or
 ///     [DocumentMarker.documentEnd] which both signify the end of the current
 ///     document.
-BlockNode<Obj> composeBlockMapFromScalar<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> composeBlockMapFromScalar<Obj>(
+  ParserState<Obj> state, {
   required ParserDelegate<Obj> keyOrNode,
   required ParsedProperty? keyOrMapProperty,
   required int? indentOnExit,
@@ -90,12 +86,8 @@ BlockNode<Obj> composeBlockMapFromScalar<
 ///
 /// [parseBlockMap] is only called if more entries can be parsed after the
 /// first [key]'s value has been parsed.
-BlockNode<Obj> composeAndParseBlockMap<
-  Obj,
-  Seq extends Iterable<Obj>,
-  Dict extends Map<Obj, Obj?>
->(
-  ParserState<Obj, Seq, Dict> state, {
+BlockNode<Obj> composeAndParseBlockMap<Obj>(
+  ParserState<Obj> state, {
   required ParserDelegate<Obj> key,
   required ParsedProperty? mapProperty,
   required int fixedMapIndent,
@@ -165,13 +157,12 @@ BlockNode<Obj> composeAndParseBlockMap<
 }
 
 /// Parses the entries of a block [map].
-BlockNode<Obj>
-parseBlockMap<Obj, Seq extends Iterable<Obj>, Dict extends Map<Obj, Obj?>>(
-  MappingDelegate<Obj, Dict> map, {
-  required ParserState<Obj, Seq, Dict> state,
+BlockNode<Obj> parseBlockMap<Obj>(
+  MapLikeDelegate<Obj, Obj> map, {
+  required ParserState<Obj> state,
 }) {
   final ParserState(:iterator, :onMapDuplicate) = state;
-  final MappingDelegate(indent: mapIndent, :indentLevel) = map;
+  final MapLikeDelegate(indent: mapIndent, :indentLevel) = map;
 
   void onParseEntry(ParserDelegate<Obj> key, ParserDelegate<Obj>? value) {
     if (!map.accept(key.parsed(), value?.parsed())) {
