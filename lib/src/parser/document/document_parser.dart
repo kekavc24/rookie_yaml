@@ -56,7 +56,7 @@ final class DocumentParser<R> {
          logger: logger,
          onMapDuplicate: onMapDuplicate,
          resolvers: resolvers,
-         customResolvers: nodeResolvers
+         customResolvers: nodeResolvers,
        );
 
   final ParserState<R> _parserState;
