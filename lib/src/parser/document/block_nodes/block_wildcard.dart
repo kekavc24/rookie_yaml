@@ -1,7 +1,6 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
-import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
@@ -11,49 +10,6 @@ import 'package:rookie_yaml/src/parser/document/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-
-/// Composes a block node using the current [event] and throws if it is not a
-/// block map.
-BlockNode<Obj> composeBlockMapStrict<Obj>(
-  ParserState<Obj> state, {
-  required int indentLevel,
-  required int laxIndent,
-  required int inlineFixedIndent,
-  required NodeProperty property,
-  required bool isInline,
-  required bool composeImplicitMap,
-}) {
-  /// Parse as a wildcard but expect it to degenerate to a block map
-  /// since we cannot determine this at the current stack level.
-  final mapInfo = parseBlockNode(
-    state,
-    indentLevel: indentLevel,
-
-    // Won't matter. The lax and inline indent are predetermined already.
-    inferredFromParent: null,
-    laxBlockIndent: laxIndent,
-    fixedInlineIndent: inlineFixedIndent,
-    forceInlined: isInline,
-    composeImplicitMap: composeImplicitMap,
-  );
-
-  final node = mapInfo.node;
-
-  if (node is! MapLikeDelegate) {
-    throwWithRangedOffset(
-      state.iterator,
-      message:
-          'Expected an (implied) block map with property '
-          '"${property.tag ?? property.anchor}"',
-
-      start: property.span.start,
-      end: mapInfo.node.endOffset!,
-    );
-  }
-
-  state.trackAnchor(node, property);
-  return mapInfo;
-}
 
 /// Parses a valid block node matching the [event].
 BlockNode<Obj> parseBlockWildCard<Obj>(

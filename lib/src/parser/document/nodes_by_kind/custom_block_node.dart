@@ -11,9 +11,12 @@ BlockNode<Obj> customBlockNode<Obj>(
   required int fixedInlineIndent,
   required bool forceInlined,
   required bool composeImplicitMap,
+  required bool expectBlockMap,
 }) {
+  // Handler for a flow or block node.
   BlockNode<Obj> flowOrBlock({
     required BlockNode<Obj> Function() ifBlock,
+    bool enforceMap = false,
     OnCustomList<Obj>? ifFlowList,
     OnCustomMap<Obj>? ifFlowMap,
   }) {
@@ -55,7 +58,7 @@ BlockNode<Obj> customBlockNode<Obj>(
         customNode = ifBlock();
     }
 
-    if (composeImplicitMap && customNode.node is! MapLikeDelegate) {
+    if ((enforceMap || expectBlockMap) && customNode.node is! MapLikeDelegate) {
       throwWithRangedOffset(
         state.iterator,
         message: 'Expected an custom map',
@@ -71,6 +74,7 @@ BlockNode<Obj> customBlockNode<Obj>(
     kind,
     property: property,
     onMatchMap: (mapBuilder) => flowOrBlock(
+      enforceMap: true,
       ifBlock: () => parseBlockMap(
         mapBuilder(
               NodeStyle.block,

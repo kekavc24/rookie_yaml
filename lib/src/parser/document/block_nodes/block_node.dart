@@ -4,6 +4,7 @@ import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/forced_block_map.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
@@ -305,6 +306,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
         state,
         parsed: composeBlockMapStrict(
           state,
+          event: event,
           indentLevel: indentLevel,
           laxIndent: adjustedLaxIndent,
           inlineFixedIndent: adjustedInlineIndent,
@@ -402,6 +404,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
       fixedInlineIndent: fixedInlineIndent,
       forceInlined: forceInlined,
       composeImplicitMap: composeImplicitMap,
+      expectBlockMap: false,
     );
   }
 
@@ -422,6 +425,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
       // Parse wildcard but expect a map
       return composeBlockMapStrict(
         state,
+        event: event,
         indentLevel: indentLevel,
         laxIndent: laxBlockIndent,
         inlineFixedIndent: fixedInlineIndent,

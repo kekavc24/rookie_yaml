@@ -1,0 +1,77 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
+import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
+import 'package:rookie_yaml/src/parser/document/document_events.dart';
+import 'package:rookie_yaml/src/parser/document/node_properties.dart';
+import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
+import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+
+/// Composes a block node but expects it to be a block map. A block map may
+/// begin with an implicit key rather than an explicit one.
+BlockNode<Obj> composeBlockMapStrict<Obj>(
+  ParserState<Obj> state, {
+  required ParserEvent event,
+  required int indentLevel,
+  required int laxIndent,
+  required int inlineFixedIndent,
+  required NodeProperty property,
+  required bool isInline,
+  required bool composeImplicitMap,
+}) {
+  BlockNode<Obj> nodeInfo;
+
+  if (property.kind case CustomKind kind) {
+    if (kind != CustomKind.map) {
+      throwWithRangedOffset(
+        state.iterator,
+        message: 'Expected the implied start of a custom block map',
+        start: property.span.start,
+        end: state.iterator.currentLineInfo.current,
+      );
+    }
+
+    nodeInfo = parseBlockMap(
+      (property.customResolver as ObjectFromMap<Obj>).onCustomMap(
+            NodeStyle.block,
+            indentLevel,
+            inlineFixedIndent,
+            property.span.start,
+          )
+          as MapLikeDelegate<Obj, Obj>,
+      state: state,
+    );
+  } else {
+    /// Parse as a wildcard but expect it to degenerate to a block map since we
+    /// cannot determine this at the current stack level.
+    nodeInfo = parseBlockNode(
+      state,
+      indentLevel: indentLevel,
+
+      // Won't matter. The lax and inline indent are predetermined already.
+      inferredFromParent: null,
+      laxBlockIndent: laxIndent,
+      fixedInlineIndent: inlineFixedIndent,
+      forceInlined: isInline,
+      composeImplicitMap: composeImplicitMap,
+    );
+
+    if (nodeInfo.node is! MapLikeDelegate) {
+      throwWithRangedOffset(
+        state.iterator,
+        message:
+            'Expected an (implied) block map with property '
+            '"${property.tag ?? property.anchor}"',
+
+        start: property.span.start,
+        end: nodeInfo.node.endOffset!,
+      );
+    }
+  }
+
+  state.trackAnchor(nodeInfo.node, property);
+  return nodeInfo;
+}
