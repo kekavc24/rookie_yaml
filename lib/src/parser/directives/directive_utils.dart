@@ -191,16 +191,20 @@ void _parseScheme(StringBuffer buffer, SourceIterator iterator) {
 void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
   const hexCount = 2;
 
-  final hexBuff = StringBuffer('0x');
+  var escaped = 0;
+  final count = takeFromIteratorUntil(
+    iterator,
+    includeCharAtCursor: false,
+    mapper: (char) => char,
+    onMapped: (c) {
+      escaped =
+          (escaped << 4) |
+          (c > asciiNine ? (10 + (c - capA)) : (c - asciiZero));
+    },
+    stopIf: (count, next) => !next.isHexDigit() || count == hexCount,
+  );
 
-  if (takeFromIteratorUntil(
-        iterator,
-        includeCharAtCursor: false,
-        mapper: (char) => char,
-        onMapped: hexBuff.writeCharCode,
-        stopIf: (count, next) => !next.isHexDigit() || count == hexCount,
-      ) !=
-      hexCount) {
+  if (count != hexCount) {
     throwWithApproximateRange(
       iterator,
       message: 'Expected at least 2 hex digits',
@@ -209,11 +213,11 @@ void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
       /// We have highlight the "%" that indicated this is an hex. This will
       /// help provide accurate and contextual information. The buffer
       /// indicates how many characters we have read so far.
-      charCountBefore: hexBuff.length - hexCount,
+      charCountBefore: (count + 2) - hexCount,
     );
   }
 
-  uriBuffer.write(String.fromCharCode(int.parse(hexBuff.toString())));
+  uriBuffer.writeCharCode(escaped);
 }
 
 /// Parses an alias or anchor suffix.

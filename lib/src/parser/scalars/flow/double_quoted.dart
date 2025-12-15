@@ -164,10 +164,7 @@ T doubleQuotedParser<T>(
 }
 
 /// Parses an escaped character present in a double quoted string.
-void _parseEscaped(
-  SourceIterator iterator, {
-  required CharWriter buffer,
-}) {
+void _parseEscaped(SourceIterator iterator, {required CharWriter buffer}) {
   iterator.nextChar();
 
   if (iterator.isEOF) {
@@ -179,14 +176,12 @@ void _parseEscaped(
   // Attempt to resolve as an hex
   if (checkHexWidth(charAfterEscape) case int hexWidth) {
     var hexToRead = hexWidth;
-    int? hexCode;
+    var hexCode = 0;
 
-    void convertRollingHex(String digit) {
-      final binary = int.parse(digit, radix: 16); // We know it is valid
-
-      hexCode = hexCode == null
-          ? binary
-          : (hexCode! << 4) ^ binary; // Shift 4 bits at a time
+    void convertRollingHex(int code) {
+      hexCode =
+          (hexCode << 4) |
+          (code > asciiNine ? (10 + (code - capA)) : (code - asciiZero));
     }
 
     iterator.nextChar(); // Point the hex character
@@ -202,7 +197,7 @@ void _parseEscaped(
       }
 
       --hexToRead;
-      convertRollingHex(hexChar.asString());
+      convertRollingHex(hexChar);
       iterator.nextChar();
     }
 
@@ -221,7 +216,7 @@ void _parseEscaped(
       );
     }
 
-    buffer(hexCode!); // Will never be null if [hexToRead] is 0
+    buffer(hexCode); // Will never be null if [hexToRead] is 0
     return;
   } else if (resolveDoubleQuotedEscaped(charAfterEscape) case int escaped) {
     buffer(escaped);
