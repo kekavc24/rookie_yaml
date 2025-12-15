@@ -110,8 +110,7 @@ R parseCustomScalar<R, Obj>(
       delegate
         ..indent = scalarIndent
         ..hasLineBreak = hasLineBreak
-        ..updateEndOffset = end
-        ..updateNodeProperties = property,
+        ..updateEndOffset = end,
     );
   }
 

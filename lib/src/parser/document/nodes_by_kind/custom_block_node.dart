@@ -52,10 +52,7 @@ BlockNode<Obj> customBlockNode<Obj>(
 
       block:
       default:
-        {
-          customNode = ifBlock();
-          state.trackAnchor(customNode.node, property);
-        }
+        customNode = ifBlock();
     }
 
     if (composeImplicitMap && customNode.node is! MapLikeDelegate) {
