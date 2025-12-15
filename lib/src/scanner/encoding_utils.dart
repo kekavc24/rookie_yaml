@@ -66,17 +66,17 @@ extension SpacingUtils on int {
   bool isLineBreak() => this == lineFeed || this == carriageReturn;
 }
 
-const _capA = 0x41;
-const _capF = 0x46;
+const capA = 0x41;
+const capF = 0x46;
 const _capZ = 0x5A;
 
-const _lowerA = 0x61;
+const lowerA = 0x61;
 const _lowerF = 0x66;
 const _lowerZ = 0x7A;
 
 /// Hex value of `0` in ASCII
 const asciiZero = 0x30;
-const _asciiNine = 0x39;
+const asciiNine = 0x39;
 
 const _lowerPrintableAscii = 0x20;
 const _upperPrintableAscii = 0x7E;
@@ -92,7 +92,7 @@ const _upperSupplementalPlane = 0x10FFFF;
 
 extension CharUtils on int {
   /// Checks if digit. `0x30 - 0x39`
-  bool isDigit() => this >= asciiZero && this <= _asciiNine;
+  bool isDigit() => this >= asciiZero && this <= asciiNine;
 
   /// Checks if hex digit.
   ///   - Valid digit `0x30 - 0x39`
@@ -100,12 +100,12 @@ extension CharUtils on int {
   ///   - `a - f`
   bool isHexDigit() =>
       isDigit() ||
-      (this >= _capA && this <= _capF) ||
-      (this >= _lowerA && this <= _lowerF);
+      (this >= capA && this <= capF) ||
+      (this >= lowerA && this <= _lowerF);
 
   /// Checks if valid ASCII letter, that is, alphabetic.
   bool isAsciiLetter() =>
-      (this >= _capA && this <= _capZ) || (this >= _lowerA && this <= _lowerZ);
+      (this >= capA && this <= _capZ) || (this >= lowerA && this <= _lowerZ);
 
   /// Checks if alphanumeric or word
   bool isAlphaNumeric() =>
