@@ -1,11 +1,11 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 List<YamlDocument> bootstrapDocParser(
   String yaml, {
-  List<Resolver>? resolvers,
+  List<ScalarResolver>? resolvers,
   void Function(bool isInfo, String message)? logger,
   void Function(String message)? onMapDuplicate,
 }) => loadAllDocuments(

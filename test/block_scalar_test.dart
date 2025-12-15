@@ -28,7 +28,7 @@ $indent
 
       for (final block in defaultBlockIndicators) {
         check(
-          parseBlockStyle(
+          parseBlockScalar(
             UnicodeIterator.ofString('$block$trailing'),
             minimumIndent: 0,
             indentLevel: 0,
@@ -52,7 +52,7 @@ $indent
   Content with indent of 2 spaces''';
 
       for (final block in defaultBlockIndicators) {
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString('$block$trailing'),
           minimumIndent: 0,
           indentLevel: 0,
@@ -67,7 +67,7 @@ $indent
     test('Parses block scalar with header only', () {
       for (final block in defaultBlockIndicators) {
         check(
-            parseBlockStyle(
+            parseBlockScalar(
               UnicodeIterator.ofString(block),
               minimumIndent: 0,
               indentLevel: 0,
@@ -82,7 +82,7 @@ $indent
     test('Throws if indent indicator is not in range of 1 - 9', () {
       // 0 is a single digit. Will check range before throwing
       check(
-        () => parseBlockStyle(
+        () => parseBlockScalar(
           UnicodeIterator.ofString('|0\n'),
           minimumIndent: 0,
           indentLevel: 0,
@@ -97,7 +97,7 @@ $indent
       /// digit of "10" which "1" is acceptable. Any other violates YAML format.
       /// We expect a chomping indicator
       check(
-        () => parseBlockStyle(
+        () => parseBlockScalar(
           UnicodeIterator.ofString('|10\n'),
           minimumIndent: 0,
           indentLevel: 0,
@@ -114,7 +114,7 @@ $indent
           ' # No duplicates allowed';
 
       check(
-        () => parseBlockStyle(
+        () => parseBlockScalar(
           UnicodeIterator.ofString(yaml),
           minimumIndent: 0,
           indentLevel: 0,
@@ -131,7 +131,7 @@ $indent
           '#Expected a space after the indicator';
 
       check(
-        () => parseBlockStyle(
+        () => parseBlockScalar(
           UnicodeIterator.ofString(yaml),
           minimumIndent: 0,
           indentLevel: 0,
@@ -150,7 +150,7 @@ $indent
 
       for (final str in defaultBlockIndicators) {
         check(
-            parseBlockStyle(
+            parseBlockScalar(
               UnicodeIterator.ofString('$str$lessIndented'),
               minimumIndent: 0,
               indentLevel: 0,
@@ -170,7 +170,7 @@ $indent
 
       for (final str in defaultBlockIndicators) {
         check(
-          () => parseBlockStyle(
+          () => parseBlockScalar(
             UnicodeIterator.ofString(
               '$str'
               '\n'
@@ -200,7 +200,7 @@ $indent
           'Nothing more, nothing less';
 
       check(
-          parseBlockStyle(
+          parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
@@ -226,7 +226,7 @@ $indent
           '\tTab is not an indent but content';
 
       check(
-          parseBlockStyle(
+          parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
@@ -245,7 +245,7 @@ $indent
       const parsed = 'Literal keeps all line breaks\n\n\n';
 
       check(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
@@ -262,7 +262,7 @@ $indent
       const parsed = 'Literal keeps final line break\n';
 
       check(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
@@ -279,7 +279,7 @@ $indent
       const parsed = 'Literal trims all line breaks';
 
       check(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
@@ -300,7 +300,7 @@ $indent
           'folded with inferredIndent of 1 space. Nothing more, nothing less';
 
       check(
-          parseBlockStyle(
+          parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
@@ -344,7 +344,7 @@ $indent
           'last line';
 
       check(
-          parseBlockStyle(
+          parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
             indentLevel: 0,
@@ -363,7 +363,7 @@ $indent
       const parsed = 'Folded keeps all line breaks\n\n\n';
 
       check(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
@@ -380,7 +380,7 @@ $indent
       const parsed = 'Folded keeps final line break\n';
 
       check(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,
@@ -397,7 +397,7 @@ $indent
       const parsed = 'Folded trims all line breaks';
 
       check(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
           indentLevel: 0,

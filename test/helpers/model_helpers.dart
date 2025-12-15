@@ -24,22 +24,30 @@ Directives vanillaDirectives(String yaml) => parseDirectives(
 T _inferredValue<T>(Scalar<T> scalar) => scalar.value;
 
 extension PreScalarHelper on Subject<PreScalar?> {
-  void hasScalarStyle(ScalarStyle style) =>
-      isNotNull().has((p) => p.scalarStyle, 'ScalarStyle').equals(style);
+  void hasScalarStyle(ScalarStyle style) => isNotNull()
+      .has((p) => p.scalarInfo.scalarStyle, 'ScalarStyle')
+      .equals(style);
 
-  void hasIndent(int indent) =>
-      isNotNull().has((p) => p.scalarIndent, 'Inferred indent').equals(indent);
+  void hasIndent(int indent) => isNotNull()
+      .has((p) => p.scalarInfo.scalarIndent, 'Inferred indent')
+      .equals(indent);
 
   void hasFormattedContent(String content) =>
       isNotNull().has((p) => p.content, 'Canonical Content').equals(content);
 
   void hasDocEndMarkers() => isNotNull()
-      .has((p) => p.docMarkerType.stopIfParsingDoc, 'Document End Markers')
+      .has(
+        (p) => p.scalarInfo.docMarkerType.stopIfParsingDoc,
+        'Document End Markers',
+      )
       .isTrue();
 
   void indentDidChangeTo(int indent) => isNotNull()
-    ..has((p) => p.indentDidChange, 'Indent Change Indicator').isTrue()
-    ..has((p) => p.indentOnExit, 'Indent on Exit').equals(indent);
+    ..has(
+      (p) => p.scalarInfo.indentDidChange,
+      'Indent Change Indicator',
+    ).isTrue()
+    ..has((p) => p.scalarInfo.indentOnExit, 'Indent on Exit').equals(indent);
 }
 
 extension ScalarHelper on Subject<Scalar> {

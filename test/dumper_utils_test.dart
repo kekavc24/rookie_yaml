@@ -87,7 +87,7 @@ multiline string.
       ).equals(defaultUnfolded.substring(0, defaultUnfolded.length - 1));
 
       parserMatches(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString('>\n$unfolded'),
           minimumIndent: 0,
           indentLevel: 0,
@@ -182,7 +182,7 @@ multiline string.
       check(unfolded).equals(expected);
 
       parserMatches(
-        parseBlockStyle(
+        parseBlockScalar(
           UnicodeIterator.ofString('>$unfolded'),
           minimumIndent: 0,
           indentLevel: 0,
