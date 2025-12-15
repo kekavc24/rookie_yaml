@@ -61,7 +61,7 @@ BlockNode<Obj> customBlockNode<Obj>(
     if ((enforceMap || expectBlockMap) && customNode.node is! MapLikeDelegate) {
       throwWithRangedOffset(
         state.iterator,
-        message: 'Expected an custom map',
+        message: 'Expected a custom map',
         start: property.span.start,
         end: customNode.node.endOffset!,
       );

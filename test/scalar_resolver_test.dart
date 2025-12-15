@@ -1,8 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
@@ -10,27 +8,7 @@ import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
 import 'helpers/model_helpers.dart';
-
-final class _SimpleUtfBuffer extends BytesToScalar<List<int>> {
-  _SimpleUtfBuffer({
-    required super.scalarStyle,
-    required super.indentLevel,
-    required super.indent,
-    required super.start,
-  });
-
-  final buffer = <int>[];
-
-  @override
-  void Function() get onComplete =>
-      () => buffer.add(-1); // Spike on complete
-
-  @override
-  CharWriter get onWriteRequest => buffer.add;
-
-  @override
-  List<int> parsed() => buffer;
-}
+import 'helpers/test_resolvers.dart';
 
 void main() {
   group('ScalarResolver', () {
@@ -79,7 +57,7 @@ void main() {
     final tag = TagShorthand.fromTagUri(TagHandle.primary(), 'buffer');
 
     final resolver = ObjectFromScalarBytes<List<int>>(
-      onCustomScalar: (style, indentLevel, indent, start) => _SimpleUtfBuffer(
+      onCustomScalar: (style, indentLevel, indent, start) => SimpleUtfBuffer(
         scalarStyle: style,
         indentLevel: indentLevel,
         indent: indent,
