@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
@@ -38,7 +38,7 @@ BlockNode<Obj> parseBlockWildCard<Obj>(
     composedMapIndent: inlineFixedIndent,
   ),
   BlockCollectionEvent.startExplicitKey => parseBlockMap(
-    MappingDelegate(
+    GenericMap(
       collectionStyle: NodeStyle.block,
       indentLevel: indentLevel,
       indent: inlineFixedIndent,

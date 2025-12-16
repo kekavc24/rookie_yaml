@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
@@ -55,7 +55,7 @@ typedef OnCompleteCustom<R, T> =
       int indentOnExit,
       bool indentDidChange,
       DocumentMarker marker,
-      ParserDelegate<T> delegate,
+      NodeDelegate<T> delegate,
     );
 
 /// Parses a scalar using a custom [resolver].
@@ -80,18 +80,19 @@ R parseCustomScalar<R, Obj>(
   required int minIndent,
 }) {
   // Delegate helper.
-  BytesToScalar<Obj> delegateOf(ScalarStyle style) {
-    return resolver.onCustomScalar(
-      style,
-      indentLevel,
-      minIndent,
-      property.span.start,
+  BoxedScalar<Obj> delegateOf(ScalarStyle style) {
+    return BoxedScalar(
+      resolver.onCustomScalar(),
+      scalarStyle: style,
+      indentLevel: indentLevel,
+      indent: minIndent,
+      start: property.span.start,
     );
   }
 
   // Creates the scalar and calls [onComplete].
-  R completionHelper(BytesToScalar<Obj> delegate, ParsedScalarInfo info) {
-    delegate.onComplete();
+  R completionHelper(BoxedScalar<Obj> boxed, ParsedScalarInfo info) {
+    boxed.delegate.onComplete();
     final (
       :scalarStyle,
       :scalarIndent,
@@ -107,7 +108,7 @@ R parseCustomScalar<R, Obj>(
       indentOnExit,
       indentDidChange,
       docMarkerType,
-      delegate
+      boxed
         ..indent = scalarIndent
         ..hasLineBreak = hasLineBreak
         ..updateEndOffset = end,
@@ -115,7 +116,7 @@ R parseCustomScalar<R, Obj>(
   }
 
   // Handler for the parser.
-  R parse(ScalarStyle style, R Function(BytesToScalar<Obj> delegate) parser) {
+  R parse(ScalarStyle style, R Function(BoxedScalar<Obj> delegate) parser) {
     final delegate = delegateOf(style);
     return parser(delegate);
   }
@@ -136,7 +137,7 @@ R parseCustomScalar<R, Obj>(
           isFolded ? ScalarStyle.folded : ScalarStyle.literal,
           (d) => blockScalarParser(
             iterator,
-            charBuffer: d.onWriteRequest,
+            charBuffer: d.delegate.onWriteRequest,
             minimumIndent: minIndent,
             indentLevel: indentLevel,
             onParseComment: onParseComment,
@@ -151,7 +152,7 @@ R parseCustomScalar<R, Obj>(
           ScalarStyle.doubleQuoted,
           (d) => doubleQuotedParser(
             iterator,
-            buffer: d.onWriteRequest,
+            buffer: d.delegate.onWriteRequest,
             indent: minIndent,
             isImplicit: isImplicit,
             onParsingComplete: (info) => completionHelper(d, info),
@@ -165,7 +166,7 @@ R parseCustomScalar<R, Obj>(
           ScalarStyle.singleQuoted,
           (d) => singleQuotedParser(
             iterator,
-            buffer: d.onWriteRequest,
+            buffer: d.delegate.onWriteRequest,
             indent: minIndent,
             isImplicit: isImplicit,
             onParsingComplete: (info) => completionHelper(d, info),
@@ -180,7 +181,7 @@ R parseCustomScalar<R, Obj>(
 
         final plain = plainParser(
           iterator,
-          buffer: plainDelegate.onWriteRequest,
+          buffer: plainDelegate.delegate.onWriteRequest,
           indent: minIndent,
           charsOnGreedy: '',
           isImplicit: isImplicit,

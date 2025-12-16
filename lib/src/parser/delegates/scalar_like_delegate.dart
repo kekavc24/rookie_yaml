@@ -1,8 +1,23 @@
-part of 'parser_delegate.dart';
+part of 'object_delegate.dart';
+
+/// A delegate that accepts the bytes/code units of a scalar from the directly
+/// underlying [SourceIterator].
+abstract base class BytesToScalar<T> extends ObjectDelegate<T> {
+  /// A callback for the scalar function at the lowest level that has access to
+  /// the [SourceIterator] backing the parser. Will be called for every code
+  /// point that is considered content.
+  CharWriter get onWriteRequest;
+
+  /// Always called once no more bytes/utf code units are present.
+  ///
+  /// The parser may fail to call this method if the scalar was declared as a
+  /// [ScalarStyle.plain] node with no content. Your delegate implementation
+  /// must take this into consideration if your scalar may be empty.
+  void onComplete();
+}
 
 /// A delegate that accepts a scalar-like value.
-sealed class ScalarLikeDelegate<T> extends ParserDelegate<T> {
-  /// Create a delegate that resolves a map-like structure.
+sealed class ScalarLikeDelegate<T> extends NodeDelegate<T> {
   ScalarLikeDelegate({
     required this.scalarStyle,
     required super.indentLevel,
@@ -14,32 +29,28 @@ sealed class ScalarLikeDelegate<T> extends ParserDelegate<T> {
   final ScalarStyle scalarStyle;
 }
 
-/// A delegate that directly accepts the bytes/code units to an object [T]. Any
-/// properties associated with your node will be packed to this delegate. You
-/// must override the `parsed` method.
-///
-/// This class is a mirror of the intermediate object created before the parser
-/// strips any styles and properties. This is the abstraction the parser sees
-/// and not your object. All properties from the super class that this class
-/// needs will be provided by the parser.
-abstract base class BytesToScalar<T> extends ScalarLikeDelegate<T> {
-  BytesToScalar({
+/// Wraps a [BytesToScalar].
+final class BoxedScalar<T> extends ScalarLikeDelegate<T> {
+  BoxedScalar(
+    this.delegate, {
     required super.scalarStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
   });
 
-  /// A callback for the scalar function at the lowest level that has access to
-  /// the [SourceIterator] backing the parser.
-  CharWriter get onWriteRequest;
+  /// External delegate that accepts code points representing the scalar's
+  /// content.
+  final BytesToScalar<T> delegate;
 
-  /// Function called once no more bytes/utf code units are present.
-  ///
-  /// The parser may fail to call this function if the scalar was declared as a
-  /// [ScalarStyle.plain] node with no content. Your delegate implementation
-  /// must take this into consideration if your scalar may be empty.
-  void Function() get onComplete;
+  @override
+  set updateNodeProperties(ParsedProperty? property) {
+    super.updateNodeProperties = property;
+    delegate._property = property;
+  }
+
+  @override
+  T parsed() => delegate.parsed();
 }
 
 /// A delegate that resolves to a [Scalar].
@@ -88,7 +99,7 @@ final class ScalarDelegate<T> extends ScalarLikeDelegate<T>
   }
 
   @override
-  T _resolveObject() {
+  T _resolveNode() {
     ScalarValue? value;
 
     if (_tag case ContentResolver<dynamic>(

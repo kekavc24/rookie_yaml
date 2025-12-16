@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/special_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
@@ -15,7 +15,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
   required int indent,
   required ParserEvent expectedEvent,
   required BlockInfo Function(SourceIterator iterator) fallback,
-  required void Function(ParserDelegate<Obj> blockNode) onSequenceOrBlockNode,
+  required void Function(NodeDelegate<Obj> blockNode) onSequenceOrBlockNode,
   required OnBlockMapEntry<Obj> maybeOnEntry,
 }) {
   final ParserState(:iterator, :comments) = state;
@@ -113,7 +113,7 @@ BlockInfo parseExplicitBlockEntry<Obj>(
   final ParserState(:iterator) = state;
   var marker = iterator.currentLineInfo.current;
 
-  ParserDelegate<Obj>? key;
+  NodeDelegate<Obj>? key;
   final (:ignoreValueIfKey, blockInfo: keyInfo) = _parseExplicit(
     state,
     indentLevel: entryIndentLevel,

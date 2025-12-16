@@ -76,26 +76,26 @@ BlockNode<Obj> customBlockNode<Obj>(
     onMatchMap: (mapBuilder) => flowOrBlock(
       enforceMap: true,
       ifBlock: () => parseBlockMap(
-        mapBuilder(
-              NodeStyle.block,
-              indentLevel,
-              fixedInlineIndent,
-              property.span.start,
-            )
-            as MapLikeDelegate<Obj, Obj>,
+        MapLikeDelegate.boxed(
+          mapBuilder(),
+          collectionStyle: NodeStyle.block,
+          indentLevel: indentLevel,
+          indent: fixedInlineIndent,
+          start: property.span.start,
+        ),
         state: state,
       ),
       ifFlowMap: mapBuilder,
     ),
     onMatchIterable: (listBuilder) => flowOrBlock(
       ifBlock: () => parseBlockSequence(
-        listBuilder(
-              NodeStyle.block,
-              indentLevel,
-              fixedInlineIndent,
-              property.span.start,
-            )
-            as SequenceLikeDelegate<Obj, Obj>,
+        SequenceLikeDelegate<Obj, Obj>.boxed(
+          listBuilder(),
+          collectionStyle: NodeStyle.block,
+          indentLevel: indentLevel,
+          indent: fixedInlineIndent,
+          start: property.span.start,
+        ),
         state: state,
         levelWithBlockMap: false,
       ).sequence,

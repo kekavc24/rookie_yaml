@@ -8,30 +8,15 @@ import 'helpers/test_resolvers.dart';
 
 void main() {
   final listResolver = ObjectFromIterable<List<int>>(
-    onCustomIterable: (style, indentLevel, indent, start) => MySortedList(
-      collectionStyle: style,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: start,
-    ),
+    onCustomIterable: () => MySortedList(),
   );
 
   final mapResolver = ObjectFromMap<Set<String>>(
-    onCustomMap: (nodeStyle, indentLevel, indent, start) => MySetFromMap(
-      collectionStyle: nodeStyle,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: start,
-    ),
+    onCustomMap: () => MySetFromMap(),
   );
 
   final scalarResolver = ObjectFromScalarBytes<List<int>>(
-    onCustomScalar: (style, indentLevel, indent, start) => SimpleUtfBuffer(
-      scalarStyle: style,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: start,
-    ),
+    onCustomScalar: () => SimpleUtfBuffer(),
   );
 
   group('Resolvers', () {

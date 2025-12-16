@@ -1,8 +1,17 @@
-part of 'parser_delegate.dart';
+part of 'object_delegate.dart';
+
+/// A delegate that maps an iterable to an object [T]. No intermediate [List] or
+/// [Iterable] is constructed. You must override the `parsed` method.
+///
+/// Additionally, it has been forced to accept a nullable [Object] as an
+/// element. All subclasses need to guarantee their own runtime safety in case
+/// the shape of the YAML sequence doesn't match the desired object.
+abstract base class SequenceToObject<T> = ObjectDelegate<T>
+    with _IterableDelegate<Object?>;
 
 /// A delegate that buffers to a sequence-like structure.
-sealed class SequenceLikeDelegate<E, T> extends ParserDelegate<T> {
-  /// Create a delegate that resolves a sequence-like structure.
+abstract base class SequenceLikeDelegate<E, T> extends NodeDelegate<T>
+    with _IterableDelegate<E> {
   SequenceLikeDelegate({
     required this.collectionStyle,
     required super.indentLevel,
@@ -13,31 +22,49 @@ sealed class SequenceLikeDelegate<E, T> extends ParserDelegate<T> {
   /// [NodeStyle] for the sequence-like node.
   final NodeStyle collectionStyle;
 
-  /// Adds an [input] to the iterable backing this delegate.
-  void accept(E input);
+  /// Creates a [SequenceLikeDelegate] for an external sequence linked to a tag.
+  factory SequenceLikeDelegate.boxed(
+    SequenceToObject<T> delegate, {
+    required NodeStyle collectionStyle,
+    required int indentLevel,
+    required int indent,
+    required RuneOffset start,
+  }) =>
+      _BoxedSequence(
+            delegate,
+            collectionStyle: collectionStyle,
+            indentLevel: indentLevel,
+            indent: indent,
+            start: start,
+          )
+          as SequenceLikeDelegate<E, T>;
 }
 
-/// A delegate that maps an iterable to an object [T]. No intermediate [List] or
-/// [Iterable] is constructed. Single element will always be provided once a
-/// complete sequence entry has been parsed. You must override the `parsed`
-/// method.
-///
-/// This class is a mirror of the intermediate object created before the
-/// parser strips any styles and properties. This is the abstraction the parser
-/// sees and not your object. All properties from the super class that this
-/// class needs will be provided by the parser.
-///
-/// Additionally, it has been forced to accept a nullable [Object] as an
-/// element. All subclasses need to guarantee their own runtime safety in case
-/// the shape of the YAML sequence doesn't match the desired object.
-abstract base class IterableToObjectDelegate<T>
-    extends SequenceLikeDelegate<Object?, T> {
-  IterableToObjectDelegate({
+/// Wraps an external [SequenceToObject] and allows it to behave like a
+/// [SequenceLikeDelegate] that the parser can interact with.
+final class _BoxedSequence<T> extends SequenceLikeDelegate<Object?, T> {
+  _BoxedSequence(
+    this._delegate, {
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
   });
+
+  /// Delegate with external sequence implementation.
+  final SequenceToObject<T> _delegate;
+
+  @override
+  set updateNodeProperties(ParsedProperty? property) {
+    super.updateNodeProperties = property;
+    _delegate._property = property;
+  }
+
+  @override
+  void accept(Object? input) => _delegate.accept(input);
+
+  @override
+  T parsed() => _delegate.parsed();
 }
 
 /// Callback for pushing elements into an iterable
@@ -59,9 +86,9 @@ _SequenceHelper<T> _listHelper<T>() {
 }
 
 /// A delegate that resolves to a [Sequence].
-final class SequenceDelegate<I> extends SequenceLikeDelegate<I, I>
+final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
     with _ResolvingCache<I> {
-  SequenceDelegate._(
+  GenericSequence._(
     this._iterable, {
     required _OnSequenceInput<I> onInput,
     required super.collectionStyle,
@@ -80,7 +107,7 @@ final class SequenceDelegate<I> extends SequenceLikeDelegate<I, I>
   /// A dynamic resolver function assigned at runtime by the [DocumentParser].
   final ListFunction<I> listResolver;
 
-  factory SequenceDelegate.byKind({
+  factory GenericSequence.byKind({
     required NodeStyle style,
     required int indent,
     required int indentLevel,
@@ -92,7 +119,7 @@ final class SequenceDelegate<I> extends SequenceLikeDelegate<I, I>
         ? _setHelper<I>()
         : _listHelper<I>();
 
-    return SequenceDelegate._(
+    return GenericSequence._(
       iterable,
       onInput: pushFunc,
       collectionStyle: style,
@@ -122,7 +149,7 @@ final class SequenceDelegate<I> extends SequenceLikeDelegate<I, I>
   }
 
   @override
-  I _resolveObject() => listResolver(
+  I _resolveNode() => listResolver(
     _iterable,
     collectionStyle,
     _tag ?? _defaultTo(_iterable is Set ? setTag : sequenceTag),

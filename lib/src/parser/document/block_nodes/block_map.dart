@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/explicit_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/implicit_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
@@ -24,7 +24,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 ///     document.
 BlockNode<Obj> composeBlockMapFromScalar<Obj>(
   ParserState<Obj> state, {
-  required ParserDelegate<Obj> keyOrNode,
+  required NodeDelegate<Obj> keyOrNode,
   required ParsedProperty? keyOrMapProperty,
   required int? indentOnExit,
   required DocumentMarker documentMarker,
@@ -88,14 +88,14 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
 /// first [key]'s value has been parsed.
 BlockNode<Obj> composeAndParseBlockMap<Obj>(
   ParserState<Obj> state, {
-  required ParserDelegate<Obj> key,
+  required NodeDelegate<Obj> key,
   required ParsedProperty? mapProperty,
   required int fixedMapIndent,
 }) {
   final iterator = state.iterator;
-  final ParserDelegate(:indent, :start) = key;
+  final NodeDelegate(:indent, :start) = key;
 
-  final map = MappingDelegate(
+  final map = GenericMap(
     collectionStyle: NodeStyle.block,
     indentLevel: key.indentLevel,
     indent: fixedMapIndent,
@@ -136,7 +136,7 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
       valueExitIndent < fixedMapIndent) {
     return (
       blockInfo: blockInfo,
-      node: state.trackAnchor(map, mapProperty) as ParserDelegate<Obj>,
+      node: state.trackAnchor(map, mapProperty) as NodeDelegate<Obj>,
     );
   } else if (valueExitIndent > fixedMapIndent) {
     throwWithRangedOffset(
@@ -151,7 +151,7 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
 
   // Intentional. Track anchor only after the whole map is parsed.
   return (
-    node: state.trackAnchor(map, mapProperty) as ParserDelegate<Obj>,
+    node: state.trackAnchor(map, mapProperty) as NodeDelegate<Obj>,
     blockInfo: mapInfo,
   );
 }
@@ -164,7 +164,7 @@ BlockNode<Obj> parseBlockMap<Obj>(
   final ParserState(:iterator, :onMapDuplicate) = state;
   final MapLikeDelegate(indent: mapIndent, :indentLevel) = map;
 
-  void onParseEntry(ParserDelegate<Obj> key, ParserDelegate<Obj>? value) {
+  void onParseEntry(NodeDelegate<Obj> key, NodeDelegate<Obj>? value) {
     if (!map.accept(key.parsed(), value?.parsed())) {
       onMapDuplicate(
         key.start,
@@ -201,7 +201,7 @@ BlockNode<Obj> parseBlockMap<Obj>(
         docMarker.stopIfParsingDoc ||
         exitIndent == null ||
         exitIndent < mapIndent) {
-      return (blockInfo: blockInfo, node: map as ParserDelegate<Obj>);
+      return (blockInfo: blockInfo, node: map as NodeDelegate<Obj>);
     } else if (exitIndent > mapIndent) {
       throwForCurrentLine(
         iterator,
@@ -210,5 +210,5 @@ BlockNode<Obj> parseBlockMap<Obj>(
     }
   }
 
-  return (blockInfo: emptyScanner, node: map as ParserDelegate<Obj>);
+  return (blockInfo: emptyScanner, node: map as NodeDelegate<Obj>);
 }

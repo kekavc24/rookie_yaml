@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
@@ -11,7 +11,7 @@ typedef FlowMapEntry<T> = ParsedEntry<T>;
 
 /// Parses an explicit flow key and its value (if present) and composes a
 /// compact flow map.
-ParserDelegate<Obj> parseExplicitAsFlowMap<Obj>(
+NodeDelegate<Obj> parseExplicitAsFlowMap<Obj>(
   ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
@@ -22,7 +22,7 @@ ParserDelegate<Obj> parseExplicitAsFlowMap<Obj>(
   minIndent: minIndent,
   forceInline: forceInline,
   onExplicitKey: (indicatorOffset, key, value) {
-    return MappingDelegate(
+    return GenericMap(
         collectionStyle: NodeStyle.flow,
         indentLevel: indentLevel,
         indent: minIndent,
@@ -60,8 +60,8 @@ R _parseExplicitFlow<R, Obj>(
   required bool forceInline,
   required R Function(
     RuneOffset indicatorOffset,
-    ParserDelegate<Obj> key,
-    ParserDelegate<Obj>? value,
+    NodeDelegate<Obj> key,
+    NodeDelegate<Obj>? value,
   )
   onExplicitKey,
 }) {
@@ -90,7 +90,7 @@ R _parseExplicitFlow<R, Obj>(
 
   key.updateEndOffset = iterator.currentLineInfo.current;
 
-  ParserDelegate<Obj>? value;
+  NodeDelegate<Obj>? value;
 
   if (inferNextEvent(
         iterator,

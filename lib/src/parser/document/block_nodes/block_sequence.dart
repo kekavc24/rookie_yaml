@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
@@ -120,7 +120,7 @@ _SequenceState _sequenceNodeOrMarker(
               docMarker: DocumentMarker.none,
               exitIndent: indentOrSeparation,
             ),
-            node: sequence as ParserDelegate<Obj>,
+            node: sequence as NodeDelegate<Obj>,
           ),
         );
       }
@@ -156,7 +156,7 @@ _SequenceState _sequenceNodeOrMarker(
           greedyOnPlain: null,
           sequence: (
             blockInfo: blockInfo,
-            node: sequence as ParserDelegate<Obj>,
+            node: sequence as NodeDelegate<Obj>,
           ),
         );
       } else if (exitIndent != null && exitIndent > sequenceIndent) {
@@ -183,7 +183,7 @@ _SequenceState _sequenceNodeOrMarker(
             docMarker: DocumentMarker.none,
             exitIndent: sequenceIndent,
           ),
-          node: sequence as ParserDelegate<Obj>,
+          node: sequence as NodeDelegate<Obj>,
         ),
       );
     } else if (marker != null) {
@@ -192,7 +192,7 @@ _SequenceState _sequenceNodeOrMarker(
         greedyOnPlain: null,
         sequence: (
           blockInfo: (docMarker: marker, exitIndent: null),
-          node: sequence as ParserDelegate<Obj>,
+          node: sequence as NodeDelegate<Obj>,
         ),
       );
     }
@@ -204,7 +204,7 @@ _SequenceState _sequenceNodeOrMarker(
       blockInfo: emptyScanner,
       node:
           (sequence..updateEndOffset = iterator.currentLineInfo.current)
-              as ParserDelegate<Obj>,
+              as NodeDelegate<Obj>,
     ),
   );
 }

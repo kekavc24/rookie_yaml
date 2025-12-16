@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/parser_state.dart';
@@ -12,7 +12,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// A parsed flow/block map entry.
-typedef ParsedEntry<T> = (ParserDelegate<T> key, ParserDelegate<T>? value);
+typedef ParsedEntry<T> = (NodeDelegate<T> key, NodeDelegate<T>? value);
 
 /// Represents the current state after a block node has been completely parsed.
 typedef BlockInfo = ({int? exitIndent, DocumentMarker docMarker});
@@ -27,15 +27,15 @@ const BlockInfo emptyScanner = (
 typedef BlockNodeBuilder<T> = ({BlockInfo blockInfo, T node});
 
 /// A single block node.
-typedef BlockNode<T> = BlockNodeBuilder<ParserDelegate<T>>;
+typedef BlockNode<T> = BlockNodeBuilder<NodeDelegate<T>>;
 
 /// An explicit/implicit block entry for a map.
 typedef BlockEntry<Obj> =
-    BlockNodeBuilder<(ParserDelegate<Obj>? key, ParserDelegate<Obj>? value)>;
+    BlockNodeBuilder<(NodeDelegate<Obj>? key, NodeDelegate<Obj>? value)>;
 
 /// Callback for a block map entry that has been fully parsed.
 typedef OnBlockMapEntry<Obj> =
-    void Function(ParserDelegate<Obj> key, ParserDelegate<Obj>? value);
+    void Function(NodeDelegate<Obj> key, NodeDelegate<Obj>? value);
 
 /// Parses a [Scalar].
 ///
@@ -192,19 +192,19 @@ bool continueToNextEntry(
 
 /// Returns `true` if a flow key was "json-like", that is, a single/double
 /// quoted plain scalar or flow map/sequence.
-bool keyIsJsonLike(ParserDelegate? delegate) => switch (delegate) {
+bool keyIsJsonLike(NodeDelegate? delegate) => switch (delegate) {
   ScalarDelegate(
     scalarStyle: ScalarStyle.singleQuoted || ScalarStyle.doubleQuoted,
   ) ||
-  MappingDelegate(collectionStyle: NodeStyle.flow) ||
-  SequenceDelegate(collectionStyle: NodeStyle.flow) => true,
+  MapLikeDelegate(collectionStyle: NodeStyle.flow) ||
+  SequenceLikeDelegate(collectionStyle: NodeStyle.flow) => true,
   _ => false,
 };
 
 /// Initializes a flow collection and validates that the [flowStartIndicator]
 /// matches the corresponding flow collection's start delimiter. Returns the
 /// collection by calling [init].
-T initFlowCollection<R, T extends ParserDelegate<R>>(
+T initFlowCollection<R, T extends NodeDelegate<R>>(
   SourceIterator iterator, {
   required int flowStartIndicator,
   required int minIndent,
@@ -249,7 +249,7 @@ T initFlowCollection<R, T extends ParserDelegate<R>>(
 /// Checks if the current char in the [scanner] matches the closing [delimiter]
 /// of the flow collection. If valid, the [flowCollection]'s end offset is
 /// updated and the [delimiter] is skipped.
-D terminateFlowCollection<Obj, D extends ParserDelegate<Obj>>(
+D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
   SourceIterator iterator,
   D flowCollection,
   int delimiter,
@@ -272,7 +272,7 @@ D terminateFlowCollection<Obj, D extends ParserDelegate<Obj>>(
 }
 
 /// Creates a `null` delegate.
-ParserDelegate<Obj> nullBlockNode<Obj>(
+NodeDelegate<Obj> nullBlockNode<Obj>(
   ParserState<Obj> state, {
   required int indentLevel,
   required int indent,
@@ -291,7 +291,7 @@ ParserDelegate<Obj> nullBlockNode<Obj>(
 );
 
 /// Creates a `null` delegate only if [property] is not an [Alias].
-ParserDelegate<Obj> emptyBlockNode<Obj>(
+NodeDelegate<Obj> emptyBlockNode<Obj>(
   ParserState<Obj> state, {
   required ParsedProperty property,
   required int indentLevel,

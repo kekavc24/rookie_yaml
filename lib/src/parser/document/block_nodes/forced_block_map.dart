@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
@@ -35,13 +35,13 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
     }
 
     nodeInfo = parseBlockMap(
-      (property.customResolver as ObjectFromMap<Obj>).onCustomMap(
-            NodeStyle.block,
-            indentLevel,
-            inlineFixedIndent,
-            property.span.start,
-          )
-          as MapLikeDelegate<Obj, Obj>,
+      MapLikeDelegate.boxed(
+        (property.customResolver as ObjectFromMap<Obj>).onCustomMap(),
+        collectionStyle: NodeStyle.block,
+        indentLevel: indentLevel,
+        indent: inlineFixedIndent,
+        start: property.span.start,
+      ),
       state: state,
     );
   } else {

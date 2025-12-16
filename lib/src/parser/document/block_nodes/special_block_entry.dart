@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/implicit_block_entry.dart';
@@ -36,11 +36,16 @@ SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
     kind: CustomKind.iterable,
     customResolver: ObjectFromIterable<Obj>(:final onCustomIterable),
   )) {
-    return onCustomIterable(NodeStyle.block, indentLevel, indent, start)
-        as SequenceLikeDelegate<Obj, Obj>;
+    return SequenceLikeDelegate.boxed(
+      onCustomIterable(),
+      collectionStyle: NodeStyle.block,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+    );
   }
 
-  return SequenceDelegate.byKind(
+  return GenericSequence.byKind(
     kind: property?.kind ?? YamlKind.sequence,
     style: NodeStyle.block,
     indent: indent,
@@ -85,7 +90,7 @@ SpecialBlockSequenceInfo composeSpecialBlockSequence<Obj>(
   required BlockNode<Obj> blockNode,
   required int keyIndent,
   required int keyIndentLevel,
-  required void Function(ParserDelegate<Obj> sequence) onSequenceOrBlockNode,
+  required void Function(NodeDelegate<Obj> sequence) onSequenceOrBlockNode,
   required OnBlockMapEntry<Obj> onNextImplicitEntry,
 }) {
   final (:blockInfo, :node) = blockNode;
@@ -145,7 +150,7 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
   required int keyIndent,
   required int keyIndentLevel,
   required ParsedProperty? property,
-  required void Function(ParserDelegate<Obj> sequence) onSequence,
+  required void Function(NodeDelegate<Obj> sequence) onSequence,
   required OnBlockMapEntry<Obj> onNextImplicitEntry,
 }) {
   final ParserState(:iterator) = state;

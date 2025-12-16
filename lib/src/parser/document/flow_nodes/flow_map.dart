@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
@@ -11,7 +11,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 ///
 /// If [forceInline] is `true`, the map must be declared on the same line
 /// with no line breaks and throws if otherwise.
-ParserDelegate<Obj> parseFlowMap<Obj>(
+NodeDelegate<Obj> parseFlowMap<Obj>(
   ParserState<Obj> state, {
   required int indentLevel,
   required int minIndent,
@@ -29,11 +29,16 @@ ParserDelegate<Obj> parseFlowMap<Obj>(
     flowEndIndicator: mappingEnd,
     init: (start) {
       if (asCustomMap != null) {
-        return asCustomMap(NodeStyle.flow, indentLevel, minIndent, start)
-            as MapLikeDelegate<Obj, Obj>;
+        return MapLikeDelegate<Obj, Obj>.boxed(
+          asCustomMap(),
+          collectionStyle: NodeStyle.flow,
+          indentLevel: indentLevel,
+          indent: minIndent,
+          start: start,
+        );
       }
 
-      return MappingDelegate(
+      return GenericMap(
         collectionStyle: NodeStyle.flow,
         indentLevel: indentLevel,
         indent: minIndent,

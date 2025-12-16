@@ -1,7 +1,7 @@
 part of 'custom_node.dart';
 
 /// Parses a custom flow node based on its [kind].
-ParserDelegate<Obj> customFlowNode<Obj>(
+NodeDelegate<Obj> customFlowNode<Obj>(
   CustomKind kind, {
   required ParserState<Obj> state,
   required NodeProperty property,
@@ -10,7 +10,7 @@ ParserDelegate<Obj> customFlowNode<Obj>(
   required int minIndent,
   required bool isImplicit,
   required bool forceInline,
-}) => _parseCustomKind<ParserDelegate<Obj>, Obj>(
+}) => _parseCustomKind<NodeDelegate<Obj>, Obj>(
   kind,
   property: property,
   onMatchMap: (builder) => parseFlowMap(

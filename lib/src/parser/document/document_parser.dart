@@ -150,7 +150,7 @@ final class DocumentParser<R> {
     /// Why block info? YAML clearly has a favourite child and that is the
     /// block(-like) styles. They are indeed a human friendly format. Also, the
     /// doc end chars "..." and "---" exist in this format.
-    ParserDelegate<R>? root;
+    NodeDelegate<R>? root;
     BlockInfo? rootInfo;
 
     /// If we attempted to check for doc markers and found none

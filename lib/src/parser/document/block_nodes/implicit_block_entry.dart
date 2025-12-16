@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/special_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
@@ -68,7 +68,7 @@ BlockInfo parseImplicitValue<Obj>(
   ParserState<Obj> state, {
   required int keyIndentLevel,
   required int keyIndent,
-  required void Function(ParserDelegate<Obj> implicitValue) onValue,
+  required void Function(NodeDelegate<Obj> implicitValue) onValue,
   required OnBlockMapEntry<Obj> onEntryValue,
 }) {
   final ParserState(:iterator, :comments) = state;

@@ -1,7 +1,6 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Callback for creating a [ContentResolver] tag.
@@ -47,29 +46,17 @@ final class ScalarResolver<O> {
        );
 }
 
-/// Template callback for an object [T] using a parsing delegate [D] with a
-/// node style [S].
-typedef OnObject<S, T, D extends ParserDelegate<T>> =
-    D Function(
-      S nodeStyle,
-      int indentLevel,
-      int indent,
-      RuneOffset start,
-    );
+/// Template callback for an object [T] using a parsing delegate [D].
+typedef OnObject<T, D extends ObjectDelegate<T>> = D Function();
 
-/// Template callback that returns [T] from a collection-like delegate of
-/// subtype [D].
-typedef OnCollection<T, D extends ParserDelegate<T>> =
-    OnObject<NodeStyle, T, D>;
+/// Callback that creates a [MappingToObject].
+typedef OnCustomMap<T> = OnObject<T, MappingToObject<T>>;
 
-/// Callback that creates a [MapToObjectDelegate].
-typedef OnCustomMap<T> = OnCollection<T, MapToObjectDelegate<T>>;
-
-/// Callback that creates a [IterableToObjectDelegate].
-typedef OnCustomList<T> = OnCollection<T, IterableToObjectDelegate<T>>;
+/// Callback that creates a [SequenceToObject].
+typedef OnCustomList<T> = OnObject<T, SequenceToObject<T>>;
 
 /// Callback that creates a [ScalarLikeDelegate].
-typedef OnCustomScalar<T> = OnObject<ScalarStyle, T, BytesToScalar<T>>;
+typedef OnCustomScalar<T> = OnObject<T, BytesToScalar<T>>;
 
 /// A resolver for any `Dart` object dumped as YAML.
 ///
@@ -85,7 +72,7 @@ sealed class CustomResolver {
 ///
 /// {@category resolvers}
 final class ObjectFromMap<T> extends CustomResolver {
-  /// Creates a resolver that lazily instantiates a [ParserDelegate] which
+  /// Creates a resolver that lazily instantiates an [ObjectDelegate] which
   /// behaves like a map and accepts a key-value pair. Resolves to an object of
   /// type [T].
   ObjectFromMap({required this.onCustomMap});
@@ -102,7 +89,7 @@ final class ObjectFromMap<T> extends CustomResolver {
 ///
 /// {@category resolvers}
 final class ObjectFromIterable<T> extends CustomResolver {
-  /// Creates a resolver that lazily instantiates a [ParserDelegate] which
+  /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like an iterable and accepts elements. Resolves to an object of
   /// type [T].
   ObjectFromIterable({required this.onCustomIterable});
@@ -130,7 +117,7 @@ final class ObjectFromIterable<T> extends CustomResolver {
 ///
 /// {@category resolvers}
 final class ObjectFromScalarBytes<T> extends CustomResolver {
-  /// Creates a resolver that lazily instantiates a [ParserDelegate] which
+  /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like a scalar and accepts bytes/ utf code units and resolves to an
   /// object of type [T].
   ObjectFromScalarBytes({required this.onCustomScalar});

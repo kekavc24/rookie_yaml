@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
@@ -445,7 +445,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
         );
 
         sequence = parseBlockSequence(
-          SequenceDelegate.byKind(
+          GenericSequence.byKind(
             kind: kind,
             style: NodeStyle.block,
             indent: fixedInlineIndent,
@@ -541,7 +541,7 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
         );
 
         final map = parseBlockMap(
-          MappingDelegate(
+          GenericMap(
             collectionStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
@@ -564,7 +564,7 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
         );
 
         final sequence = parseBlockSequence(
-          SequenceDelegate.byKind(
+          GenericSequence.byKind(
             style: NodeStyle.block,
             indent: fixedInlineIndent,
             indentLevel: indentLevel,

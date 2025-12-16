@@ -1,35 +1,20 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 
 final class SimpleUtfBuffer extends BytesToScalar<List<int>> {
-  SimpleUtfBuffer({
-    required super.scalarStyle,
-    required super.indentLevel,
-    required super.indent,
-    required super.start,
-  });
-
   final buffer = <int>[];
-
-  @override
-  void Function() get onComplete =>
-      () => buffer.add(-1); // Spike on complete
 
   @override
   CharWriter get onWriteRequest => buffer.add;
 
   @override
+  void onComplete() => buffer.add(-1);
+
+  @override
   List<int> parsed() => buffer;
 }
 
-final class MySetFromMap extends MapToObjectDelegate<Set<String>> {
-  MySetFromMap({
-    required super.collectionStyle,
-    required super.indentLevel,
-    required super.indent,
-    required super.start,
-  });
-
+final class MySetFromMap extends MappingToObject<Set<String>> {
   final _mySet = <String>{};
 
   @override
@@ -42,14 +27,7 @@ final class MySetFromMap extends MapToObjectDelegate<Set<String>> {
   Set<String> parsed() => _mySet;
 }
 
-final class MySortedList extends IterableToObjectDelegate<List<int>> {
-  MySortedList({
-    required super.collectionStyle,
-    required super.indentLevel,
-    required super.indent,
-    required super.start,
-  });
-
+final class MySortedList extends SequenceToObject<List<int>> {
   final list = <int>[];
 
   @override

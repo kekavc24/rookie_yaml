@@ -57,12 +57,7 @@ void main() {
     final tag = TagShorthand.fromTagUri(TagHandle.primary(), 'buffer');
 
     final resolver = ObjectFromScalarBytes<List<int>>(
-      onCustomScalar: (style, indentLevel, indent, start) => SimpleUtfBuffer(
-        scalarStyle: style,
-        indentLevel: indentLevel,
-        indent: indent,
-        start: start,
-      ),
+      onCustomScalar: () => SimpleUtfBuffer(),
     );
 
     test('Buffers all code units of scalar', () {

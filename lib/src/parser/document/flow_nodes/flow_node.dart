@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/delegates/parser_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
@@ -74,7 +74,7 @@ ScalarDelegate<R> parseFlowScalar<R>(
 ///
 /// [minIndent] represents the minimum indent the flow node needs to adhere to
 /// when embedded in a block node. Indent, by default, is moot in flow nodes.
-ParserDelegate<Obj> parseFlowNode<Obj>(
+NodeDelegate<Obj> parseFlowNode<Obj>(
   ParserState<Obj> state, {
   required int currentIndentLevel,
   required int minIndent,
@@ -162,7 +162,7 @@ ParserDelegate<Obj> parseFlowNode<Obj>(
 ///
 /// Throws if [kind] is [NodeKind.unknown]. Prefer calling [_ambigousFlowNode]
 /// instead.
-ParserDelegate<Obj> _flowNodeOfKind<Obj>(
+NodeDelegate<Obj> _flowNodeOfKind<Obj>(
   NodeKind kind, {
   required ParserState<Obj> parserState,
   required NodeProperty property,
@@ -239,7 +239,7 @@ ParserDelegate<Obj> _flowNodeOfKind<Obj>(
 
 /// Parses a flow node using the current [parserState] and heavily relies on
 /// the current [event] to determine the next course of action.
-ParserDelegate<Obj> _ambigousFlowNode<Obj>(
+NodeDelegate<Obj> _ambigousFlowNode<Obj>(
   ParserEvent event, {
   required ParserState<Obj> parserState,
   required ParsedProperty property,
