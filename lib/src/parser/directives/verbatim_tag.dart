@@ -25,16 +25,24 @@ String _wrapAsVerbatim(String uri) =>
 final class VerbatimTag extends ResolvedTag {
   VerbatimTag._(this.verbatim);
 
-  /// Creates a verbatim tag from a valid tag uri. [uri] should not have a
-  /// leading `!`.
-  factory VerbatimTag.fromTagUri(String uri) => VerbatimTag._(
-    _wrapAsVerbatim(
-      '!'
-      '${_ensureIsTagUri(uri, allowRestrictedIndicators: false)}',
-    ),
-  );
+  /// Creates a verbatim tag from a valid tag uri. [uri] must start with the
+  /// global tag uri scheme `tag:`. Any non-uri characters present will be
+  /// normalized.
+  factory VerbatimTag.fromTagUri(String uri) {
+    if (!uri.startsWith('tag:')) {
+      throw FormatException(
+        'A verbatim tag uri must start with global tag prefix "tag:"',
+        uri,
+        0,
+      );
+    }
 
-  /// Creates a verbatim tag from a local tag
+    return VerbatimTag._(
+      _wrapAsVerbatim('!${normalizeTagUri(uri, includeRestricted: false)}'),
+    );
+  }
+
+  /// Creates a verbatim tag from a local tag.
   factory VerbatimTag.fromTagShorthand(TagShorthand tag) {
     final uri = tag.toString().trim();
 

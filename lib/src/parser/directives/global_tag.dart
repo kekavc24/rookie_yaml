@@ -25,10 +25,7 @@ final class GlobalTag<T> extends SpecificTag<T> implements Directive {
 
   /// Creates a global tag whose prefix is a valid tag uri
   GlobalTag.fromTagUri(TagHandle handle, String uri)
-    : this._(
-        handle,
-        _ensureIsTagUri(uri, allowRestrictedIndicators: true),
-      );
+    : this._(handle, normalizeTagUri(uri, includeRestricted: false));
 
   @override
   String get name => _globalTagDirective;

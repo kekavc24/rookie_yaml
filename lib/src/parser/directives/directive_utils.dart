@@ -71,14 +71,77 @@ String _dumpDirective(Directive directive) {
   return '${_directiveIndicator.asString()}$name ${parameters.join(' ')}';
 }
 
-/// Validates a tag uri. Returns it if valid. Otherwise, an exception is thrown.
+/// Normalizes a [tagUri]. Any percent-encoded characters are left untouched.
 ///
-/// Internally calls [_parseTagUri].
-String _ensureIsTagUri(String uri, {required bool allowRestrictedIndicators}) {
-  return _parseTagUri(
-    UnicodeIterator.ofString(uri),
-    allowRestrictedIndicators: allowRestrictedIndicators,
-  );
+/// If [includeRestricted] is `true`, `!` and any flow collection delimiters
+/// are percent-encoded.
+///
+/// See URI section: https://yaml.org/spec/1.2.2/#56-miscellaneous-characters
+String normalizeTagUri(String tagUri, {required bool includeRestricted}) {
+  final buffer = StringBuffer();
+  final iterator = UnicodeIterator.ofString(tagUri);
+
+  /// Converts [char] as hex with '%' prefix.
+  String asHex(int char) => '%${char.toRadixString(16)}';
+
+  void addAsUriString(String string) =>
+      buffer.write(Uri.encodeComponent(string));
+
+  // Normalizes '%' or read the next two hext chars
+  void normalized(int percent) {
+    // Recover the '%'.
+    if (iterator.peekNextChar().isNullOr((c) => !c.isHexDigit())) {
+      buffer.write(asHex(percent));
+      return;
+    }
+
+    // Fetch the next 2 hex characters
+    final greedy = <int>[percent];
+
+    while (greedy.length < 3) {
+      iterator.nextChar();
+      if (iterator.isEOF || !iterator.current.isHexDigit()) break;
+      greedy.add(iterator.current);
+    }
+
+    final capture = String.fromCharCodes(greedy);
+    greedy.length == 3 ? buffer.write(capture) : addAsUriString(capture);
+  }
+
+  while (!iterator.isEOF) {
+    final char = iterator.current;
+
+    switch (char) {
+      case tag ||
+              mappingStart ||
+              mappingEnd ||
+              flowSequenceStart ||
+              flowEntryEnd ||
+              flowSequenceEnd
+          when includeRestricted:
+        buffer.write(asHex(char));
+
+      // %
+      case directive:
+        normalized(char);
+
+      default:
+        isUriChar(char)
+            ? buffer.writeCharCode(char)
+            : addAsUriString(char.asString());
+    }
+
+    if (iterator.peekNextChar() != null) {
+      iterator.nextChar();
+      continue;
+    }
+
+    break;
+  }
+
+  final buffered = buffer.toString();
+
+  return buffered;
 }
 
 /// Parses a `YAML` tag uri.

@@ -1,18 +1,27 @@
 part of 'directives.dart';
 
-/// A tag shorthand for a node that may (not) be resolved to a [GlobalTag]
+/// A tag shorthand for a node that may (not) be resolved to a [GlobalTag].
 ///
 /// {@category tag_types}
 /// {@category declare_tags}
 final class TagShorthand extends SpecificTag<String> {
   TagShorthand._(super.tagHandle, super.suffix) : super.fromString();
 
-  /// Creates a local tag from a valid tag uri without the leading `!`.
-  factory TagShorthand.fromTagUri(TagHandle tagHandle, String suffix) =>
-      TagShorthand._(
-        tagHandle,
-        _ensureIsTagUri(suffix, allowRestrictedIndicators: false),
-      );
+  /// Creates a local tag with the [tagHandle] and [suffix].
+  TagShorthand.fromTagUri(TagHandle tagHandle, String suffix)
+    : this._(tagHandle, normalizeTagUri(suffix, includeRestricted: true));
+
+  /// Creates a local tag with the primary tag handle prefix `!`.
+  TagShorthand.primary(String suffix)
+    : this.fromTagUri(TagHandle.primary(), suffix);
+
+  /// Creates a local tag with the secondary tag handle prefix `!!`.
+  TagShorthand.secondary(String suffix)
+    : this.fromTagUri(TagHandle.secondary(), suffix);
+
+  /// Creates a local tag with the named tag handle prefix `![name]!`.
+  TagShorthand.named(String name, String suffix)
+    : this.fromTagUri(TagHandle.named(name), suffix);
 
   @override
   String get prefix => tagHandle.handle;
@@ -34,7 +43,7 @@ final class TagShorthand extends SpecificTag<String> {
   int get hashCode => toString().hashCode;
 }
 
-/// Parses a [TagShorthand]
+/// Parses a [TagShorthand].
 TagShorthand parseTagShorthand(SourceIterator iterator) {
   if (iterator.current != tag) {
     throwWithSingleOffset(
