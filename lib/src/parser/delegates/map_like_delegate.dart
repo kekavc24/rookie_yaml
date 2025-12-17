@@ -1,5 +1,14 @@
 part of 'object_delegate.dart';
 
+/// A delegate that behaves like a map.
+mixin _MapDelegate<E> {
+  /// Adds a [key]-[value] pair.
+  ///
+  /// Returning `false` makes the parser assume this is a duplicate key. Prefer
+  /// returning `true` or throwing.
+  bool accept(E key, E? value);
+}
+
 /// A delegate that directly maps a YAML map to an object [T]. No intermediate
 /// [Map] is constructed. Both the key and value are presented at the same time
 /// after the complete entry has been parsed. You must override the `parsed`

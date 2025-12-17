@@ -48,6 +48,7 @@ final class NodeTag<T> extends ResolvedTag {
         suffix?.content ?? '',
         suffixIsNonSpecific: suffix?.isNonSpecific ?? false,
       ),
+      hasGlobalTag = suffix == null,
       suffix = suffix ?? resolvedTag as TagShorthand;
 
   /// A [TagShorthand] shorthand resolved to a [GlobalTag] or the tag itself.
@@ -64,6 +65,9 @@ final class NodeTag<T> extends ResolvedTag {
 
   @override
   final String verbatim;
+
+  /// Whether this node tag has a global tag.
+  final bool hasGlobalTag;
 
   @override
   bool operator ==(Object other) =>

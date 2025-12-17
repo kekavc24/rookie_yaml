@@ -75,17 +75,31 @@ sealed class ObjectDelegate<T> {
   T parsed();
 }
 
-/// A delegate that behaves like a map.
-mixin _MapDelegate<E> {
-  /// Adds a [key]-[value] pair.
-  ///
-  /// Returning `false` makes the parser assume this is a duplicate key. Prefer
-  /// returning `true` or throwing.
-  bool accept(E key, E? value);
-}
+/// Helper mixin that normalizes the local tag information assigned to an
+/// [ObjectDelegate].
+mixin TagInfo on ObjectDelegate {
+  /// Obtains the resolved local tag information associated with each object.
+  /// Always returns `null` for any alias or object having a [VerbatimTag].
+  ({GlobalTag? globalTag, TagShorthand suffix})? localTagInfo() {
+    final objectTag = switch (_property) {
+      NodeProperty(tag: final ResolvedTag resolved) => resolved,
+      _ => null,
+    };
 
-/// A delegate that behaves like a sequence/iterable.
-mixin _IterableDelegate<E> {
-  /// Adds an [input] to a sequence like delegate.
-  void accept(E input);
+    if (objectTag case null || VerbatimTag()) return null;
+
+    // All objects have this tag.
+    final NodeTag(
+      :resolvedTag,
+      :suffix,
+      :hasGlobalTag,
+    ) = objectTag is ContentResolver
+        ? objectTag.resolvedTag
+        : objectTag as NodeTag;
+
+    return (
+      globalTag: hasGlobalTag ? resolvedTag as GlobalTag : null,
+      suffix: suffix,
+    );
+  }
 }

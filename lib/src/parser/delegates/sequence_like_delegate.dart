@@ -1,5 +1,11 @@
 part of 'object_delegate.dart';
 
+/// A delegate that behaves like a sequence/iterable.
+mixin _IterableDelegate<E> {
+  /// Adds an [input] to a sequence like delegate.
+  void accept(E input);
+}
+
 /// A delegate that maps an iterable to an object [T]. No intermediate [List] or
 /// [Iterable] is constructed. You must override the `parsed` method.
 ///
