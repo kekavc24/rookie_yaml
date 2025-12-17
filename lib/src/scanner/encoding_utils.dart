@@ -46,11 +46,14 @@ int? resolveDoubleQuotedEscaped(int unicode) {
 }
 
 extension Flattened on int? {
+  /// Converts the UTF char to string if not null.
   String asString() => this == null ? '<null>' : String.fromCharCode(this!);
 
+  /// Whether `null` or [matcher] is `true`.
   bool isNullOr(bool Function(int value) matcher) =>
       this == null || matcher(this!);
 
+  /// Whether not `null` and [matcher] is `true`.
   bool isNotNullAnd(bool Function(int value) matcher) =>
       this != null && matcher(this!);
 }
@@ -138,7 +141,7 @@ extension CharUtils on int {
 
 /// Characters allowed in a `URI` not included in `isAlphaNumeric` or
 /// `isHexDigit` or `isFlowDelimiter`
-final _miscUriChars = <int>{
+const _miscUriChars = <int>{
   comment, // #
   0x3B, // ;
   slash, // /
@@ -149,12 +152,17 @@ final _miscUriChars = <int>{
   0x3D, // =
   0x2B, // +
   0x24, // $
+  flowEntryEnd, // ,
   0x5F, // _
   0x2E, // .
   tag, // !
   0xFE, // ~
   alias, // *
   singleQuote, // '
+  0x28, // (
+  0x29, // )
+  flowSequenceStart, // [
+  flowSequenceEnd, // ]
 };
 
 /// Checks with bias if [uriChar] is a valid character.
@@ -169,18 +177,17 @@ bool isUriChar<T>(T uriChar) {
     return _isValidSingleUriChar(uriChar);
   }
 
-  assert(uriChar is List<int>, 'Expected list of unicode integers');
-  return _isValidHexInUri(uriChar as List<int>);
+  assert(uriChar is Iterable<int>, 'Expected list of unicode integers');
+  return _isValidHexInUri(uriChar as Iterable<int>);
 }
 
 /// Checks if a single [unicode] is a valid [Uri] character
 bool _isValidSingleUriChar(int unicode) =>
-    unicode.isFlowDelimiter() ||
     unicode.isAlphaNumeric() ||
     _miscUriChars.contains(unicode);
 
 /// Checks if a sequence of escaped `hex` characters are valid
-bool _isValidHexInUri(List<int> chars) {
+bool _isValidHexInUri(Iterable<int> chars) {
   return chars.length == 3 &&
       chars.first == directive &&
       chars.skip(1).every((c) => c.isHexDigit());
