@@ -3,7 +3,7 @@
 ![pub_version][dart_pub_version]
 ![pub_downloads][dart_pub_downloads]
 ![Coverage Status][coverage]
-![test_suite](https://img.shields.io/badge/YAML_Test_Suite-88.31%25-green)
+![test_suite](https://img.shields.io/badge/YAML_Test_Suite-88.56%25-green)
 
 > [!WARNING]
 > The parser is still in active development and has missing features/intermediate functionalities. Until a stable `1.0.0` is released, package API may have breaking changes in each minor/patch version.
