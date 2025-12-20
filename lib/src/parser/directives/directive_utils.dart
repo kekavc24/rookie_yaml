@@ -71,15 +71,29 @@ String _dumpDirective(Directive directive) {
   return '${_directiveIndicator.asString()}$name ${parameters.join(' ')}';
 }
 
-/// Normalizes a [tagUri]. Any percent-encoded characters are left untouched.
+/// Normalizes a [tagSuffix] for a local tag uri. Any percent-encoded characters
+/// are left untouched.
+String _normalizeLocalTagUri(String tagSuffix) => _normalizeTagUri(
+  UnicodeIterator.ofString(tagSuffix),
+  includeRestricted: true,
+);
+
+/// Normalizes a tag uri present in the [iterator].
+///
+/// [bufferedUri] represents a buffer that was instantiated externally. Most
+/// [GlobalTag] uri prefixes must be valid uri strings with a scheme and thus
+/// require additional checks.
 ///
 /// If [includeRestricted] is `true`, `!` and any flow collection delimiters
 /// are percent-encoded.
 ///
 /// See URI section: https://yaml.org/spec/1.2.2/#56-miscellaneous-characters
-String normalizeTagUri(String tagUri, {required bool includeRestricted}) {
-  final buffer = StringBuffer();
-  final iterator = UnicodeIterator.ofString(tagUri);
+String _normalizeTagUri(
+  UnicodeIterator iterator, {
+  StringBuffer? bufferedUri,
+  required bool includeRestricted,
+}) {
+  final buffer = bufferedUri ?? StringBuffer();
 
   /// Converts [char] as hex with '%' prefix.
   String asHex(int char) => '%${char.toRadixString(16)}';
@@ -213,7 +227,11 @@ String _parseTagUri(
 }
 
 /// Parses a URI scheme
-void _parseScheme(StringBuffer buffer, SourceIterator iterator) {
+void _parseScheme(
+  StringBuffer buffer,
+  SourceIterator iterator, {
+  bool isDecoding = true,
+}) {
   int? lastChar;
   const schemeEnd = mappingValue; // ":" char
 
@@ -240,7 +258,7 @@ void _parseScheme(StringBuffer buffer, SourceIterator iterator) {
   }
 
   /// Ensure we return in a state where a tag uri can be parsed further
-  if (iterator.peekNextChar().isNullOr((c) => !isUriChar(c))) {
+  if (isDecoding && iterator.peekNextChar().isNullOr((c) => !isUriChar(c))) {
     throwForCurrentLine(
       iterator,
       message: 'Expected at least a uri character after the scheme',

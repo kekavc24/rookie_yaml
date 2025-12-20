@@ -9,7 +9,7 @@ final class TagShorthand extends SpecificTag<String> {
 
   /// Creates a local tag with the [tagHandle] and [suffix].
   TagShorthand.fromTagUri(TagHandle tagHandle, String suffix)
-    : this._(tagHandle, normalizeTagUri(suffix, includeRestricted: true));
+    : this._(tagHandle, _normalizeLocalTagUri(suffix));
 
   /// Creates a local tag with the primary tag handle prefix `!`.
   TagShorthand.primary(String suffix)

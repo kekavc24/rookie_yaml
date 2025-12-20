@@ -38,7 +38,12 @@ final class VerbatimTag extends ResolvedTag {
     }
 
     return VerbatimTag._(
-      _wrapAsVerbatim('!${normalizeTagUri(uri, includeRestricted: false)}'),
+      _wrapAsVerbatim(
+        _normalizeTagUri(
+          UnicodeIterator.ofString(uri),
+          includeRestricted: false,
+        ),
+      ),
     );
   }
 

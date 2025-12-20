@@ -183,8 +183,7 @@ bool isUriChar<T>(T uriChar) {
 
 /// Checks if a single [unicode] is a valid [Uri] character
 bool _isValidSingleUriChar(int unicode) =>
-    unicode.isAlphaNumeric() ||
-    _miscUriChars.contains(unicode);
+    unicode.isAlphaNumeric() || _miscUriChars.contains(unicode);
 
 /// Checks if a sequence of escaped `hex` characters are valid
 bool _isValidHexInUri(Iterable<int> chars) {

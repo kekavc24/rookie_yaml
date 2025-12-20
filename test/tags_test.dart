@@ -76,11 +76,11 @@ void main() {
     test('Parses global tag uri with named tag handle and uri prefix', () {
       final named = 'named';
       final tagDefinition = '%TAG !$named! ';
-      final uriPrefix =
-          'tag:example.com,2000:app/'
-          '\n---';
+      final uriPrefix = 'tag:example.com,2000:app/';
 
-      final yaml = '$tagDefinition$uriPrefix';
+      final yaml =
+          '$tagDefinition$uriPrefix'
+          '\n---';
 
       final handle = TagHandle.named(named);
 
@@ -194,21 +194,23 @@ void main() {
 
         // Special yaml delimiters that must be escaped in tag uri
         final escaped = [
-          '%21', // "!"
-          '%7B', // "{"
-          '%7D', // "}"
-          '%5B', // "["
-          '%5D', // "]"
-          '%2C', // ","
+          tag, // "!"
+          mappingStart, // "{"
+          mappingEnd, // "}"
+          flowSequenceStart, // "["
+          flowSequenceEnd, // "]"
+          flowEntryEnd, // ","
         ];
 
-        for (var hex in escaped) {
-          final tag = '$suffix$hex';
-          final yaml = '!$tag $node';
+        String asUriHex(int char) => '%${char.toRadixString(16)}';
+
+        for (var (index, hex) in escaped.map(asUriHex).indexed) {
+          final localTag = '$suffix$hex';
+          final yaml = '!$localTag $node';
 
           check(
-            parseTagShorthand(UnicodeIterator.ofString(yaml)),
-          ).equals(TagShorthand.fromTagUri(TagHandle.primary(), tag));
+            parseTagShorthand(UnicodeIterator.ofString(yaml)).toString(),
+          ).equals('!$suffix${escaped[index].asString()}');
         }
       },
     );
@@ -366,6 +368,32 @@ void main() {
       ).throwsParserException(
         'Expected a tag uri starting the "tag:" uri scheme',
       );
+    });
+  });
+
+  group('Tags as code', () {
+    const tagUri = '%hello!{}';
+
+    test('Normalizes local tag', () {
+      check(
+        TagShorthand.primary(tagUri).toString(),
+      ).equals('!%25hello%21%7b%7d');
+    });
+
+    test('Normalizes global tag', () {
+      const scheme = 'who:';
+
+      check(
+        GlobalTag.fromTagUri(TagHandle.primary(), '$scheme$tagUri').toString(),
+      ).equals('%TAG ! $scheme%25hello!%7B%7D');
+    });
+
+    test('Throws if global tag has no scheme', () {
+      check(() => GlobalTag.fromTagUri(TagHandle.primary(), tagUri)).throws();
+    });
+
+    test('Throws if verbatim tag has no "tag:" scheme', () {
+      check(() => VerbatimTag.fromTagUri(tagUri)).throws();
     });
   });
 
