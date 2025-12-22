@@ -19,6 +19,59 @@ void main() {
     onCustomScalar: () => SimpleUtfBuffer(),
   );
 
+  group('Generic triggers', () {
+    test('Callback for document is always called', () {
+      const yaml = '''
+Bare doc
+...
+%TAG ! !with-directives
+---
+Document
+---
+Document with no directives
+''';
+
+      var count = 0;
+
+      loadResolvedDartObject(yaml, onDoctStart: (_) => ++count);
+      check(count).equals(3);
+    });
+
+    test('Callback for keys is always called', () {
+      const yaml = '''
+block: value
+
+? blockExplicit
+: {flow, ? flowExplicit}
+''';
+
+      final keyTracker = [];
+      loadResolvedDartObject(yaml, onKeySeen: keyTracker.add);
+
+      check(
+        keyTracker,
+      ).deepEquals(['block', 'blockExplicit', 'flow', 'flowExplicit']);
+    });
+
+    test('Loads default list', () {
+      check(
+        loadResolvedDartObject(
+          '[30, 40, 10, 20]',
+          customList: () => MySortedList(),
+        ),
+      ).isA<List<int>>().deepEquals([10, 20, 30, 40]);
+    });
+
+    test('Loads default map', () {
+      check(
+        loadResolvedDartObject(
+          '{ hello, flow, flow, hello }',
+          customMap: () => MySetFromMap(),
+        ),
+      ).isA<Set<String>>().deepEquals({'hello', 'flow'});
+    });
+  });
+
   group('Resolvers', () {
     test('Loads a predictable strongly typed set from a map', () {
       // Flow map that has no values
@@ -37,10 +90,7 @@ cycle:
 
       for (final source in sources) {
         check(
-          loadDartObject(
-            YamlSource.string(source),
-            nodeResolvers: {setTag: mapResolver},
-          ),
+          loadResolvedDartObject(source, nodeResolvers: {setTag: mapResolver}),
         ).isA<Set<String>>().deepEquals(expected);
       }
     });
@@ -62,8 +112,8 @@ $sequenceTag
 
       for (final source in sources) {
         check(
-          loadDartObject(
-            YamlSource.string(source),
+          loadResolvedDartObject(
+            source,
             nodeResolvers: {sequenceTag: listResolver},
           ),
         ).isA<List<int>>().deepEquals(expected);
@@ -72,14 +122,14 @@ $sequenceTag
 
     test('Loads a strongly typed sorted list with special block sequences', () {
       check(
-        loadDartObject(
-          YamlSource.string('''
+        loadResolvedDartObject(
+          '''
 key: $sequenceTag
 - 25
 - 2
 - 0
 - 18
-'''),
+''',
           nodeResolvers: {sequenceTag: listResolver},
         ),
       ).isA<Map>().which(
@@ -92,11 +142,11 @@ key: $sequenceTag
       ' properties',
       () {
         check(
-          loadDartObject(
-            YamlSource.string('''
-$setTag 
+          loadResolvedDartObject(
+            '''
+$setTag
 !!str key:
-'''),
+''',
             nodeResolvers: {setTag: mapResolver},
           ),
         ).isA<Set<String>>().deepEquals({'key'});
@@ -107,8 +157,8 @@ $setTag
   group('Exceptions', () {
     test('Throws when a block node is inline with the custom properties', () {
       check(
-        () => loadDartObject(
-          YamlSource.string('$setTag ? key'),
+        () => loadResolvedDartObject(
+          '$setTag ? key',
           nodeResolvers: {setTag: mapResolver},
         ),
       ).throwsParserException(
@@ -117,8 +167,8 @@ $setTag
       );
 
       check(
-        () => loadDartObject(
-          YamlSource.string('$sequenceTag - sequence'),
+        () => loadResolvedDartObject(
+          '$sequenceTag - sequence',
           nodeResolvers: {sequenceTag: listResolver},
         ),
       ).throwsParserException(
@@ -129,11 +179,11 @@ $setTag
 
     test('Throws when a map can be constructed in the current state', () {
       check(
-        () => loadDartObject(
-          YamlSource.string('''
+        () => loadResolvedDartObject(
+          '''
 $stringTag
 !!int key: value
-'''),
+''',
           nodeResolvers: {stringTag: scalarResolver},
         ),
       ).throwsParserException(
@@ -143,8 +193,8 @@ $stringTag
 
     test('Throws when a custom map cannot be parsed', () {
       check(
-        () => loadDartObject(
-          YamlSource.string('$setTag [flow, sequence]'),
+        () => loadResolvedDartObject(
+          '$setTag [flow, sequence]',
           nodeResolvers: {setTag: mapResolver},
         ),
       ).throwsParserException('Expected a custom map');
@@ -152,8 +202,8 @@ $stringTag
 
     test('Throws when a custom scalar cannot be parsed', () {
       check(
-        () => loadDartObject(
-          YamlSource.string('$stringTag {key: value}'),
+        () => loadResolvedDartObject(
+          '$stringTag {key: value}',
           nodeResolvers: {stringTag: scalarResolver},
         ),
       ).throwsParserException(

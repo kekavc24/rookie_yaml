@@ -1,7 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';
@@ -62,8 +61,8 @@ void main() {
 
     test('Buffers all code units of scalar', () {
       check(
-        loadDartObject(
-          YamlSource.string('$tag $scalar'),
+        loadResolvedDartObject(
+          '$tag $scalar',
           nodeResolvers: {tag: resolver},
         ),
       ).isA<List<int>>().deepEquals(scalar.codeUnits.followedBy([-1]));
@@ -71,8 +70,8 @@ void main() {
 
     test('Buffers all code units of scalar when in list', () {
       check(
-        loadDartObject(
-          YamlSource.string('- $tag $scalar'),
+        loadResolvedDartObject(
+          '- $tag $scalar',
           nodeResolvers: {tag: resolver},
         ),
       ).isA<List>().which(
@@ -86,8 +85,8 @@ void main() {
       final mimic = '$tag $scalar';
 
       check(
-        loadDartObject(
-          YamlSource.string('{$mimic: $mimic}'),
+        loadResolvedDartObject(
+          '{$mimic: $mimic}',
           nodeResolvers: {tag: resolver},
         ),
       ).isA<Map>().which(

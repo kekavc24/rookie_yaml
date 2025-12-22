@@ -1,6 +1,6 @@
 import 'package:args/args.dart';
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
+import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 import 'package:yaml_test_suite_runner/yaml_test_suite_runner.dart';
 
 final _argParser = ArgParser()

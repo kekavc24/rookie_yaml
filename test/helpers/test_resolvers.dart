@@ -1,5 +1,92 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
+import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
+
+T? loadResolvedDartObject<T>(
+  String yaml, {
+  List<ScalarResolver<Object?>>? resolvers,
+  Map<TagShorthand, CustomResolver>? nodeResolvers,
+  OnCustomList<Object>? customList,
+  OnCustomMap<Object>? customMap,
+  void Function(int index)? onDoctStart,
+  void Function(Object? key)? onKeySeen,
+  void Function(bool, String)? logger,
+}) => loadDartObject(
+  YamlSource.string(yaml),
+  triggers: TestTrigger(
+    resolvers: resolvers,
+    customResolvers: nodeResolvers,
+    onDoctStart: onDoctStart,
+    onKeySeen: onKeySeen,
+    customList: customList,
+    customMap: customMap,
+  ),
+  logger: logger,
+);
+
+final class TestTrigger extends CustomTriggers {
+  TestTrigger._({
+    super.resolvers,
+    super.advancedResolvers,
+    void Function(int index)? onDoctStart,
+    void Function(Object? key)? onKeySeen,
+    OnCustomList<Object>? customList,
+    OnCustomMap<Object>? customMap,
+  }) : _onDocStart = onDoctStart ?? ((_) {}),
+       _onKeySeen = onKeySeen ?? ((_) {}),
+       _defaultList = customList,
+       _defaultMap = customMap;
+
+  final void Function(int index) _onDocStart;
+
+  final void Function(Object? key) _onKeySeen;
+
+  final OnCustomList<Object>? _defaultList;
+
+  final OnCustomMap<Object>? _defaultMap;
+
+  factory TestTrigger({
+    List<ScalarResolver<Object?>>? resolvers,
+    Map<TagShorthand, CustomResolver>? customResolvers,
+    void Function(int index)? onDoctStart,
+    void Function(Object? key)? onKeySeen,
+    OnCustomList<Object>? customList,
+    OnCustomMap<Object>? customMap,
+  }) {
+    final creators = (resolvers ?? []).fold(
+      <TagShorthand, ResolverCreator<Object?>>{},
+      (p, c) {
+        final ScalarResolver(:target, :onTarget) = c;
+        p[target] = onTarget;
+        return p;
+      },
+    );
+
+    return TestTrigger._(
+      resolvers: creators,
+      advancedResolvers: customResolvers,
+      onDoctStart: onDoctStart,
+      onKeySeen: onKeySeen,
+      customList: customList,
+      customMap: customMap,
+    );
+  }
+
+  @override
+  void onDocumentStart(int index) => _onDocStart(index);
+
+  @override
+  void onParsedKey(Object? key) => _onKeySeen(key);
+
+  @override
+  OnCustomMap<M>? onDefaultMapping<M>() => _defaultMap as OnCustomMap<M>?;
+
+  @override
+  OnCustomList<S>? onDefaultSequence<S>() => _defaultList as OnCustomList<S>?;
+}
 
 final class SimpleUtfBuffer extends BytesToScalar<List<int>> {
   final buffer = <int>[];
