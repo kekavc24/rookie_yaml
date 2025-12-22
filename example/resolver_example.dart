@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 
+import '../test/helpers/test_resolvers.dart';
+
 void main(List<String> args) {
   // Let's decode json embedded in a double quoted scalar. This is for demo
   // purposes.
@@ -38,7 +40,7 @@ $jsonTag "${json.encode(object).replaceAll('"', r'\"')}"
   // decoded directly as a Dart object
   final decodedList = loadDartObject<List>(
     YamlSource.string(yaml),
-    resolvers: [jsonResolver],
+    triggers: TestTrigger(resolvers: [jsonResolver]),
   );
 
   print(decodedList); // [This, is, my, json]

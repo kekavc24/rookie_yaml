@@ -3,7 +3,7 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/special_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -136,6 +136,7 @@ BlockInfo parseExplicitBlockEntry<Obj>(
       end: iterator.currentLineInfo.current,
     );
   } else if (ignoreValueIfKey) {
+    state.onParseMapKey(key!.parsed());
     onExplicitEntry(key!, null);
     return keyInfo;
   } else if (keyInfo.exitIndent != null) {
@@ -148,10 +149,13 @@ BlockInfo parseExplicitBlockEntry<Obj>(
         end: state.iterator.currentLineInfo.current,
       );
     } else if (keyInfo.exitIndent! < entryIndent) {
+      state.onParseMapKey(key!.parsed());
       onExplicitEntry(key!, null);
       return keyInfo;
     }
   }
+
+  state.onParseMapKey(key!.parsed());
 
   // Parse value
   return _parseExplicit(

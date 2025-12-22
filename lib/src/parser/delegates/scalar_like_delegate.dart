@@ -102,12 +102,12 @@ final class ScalarDelegate<T> extends ScalarLikeDelegate<T>
   T _resolveNode() {
     ScalarValue? value;
 
-    if (_tag case ContentResolver<dynamic>(
+    if (_tag case ContentResolver<Object?>(
       :final resolver,
       :final toYamlSafe,
       :final acceptNullAsValue,
     )) {
-      if (resolver(content) case dynamic resolved
+      if (resolver(content) case Object? resolved
           when resolved != null || acceptNullAsValue) {
         value = CustomValue(resolved, toYamlSafe: toYamlSafe);
       }

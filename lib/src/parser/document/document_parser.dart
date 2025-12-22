@@ -2,6 +2,8 @@ part of 'yaml_document.dart';
 
 typedef GreedyPlain = ({RuneOffset start, String greedChars});
 
+typedef _OnDocStart = void Function(int document);
+
 const rootIndentLevel = seamlessIndentMarker + 1;
 
 /// Throws an exception if the prospective [YamlSourceNode]
@@ -45,8 +47,7 @@ final class DocumentParser<R> {
     required ScalarFunction<R> scalarFunction,
     required ParserLogger logger,
     required MapDuplicateHandler onMapDuplicate,
-    List<ScalarResolver>? resolvers,
-    Map<TagShorthand, CustomResolver>? nodeResolvers,
+    CustomTriggers? triggers,
   }) : _parserState = ParserState<R>(
          iterator,
          aliasFunction: aliasFunction,
@@ -55,11 +56,14 @@ final class DocumentParser<R> {
          scalarFunction: scalarFunction,
          logger: logger,
          onMapDuplicate: onMapDuplicate,
-         resolvers: resolvers,
-         customResolvers: nodeResolvers,
-       );
+         triggers: triggers,
+       ),
+       _onDocReset = triggers?.onDocumentStart ?? ((_) {});
 
   final ParserState<R> _parserState;
+
+  /// Called when a new document's parsing begins.
+  final _OnDocStart _onDocReset;
 
   /// Parses the next [YamlDocument] if present in the YAML string.
   ///
@@ -71,6 +75,8 @@ final class DocumentParser<R> {
     final ParserState(:iterator, :comments, :logger) = _parserState;
 
     if (iterator.isEOF) return (false, null);
+
+    _onDocReset(_parserState.current);
 
     GreedyPlain? docMarkerGreedy;
     YamlDirective? version;

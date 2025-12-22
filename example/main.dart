@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/yaml_loaders.dart';
+import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 
 void main(List<String> args) {
   const yaml = '''

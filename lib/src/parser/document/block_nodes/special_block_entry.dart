@@ -7,7 +7,7 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -29,7 +29,7 @@ SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
   required RuneOffset start,
   required int indent,
   required int indentLevel,
-  required ListFunction<Obj> defaultSequence,
+  required ParserState<Obj> state,
 }) {
   // Check if this special sequence was annotated with custom properties
   if (property case NodeProperty(
@@ -45,13 +45,12 @@ SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
     );
   }
 
-  return GenericSequence.byKind(
-    kind: property?.kind ?? YamlKind.sequence,
+  return state.defaultSequenceDelegate(
     style: NodeStyle.block,
     indent: indent,
     indentLevel: indentLevel,
     start: start,
-    resolver: defaultSequence,
+    kind: property?.kind ?? YamlKind.sequence,
   );
 }
 
@@ -158,10 +157,10 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
   final (:greedyOnPlain, :sequence) = parseBlockSequence(
     _delegateHelper<Obj>(
       property,
+      state: state,
       start: property?.span.start ?? iterator.currentLineInfo.current,
       indent: keyIndent,
       indentLevel: keyIndentLevel,
-      defaultSequence: state.listFunction,
     )..updateNodeProperties = property,
     state: state,
     levelWithBlockMap: true,

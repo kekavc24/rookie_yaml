@@ -6,7 +6,7 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -38,12 +38,11 @@ BlockNode<Obj> parseBlockWildCard<Obj>(
     composedMapIndent: inlineFixedIndent,
   ),
   BlockCollectionEvent.startExplicitKey => parseBlockMap(
-    GenericMap(
-      collectionStyle: NodeStyle.block,
+    state.defaultMapDelegate(
+      mapStyle: NodeStyle.block,
       indentLevel: indentLevel,
       indent: inlineFixedIndent,
       start: state.iterator.currentLineInfo.current,
-      mapResolver: state.mapFunction,
     ),
     state: state,
   ),

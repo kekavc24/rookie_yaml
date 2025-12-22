@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
@@ -10,7 +9,7 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -445,13 +444,12 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
         );
 
         sequence = parseBlockSequence(
-          GenericSequence.byKind(
+          state.defaultSequenceDelegate(
             kind: kind,
             style: NodeStyle.block,
             indent: fixedInlineIndent,
             indentLevel: indentLevel,
             start: property.span.start,
-            resolver: state.listFunction,
           ),
           state: state,
           levelWithBlockMap: false,
@@ -541,12 +539,11 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
         );
 
         final map = parseBlockMap(
-          GenericMap(
-            collectionStyle: NodeStyle.block,
+          parserState.defaultMapDelegate(
+            mapStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
             start: parserState.iterator.currentLineInfo.current,
-            mapResolver: parserState.mapFunction,
           ),
           state: parserState,
         );
@@ -564,12 +561,11 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
         );
 
         final sequence = parseBlockSequence(
-          GenericSequence.byKind(
+          parserState.defaultSequenceDelegate(
             style: NodeStyle.block,
             indent: fixedInlineIndent,
             indentLevel: indentLevel,
             start: property.span.start,
-            resolver: parserState.listFunction,
           ),
           state: parserState,
           levelWithBlockMap: false,

@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Callback for creating a [ContentResolver] tag.
-typedef ResolverCreator = ContentResolver Function(NodeTag tag);
+typedef ResolverCreator<R> = ContentResolver<R> Function(NodeTag tag);
 
 /// A resolver for a [Scalar]. The type emitted by this resolver lives within
 /// the scalar itself or acts as the type inferred when directly parsed as a
@@ -19,7 +19,7 @@ final class ScalarResolver<O> {
   final TagShorthand target;
 
   /// Creates a resolver tag.
-  final ResolverCreator onTarget;
+  final ResolverCreator<Object?> onTarget;
 
   /// Creates a resolver that only resolves a scalar's content after the parser
   /// has buffered the content as a string.

@@ -3,7 +3,7 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/special_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -26,6 +26,7 @@ BlockInfo parseImplicitBlockEntry<Obj>(
   );
 
   final iterator = state.iterator;
+  state.onParseMapKey(key.parsed());
 
   /// We parsed the directive end "---" or document end "..." chars. We have no
   /// key. We reached the end of the doc and parsed the key as that char

@@ -5,7 +5,7 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -64,9 +64,8 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
     return keyOrElement;
   }
 
-  // TODO: Throw if key has properties
-
   iterator.nextChar();
+  state.onParseMapKey(keyOrElement.parsed());
 
   // We want this value inline. Override implicit and force inline param.
   final value = parseFlowNode(
@@ -79,12 +78,11 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
   );
 
   final map =
-      GenericMap(
-          collectionStyle: NodeStyle.flow,
+      state.defaultMapDelegate(
+          mapStyle: NodeStyle.flow,
           indentLevel: indentLevel,
           indent: minIndent,
           start: keyOrElement.start,
-          mapResolver: state.mapFunction,
         )
         ..accept(keyOrElement.parsed(), value.parsed())
         ..updateEndOffset = value.endOffset;
@@ -125,12 +123,11 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
         );
       }
 
-      return GenericSequence.byKind(
+      return state.defaultSequenceDelegate(
         style: NodeStyle.flow,
         indentLevel: indentLevel,
         indent: minIndent,
         start: start,
-        resolver: listFunction,
         kind: kind,
       );
     },

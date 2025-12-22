@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/implicit_block_entry
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -81,7 +81,7 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
 }
 
 /// Parses the value of the provided [key] and uses the first entry to create a
-/// [MappingDelegate] representing the block map with an indent of
+/// [MapLikeDelegate] representing the block map with an indent of
 /// [fixedMapIndent].
 ///
 /// [parseBlockMap] is only called if more entries can be parsed after the
@@ -95,13 +95,14 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
   final iterator = state.iterator;
   final NodeDelegate(:indent, :start) = key;
 
-  final map = GenericMap(
-    collectionStyle: NodeStyle.block,
+  final map = state.defaultMapDelegate(
+    mapStyle: NodeStyle.block,
     indentLevel: key.indentLevel,
     indent: fixedMapIndent,
     start: start,
-    mapResolver: state.mapFunction,
   );
+
+  state.onParseMapKey(key.parsed());
 
   final blockInfo = parseImplicitValue(
     state,

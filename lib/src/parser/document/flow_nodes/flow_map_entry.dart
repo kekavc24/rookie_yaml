@@ -2,7 +2,7 @@ import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_node.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
-import 'package:rookie_yaml/src/parser/document/parser_state.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -22,12 +22,11 @@ NodeDelegate<Obj> parseExplicitAsFlowMap<Obj>(
   minIndent: minIndent,
   forceInline: forceInline,
   onExplicitKey: (indicatorOffset, key, value) {
-    return GenericMap(
-        collectionStyle: NodeStyle.flow,
+    return state.defaultMapDelegate(
+        mapStyle: NodeStyle.flow,
         indentLevel: indentLevel,
         indent: minIndent,
         start: indicatorOffset,
-        mapResolver: state.mapFunction,
       )
       ..accept(key.parsed(), value?.parsed())
       ..updateEndOffset = value?.endOffset ?? key.endOffset
@@ -89,6 +88,7 @@ R _parseExplicitFlow<R, Obj>(
   );
 
   key.updateEndOffset = iterator.currentLineInfo.current;
+  state.onParseMapKey(key.parsed());
 
   NodeDelegate<Obj>? value;
 
@@ -158,6 +158,7 @@ FlowMapEntry<Obj> parseImplicitEntry<Obj>(
 
   // Move end offset ahead for key
   parsedKey.updateEndOffset = iterator.currentLineInfo.current;
+  state.onParseMapKey(parsedKey.parsed());
 
   if (iterator.current case flowEntryEnd || mappingEnd) {
     return (parsedKey, null);

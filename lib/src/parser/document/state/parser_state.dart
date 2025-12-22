@@ -3,6 +3,7 @@ import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
+import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -10,12 +11,6 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 final _defaultGlobalTag = MapEntry(TagHandle.secondary(), yamlGlobalTag);
-
-/// A map with functions linked to a local tag.
-typedef Resolvers = Map<TagShorthand, ResolverCreator>;
-
-/// A map with [CustomResolver]s associated with a local tag.
-typedef AdvancedResolvers = Map<TagShorthand, CustomResolver>;
 
 /// A callback for handling map duplicates
 typedef MapDuplicateHandler =
@@ -35,6 +30,20 @@ typedef OnTagResolved = ({
 typedef TagResolver =
     OnTagResolved Function(RuneOffset start, RuneOffset end, TagShorthand tag);
 
+typedef _OnCustomResolver = CustomResolver? Function(TagShorthand localTag);
+
+typedef _OnScalarResolver<R> =
+    ResolverCreator<R>? Function(TagShorthand localTag);
+
+typedef OnMapKey = void Function(Object? key);
+
+typedef _OnDefaultSeq<S> = OnCustomList<S>? Function();
+
+typedef _OnDefaultMap<M> = OnCustomMap<M>? Function();
+
+/// Just a null-ish helper.
+R? _nullish<R>() => null;
+
 /// Holds the document parser's top level state
 final class ParserState<R> {
   ParserState(
@@ -45,14 +54,12 @@ final class ParserState<R> {
     required this.scalarFunction,
     required this.logger,
     required this.onMapDuplicate,
-    List<ScalarResolver>? resolvers,
-    AdvancedResolvers? customResolvers,
-  }) : _advancedResolvers = customResolvers ?? {},
-       _resolvers = (resolvers ?? []).fold({}, (p, c) {
-         final ScalarResolver(:target, :onTarget) = c;
-         p[target] = onTarget;
-         return p;
-       });
+    required CustomTriggers? triggers,
+  }) : _onCustomResolver = triggers?.onCustomResolver ?? ((_) => null),
+       _onScalarResolver = triggers?.onScalarResolver ?? ((_) => null),
+       onParseMapKey = triggers?.onParsedKey ?? ((_) {}),
+       _defaultMap = triggers?.onDefaultMapping ?? _nullish,
+       _defaultSequence = triggers?.onDefaultSequence ?? _nullish;
 
   /// Byte iterator.
   final SourceIterator iterator;
@@ -69,11 +76,20 @@ final class ParserState<R> {
   /// Scalar builder
   final ScalarFunction<R> scalarFunction;
 
-  /// Custom functions to resolve a scalar's string content.
-  final Resolvers _resolvers;
+  /// Callback for binding a local tag to a custom resolver.
+  final _OnCustomResolver _onCustomResolver;
 
-  /// Custom resolvers that act as delegates to the actual parser.
-  final AdvancedResolvers _advancedResolvers;
+  /// Callback for binding a local tag to a custom scalar resolver.
+  final _OnScalarResolver _onScalarResolver;
+
+  /// Callback once a valid map key has been parsed completely
+  final OnMapKey onParseMapKey;
+
+  /// Callback for creating a default sequence delegate.
+  final _OnDefaultSeq<R> _defaultSequence;
+
+  /// Callback for creating a default mapping delegate.
+  final _OnDefaultMap<R> _defaultMap;
 
   /// Logging function for warnings and info
   final ParserLogger logger;
@@ -314,10 +330,11 @@ final class ParserState<R> {
     // resolver. Give preference to a custom resolver. This conveniently
     // allows non-specific tags to be captured for custom resolution before
     // they are dropped.
-    if (_advancedResolvers[localTag] case CustomResolver resolver) {
+    if (_onCustomResolver(localTag) case CustomResolver resolver) {
       kind = resolver.kind;
       customResolver = resolver;
-    } else if (_resolvers[localTag] case ResolverCreator function) {
+    } else if (_onScalarResolver(localTag)
+        case ResolverCreator<Object?> function) {
       nodeTag = function(nodeTag as NodeTag);
     }
 
@@ -332,4 +349,52 @@ final class ParserState<R> {
 
     return (kind: kind, tag: nodeTag, customResolver: customResolver);
   }
+
+  /// Creates a generic map delegate.
+  MapLikeDelegate<R, R> defaultMapDelegate({
+    required NodeStyle mapStyle,
+    required int indentLevel,
+    required int indent,
+    required RuneOffset start,
+  }) => switch (_defaultMap()) {
+    OnCustomMap<R> customMap => MapLikeDelegate.boxed(
+      customMap(),
+      collectionStyle: mapStyle,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+    ),
+    _ => GenericMap(
+      collectionStyle: mapStyle,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+      mapResolver: mapFunction,
+    ),
+  };
+
+  /// Creates a generic sequence delegate.
+  SequenceLikeDelegate<R, R> defaultSequenceDelegate({
+    required NodeStyle style,
+    required int indent,
+    required int indentLevel,
+    required RuneOffset start,
+    NodeKind kind = YamlKind.sequence,
+  }) => switch (_defaultSequence()) {
+    OnCustomList<R> customList => SequenceLikeDelegate.boxed(
+      customList(),
+      collectionStyle: style,
+      indentLevel: indentLevel,
+      indent: indent,
+      start: start,
+    ),
+    _ => GenericSequence.byKind(
+      style: style,
+      indent: indent,
+      indentLevel: indentLevel,
+      start: start,
+      resolver: listFunction,
+      kind: kind,
+    ),
+  };
 }
