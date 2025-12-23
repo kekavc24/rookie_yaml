@@ -87,6 +87,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
     state,
     blockNode: parseBlockNode(
       state,
+      blockParentIndent: indent,
       indentLevel: isNextLevel ? indentLevel + 1 : indentLevel,
       inferredFromParent: indentOrSeparation,
       laxBlockIndent: indent + 1,

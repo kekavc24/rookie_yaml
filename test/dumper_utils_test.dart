@@ -90,7 +90,7 @@ multiline string.
         parseBlockScalar(
           UnicodeIterator.ofString('>\n$unfolded'),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: (_) {},
         ),
         defaultFolded,
@@ -185,7 +185,7 @@ multiline string.
         parseBlockScalar(
           UnicodeIterator.ofString('>$unfolded'),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: (_) {},
         ),
         foldTarget,

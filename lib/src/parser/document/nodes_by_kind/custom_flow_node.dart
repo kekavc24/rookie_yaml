@@ -69,6 +69,7 @@ NodeDelegate<Obj> customFlowNode<Obj>(
       isInFlowContext: true,
       indentLevel: currentIndentLevel,
       minIndent: minIndent,
+      blockParentIndent: null,
     );
   },
 );

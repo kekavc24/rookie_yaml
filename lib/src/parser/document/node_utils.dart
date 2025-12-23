@@ -51,6 +51,7 @@ typedef OnBlockMapEntry<Obj> =
   required bool isInFlowContext,
   required int indentLevel,
   required int minIndent,
+  required int? blockParentIndent,
   String greedyOnPlain = '',
   RuneOffset? start,
 }) {
@@ -62,7 +63,7 @@ typedef OnBlockMapEntry<Obj> =
       parseBlockScalar(
         iterator,
         minimumIndent: minIndent,
-        indentLevel: indentLevel,
+        blockParentIndent: blockParentIndent,
         onParseComment: onParseComment,
       ),
 

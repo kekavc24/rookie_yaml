@@ -166,6 +166,7 @@ final class DocumentParser<R> {
       final (:blockInfo, :node) = parseBlockScalar(
         _parserState,
         event: ScalarEvent.startFlowPlain,
+        blockParentIndent: null,
         minIndent: 0,
         indentLevel: rootIndentLevel,
         isImplicit: false,
@@ -194,6 +195,7 @@ final class DocumentParser<R> {
 
       final (:blockInfo, :node) = parseBlockNode(
         _parserState,
+        blockParentIndent: null, // No parent
         inferredFromParent: rootIndent,
         indentLevel: rootIndentLevel,
         laxBlockIndent: 0,

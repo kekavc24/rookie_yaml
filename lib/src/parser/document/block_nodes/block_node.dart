@@ -208,6 +208,7 @@ BlockNode<Obj> _safeBlockState<Obj>(
 ///   (inclusive).
 BlockNode<Obj> parseBlockNode<Obj>(
   ParserState<Obj> state, {
+  required int? blockParentIndent,
   required int indentLevel,
   required int? inferredFromParent,
   required int laxBlockIndent,
@@ -350,6 +351,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
               state: state,
               event: event,
               property: property as NodeProperty,
+              blockParentIndent: blockParentIndent,
               indentLevel: indentLevel,
               laxBlockIndent: adjustedLaxIndent,
               fixedInlineIndent: adjustedInlineIndent,
@@ -367,6 +369,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
       event,
       parserState: state,
       property: property,
+      blockParentIndent: blockParentIndent,
       indentLevel: indentLevel,
       laxBlockIndent: adjustedLaxIndent,
       fixedInlineIndent: adjustedInlineIndent,
@@ -386,6 +389,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
   required ParserState<Obj> state,
   required ParserEvent event,
   required NodeProperty property,
+  required int? blockParentIndent,
   required int indentLevel,
   required int laxBlockIndent,
   required int fixedInlineIndent,
@@ -398,6 +402,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
       state: state,
       event: event,
       property: property,
+      blockParentIndent: blockParentIndent,
       indentLevel: indentLevel,
       laxBlockIndent: laxBlockIndent,
       fixedInlineIndent: fixedInlineIndent,
@@ -486,6 +491,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
         return parseBlockWildCard(
           state,
           event: event,
+          blockParentIndent: blockParentIndent,
           indentLevel: indentLevel,
           laxIndent: laxBlockIndent,
           inlineFixedIndent: fixedInlineIndent,
@@ -506,6 +512,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
       event,
       parserState: state,
       property: property,
+      blockParentIndent: blockParentIndent,
       indentLevel: indentLevel,
       laxBlockIndent: laxBlockIndent,
       fixedInlineIndent: fixedInlineIndent,
@@ -521,6 +528,7 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
   ParserEvent event, {
   required ParserState<Obj> parserState,
   required ParsedProperty property,
+  required int? blockParentIndent,
   required int indentLevel,
   required int laxBlockIndent,
   required int fixedInlineIndent,
@@ -583,6 +591,7 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
         return parseBlockWildCard(
           parserState,
           event: event,
+          blockParentIndent: blockParentIndent,
           indentLevel: indentLevel,
           laxIndent: laxBlockIndent,
           inlineFixedIndent: fixedInlineIndent,

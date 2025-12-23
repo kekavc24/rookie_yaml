@@ -26,7 +26,7 @@ part 'block_utils.dart';
 PreScalar parseBlockScalar(
   SourceIterator iterator, {
   required int minimumIndent,
-  required int indentLevel,
+  required int? blockParentIndent,
   required void Function(YamlComment comment) onParseComment,
 }) {
   final buffer = ScalarBuffer();
@@ -35,7 +35,7 @@ PreScalar parseBlockScalar(
     iterator,
     charBuffer: buffer.writeChar,
     minimumIndent: minimumIndent,
-    indentLevel: indentLevel,
+    blockParentIndent: blockParentIndent,
     onParseComment: onParseComment,
     onParsingComplete: (info) => (
       content: buffer.bufferedContent(),
@@ -54,7 +54,7 @@ T blockScalarParser<T>(
   SourceIterator iterator, {
   required CharWriter charBuffer,
   required int minimumIndent,
-  required int indentLevel,
+  required int? blockParentIndent,
   required void Function(YamlComment comment) onParseComment,
   required OnParsedScalar<T> onParsingComplete,
 }) {
@@ -77,7 +77,7 @@ T blockScalarParser<T>(
   /// If not null, we know the indent. Otherwise we have to infer from the
   /// first non-empty line.
   if (indentIndicator != null) {
-    trueIndent = max(0, indentLevel) + indentIndicator;
+    trueIndent = (blockParentIndent ?? 0) + indentIndicator;
   }
 
   final lineBreaks = <int>[

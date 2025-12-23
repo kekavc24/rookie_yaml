@@ -53,6 +53,11 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
 
       // Won't matter. The lax and inline indent are predetermined already.
       inferredFromParent: null,
+
+      // It must degenerate to a block map! A block scalar cannot or should
+      // not be here (unless via an explicit key) since we expect a block map
+      // after this call.
+      blockParentIndent: null,
       laxBlockIndent: laxIndent,
       fixedInlineIndent: inlineFixedIndent,
       forceInlined: isInline,

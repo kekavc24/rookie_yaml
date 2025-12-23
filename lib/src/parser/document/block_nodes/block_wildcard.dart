@@ -15,6 +15,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 BlockNode<Obj> parseBlockWildCard<Obj>(
   ParserState<Obj> state, {
   required ParserEvent event,
+  required int? blockParentIndent,
   required int indentLevel,
   required int laxIndent,
   required int inlineFixedIndent,
@@ -59,6 +60,7 @@ BlockNode<Obj> parseBlockWildCard<Obj>(
   ScalarEvent() => parseBlockScalar(
     state,
     event: event,
+    blockParentIndent: blockParentIndent,
     minIndent: laxIndent,
     indentLevel: indentLevel,
     isImplicit: isInline,
@@ -141,6 +143,7 @@ BlockNode<Obj> parseBlockScalar<Obj>(
   required ScalarEvent event,
   required int minIndent,
   required int indentLevel,
+  required int? blockParentIndent,
   required bool isImplicit,
   required ParsedProperty? scalarProperty,
   required bool composeImplicitMap,
@@ -159,6 +162,7 @@ BlockNode<Obj> parseBlockScalar<Obj>(
     isInFlowContext: false,
     indentLevel: indentLevel,
     minIndent: minIndent,
+    blockParentIndent: blockParentIndent,
     greedyOnPlain: greedyOnPlain,
     start: start,
   );

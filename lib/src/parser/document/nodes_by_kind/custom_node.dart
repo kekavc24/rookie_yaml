@@ -78,6 +78,7 @@ R parseCustomScalar<R, Obj>(
   required bool isInFlowContext,
   required int indentLevel,
   required int minIndent,
+  required int? blockParentIndent,
 }) {
   // Delegate helper.
   BoxedScalar<Obj> delegateOf(ScalarStyle style) {
@@ -139,7 +140,7 @@ R parseCustomScalar<R, Obj>(
             iterator,
             charBuffer: d.delegate.onWriteRequest,
             minimumIndent: minIndent,
-            indentLevel: indentLevel,
+            blockParentIndent: blockParentIndent,
             onParseComment: onParseComment,
             onParsingComplete: (info) => completionHelper(d, info),
           ),

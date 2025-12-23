@@ -32,6 +32,7 @@ ScalarDelegate<R> parseFlowScalar<R>(
     isInFlowContext: true,
     indentLevel: indentLevel,
     minIndent: minIndent,
+    blockParentIndent: null,
   );
 
   /// Plain scalars can have document/directive end chars embedded

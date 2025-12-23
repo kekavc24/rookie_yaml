@@ -17,6 +17,7 @@ BlockInfo parseImplicitBlockEntry<Obj>(
 }) {
   final (:blockInfo, node: key) = parseBlockNode(
     state,
+    blockParentIndent: null, // Cannot have block keys as implicit
     indentLevel: keyIndentLevel,
     inferredFromParent: keyIndent,
     laxBlockIndent: keyIndent,
@@ -156,6 +157,7 @@ BlockInfo parseImplicitValue<Obj>(
     ///     -> [canComposeMapIfMultiline]
     blockNode: parseBlockNode(
       state,
+      blockParentIndent: keyIndent,
       indentLevel: hasIndent ? keyIndentLevel + 1 : keyIndentLevel,
       inferredFromParent: indentOrSeparation,
       laxBlockIndent: valueIndent,

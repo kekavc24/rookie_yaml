@@ -31,7 +31,7 @@ $indent
           parseBlockScalar(
             UnicodeIterator.ofString('$block$trailing'),
             minimumIndent: 0,
-            indentLevel: 0,
+            blockParentIndent: null,
             onParseComment: comments.add,
           ),
         ).hasIndent(indent);
@@ -55,7 +55,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString('$block$trailing'),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         );
       }
@@ -70,7 +70,7 @@ $indent
             parseBlockScalar(
               UnicodeIterator.ofString(block),
               minimumIndent: 0,
-              indentLevel: 0,
+              blockParentIndent: null,
               onParseComment: comments.add,
             ),
           )
@@ -85,7 +85,7 @@ $indent
         () => parseBlockScalar(
           UnicodeIterator.ofString('|0\n'),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).throwsWithMessage<RangeError>(
@@ -100,7 +100,7 @@ $indent
         () => parseBlockScalar(
           UnicodeIterator.ofString('|10\n'),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).throwsParserException(
@@ -117,7 +117,7 @@ $indent
         () => parseBlockScalar(
           UnicodeIterator.ofString(yaml),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).throwsParserException(
@@ -134,7 +134,7 @@ $indent
         () => parseBlockScalar(
           UnicodeIterator.ofString(yaml),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).throwsParserException(
@@ -153,7 +153,7 @@ $indent
             parseBlockScalar(
               UnicodeIterator.ofString('$str$lessIndented'),
               minimumIndent: 0,
-              indentLevel: 0,
+              blockParentIndent: null,
               onParseComment: comments.add,
             ),
           )
@@ -177,7 +177,7 @@ $indent
               '$emptyLineIsMoreIndented',
             ),
             minimumIndent: 0,
-            indentLevel: 0,
+            blockParentIndent: null,
             onParseComment: comments.add,
           ),
         ).throwsParserException(
@@ -203,7 +203,7 @@ $indent
           parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
-            indentLevel: 0,
+            blockParentIndent: null,
             onParseComment: comments.add,
           ),
         )
@@ -229,7 +229,7 @@ $indent
           parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
-            indentLevel: 0,
+            blockParentIndent: null,
             onParseComment: comments.add,
           ),
         )
@@ -248,7 +248,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -265,7 +265,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -282,7 +282,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -303,7 +303,7 @@ $indent
           parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
-            indentLevel: 0,
+            blockParentIndent: null,
             onParseComment: comments.add,
           ),
         )
@@ -347,7 +347,7 @@ $indent
           parseBlockScalar(
             UnicodeIterator.ofString(scalar),
             minimumIndent: 0,
-            indentLevel: 0,
+            blockParentIndent: null,
             onParseComment: comments.add,
           ),
         )
@@ -366,7 +366,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -383,7 +383,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);
@@ -400,7 +400,7 @@ $indent
         parseBlockScalar(
           UnicodeIterator.ofString(scalar),
           minimumIndent: 0,
-          indentLevel: 0,
+          blockParentIndent: null,
           onParseComment: comments.add,
         ),
       ).hasFormattedContent(parsed);

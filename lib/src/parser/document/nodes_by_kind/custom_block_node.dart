@@ -6,6 +6,7 @@ BlockNode<Obj> customBlockNode<Obj>(
   required ParserState<Obj> state,
   required ParserEvent event,
   required NodeProperty property,
+  required int? blockParentIndent,
   required int indentLevel,
   required int laxBlockIndent,
   required int fixedInlineIndent,
@@ -119,6 +120,7 @@ BlockNode<Obj> customBlockNode<Obj>(
               (indentOnExit, marker, delegate),
           isImplicit: forceInlined,
           isInFlowContext: false,
+          blockParentIndent: blockParentIndent,
           indentLevel: indentLevel,
           minIndent: laxBlockIndent,
         );

@@ -134,6 +134,7 @@ _SequenceState _sequenceNodeOrMarker(
 
       final (:blockInfo, :node) = parseBlockNode(
         state,
+        blockParentIndent: sequenceIndent,
         indentLevel: isNextLevel ? indentLevel + 1 : indentLevel,
         inferredFromParent: indentOrSeparation,
         laxBlockIndent: entryIndent,

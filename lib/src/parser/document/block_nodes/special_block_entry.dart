@@ -177,6 +177,7 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
   final (blockInfo: keyInfo, node: implicitKey) = parseBlockScalar(
     state,
     event: ScalarEvent.startFlowPlain,
+    blockParentIndent: null,
     minIndent: keyIndent,
     indentLevel: keyIndentLevel,
     isImplicit: true,
