@@ -95,6 +95,17 @@ T blockScalarParser<T>(
   var docMarkerType = DocumentMarker.none;
   var end = iterator.currentLineInfo.current;
 
+  // Buffers characters until the end of the current line.
+  bool chunkAndExit(int current) {
+    blockBuffer(current);
+
+    return iterateAndChunk(
+      iterator,
+      onChar: blockBuffer,
+      exitIf: (_, curr) => curr.isLineBreak(),
+    ).sourceEnded;
+  }
+
   blockParser:
   while (!iterator.isEOF) {
     final indent = trueIndent ?? minimumIndent;
@@ -195,16 +206,47 @@ T blockScalarParser<T>(
           }
         }
 
-      // All block scalar styles only accept printable characters
-      case _ when char.isPrintable():
+      case space || tab:
         {
-          if (char.isWhiteSpace()) {
-            if (isLiteral || wroteToBuffer || lineBreaks.length > 1) {
-              bufferHelper(lineBreaks, blockBuffer);
-            }
+          final canFold = lineBreaks.length > 1;
 
-            lastWasIndented = true;
+          // Only empty lines separating folded lines and indented line are
+          // ignored. See folded section productions [180] & [181].
+          if (!isLiteral && !wroteToBuffer && canFold) {
+            _maybeFoldLF(
+              blockBuffer,
+              isLiteral: false,
+              wroteToBuffer: true,
+              lastNonEmptyWasIndented: false,
+              lineBreaks: lineBreaks,
+            );
+          } else if (canFold || wroteToBuffer) {
+            bufferHelper(lineBreaks, blockBuffer);
+          }
+
+          lastWasIndented = true;
+          lineBreaks.clear();
+
+          if (chunkAndExit(char)) break blockParser;
+        }
+
+      default:
+        {
+          // All block scalar styles only accept printable characters.
+          if (!char.isPrintable()) {
+            throwWithSingleOffset(
+              iterator,
+              message:
+                  'Block scalar styles are restricted to the printable '
+                  'character set',
+              offset: iterator.currentLineInfo.current,
+            );
+          }
+
+          if (lastWasIndented) {
+            bufferHelper(lineBreaks, blockBuffer);
             lineBreaks.clear();
+            lastWasIndented = false;
           } else {
             _maybeFoldLF(
               blockBuffer,
@@ -213,29 +255,10 @@ T blockScalarParser<T>(
               lastNonEmptyWasIndented: lastWasIndented,
               lineBreaks: lineBreaks,
             );
-            lastWasIndented = false;
           }
 
-          blockBuffer(char);
-
-          // Write the remaining line to the end without including line break
-          final OnChunk(:sourceEnded) = iterateAndChunk(
-            iterator,
-            onChar: blockBuffer,
-            exitIf: (_, curr) => curr.isLineBreak(),
-          );
-
-          if (sourceEnded) break blockParser;
+          if (chunkAndExit(char)) break blockParser;
         }
-
-      default:
-        throwWithSingleOffset(
-          iterator,
-          message:
-              'Block scalar styles are restricted to the printable '
-              'character set',
-          offset: iterator.currentLineInfo.current,
-        );
     }
   }
 
