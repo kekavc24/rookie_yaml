@@ -18,10 +18,6 @@ void bufferHelper(Iterable<int> buffered, CharWriter writer) {
   }
 }
 
-/// Callback for a low level scalar parse function after the scalar has been
-/// completely parsed.
-typedef OnParsedScalar<T> = T Function(ParsedScalarInfo info);
-
 /// Scalar info from a low level scalar parse function.
 typedef ParsedScalarInfo = ({
   /// [Scalar]'s scalarstyle

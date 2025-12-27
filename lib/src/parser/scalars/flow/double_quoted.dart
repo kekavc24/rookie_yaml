@@ -36,17 +36,17 @@ PreScalar parseDoubleQuoted(
   required bool isImplicit,
 }) {
   final buffer = ScalarBuffer();
-
-  return doubleQuotedParser<PreScalar>(
+  final info = doubleQuotedParser(
     iterator,
     buffer: buffer.writeChar,
     indent: indent,
     isImplicit: isImplicit,
-    onParsingComplete: (info) => (
-      content: buffer.bufferedContent(),
-      scalarInfo: info,
-      wroteLineBreak: buffer.wroteLineBreak,
-    ),
+  );
+
+  return (
+    content: buffer.bufferedContent(),
+    scalarInfo: info,
+    wroteLineBreak: buffer.wroteLineBreak,
   );
 }
 
@@ -55,12 +55,11 @@ PreScalar parseDoubleQuoted(
 /// Calls [buffer] for every byte/utf code unit that it reads as valid content
 /// from the [iterator]. Always calls [onParsingComplete] and returns the
 /// object [T] after the closing quote has been skipped.
-T doubleQuotedParser<T>(
+ParsedScalarInfo doubleQuotedParser(
   SourceIterator iterator, {
   required CharWriter buffer,
   required int indent,
   required bool isImplicit,
-  required OnParsedScalar<T> onParsingComplete,
 }) {
   if (iterator.current != doubleQuote) {
     _doubleQuoteException(iterator, 'Expected an opening double quote (")');
@@ -150,16 +149,14 @@ T doubleQuotedParser<T>(
     _closingQuoteException(iterator);
   }
 
-  return onParsingComplete(
-    (
-      scalarStyle: ScalarStyle.doubleQuoted,
-      scalarIndent: indent,
-      docMarkerType: DocumentMarker.none,
-      hasLineBreak: foundLineBreak,
-      indentDidChange: false,
-      indentOnExit: seamlessIndentMarker,
-      end: iterator.currentLineInfo.current,
-    ),
+  return (
+    scalarStyle: ScalarStyle.doubleQuoted,
+    scalarIndent: indent,
+    docMarkerType: DocumentMarker.none,
+    hasLineBreak: foundLineBreak,
+    indentDidChange: false,
+    indentOnExit: seamlessIndentMarker,
+    end: iterator.currentLineInfo.current,
   );
 }
 

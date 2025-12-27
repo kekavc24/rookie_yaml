@@ -36,20 +36,24 @@ PreScalar? parsePlain(
 }) {
   final buffer = ScalarBuffer();
 
-  return plainParser(
-    iterator,
-    buffer: buffer.writeChar,
-    indent: indent,
-    charsOnGreedy: charsOnGreedy,
-    isImplicit: isImplicit,
-    isInFlowContext: isInFlowContext,
-    onParsingComplete: (info) => (
+  if (plainParser(
+        iterator,
+        buffer: buffer.writeChar,
+        indent: indent,
+        charsOnGreedy: charsOnGreedy,
+        isImplicit: isImplicit,
+        isInFlowContext: isInFlowContext,
+      )
+      case ParsedScalarInfo info) {
+    return (
       // Cannot have leading and trailing whitespace (line breaks included).
       content: buffer.bufferedContent().trim(),
       scalarInfo: info,
       wroteLineBreak: buffer.wroteLineBreak,
-    ),
-  );
+    );
+  }
+
+  return null;
 }
 
 /// Parses the plain scalar. [charsOnGreedy] may represent the leading
@@ -63,16 +67,14 @@ PreScalar? parsePlain(
 /// production correctly.
 ///
 /// Calls [buffer] for every byte/utf code unit that it reads as valid content
-/// from the [iterator]. Always calls [onParsingComplete] and returns the
-/// object [T] after the closing quote has been skipped.
-T? plainParser<T>(
+/// from the [iterator].
+ParsedScalarInfo? plainParser(
   SourceIterator iterator, {
   required CharWriter buffer,
   required int indent,
   required String charsOnGreedy,
   required bool isImplicit,
   required bool isInFlowContext,
-  required OnParsedScalar<T> onParsingComplete,
 }) {
   //  Ensure we don't have a `(? | - | : ) + (s-whitespace)` production.
   if (charsOnGreedy.isEmpty &&
@@ -80,16 +82,14 @@ T? plainParser<T>(
       iterator.peekNextChar().isNotNullAnd((c) => c.isWhiteSpace())) {
     return iterator.current != mappingValue
         ? null
-        : onParsingComplete(
-            (
-              scalarStyle: ScalarStyle.plain,
-              scalarIndent: indent,
-              docMarkerType: DocumentMarker.none,
-              hasLineBreak: false,
-              indentOnExit: seamlessIndentMarker,
-              indentDidChange: false,
-              end: iterator.currentLineInfo.current,
-            ),
+        : (
+            scalarStyle: ScalarStyle.plain,
+            scalarIndent: indent,
+            docMarkerType: DocumentMarker.none,
+            hasLineBreak: false,
+            indentOnExit: seamlessIndentMarker,
+            indentDidChange: false,
+            end: iterator.currentLineInfo.current,
           );
   }
 
@@ -100,6 +100,16 @@ T? plainParser<T>(
   var foundLineBreak = false;
   var end = iterator.currentLineInfo.current;
   var indentOnExit = seamlessIndentMarker;
+
+  final foldingBuffer = <int>[];
+
+  // Plain scalars cannot have trailing whitespaces.
+  void flushFoldingBuffer() {
+    if (foldingBuffer.isNotEmpty) {
+      bufferHelper(foldingBuffer, buffer);
+      foldingBuffer.clear();
+    }
+  }
 
   chunker:
   while (!iterator.isEOF) {
@@ -119,13 +129,18 @@ T? plainParser<T>(
 
           docMarkerType = checkForDocumentMarkers(
             iterator,
-            onMissing: (greedy) => bufferHelper(greedy, buffer),
+
+            // Minimalistic closure. Assume we have whitespaces and linebreaks
+            // present. Akin to a sequential write.
+            onMissing: foldingBuffer.addAll,
           );
 
           if (docMarkerType.stopIfParsingDoc) {
             end = maybeEnd;
             break chunker;
           }
+
+          flushFoldingBuffer(); // Non-space chars found
         }
 
       /// A mapping key can never be followed by a whitespace. Exit regardless
@@ -160,7 +175,7 @@ T? plainParser<T>(
         {
           final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(
             iterator,
-            scalarBuffer: buffer,
+            scalarBuffer: foldingBuffer.add,
             minIndent: indent,
             isImplicit: isImplicit,
             matcherOnPlain: (charAfter) =>
@@ -182,6 +197,7 @@ T? plainParser<T>(
 
       default:
         {
+          flushFoldingBuffer();
           buffer(char);
 
           final OnChunk(:sourceEnded) = iterateAndChunk(
@@ -195,7 +211,7 @@ T? plainParser<T>(
     }
   }
 
-  return onParsingComplete((
+  return (
     scalarStyle: ScalarStyle.plain,
     scalarIndent: indent,
     docMarkerType: docMarkerType,
@@ -203,5 +219,5 @@ T? plainParser<T>(
     hasLineBreak: foundLineBreak,
     indentDidChange: indentOnExit != seamlessIndentMarker,
     end: end,
-  ));
+  );
 }

@@ -16,31 +16,29 @@ PreScalar parseSingleQuoted(
   required bool isImplicit,
 }) {
   final buffer = ScalarBuffer();
-
-  return singleQuotedParser(
+  final info = singleQuotedParser(
     iterator,
     buffer: buffer.writeChar,
     indent: indent,
     isImplicit: isImplicit,
-    onParsingComplete: (info) => (
-      content: buffer.bufferedContent(),
-      wroteLineBreak: buffer.wroteLineBreak,
-      scalarInfo: info,
-    ),
+  );
+
+  return (
+    content: buffer.bufferedContent(),
+    wroteLineBreak: buffer.wroteLineBreak,
+    scalarInfo: info,
   );
 }
 
 /// Parses the single quoted scalar.
 ///
 /// Calls [buffer] for every byte/utf code unit that it reads as valid content
-/// from the [iterator]. Always calls [onParsingComplete] and returns the
-/// object [T] after the closing quote has been skipped.
-T singleQuotedParser<T>(
+/// from the [iterator].
+ParsedScalarInfo singleQuotedParser(
   SourceIterator iterator, {
   required CharWriter buffer,
   required int indent,
   required bool isImplicit,
-  required OnParsedScalar<T> onParsingComplete,
 }) {
   if (iterator.current != singleQuote) {
     throwWithSingleOffset(
@@ -130,7 +128,7 @@ T singleQuotedParser<T>(
     );
   }
 
-  return onParsingComplete((
+  return (
     scalarStyle: ScalarStyle.singleQuoted,
     scalarIndent: indent,
     docMarkerType: DocumentMarker.none,
@@ -138,5 +136,5 @@ T singleQuotedParser<T>(
     indentDidChange: false,
     indentOnExit: seamlessIndentMarker,
     end: iterator.currentLineInfo.current,
-  ));
+  );
 }

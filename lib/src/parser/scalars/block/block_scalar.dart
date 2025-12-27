@@ -30,33 +30,31 @@ PreScalar parseBlockScalar(
   required void Function(YamlComment comment) onParseComment,
 }) {
   final buffer = ScalarBuffer();
-
-  return blockScalarParser(
+  final info = blockScalarParser(
     iterator,
     charBuffer: buffer.writeChar,
     minimumIndent: minimumIndent,
     blockParentIndent: blockParentIndent,
     onParseComment: onParseComment,
-    onParsingComplete: (info) => (
-      content: buffer.bufferedContent(),
-      scalarInfo: info,
-      wroteLineBreak: buffer.wroteLineBreak,
-    ),
+  );
+
+  return (
+    content: buffer.bufferedContent(),
+    wroteLineBreak: buffer.wroteLineBreak,
+    scalarInfo: info,
   );
 }
 
 /// Parses the block scalar.
 ///
 /// Calls [charBuffer] for every byte/utf code unit that it reads as valid content
-/// from the [iterator]. Always calls [onParsingComplete] and returns the
-/// object [T] after the closing quote has been skipped.
-T blockScalarParser<T>(
+/// from the [iterator]..
+ParsedScalarInfo blockScalarParser(
   SourceIterator iterator, {
   required CharWriter charBuffer,
   required int minimumIndent,
   required int? blockParentIndent,
   required void Function(YamlComment comment) onParseComment,
-  required OnParsedScalar<T> onParsingComplete,
 }) {
   var wroteToBuffer = false;
 
@@ -269,7 +267,7 @@ T blockScalarParser<T>(
     lineBreaks: lineBreaks,
   );
 
-  return onParsingComplete((
+  return (
     scalarStyle: isLiteral ? ScalarStyle.literal : ScalarStyle.folded,
     scalarIndent: trueIndent ?? minimumIndent,
     indentOnExit: indentOnExit,
@@ -277,5 +275,5 @@ T blockScalarParser<T>(
     docMarkerType: docMarkerType,
     hasLineBreak: indentOnExit != seamlessIndentMarker || wroteToBuffer,
     end: end,
-  ));
+  );
 }
