@@ -1,7 +1,6 @@
 library;
 
-export 'src/dumping/dumping.dart'
-    hide unfoldBlockFolded, unfoldDoubleQuoted, unfoldNormal, Normalizer;
+export 'src/dumping/dumping.dart';
 export 'src/parser/directives/directives.dart'
     hide
         Directives,

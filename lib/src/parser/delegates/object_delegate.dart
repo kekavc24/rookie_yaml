@@ -1,12 +1,13 @@
 import 'dart:collection';
+import 'dart:typed_data';
 
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 part 'map_like_delegate.dart';
@@ -49,7 +50,8 @@ typedef MapFunction<I> = YamlCollectionBuilder<Map<I, I?>, I>;
 
 /// A builder function for a scalar or a Dart built-in type that is not a [Map]
 /// or [List]
-typedef ScalarFunction<T> = YamlObjectBuilder<ScalarStyle, ScalarValue, T>;
+typedef ScalarFunction<T> =
+    YamlObjectBuilder<ScalarStyle, ScalarValue<Object?>, T>;
 
 /// A builder function for an [Alias] or any referenced Dart-built in type.
 typedef AliasFunction<Ref> =

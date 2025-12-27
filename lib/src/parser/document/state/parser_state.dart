@@ -184,9 +184,9 @@ final class ParserState<R> {
     );
   }
 
-  /// Creates a [NodeDelegate] if the node's [property] is not empty and:
-  ///   1. It is an alias, then an [AliasDelegate].
-  ///   2. Has an anchor or tag, then a [ScalarDelegate] wrapping `null`
+  /// Creates a [NodeDelegate] if the node's [property] is not empty:
+  ///   1. [AliasDelegate] for an alias.
+  ///   2. [EfficientScalarDelegate] wrapping `null` for tag/anchor.
   T? nullOrAlias<T extends NodeDelegate<R>>(
     ParsedProperty property, {
     required int indentLevel,
@@ -390,7 +390,7 @@ final class ParserState<R> {
     required int indent,
     required int indentLevel,
     required RuneOffset start,
-    NodeKind kind = YamlKind.sequence,
+    NodeKind kind = YamlCollectionKind.sequence,
   }) => switch (_defaultSequence()) {
     OnCustomList<R> customList => SequenceLikeDelegate.boxed(
       customList(),

@@ -1,93 +1,15 @@
 import 'package:collection/collection.dart';
+import 'package:rookie_yaml/src/dumping/string_utils.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:rookie_yaml/src/schema/safe_type_wrappers/scalar_value.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
 part 'dump_mapping.dart';
 part 'dump_scalar.dart';
 part 'dump_sequence.dart';
 part 'dump_yaml_node.dart';
-part 'unfolding.dart';
-
-extension Normalizer on int {
-  /// Normalizes all character that can be escaped.
-  ///
-  /// If [includeTab] is `true`, then `\t` is also normalized. If
-  /// [includeLineBreaks] is `true`, both `\n` and `\r` are normalized. If
-  /// [includeSlashes] is `true`, backslash `\` and slash `/` are escaped. If
-  /// [includeDoubleQuote] is `true`, the double quote is escaped.
-  Iterable<int> normalizeEscapedChars({
-    required bool includeTab,
-    required bool includeLineBreaks,
-    bool includeSlashes = true,
-    bool includeDoubleQuote = true,
-  }) sync* {
-    int? leader = backSlash;
-    var trailer = this;
-
-    switch (this) {
-      case unicodeNull:
-        trailer = 0x30;
-
-      case bell:
-        trailer = 0x61;
-
-      case asciiEscape:
-        trailer = 0x65;
-
-      case nextLine:
-        trailer = 0x4E;
-
-      case nbsp:
-        trailer = 0x5F;
-
-      case lineSeparator:
-        trailer = 0x4C;
-
-      case paragraphSeparator:
-        trailer = 0x50;
-
-      case backspace:
-        trailer = 0x62;
-
-      case tab when includeTab:
-        trailer = 0x74;
-
-      case lineFeed when includeLineBreaks:
-        trailer = 0x6E;
-
-      case verticalTab:
-        trailer = 0x76;
-
-      case formFeed:
-        trailer = 0x66;
-
-      case carriageReturn when includeLineBreaks:
-        trailer = 0x66;
-
-      case backSlash || slash:
-        {
-          if (includeSlashes) break;
-          leader = null;
-        }
-
-      case doubleQuote:
-        {
-          if (includeDoubleQuote) break;
-          leader = null;
-        }
-
-      default:
-        leader = null; // Remove nerf by default
-    }
-
-    if (leader != null) yield leader;
-    yield trailer;
-  }
-}
 
 /// Joins [lines] of a scalar being dumped by applying the specified [indent]
 /// to each line. If [includeFirst] is `true`, the first line is also indented.

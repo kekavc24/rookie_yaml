@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:rookie_yaml/src/dumping/dumping.dart';
+import 'package:rookie_yaml/src/dumping/string_utils.dart';
 
 part 'character_encoding.dart';
 part 'encoding_utils.dart';

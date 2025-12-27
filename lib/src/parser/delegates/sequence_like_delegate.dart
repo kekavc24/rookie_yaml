@@ -119,9 +119,9 @@ final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
     required int indentLevel,
     required RuneOffset start,
     required ListFunction<I> resolver,
-    NodeKind kind = YamlKind.sequence,
+    NodeKind kind = YamlCollectionKind.sequence,
   }) {
-    final (iterable, pushFunc) = kind == YamlKind.set
+    final (iterable, pushFunc) = kind == YamlCollectionKind.set
         ? _setHelper<I>()
         : _listHelper<I>();
 

@@ -74,7 +74,7 @@ const capF = 0x46;
 const _capZ = 0x5A;
 
 const lowerA = 0x61;
-const _lowerF = 0x66;
+const lowerF = 0x66;
 const _lowerZ = 0x7A;
 
 /// Hex value of `0` in ASCII
@@ -104,7 +104,7 @@ extension CharUtils on int {
   bool isHexDigit() =>
       isDigit() ||
       (this >= capA && this <= capF) ||
-      (this >= lowerA && this <= _lowerF);
+      (this >= lowerA && this <= lowerF);
 
   /// Checks if valid ASCII letter, that is, alphabetic.
   bool isAsciiLetter() =>

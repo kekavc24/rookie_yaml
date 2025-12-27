@@ -287,7 +287,7 @@ void main() {
           bootstrapDocParser(yaml).parseNodeSingle(),
         ).isNotNull().isA<Scalar>()
         ..withTag().equals(tag)
-        ..hasParsedInteger(24);
+        ..hasInferred('Partial content', '24');
     });
 
     //     test('Dart types can be used as keys in DynamicMapping', () {

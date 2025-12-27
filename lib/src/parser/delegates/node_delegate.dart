@@ -166,6 +166,9 @@ base mixin _ResolvingCache<T> on NodeDelegate<T> {
 
   /// Resolves the actual object.
   T _resolveNode();
+
+  /// Span for this node.
+  RuneSpan nodeSpan() => (start: start, end: _ensureEndIsSet());
 }
 
 /// Represents a delegate that resolves to an [AliasNode]

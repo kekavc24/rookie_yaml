@@ -1,4 +1,178 @@
-part of 'dumping.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+
+/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
+/// line breaks in YAML.
+///
+/// Unlike [splitStringLazy], this function allows you to declare a [replacer]
+/// for [Runes] being iterated. [lineOnSplit] callback is triggered everytime a
+/// line is split after a `\r` or `\n` or `\r\n`. May be inaccurate.
+Iterable<String> splitLazyChecked(
+  String string, {
+  required Iterable<int> Function(int offset, int charCode) replacer,
+  required void Function() lineOnSplit,
+}) => _coreLazySplit(string, replacer: replacer, lineOnSplit: lineOnSplit);
+
+/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
+/// line breaks in YAML.
+///
+/// This function breaks the lines indiscriminately and does not track the
+/// dominant line break based on the platform unless the `\r\n` is seen.
+Iterable<String> splitStringLazy(String string) => _coreLazySplit(string);
+
+/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
+/// line breaks in YAML.
+///
+/// Unlike [splitStringLazy], this function allows you to declare a [replacer]
+/// for [Runes] being iterated. [lineOnSplit] callback is triggered everytime a
+/// line is split after a `\r` or `\n` or `\r\n`. May be inaccurate.
+Iterable<String> _coreLazySplit(
+  String string, {
+  Iterable<int> Function(int offset, int charCode)? replacer,
+  void Function()? lineOnSplit,
+}) sync* {
+  final subchecker =
+      replacer ??
+      (_, c) sync* {
+        yield c;
+      };
+
+  final splitCallback = lineOnSplit ?? () {};
+
+  final runeIterator = string.runes.iterator;
+
+  bool canIterate() => runeIterator.moveNext();
+
+  final buffer = StringBuffer();
+  int? previous; // Track trailing line breaks for preservation
+
+  splitter:
+  while (canIterate()) {
+    var current = runeIterator.current;
+
+    switch (current) {
+      case carriageReturn:
+        {
+          // If just "\r", exit immediately without overwriting trailing "\r"
+          if (!canIterate()) {
+            splitCallback();
+            yield buffer.toString();
+            buffer.clear();
+            break splitter;
+          }
+
+          current = runeIterator.current;
+          continue gen; // Let "lf" handle this.
+        }
+
+      gen:
+      case lineFeed:
+        {
+          splitCallback();
+
+          yield buffer.toString();
+          buffer.clear();
+
+          // In case we got this char from the carriage return
+          if (current != lineFeed && current != -1) {
+            continue writer;
+          }
+        }
+
+      writer:
+      default:
+        for (final char in subchecker(runeIterator.rawIndex, current)) {
+          buffer.writeCharCode(char);
+        }
+    }
+
+    previous = current;
+  }
+
+  /// Ensure we flush all buffered contents. A trailing line break signals
+  /// we need it preserved. Thus, emit an empty string too in this case.
+  if (buffer.isNotEmpty || previous == carriageReturn || previous == lineFeed) {
+    yield buffer.toString();
+  }
+}
+
+extension Normalizer on int {
+  /// Normalizes all character that can be escaped.
+  ///
+  /// If [includeTab] is `true`, then `\t` is also normalized. If
+  /// [includeLineBreaks] is `true`, both `\n` and `\r` are normalized. If
+  /// [includeSlashes] is `true`, backslash `\` and slash `/` are escaped. If
+  /// [includeDoubleQuote] is `true`, the double quote is escaped.
+  Iterable<int> normalizeEscapedChars({
+    required bool includeTab,
+    required bool includeLineBreaks,
+    bool includeSlashes = true,
+    bool includeDoubleQuote = true,
+  }) sync* {
+    int? leader = backSlash;
+    var trailer = this;
+
+    switch (this) {
+      case unicodeNull:
+        trailer = 0x30;
+
+      case bell:
+        trailer = 0x61;
+
+      case asciiEscape:
+        trailer = 0x65;
+
+      case nextLine:
+        trailer = 0x4E;
+
+      case nbsp:
+        trailer = 0x5F;
+
+      case lineSeparator:
+        trailer = 0x4C;
+
+      case paragraphSeparator:
+        trailer = 0x50;
+
+      case backspace:
+        trailer = 0x62;
+
+      case tab when includeTab:
+        trailer = 0x74;
+
+      case lineFeed when includeLineBreaks:
+        trailer = 0x6E;
+
+      case verticalTab:
+        trailer = 0x76;
+
+      case formFeed:
+        trailer = 0x66;
+
+      case carriageReturn when includeLineBreaks:
+        trailer = 0x66;
+
+      case backSlash || slash:
+        {
+          if (includeSlashes) break;
+          leader = null;
+        }
+
+      case doubleQuote:
+        {
+          if (includeDoubleQuote) break;
+          leader = null;
+        }
+
+      default:
+        leader = null; // Remove nerf by default
+    }
+
+    if (leader != null) yield leader;
+    yield trailer;
+  }
+}
+
+
 
 const _empty = '';
 const _slash = r'\';
@@ -149,3 +323,4 @@ Iterable<String> unfoldDoubleQuoted(Iterable<String> lines) => _coreUnfolding(
         : string;
   },
 );
+
