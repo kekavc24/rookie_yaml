@@ -486,7 +486,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
 
       return sequence;
     },
-    onMatchScalar: () {
+    onMatchScalar: (scalarKind) {
       if (event case ScalarEvent() || BlockCollectionEvent.startEntryValue) {
         return parseBlockWildCard(
           state,
@@ -498,6 +498,7 @@ BlockNode<Obj> _blockNodeOfKind<Obj>(
           property: property,
           isInline: forceInlined,
           composeImplicitMap: composeImplicitMap,
+          delegateScalar: scalarImpls(scalarKind),
         );
       }
 

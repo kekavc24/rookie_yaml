@@ -99,7 +99,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
-  NodeKind kind = YamlKind.sequence,
+  NodeKind kind = YamlCollectionKind.sequence,
   OnCustomList<Obj>? asCustomList,
 }) {
   final ParserState(:iterator, :comments, :listFunction, :onMapDuplicate) =

@@ -14,6 +14,19 @@ BlockNode<Obj> customBlockNode<Obj>(
   required bool composeImplicitMap,
   required bool expectBlockMap,
 }) {
+  BlockNode<Obj> mapEnforcer(BlockNode<Obj> object, {bool enforceMap = false}) {
+    if ((enforceMap || expectBlockMap) && object.node is! MapLikeDelegate) {
+      throwWithRangedOffset(
+        state.iterator,
+        message: 'Expected a custom map',
+        start: property.span.start,
+        end: object.node.endOffset!,
+      );
+    }
+
+    return object;
+  }
+
   // Handler for a flow or block node.
   BlockNode<Obj> flowOrBlock({
     required BlockNode<Obj> Function() ifBlock,
@@ -59,16 +72,7 @@ BlockNode<Obj> customBlockNode<Obj>(
         customNode = ifBlock();
     }
 
-    if ((enforceMap || expectBlockMap) && customNode.node is! MapLikeDelegate) {
-      throwWithRangedOffset(
-        state.iterator,
-        message: 'Expected a custom map',
-        start: property.span.start,
-        end: customNode.node.endOffset!,
-      );
-    }
-
-    return customNode;
+    return mapEnforcer(customNode, enforceMap: enforceMap);
   }
 
   return _parseCustomKind<BlockNode<Obj>, Obj>(
@@ -102,50 +106,74 @@ BlockNode<Obj> customBlockNode<Obj>(
       ).sequence,
       ifFlowList: listBuilder,
     ),
-    onMatchScalar: (resolver) {
-      // We want the custom object to bubble up as whatever is needed and not
-      // the null.
-      final actualEvent = event == BlockCollectionEvent.startEntryValue
-          ? ScalarEvent.startFlowPlain
-          : event;
+    onMatchScalar: (resolver) => mapEnforcer(
+      customBlockScalar(
+        event,
+        state: state,
+        resolver: resolver,
+        property: property,
+        blockParentIndent: blockParentIndent,
+        indentLevel: indentLevel,
+        laxBlockIndent: laxBlockIndent,
+        fixedInlineIndent: fixedInlineIndent,
+        forceInlined: forceInlined,
+        composeImplicitMap: composeImplicitMap,
+      ),
+    ),
+  );
+}
 
-      if (actualEvent is ScalarEvent) {
-        final (exitIndent, docMarker, node) = parseCustomScalar(
-          actualEvent,
-          iterator: state.iterator,
-          resolver: resolver,
-          property: property,
-          onParseComment: state.comments.add,
-          onScalar: (_, indentOnExit, _, marker, delegate) =>
-              (indentOnExit, marker, delegate),
-          isImplicit: forceInlined,
-          isInFlowContext: false,
-          blockParentIndent: blockParentIndent,
-          indentLevel: indentLevel,
-          minIndent: laxBlockIndent,
-        );
+/// Parses a custom block scalar.
+BlockNode<Obj> customBlockScalar<Obj>(
+  ParserEvent scalarEvent, {
+  required ParserState<Obj> state,
+  required OnCustomScalar<Obj> resolver,
+  required NodeProperty property,
+  required int? blockParentIndent,
+  required int indentLevel,
+  required int laxBlockIndent,
+  required int fixedInlineIndent,
+  required bool forceInlined,
+  required bool composeImplicitMap,
+}) {
+  // We want the custom object to bubble up as whatever is needed and not
+  // the null.
+  final actualEvent = scalarEvent == BlockCollectionEvent.startEntryValue
+      ? ScalarEvent.startFlowPlain
+      : scalarEvent;
 
-        return flowOrBlock(
-          ifBlock: () => composeBlockMapFromScalar(
-            state,
-            keyOrNode: node,
-            keyOrMapProperty: property,
-            indentOnExit: exitIndent,
-            documentMarker: docMarker,
-            keyIsBlock:
-                composeImplicitMap && exitIndent != seamlessIndentMarker,
-            composeImplicitMap: composeImplicitMap,
-            composedMapIndent: fixedInlineIndent,
-          ),
-        );
-      }
+  if (actualEvent is ScalarEvent) {
+    final (exitIndent, docMarker, node) = parseCustomScalar(
+      actualEvent,
+      iterator: state.iterator,
+      resolver: resolver,
+      property: property,
+      onParseComment: state.comments.add,
+      onScalar: (_, indentOnExit, _, marker, delegate) =>
+          (indentOnExit, marker, delegate),
+      isImplicit: forceInlined,
+      isInFlowContext: false,
+      blockParentIndent: blockParentIndent,
+      indentLevel: indentLevel,
+      minIndent: laxBlockIndent,
+    );
 
-      throwWithRangedOffset(
-        state.iterator,
-        message: 'Expected a scalar that can be parsed as a custom node',
-        start: property.span.start,
-        end: state.iterator.currentLineInfo.current,
-      );
-    },
+    return composeBlockMapFromScalar(
+      state,
+      keyOrNode: node,
+      keyOrMapProperty: property,
+      indentOnExit: exitIndent,
+      documentMarker: docMarker,
+      keyIsBlock: composeImplicitMap && exitIndent != seamlessIndentMarker,
+      composeImplicitMap: composeImplicitMap,
+      composedMapIndent: fixedInlineIndent,
+    );
+  }
+
+  throwWithRangedOffset(
+    state.iterator,
+    message: 'Expected a scalar that can be parsed as a custom node',
+    start: property.span.start,
+    end: state.iterator.currentLineInfo.current,
   );
 }

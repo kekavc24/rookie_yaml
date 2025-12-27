@@ -50,7 +50,7 @@ SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
     indent: indent,
     indentLevel: indentLevel,
     start: start,
-    kind: property?.kind ?? YamlKind.sequence,
+    kind: property?.kind ?? YamlCollectionKind.sequence,
   );
 }
 
@@ -94,7 +94,7 @@ SpecialBlockSequenceInfo composeSpecialBlockSequence<Obj>(
 }) {
   final (:blockInfo, :node) = blockNode;
 
-  if (node case ScalarDelegate(isNullDelegate: true)
+  if (node case EfficientScalarDelegate(isNullDelegate: true)
       when !state.iterator.isEOF &&
           !blockInfo.docMarker.stopIfParsingDoc &&
           blockInfo.exitIndent == keyIndent &&

@@ -8,13 +8,12 @@ import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// Parses a flow scalar based on the current scalar [event].
-ScalarDelegate<R> parseFlowScalar<R>(
+EfficientScalarDelegate<R> parseFlowScalar<R>(
   ScalarEvent event, {
   required SourceIterator iterator,
   required ScalarFunction<R> scalarFunction,
@@ -22,31 +21,27 @@ ScalarDelegate<R> parseFlowScalar<R>(
   required bool isInline,
   required int indentLevel,
   required int minIndent,
-}) {
-  final (info, delegate) = parseScalar(
-    event,
-    iterator: iterator,
-    scalarFunction: scalarFunction,
-    onParseComment: onParseComment,
-    isImplicit: isInline,
-    isInFlowContext: true,
-    indentLevel: indentLevel,
-    minIndent: minIndent,
-    blockParentIndent: null,
-  );
+  bool defaultToString = false,
+  DelegatedValue? delegateScalar,
+}) => parseScalar(
+  event,
+  iterator: iterator,
+  scalarFunction: scalarFunction,
+  onParseComment: onParseComment,
+  isImplicit: isInline,
+  isInFlowContext: true,
+  indentLevel: indentLevel,
+  minIndent: minIndent,
+  blockParentIndent: null,
+  delegateScalar: delegateScalar,
+  defaultToString: defaultToString,
+  onScalar: (scalar, style, indentOnExit, indentDidChange, marker) {
+    if (style != ScalarStyle.plain || isInline) return scalar;
 
-  /// Plain scalars can have document/directive end chars embedded
-  /// in the content. Additionally, if not implicit, it can be affected by
-  /// indent changes since it has a block-like structure. Neither should be
-  /// allowed.
-  if (info case ParsedScalarInfo(
-    scalarStyle: ScalarStyle.plain,
-    :final indentOnExit,
-    :final indentDidChange,
-    :final docMarkerType,
-  ) when !isInline) {
-    // Flow node only ends after parsing a flow delimiter
-    if (docMarkerType.stopIfParsingDoc) {
+    // Plain scalars can have document/directive end chars embedded in the
+    // content. Additionally, if not implicit, it can be affected by indent
+    // changes since it has a block-like structure. Neither should be allowed.
+    if (marker.stopIfParsingDoc) {
       throwForCurrentLine(
         iterator,
         message:
@@ -63,10 +58,10 @@ ScalarDelegate<R> parseFlowScalar<R>(
         charCountBefore: indentOnExit,
       );
     }
-  }
 
-  return delegate;
-}
+    return scalar;
+  },
+);
 
 /// Parses a flow node using the current parser [state].
 ///
@@ -206,7 +201,7 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
       forceInline: isInline,
       kind: kind,
     ),
-    onMatchScalar: () {
+    onMatchScalar: (scalarKind) {
       final ParserState(:iterator, :scalarFunction, :comments) = parserState;
       return switch (flowEvent) {
         ScalarEvent e => parseFlowScalar(
@@ -217,6 +212,7 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
           isInline: isInline,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
+          delegateScalar: scalarImpls(scalarKind),
         ),
         _ => nullScalarDelegate(
           indentLevel: currentIndentLevel,
@@ -291,6 +287,7 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
           isInline: isImplicit || forceInline,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
+          defaultToString: isGenericNode(property),
         );
       }
 

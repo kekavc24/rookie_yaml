@@ -6,6 +6,7 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -22,6 +23,7 @@ BlockNode<Obj> parseBlockWildCard<Obj>(
   required ParsedProperty property,
   required bool isInline,
   required bool composeImplicitMap,
+  DelegatedValue? delegateScalar,
 }) => switch (event) {
   BlockCollectionEvent.startEntryValue => composeBlockMapFromScalar(
     state,
@@ -67,6 +69,7 @@ BlockNode<Obj> parseBlockWildCard<Obj>(
     scalarProperty: property,
     composeImplicitMap: composeImplicitMap,
     composedMapIndent: inlineFixedIndent,
+    delegateScalar: delegateScalar,
   ),
   _ => throwWithRangedOffset(
     state.iterator,
@@ -148,16 +151,20 @@ BlockNode<Obj> parseBlockScalar<Obj>(
   required ParsedProperty? scalarProperty,
   required bool composeImplicitMap,
   required int composedMapIndent,
+  DelegatedValue? delegateScalar,
   String greedyOnPlain = '',
   RuneOffset? start,
 }) {
-  final ParserState(:iterator, :comments, :scalarFunction) = state;
+  final defaultToString =
+      delegateScalar == null &&
+      (!composeImplicitMap || !(scalarProperty?.isMultiline ?? true)) &&
+      isGenericNode(scalarProperty);
 
-  final (info, delegate) = parseScalar(
+  final (delegate, indentOnExit, docMarker, indentDidChange) = parseScalar(
     event,
-    iterator: iterator,
-    scalarFunction: scalarFunction,
-    onParseComment: comments.add,
+    iterator: state.iterator,
+    scalarFunction: state.scalarFunction,
+    onParseComment: state.comments.add,
     isImplicit: isImplicit,
     isInFlowContext: false,
     indentLevel: indentLevel,
@@ -165,17 +172,21 @@ BlockNode<Obj> parseBlockScalar<Obj>(
     blockParentIndent: blockParentIndent,
     greedyOnPlain: greedyOnPlain,
     start: start,
+    delegateScalar: delegateScalar,
+    defaultToString: defaultToString,
+    onScalar: (scalar, _, indentOnExit, indentDidChange, marker) =>
+        (scalar, indentOnExit, marker, indentDidChange),
   );
 
   return composeBlockMapFromScalar(
     state,
     keyOrNode: delegate,
     keyOrMapProperty: scalarProperty,
-    indentOnExit: info.indentOnExit,
-    documentMarker: info.docMarkerType,
+    indentOnExit: indentOnExit,
+    documentMarker: docMarker,
 
     // Plain scalar behaved like a block scalar if indent changed.
-    keyIsBlock: !event.isFlowContext || info.indentDidChange,
+    keyIsBlock: !event.isFlowContext || indentDidChange,
     composeImplicitMap: composeImplicitMap,
     composedMapIndent: composedMapIndent,
   );

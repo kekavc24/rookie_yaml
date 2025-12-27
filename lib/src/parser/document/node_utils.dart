@@ -1,12 +1,11 @@
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
+import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -37,12 +36,21 @@ typedef BlockEntry<Obj> =
 typedef OnBlockMapEntry<Obj> =
     void Function(NodeDelegate<Obj> key, NodeDelegate<Obj>? value);
 
+typedef OnGenericScalar<R, T> =
+    T Function(
+      EfficientScalarDelegate<R> scalar,
+      ScalarStyle style,
+      int indentOnExit,
+      bool indentDidChange,
+      DocumentMarker marker,
+    );
+
 /// Parses a [Scalar].
 ///
 /// [greedyOnPlain] is only ever passed when the first two plain scalar
 /// characters resemble the directive end markers `---` but the last char
 /// is not a match.
-(ParsedScalarInfo info, ScalarDelegate<R> delegate) parseScalar<R>(
+T parseScalar<R, T>(
   ScalarEvent event, {
   required SourceIterator iterator,
   required ScalarFunction<R> scalarFunction,
@@ -52,71 +60,43 @@ typedef OnBlockMapEntry<Obj> =
   required int indentLevel,
   required int minIndent,
   required int? blockParentIndent,
+  required OnGenericScalar<R, T> onScalar,
+  required bool defaultToString,
+  DelegatedValue? delegateScalar,
   String greedyOnPlain = '',
   RuneOffset? start,
 }) {
-  final scalarStart = start ?? iterator.currentLineInfo.current;
+  final delegate = EfficientScalarDelegate.ofScalar(
+    delegateScalar != null
+        ? delegateScalar()
+        : AmbigousDelegate(defaultToString: defaultToString),
+    style: switch (event) {
+      ScalarEvent.startBlockFolded => ScalarStyle.folded,
+      ScalarEvent.startBlockLiteral => ScalarStyle.literal,
+      ScalarEvent.startFlowDoubleQuoted => ScalarStyle.doubleQuoted,
+      ScalarEvent.startFlowSingleQuoted => ScalarStyle.singleQuoted,
+      _ => ScalarStyle.plain,
+    },
+    indentLevel: indentLevel,
+    indent: minIndent,
+    start: start ?? iterator.currentLineInfo.current,
+    resolver: scalarFunction,
+  );
 
-  final prescalar = switch (event) {
-    ScalarEvent.startBlockLiteral || ScalarEvent.startBlockFolded
-        when !isImplicit && !isInFlowContext && greedyOnPlain.isEmpty =>
-      parseBlockScalar(
-        iterator,
-        minimumIndent: minIndent,
-        blockParentIndent: blockParentIndent,
-        onParseComment: onParseComment,
-      ),
-
-    ScalarEvent.startFlowDoubleQuoted when greedyOnPlain.isEmpty =>
-      parseDoubleQuoted(
-        iterator,
-        indent: minIndent,
-        isImplicit: isImplicit,
-      ),
-
-    ScalarEvent.startFlowSingleQuoted when greedyOnPlain.isEmpty =>
-      parseSingleQuoted(
-        iterator,
-        indent: minIndent,
-        isImplicit: isImplicit,
-      ),
-
-    // We are aware of what character is at the start. Cannot be null
-    _ when event == ScalarEvent.startFlowPlain || greedyOnPlain.isNotEmpty =>
-      parsePlain(
-        iterator,
-        indent: minIndent,
-        charsOnGreedy: greedyOnPlain,
-        isImplicit: isImplicit,
-        isInFlowContext: isInFlowContext,
-      ),
-
-    _ => throwForCurrentLine(
-      iterator,
-      message: 'Failed to parse block scalar declared in a flow context!',
-    ),
-  };
-
-  /// This is a failsafe. Every map/list (flow or block) must look for
-  /// ways to ensure a `null` plain scalar is never returned. This ensures
-  /// the internal parsing logic for parsing the map/list is correct. Each
-  /// flow/block map/list handles missing values differently.
-  if (prescalar == null) {
-    throw throwForCurrentLine(
-      iterator,
-      message: 'Null was returned when parsing a plain scalar!',
-    );
-  }
-
-  return (
-    prescalar.scalarInfo,
-    ScalarDelegate(
-      indentLevel: indentLevel,
-      indent: minIndent,
-      start: scalarStart,
-      scalarResolver: scalarFunction,
-      prescalar: prescalar,
-    ),
+  return parseCustomScalar(
+    event,
+    iterator: iterator,
+    resolver: () => delegate,
+    property: null,
+    onParseComment: onParseComment,
+    onScalar: (style, indentOnExit, indentDidChange, marker, _) =>
+        onScalar(delegate, style, indentOnExit, indentDidChange, marker),
+    isImplicit: isImplicit,
+    isInFlowContext: isInFlowContext,
+    indentLevel: indentLevel,
+    minIndent: minIndent,
+    blockParentIndent: blockParentIndent,
+    charsOnGreedy: greedyOnPlain,
   );
 }
 
@@ -163,8 +143,8 @@ bool nextSafeLineInFlow(
   return true;
 }
 
-/// Returns `true` if [_parseFlowSequence] or [_parseFlowMap] can parse the
-/// next flow entry or flow map entry respectively.
+/// Returns `true` if the next flow sequence entry or flow map entry can be
+/// parsed.
 bool continueToNextEntry(
   SourceIterator iterator, {
   required int minIndent,
@@ -194,7 +174,7 @@ bool continueToNextEntry(
 /// Returns `true` if a flow key was "json-like", that is, a single/double
 /// quoted plain scalar or flow map/sequence.
 bool keyIsJsonLike(NodeDelegate? delegate) => switch (delegate) {
-  ScalarDelegate(
+  EfficientScalarDelegate(
     scalarStyle: ScalarStyle.singleQuoted || ScalarStyle.doubleQuoted,
   ) ||
   MapLikeDelegate(collectionStyle: NodeStyle.flow) ||

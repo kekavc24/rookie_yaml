@@ -36,7 +36,7 @@ T _parseCustomKind<T, Obj>(
   required NodeProperty property,
   required T Function(OnCustomMap<Obj> mapBuilder) onMatchMap,
   required T Function(OnCustomList<Obj> listBuilder) onMatchIterable,
-  required T Function(ObjectFromScalarBytes<Obj> resolver) onMatchScalar,
+  required T Function(OnCustomScalar<Obj> resolver) onMatchScalar,
 }) {
   final resolver = property.customResolver!;
 
@@ -45,7 +45,7 @@ T _parseCustomKind<T, Obj>(
     CustomKind.iterable => onMatchIterable(
       (resolver as ObjectFromIterable<Obj>).onCustomIterable,
     ),
-    _ => onMatchScalar(resolver as ObjectFromScalarBytes<Obj>),
+    _ => onMatchScalar((resolver as ObjectFromScalarBytes<Obj>).onCustomScalar),
   };
 }
 
@@ -57,6 +57,12 @@ typedef OnCompleteCustom<R, T> =
       DocumentMarker marker,
       NodeDelegate<T> delegate,
     );
+
+typedef _InternalScalar<Obj> = (
+  CharWriter writer,
+  void Function() onComplete,
+  ScalarLikeDelegate<Obj> delegate,
+);
 
 /// Parses a scalar using a custom [resolver].
 ///
@@ -70,8 +76,8 @@ typedef OnCompleteCustom<R, T> =
 R parseCustomScalar<R, Obj>(
   ScalarEvent event, {
   required SourceIterator iterator,
-  required ObjectFromScalarBytes<Obj> resolver,
-  required NodeProperty property,
+  required OnCustomScalar<Obj> resolver,
+  required NodeProperty? property,
   required void Function(YamlComment comment) onParseComment,
   required OnCompleteCustom<R, Obj> onScalar,
   required bool isImplicit,
@@ -79,21 +85,35 @@ R parseCustomScalar<R, Obj>(
   required int indentLevel,
   required int minIndent,
   required int? blockParentIndent,
+  String charsOnGreedy = '',
 }) {
   // Delegate helper.
-  BoxedScalar<Obj> delegateOf(ScalarStyle style) {
-    return BoxedScalar(
-      resolver.onCustomScalar(),
-      scalarStyle: style,
-      indentLevel: indentLevel,
-      indent: minIndent,
-      start: property.span.start,
-    );
+  _InternalScalar<Obj> delegateOf(ScalarStyle style) {
+    final delegate = resolver();
+    final writer = delegate.onWriteRequest;
+    final onComplete = delegate.onComplete;
+
+    return delegate is EfficientScalarDelegate<Obj>
+        ? (writer, onComplete, delegate)
+        : (
+            writer,
+            onComplete,
+            BoxedScalar(
+              delegate,
+              scalarStyle: style,
+              indentLevel: indentLevel,
+              indent: minIndent,
+              start: property?.span.start ?? iterator.currentLineInfo.current,
+            ),
+          );
   }
 
-  // Creates the scalar and calls [onComplete].
-  R completionHelper(BoxedScalar<Obj> boxed, ParsedScalarInfo info) {
-    boxed.delegate.onComplete();
+  // Updates the delegate and calls [onComplete]
+  R completionHelper(
+    ParsedScalarInfo info,
+    ScalarLikeDelegate<Obj> delegate,
+    void Function() onComplete,
+  ) {
     final (
       :scalarStyle,
       :scalarIndent,
@@ -104,22 +124,29 @@ R parseCustomScalar<R, Obj>(
       :end,
     ) = info;
 
+    delegate
+      ..indent = scalarIndent
+      ..hasLineBreak = hasLineBreak
+      ..updateEndOffset = end;
+
+    onComplete();
+
     return onScalar(
       scalarStyle,
       indentOnExit,
       indentDidChange,
       docMarkerType,
-      boxed
-        ..indent = scalarIndent
-        ..hasLineBreak = hasLineBreak
-        ..updateEndOffset = end,
+      delegate,
     );
   }
 
   // Handler for the parser.
-  R parse(ScalarStyle style, R Function(BoxedScalar<Obj> delegate) parser) {
-    final delegate = delegateOf(style);
-    return parser(delegate);
+  R parse(
+    ScalarStyle style,
+    ParsedScalarInfo Function(CharWriter writer) parser,
+  ) {
+    final (writer, onComplete, delegate) = delegateOf(style);
+    return completionHelper(parser(writer), delegate, onComplete);
   }
 
   var isFolded = false;
@@ -136,13 +163,12 @@ R parseCustomScalar<R, Obj>(
       {
         return parse(
           isFolded ? ScalarStyle.folded : ScalarStyle.literal,
-          (d) => blockScalarParser(
+          (writer) => blockScalarParser(
             iterator,
-            charBuffer: d.delegate.onWriteRequest,
+            charBuffer: writer,
             minimumIndent: minIndent,
             blockParentIndent: blockParentIndent,
             onParseComment: onParseComment,
-            onParsingComplete: (info) => completionHelper(d, info),
           ),
         );
       }
@@ -151,12 +177,11 @@ R parseCustomScalar<R, Obj>(
       {
         return parse(
           ScalarStyle.doubleQuoted,
-          (d) => doubleQuotedParser(
+          (writer) => doubleQuotedParser(
             iterator,
-            buffer: d.delegate.onWriteRequest,
+            buffer: writer,
             indent: minIndent,
             isImplicit: isImplicit,
-            onParsingComplete: (info) => completionHelper(d, info),
           ),
         );
       }
@@ -165,12 +190,11 @@ R parseCustomScalar<R, Obj>(
       {
         return parse(
           ScalarStyle.singleQuoted,
-          (d) => singleQuotedParser(
+          (writer) => singleQuotedParser(
             iterator,
-            buffer: d.delegate.onWriteRequest,
+            buffer: writer,
             indent: minIndent,
             isImplicit: isImplicit,
-            onParsingComplete: (info) => completionHelper(d, info),
           ),
         );
       }
@@ -178,36 +202,35 @@ R parseCustomScalar<R, Obj>(
     case _ when event == ScalarEvent.startFlowPlain:
       {
         // Plain scalars may return null
-        final plainDelegate = delegateOf(ScalarStyle.plain);
+        final (writer, onComplete, delegate) = delegateOf(ScalarStyle.plain);
 
-        final plain = plainParser(
+        final info = plainParser(
           iterator,
-          buffer: plainDelegate.delegate.onWriteRequest,
+          buffer: writer,
           indent: minIndent,
-          charsOnGreedy: '',
+          charsOnGreedy: charsOnGreedy,
           isImplicit: isImplicit,
           isInFlowContext: isInFlowContext,
-          onParsingComplete: (info) => completionHelper(plainDelegate, info),
         );
 
-        if (plain == null) {
+        if (info == null) {
           throwWithRangedOffset(
             iterator,
             message:
                 'Dirty parser state. Failed to parse a custom plain scalar',
-            start: plainDelegate.start,
+            start: delegate.start,
             end: iterator.currentLineInfo.current,
           );
         }
 
-        return plain;
+        return completionHelper(info, delegate, onComplete);
       }
 
     default:
       throwWithRangedOffset(
         iterator,
         message: 'Dirty parser state. Failed to parse a scalar using $event.',
-        start: property.span.start,
+        start: property?.span.start ?? iterator.currentLineInfo.current,
         end: iterator.currentLineInfo.current,
       );
   }

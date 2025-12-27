@@ -172,8 +172,6 @@ extension Normalizer on int {
   }
 }
 
-
-
 const _empty = '';
 const _slash = r'\';
 const _nerfedTab =
@@ -323,4 +321,3 @@ Iterable<String> unfoldDoubleQuoted(Iterable<String> lines) => _coreUnfolding(
         : string;
   },
 );
-
