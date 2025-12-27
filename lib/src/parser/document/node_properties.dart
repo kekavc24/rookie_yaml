@@ -143,6 +143,16 @@ final class Alias extends ParsedProperty {
   bool get isAlias => true;
 }
 
+/// Whether the node with the [property] should be parsed as a generic `!!map`
+/// or `!!seq` or `!!str`.
+bool isGenericNode(ParsedProperty? property) {
+  if (property == null) return false;
+  final kind = property.kind;
+
+  return kind.isGeneric ||
+      (property is NodeProperty && property.tag != null && !kind.isKnown);
+}
+
 typedef ConcreteProperty = ({
   ParserEvent event,
   ParsedProperty property,

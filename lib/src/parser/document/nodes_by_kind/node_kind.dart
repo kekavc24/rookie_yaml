@@ -1,3 +1,4 @@
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Represents the kind of node to be parsed.
@@ -7,12 +8,29 @@ sealed class NodeKind {
   /// Creates a node whose kind could not be determined.
   factory NodeKind.unknown() = _UnknownKind;
 
+  factory NodeKind.generic() = _GenericKind;
+
   /// Whether an object's kind was inferred from its tag.
   bool get isKnown => false;
+
+  /// Whether an object will be inferred as !!map or !!seq or !!str only when
+  /// the tag is non-specific.
+  bool get isGeneric => false;
 }
 
 /// A node without a tag or with a tag whose kind cannot be ascertained.
 final class _UnknownKind extends NodeKind {}
+
+/// A node resolved to the generic map/sequence/string when the local tag
+/// is non-specific.
+///
+/// ```yaml
+/// ! { ! scalar: ! [ sequence ] }
+/// ```
+final class _GenericKind extends NodeKind {
+  @override
+  bool get isGeneric => true;
+}
 
 /// Represents a node with a custom tag.
 enum CustomKind implements NodeKind {
@@ -27,21 +45,22 @@ enum CustomKind implements NodeKind {
 
   @override
   bool get isKnown => true;
+
+  @override
+  bool get isGeneric => false;
 }
 
-/// Represents a node with(out) a tag.
-enum YamlKind implements NodeKind {
-  /// [Scalar].
-  scalar,
-
+/// Represents a node with(out) a tag that contains other nodes.
+enum YamlCollectionKind implements NodeKind {
   /// [Set] or [Sequence] with unique elements. This could also represent a
-  /// [YamlKind.orderedMap] or [YamlKind.mapping].
+  /// [YamlCollectionKind.orderedMap] or [YamlCollectionKind.mapping].
   set,
 
   /// Normal [Sequence] or [List].
   sequence,
 
-  /// [YamlKind.mapping] or a [Sequence]/[List] of [YamlKind.mapping].
+  /// [YamlCollectionKind.mapping] or a [Sequence]/[List] of
+  /// [YamlCollectionKind.mapping].
   orderedMap,
 
   /// [Mapping] or [Map].
@@ -49,7 +68,51 @@ enum YamlKind implements NodeKind {
 
   @override
   bool get isKnown => true;
+
+  @override
+  bool get isGeneric => false;
 }
+
+/// Represents any node with a scalar tag.
+enum YamlScalarKind implements NodeKind {
+  /// [String].
+  string,
+
+  /// [String] that is mapped to a type after it has been buffered.
+  stringToType,
+
+  /// [Null].
+  nullString,
+
+  /// [bool].
+  booleanString,
+
+  /// [int].
+  integer,
+
+  /// [double].
+  float;
+
+  @override
+  bool get isKnown => true;
+
+  @override
+  bool get isGeneric => false;
+}
+
+/// Callback that creates a low level delegate that eagerly parsed a
+/// [YamlScalarKind].
+typedef DelegatedValue = ScalarValueDelegate<Object?> Function();
+
+/// Maps a scalar [kind] to its `BytesToScalar` delegate and creates the
+/// callback.
+DelegatedValue scalarImpls(YamlScalarKind kind) => switch (kind) {
+  YamlScalarKind.nullString => () => NullDelegate(),
+  YamlScalarKind.booleanString => () => BoolDelegate(),
+  YamlScalarKind.integer => () => RecoverableDelegate.forInt(),
+  YamlScalarKind.float => () => FloatDelegate(),
+  _ => () => StringDelegate(),
+};
 
 /// Parses a node based on its [kind].
 ///
@@ -63,11 +126,11 @@ T parseNodeOfKind<T>(
   required bool Function() sequenceOnMatchSetOrOrderedMap,
   required T Function() onMatchMapping,
   required T Function() onMatchSequence,
-  required T Function() onMatchScalar,
+  required T Function(YamlScalarKind kind) onMatchScalar,
   required T Function() defaultFallback,
 }) {
   switch (kind) {
-    case YamlKind.set || YamlKind.orderedMap:
+    case YamlCollectionKind.set || YamlCollectionKind.orderedMap:
       {
         if (sequenceOnMatchSetOrOrderedMap()) {
           continue sequence;
@@ -77,15 +140,15 @@ T parseNodeOfKind<T>(
       }
 
     mapping:
-    case YamlKind.mapping:
+    case YamlCollectionKind.mapping:
       return onMatchMapping();
 
     sequence:
-    case YamlKind.sequence:
+    case YamlCollectionKind.sequence:
       return onMatchSequence();
 
-    case YamlKind.scalar:
-      return onMatchScalar();
+    case YamlScalarKind _:
+      return onMatchScalar(kind);
 
     default:
       return defaultFallback();

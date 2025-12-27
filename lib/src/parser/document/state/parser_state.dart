@@ -336,18 +336,29 @@ final class ParserState<R> {
     } else if (_onScalarResolver(localTag)
         case ResolverCreator<Object?> function) {
       nodeTag = function(nodeTag as NodeTag);
+      kind = YamlScalarKind.stringToType;
     }
 
-    kind ??= switch (localTag.toString()) {
-      '!!map' => YamlKind.mapping,
-      '!!omap' => YamlKind.orderedMap,
-      '!!seq' => YamlKind.sequence,
-      '!!set' => YamlKind.set,
-      _ when isYamlScalarTag(localTag) => YamlKind.scalar,
-      _ => NodeKind.unknown(),
-    };
-
-    return (kind: kind, tag: nodeTag, customResolver: customResolver);
+    return (
+      kind:
+          kind ??
+          switch (localTag.toString()) {
+            '!!map' => YamlCollectionKind.mapping,
+            '!!omap' => YamlCollectionKind.orderedMap,
+            '!!seq' => YamlCollectionKind.sequence,
+            '!!set' => YamlCollectionKind.set,
+            '!!str' => YamlScalarKind.string,
+            '!!null' => YamlScalarKind.nullString,
+            '!!bool' => YamlScalarKind.booleanString,
+            '!!int' => YamlScalarKind.integer,
+            '!!float' => YamlScalarKind.float,
+            _ when !hasGlobalTag && localTag.isNonSpecific =>
+              NodeKind.generic(),
+            _ => NodeKind.unknown(),
+          },
+      tag: nodeTag,
+      customResolver: customResolver,
+    );
   }
 
   /// Creates a generic map delegate.
