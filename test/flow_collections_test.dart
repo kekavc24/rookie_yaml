@@ -40,11 +40,15 @@ void main() {
     });
 
     test('Parses empty entry node declared explicitly', () {
-      const yaml = '{ ? }';
+      const yaml = '{ ? ? }';
 
       check(
         bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).equals({null: null}.toString());
+      ).equals(
+        {
+          {null: null}: null,
+        }.toString(),
+      );
     });
 
     test('Parses implicit entry with missing keys/values', () {

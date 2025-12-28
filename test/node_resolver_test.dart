@@ -156,6 +156,38 @@ key: $sequenceTag
       );
     });
 
+    test('Loads strongly typed sorted list for nested flow', () {
+      check(
+            loadResolvedDartObject(
+              ' [ $sequenceTag [ 1000, 623, 845, 0] ]',
+              nodeResolvers: {sequenceTag: listResolver},
+            ),
+          )
+          .isA<List>()
+          .has((l) => l.firstOrNull, 'Single element')
+          .which(
+            (e) => e.isNotNull().isA<List<int>>().deepEquals(
+              [0, 623, 845, 1000],
+            ),
+          );
+    });
+
+    test('Loads strongly typed set from nested flow map', () {
+      check(
+            loadResolvedDartObject(
+              ' [ $setTag { is, is, a, a, set, set } ]',
+              nodeResolvers: {setTag: mapResolver},
+            ),
+          )
+          .isA<List>()
+          .has((l) => l.firstOrNull, 'Single element')
+          .which(
+            (e) => e.isNotNull().isA<Set<String>>().deepEquals(
+              {'is', 'a', 'set'},
+            ),
+          );
+    });
+
     test(
       'Loads a strongly typed set from a block map when leading key has'
       ' properties',

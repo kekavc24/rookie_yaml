@@ -407,6 +407,22 @@ implicit:     !even-in-implicit
   });
 
   group('Exceptions', () {
+    test('Throws when an anchor or alias has no suffix', () {
+      const error = 'Expected at 1 non-whitespace character';
+
+      check(
+        () => bootstrapDocParser('& {}').nodeAsSimpleString(),
+      ).throwsParserException(error);
+
+      check(
+        () => bootstrapDocParser('{ &this value, * }').nodeAsSimpleString(),
+      ).throwsParserException(error);
+
+      check(
+        () => bootstrapDocParser('- &this value\n- *').nodeAsSimpleString(),
+      ).throwsParserException(error);
+    });
+
     test('Throws when an unknown secondary tag is used', () {
       final tag = '!!unknown-tag';
       final yaml = '$tag ignored :)';
@@ -595,7 +611,7 @@ implicit-2: is-an-error}
       for (final parent in const ['?', '-']) {
         check(
           () => bootstrapDocParser('''
-$parent 
+$parent
   &invalid
     - value
 '''),
@@ -613,7 +629,7 @@ $parent
           () => bootstrapDocParser('''
 $parent
   &invalid
-    > 
+    >
      value
 '''),
         ).throwsParserException(message);
@@ -622,7 +638,7 @@ $parent
           () => bootstrapDocParser('''
 $parent
   &invalid
-    | 
+    |
       value
 '''),
         ).throwsParserException(message);

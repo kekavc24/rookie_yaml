@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
+import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
@@ -187,6 +188,28 @@ rogue
       ).throwsParserException(
         'Implicit block keys are restricted to a single line',
       );
+
+      check(
+        () => bootstrapDocParser('''
+key: value
+[ \n ]: value
+'''),
+      ).throwsParserException(
+        'Found a line break when parsing an inline flow node',
+      );
+
+      check(
+        () => bootstrapDocParser('''
+key: value
+
+# Block scalar cannot be implicit
+|
+  block
+'''),
+      ).throwsParserException(
+        'Dirty parser state. Failed to parse a scalar using'
+        ' ${ScalarEvent.startBlockLiteral}.',
+      );
     });
 
     test('Throws if a block sequence is inline with block implicit key', () {
@@ -353,6 +376,17 @@ implicit:
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException('Invalid block list entry found');
+    });
+
+    test('Throws if a flow node is less indented than block parent', () {
+      const yaml = '''
+- - [not,
+ okay]
+''';
+
+      check(
+        () => bootstrapDocParser(yaml).nodeAsSimpleString(),
+      ).throwsParserException('Expected at least 2 additional spaces');
     });
   });
 

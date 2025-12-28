@@ -156,6 +156,20 @@ void main() {
         );
       },
     );
+
+    test('Throws if global uri has a scheme and no authority', () {
+      check(
+        () => vanillaDirectives('%TAG ! scheme:'),
+      ).throwsParserException(
+        'Expected at least a uri character after the scheme',
+      );
+    });
+
+    test('Throws if a global uri has an invalid hex', () {
+      check(
+        () => vanillaDirectives('%TAG ! scheme:%a'),
+      ).throwsParserException('Expected at least 2 hex digits');
+    });
   });
 
   group('Local Tag', () {
