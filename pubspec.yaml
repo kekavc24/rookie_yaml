@@ -32,4 +32,4 @@ dev_dependencies:
   # YAML test suite abstraction
   yaml_test_suite_runner:
     git: https://github.com/kekavc24/yaml_test_suite_runner.git
-    version: 0.0.2
+    version: 0.0.3
