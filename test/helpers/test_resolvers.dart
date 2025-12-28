@@ -19,7 +19,7 @@ T? loadResolvedDartObject<T>(
   YamlSource.string(yaml),
   triggers: TestTrigger(
     resolvers: resolvers,
-    customResolvers: nodeResolvers,
+    advancedResolvers: nodeResolvers,
     onDoctStart: onDoctStart,
     onKeySeen: onKeySeen,
     customList: customList,
@@ -30,7 +30,7 @@ T? loadResolvedDartObject<T>(
 );
 
 final class TestTrigger extends CustomTriggers {
-  TestTrigger._({
+  TestTrigger({
     super.resolvers,
     super.advancedResolvers,
     void Function(int index)? onDoctStart,
@@ -53,35 +53,6 @@ final class TestTrigger extends CustomTriggers {
   final OnCustomMap<Object>? _defaultMap;
 
   final OnCustomScalar<Object>? _defaultScalar;
-
-  factory TestTrigger({
-    List<ScalarResolver<Object?>>? resolvers,
-    Map<TagShorthand, CustomResolver>? customResolvers,
-    void Function(int index)? onDoctStart,
-    void Function(Object? key)? onKeySeen,
-    OnCustomList<Object>? customList,
-    OnCustomMap<Object>? customMap,
-    OnCustomScalar<Object>? customScalar,
-  }) {
-    final creators = (resolvers ?? []).fold(
-      <TagShorthand, ResolverCreator<Object?>>{},
-      (p, c) {
-        final ScalarResolver(:target, :onTarget) = c;
-        p[target] = onTarget;
-        return p;
-      },
-    );
-
-    return TestTrigger._(
-      resolvers: creators,
-      advancedResolvers: customResolvers,
-      onDoctStart: onDoctStart,
-      onKeySeen: onKeySeen,
-      customList: customList,
-      customMap: customMap,
-      customScalar: customScalar,
-    );
-  }
 
   @override
   void onDocumentStart(int index) => _onDocStart(index);

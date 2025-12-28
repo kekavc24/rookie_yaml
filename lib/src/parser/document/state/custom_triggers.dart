@@ -2,22 +2,29 @@ import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 
 /// A map with functions linked to a local tag.
-typedef Resolvers = Map<TagShorthand, ResolverCreator<Object?>>;
+typedef _Resolvers = Map<TagShorthand, ResolverCreator<Object?>>;
 
 /// A map with [CustomResolver]s associated with a local tag.
 typedef AdvancedResolvers = Map<TagShorthand, CustomResolver>;
 
 /// A class with callbacks to some of the inner workings of the parser.
 abstract base class CustomTriggers {
-  const CustomTriggers({
-    Resolvers? resolvers,
+  CustomTriggers({
+    List<ScalarResolver<Object?>>? resolvers,
     AdvancedResolvers? advancedResolvers,
-  }) : _resolvers = resolvers,
-       _advancedResolvers = advancedResolvers;
+  }) : _advancedResolvers = advancedResolvers,
+       _resolvers = resolvers?.fold(
+         <TagShorthand, ResolverCreator<Object?>>{},
+         (p, c) {
+           final ScalarResolver(:target, :onTarget) = c;
+           p![target] = onTarget;
+           return p;
+         },
+       );
 
   /// Custom functions to resolve a scalar's string content based on the
   /// [TagShorthand].
-  final Resolvers? _resolvers;
+  final _Resolvers? _resolvers;
 
   /// Custom resolvers that instantiate custom delegates used by the actual
   /// parser based on the [TagShorthand].

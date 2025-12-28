@@ -3,19 +3,6 @@ part of 'loader.dart';
 final class _SourceNodeTrigger extends CustomTriggers {
   _SourceNodeTrigger._({super.resolvers});
 
-  factory _SourceNodeTrigger(List<ScalarResolver<Object?>>? resolvers) {
-    final creators = (resolvers ?? []).fold(
-      <TagShorthand, ResolverCreator<Object?>>{},
-      (p, c) {
-        final ScalarResolver(:target, :onTarget) = c;
-        p[target] = onTarget;
-        return p;
-      },
-    );
-
-    return _SourceNodeTrigger._(resolvers: creators);
-  }
-
   @override
   void onDocumentStart(int index) {}
 
@@ -57,7 +44,7 @@ List<YamlDocument> _loadYamlDocuments(
       nodeSpan: span,
     ),
     logger: logger ?? _defaultLogger,
-    triggers: _SourceNodeTrigger(resolvers),
+    triggers: _SourceNodeTrigger._(resolvers: resolvers),
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
       iterator,
       start: keyStart,
