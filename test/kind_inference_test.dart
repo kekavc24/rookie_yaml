@@ -7,6 +7,7 @@ import 'package:test/test.dart';
 import 'helpers/bootstrap_parser.dart';
 import 'helpers/exception_helpers.dart';
 import 'helpers/model_helpers.dart';
+import 'helpers/test_resolvers.dart';
 
 void main() {
   test('Defaults non-specific tags to their default schema kind', () {
@@ -290,26 +291,27 @@ void main() {
         ..hasInferred('Partial content', '24');
     });
 
-    //     test('Dart types can be used as keys in DynamicMapping', () {
-    //       const string = 'key';
-    //       const integer = 24;
+    test('Infers explicit floats and integers', () {
+      const value = -24;
 
-    //       const yaml =
-    //           '''
-    // $string: $integer
-    // $integer: $string
-    // ''';
+      const inputs = [
+        '$value', // Plain
+        '"$value"', // Double quoted
+        "'$value'", // Single quoted
+        '|\n $value', // Literal
+        '>\n $value',
+      ];
 
-    //       check(bootstrapDocParser(yaml).parseNodeSingle())
-    //           .isNotNull()
-    //           .isA<Mapping>()
-    //           .has((m) => m.castTo<DynamicMapping>(), 'DynamicMapping cast')
-    //           .which(
-    //             (dm) => dm
-    //               ..has((v) => v[string], 'String key').isNotNull()
-    //               ..has((v) => v[integer], 'Integer key').isNotNull(),
-    //           );
-    //     });
+      for (final str in inputs) {
+        check(
+          loadResolvedDartObject('$floatTag $str'),
+        ).isA<double>().equals(value.toDouble());
+
+        check(
+          loadResolvedDartObject('$integerTag $str'),
+        ).isA<int>().equals(value);
+      }
+    });
   });
 
   group('Sequences', () {
