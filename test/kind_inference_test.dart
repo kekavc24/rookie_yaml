@@ -291,7 +291,7 @@ void main() {
         ..hasInferred('Partial content', '24');
     });
 
-    test('Infers explicit floats and integers', () {
+    test('Infers explicit floats ', () {
       const value = -24;
 
       const inputs = [
@@ -306,11 +306,70 @@ void main() {
         check(
           loadResolvedDartObject('$floatTag $str'),
         ).isA<double>().equals(value.toDouble());
+      }
+    });
+
+    group('Recoverable integer delegate with explicit tag', () {
+      test('Infers base 10', () {
+        check(
+          loadResolvedDartObject('$integerTag 24'),
+        ).isA<int>().equals(24);
+
+        // With padding
+        check(
+          loadResolvedDartObject('$integerTag 000000000000000024'),
+        ).isA<int>().equals(24);
 
         check(
-          loadResolvedDartObject('$integerTag $str'),
-        ).isA<int>().equals(value);
-      }
+          loadResolvedDartObject('$integerTag -24'),
+        ).isA<int>().equals(-24);
+      });
+
+      test('Infers base 16', () {
+        check(loadResolvedDartObject('$integerTag 0x18')).isA<int>().equals(24);
+
+        // With padding
+        check(
+          loadResolvedDartObject('$integerTag 0x00000000000000000018'),
+        ).isA<int>().equals(24);
+      });
+
+      test('Infers base 8', () {
+        check(loadResolvedDartObject('$integerTag 0o30')).isA<int>().equals(24);
+
+        // With padding
+        check(
+          loadResolvedDartObject('$integerTag 0o00000000000000000030'),
+        ).isA<int>().equals(24);
+      });
+
+      test('Recovers on fail as a string', () {
+        check(
+          loadResolvedDartObject('$integerTag 2459d'),
+        ).isA<String>().equals('2459d');
+
+        check(
+          loadResolvedDartObject('$integerTag 0x18deaQ'),
+        ).isA<String>().equals('0x18deaQ');
+
+        check(
+          loadResolvedDartObject('$integerTag 0o12348'),
+        ).isA<String>().equals('0o12348');
+      });
+
+      test('Recovers on fail as a string with padding', () {
+        check(
+          loadResolvedDartObject('$integerTag 0000000000024delay'),
+        ).isA<String>().equals('0000000000024delay');
+
+        check(
+          loadResolvedDartObject('$integerTag 0x0000000000024delay'),
+        ).isA<String>().equals('0x0000000000024delay');
+
+        check(
+          loadResolvedDartObject('$integerTag 0o0000000000024delay'),
+        ).isA<String>().equals('0o0000000000024delay');
+      });
     });
   });
 
