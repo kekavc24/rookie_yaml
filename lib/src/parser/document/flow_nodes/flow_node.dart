@@ -1,21 +1,23 @@
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
-import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// Parses a flow scalar based on the current scalar [event].
-EfficientScalarDelegate<R> parseFlowScalar<R>(
+ScalarLikeDelegate<R> parseFlowScalar<R>(
   ScalarEvent event, {
   required SourceIterator iterator,
+  required OnCustomScalar<R>? onDefault,
   required ScalarFunction<R> scalarFunction,
   required void Function(YamlComment comment) onParseComment,
   required bool isInline,
@@ -26,6 +28,7 @@ EfficientScalarDelegate<R> parseFlowScalar<R>(
 }) => parseScalar(
   event,
   iterator: iterator,
+  onDefault: onDefault,
   scalarFunction: scalarFunction,
   onParseComment: onParseComment,
   isImplicit: isInline,
@@ -35,7 +38,7 @@ EfficientScalarDelegate<R> parseFlowScalar<R>(
   blockParentIndent: null,
   delegateScalar: delegateScalar,
   defaultToString: defaultToString,
-  onScalar: (scalar, style, indentOnExit, indentDidChange, marker) {
+  onScalar: (style, indentOnExit, indentDidChange, marker, scalar) {
     if (style != ScalarStyle.plain || isInline) return scalar;
 
     // Plain scalars can have document/directive end chars embedded in the
@@ -202,13 +205,13 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
       kind: kind,
     ),
     onMatchScalar: (scalarKind) {
-      final ParserState(:iterator, :scalarFunction, :comments) = parserState;
       return switch (flowEvent) {
         ScalarEvent e => parseFlowScalar(
           e,
-          iterator: iterator,
-          scalarFunction: scalarFunction,
-          onParseComment: comments.add,
+          iterator: parserState.iterator,
+          onDefault: parserState.defaultScalar(),
+          scalarFunction: parserState.scalarFunction,
+          onParseComment: parserState.comments.add,
           isInline: isInline,
           indentLevel: currentIndentLevel,
           minIndent: minIndent,
@@ -218,7 +221,7 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
           indentLevel: currentIndentLevel,
           indent: minIndent,
           startOffset: start,
-          resolver: scalarFunction,
+          resolver: parserState.scalarFunction,
         )..updateEndOffset = end,
       };
     },
@@ -282,6 +285,7 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
         return parseFlowScalar(
           scalarEvent,
           iterator: parserState.iterator,
+          onDefault: parserState.defaultScalar(),
           scalarFunction: parserState.scalarFunction,
           onParseComment: parserState.comments.add,
           isInline: isImplicit || forceInline,

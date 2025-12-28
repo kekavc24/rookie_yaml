@@ -41,6 +41,8 @@ typedef _OnDefaultSeq<S> = OnCustomList<S>? Function();
 
 typedef _OnDefaultMap<M> = OnCustomMap<M>? Function();
 
+typedef OnDefaultScalar<S> = OnCustomScalar<S>? Function();
+
 /// Just a null-ish helper.
 R? _nullish<R>() => null;
 
@@ -59,7 +61,8 @@ final class ParserState<R> {
        _onScalarResolver = triggers?.onScalarResolver ?? ((_) => null),
        onParseMapKey = triggers?.onParsedKey ?? ((_) {}),
        _defaultMap = triggers?.onDefaultMapping ?? _nullish,
-       _defaultSequence = triggers?.onDefaultSequence ?? _nullish;
+       _defaultSequence = triggers?.onDefaultSequence ?? _nullish,
+       defaultScalar = triggers?.onDefaultScalar ?? _nullish;
 
   /// Byte iterator.
   final SourceIterator iterator;
@@ -90,6 +93,9 @@ final class ParserState<R> {
 
   /// Callback for creating a default mapping delegate.
   final _OnDefaultMap<R> _defaultMap;
+
+  /// Callback for creating a default scalar delegate.
+  final OnDefaultScalar<R> defaultScalar;
 
   /// Logging function for warnings and info
   final ParserLogger logger;

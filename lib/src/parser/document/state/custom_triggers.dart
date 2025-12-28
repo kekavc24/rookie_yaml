@@ -64,4 +64,9 @@ abstract base class CustomTriggers {
   /// tags are present. This could be used to return custom objects for
   /// top-level and nested mappings if paired correctly with [onParsedKey].
   OnCustomMap<M>? onDefaultMapping<M>() => null;
+
+  /// Triggered when the parser requires a generic scalar delegate when no tags
+  /// are present. This is never called if the parser can accurately default
+  /// the scalar to `null` ahead of time.
+  OnCustomScalar<S>? onDefaultScalar<S>() => null;
 }

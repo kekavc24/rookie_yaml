@@ -1,10 +1,4 @@
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
-import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
-import 'package:rookie_yaml/src/parser/document/document_events.dart';
-import 'package:rookie_yaml/src/parser/document/node_properties.dart';
-import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
-import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
-import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -35,70 +29,6 @@ typedef BlockEntry<Obj> =
 /// Callback for a block map entry that has been fully parsed.
 typedef OnBlockMapEntry<Obj> =
     void Function(NodeDelegate<Obj> key, NodeDelegate<Obj>? value);
-
-typedef OnGenericScalar<R, T> =
-    T Function(
-      EfficientScalarDelegate<R> scalar,
-      ScalarStyle style,
-      int indentOnExit,
-      bool indentDidChange,
-      DocumentMarker marker,
-    );
-
-/// Parses a [Scalar].
-///
-/// [greedyOnPlain] is only ever passed when the first two plain scalar
-/// characters resemble the directive end markers `---` but the last char
-/// is not a match.
-T parseScalar<R, T>(
-  ScalarEvent event, {
-  required SourceIterator iterator,
-  required ScalarFunction<R> scalarFunction,
-  required void Function(YamlComment comment) onParseComment,
-  required bool isImplicit,
-  required bool isInFlowContext,
-  required int indentLevel,
-  required int minIndent,
-  required int? blockParentIndent,
-  required OnGenericScalar<R, T> onScalar,
-  required bool defaultToString,
-  DelegatedValue? delegateScalar,
-  String greedyOnPlain = '',
-  RuneOffset? start,
-}) {
-  final delegate = EfficientScalarDelegate.ofScalar(
-    delegateScalar != null
-        ? delegateScalar()
-        : AmbigousDelegate(defaultToString: defaultToString),
-    style: switch (event) {
-      ScalarEvent.startBlockFolded => ScalarStyle.folded,
-      ScalarEvent.startBlockLiteral => ScalarStyle.literal,
-      ScalarEvent.startFlowDoubleQuoted => ScalarStyle.doubleQuoted,
-      ScalarEvent.startFlowSingleQuoted => ScalarStyle.singleQuoted,
-      _ => ScalarStyle.plain,
-    },
-    indentLevel: indentLevel,
-    indent: minIndent,
-    start: start ?? iterator.currentLineInfo.current,
-    resolver: scalarFunction,
-  );
-
-  return parseCustomScalar(
-    event,
-    iterator: iterator,
-    resolver: () => delegate,
-    property: null,
-    onParseComment: onParseComment,
-    onScalar: (style, indentOnExit, indentDidChange, marker, _) =>
-        onScalar(delegate, style, indentOnExit, indentDidChange, marker),
-    isImplicit: isImplicit,
-    isInFlowContext: isInFlowContext,
-    indentLevel: indentLevel,
-    minIndent: minIndent,
-    blockParentIndent: blockParentIndent,
-    charsOnGreedy: greedyOnPlain,
-  );
-}
 
 /// Skips to the next parsable flow indicator/character.
 ///
@@ -250,54 +180,6 @@ D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
   flowCollection.updateEndOffset = offset;
   iterator.nextChar();
   return flowCollection;
-}
-
-/// Creates a `null` delegate.
-NodeDelegate<Obj> nullBlockNode<Obj>(
-  ParserState<Obj> state, {
-  required int indentLevel,
-  required int indent,
-  required RuneOffset start,
-}) => emptyBlockNode(
-  state,
-  property: ParsedProperty.empty(
-    start,
-    start,
-    null,
-    spanMultipleLines: false,
-  ),
-  indentLevel: indentLevel,
-  indent: indent,
-  end: start,
-);
-
-/// Creates a `null` delegate only if [property] is not an [Alias].
-NodeDelegate<Obj> emptyBlockNode<Obj>(
-  ParserState<Obj> state, {
-  required ParsedProperty property,
-  required int indentLevel,
-  required int indent,
-  required RuneOffset end,
-}) {
-  final offset = property.span.start;
-
-  final node = switch (property) {
-    Alias _ => state.referenceAlias(
-      property,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: offset,
-    ),
-    _ => nullScalarDelegate(
-      indentLevel: indentLevel,
-      indent: indent,
-      startOffset: offset,
-      resolver: state.scalarFunction,
-    ),
-  };
-
-  return state.trackAnchor(node..updateEndOffset = end, property)
-    ..hasLineBreak = property.isMultiline;
 }
 
 /// Calculates the indent for a block node within a block collection

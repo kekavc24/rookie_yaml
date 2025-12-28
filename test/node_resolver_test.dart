@@ -70,6 +70,25 @@ block: value
         ),
       ).isA<Set<String>>().deepEquals({'hello', 'flow'});
     });
+
+    test('Loads default scalar', () {
+      const value = '24';
+      final codePoints = [...value.toString().codeUnits, -1];
+
+      for (final style in ScalarStyle.values) {
+        final yaml = switch (style) {
+          ScalarStyle.doubleQuoted => '"$value"',
+          ScalarStyle.singleQuoted => "'$value'",
+          ScalarStyle.plain => value,
+          ScalarStyle.folded => '>\n $value',
+          ScalarStyle.literal => '|\n $value',
+        };
+
+        check(
+          loadResolvedDartObject(yaml, customScalar: () => SimpleUtfBuffer()),
+        ).isA<List<int>>().deepEquals(codePoints);
+      }
+    });
   });
 
   group('Resolvers', () {

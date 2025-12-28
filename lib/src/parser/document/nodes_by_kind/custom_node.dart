@@ -10,12 +10,12 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/flow/double_quoted.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/flow/plain.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -49,13 +49,13 @@ T _parseCustomKind<T, Obj>(
   };
 }
 
-typedef OnCompleteCustom<R, T> =
+typedef OnScalar<R, T> =
     R Function(
       ScalarStyle style,
       int indentOnExit,
       bool indentDidChange,
       DocumentMarker marker,
-      NodeDelegate<T> delegate,
+      ScalarLikeDelegate<T> delegate,
     );
 
 typedef _InternalScalar<Obj> = (
@@ -79,7 +79,7 @@ R parseCustomScalar<R, Obj>(
   required OnCustomScalar<Obj> resolver,
   required NodeProperty? property,
   required void Function(YamlComment comment) onParseComment,
-  required OnCompleteCustom<R, Obj> onScalar,
+  required OnScalar<R, Obj> onScalar,
   required bool isImplicit,
   required bool isInFlowContext,
   required int indentLevel,

@@ -3,6 +3,7 @@ import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/special_block_entry.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';

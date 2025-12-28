@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/scalars/block/block_scalar.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';

@@ -1,7 +1,7 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/double_quoted.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/plain.dart';
-import 'package:rookie_yaml/src/parser/scalars/flow/single_quoted.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/flow/double_quoted.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/flow/plain.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/flow/single_quoted.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:test/test.dart';
 

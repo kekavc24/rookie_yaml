@@ -7,6 +7,7 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
+import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
@@ -163,6 +164,7 @@ BlockNode<Obj> parseBlockScalar<Obj>(
   final (delegate, indentOnExit, docMarker, indentDidChange) = parseScalar(
     event,
     iterator: state.iterator,
+    onDefault: state.defaultScalar(),
     scalarFunction: state.scalarFunction,
     onParseComment: state.comments.add,
     isImplicit: isImplicit,
@@ -174,7 +176,7 @@ BlockNode<Obj> parseBlockScalar<Obj>(
     start: start,
     delegateScalar: delegateScalar,
     defaultToString: defaultToString,
-    onScalar: (scalar, _, indentOnExit, indentDidChange, marker) =>
+    onScalar: (_, indentOnExit, indentDidChange, marker, scalar) =>
         (scalar, indentOnExit, marker, indentDidChange),
   );
 

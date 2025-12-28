@@ -11,6 +11,7 @@ T? loadResolvedDartObject<T>(
   Map<TagShorthand, CustomResolver>? nodeResolvers,
   OnCustomList<Object>? customList,
   OnCustomMap<Object>? customMap,
+  OnCustomScalar<Object>? customScalar,
   void Function(int index)? onDoctStart,
   void Function(Object? key)? onKeySeen,
   void Function(bool, String)? logger,
@@ -23,6 +24,7 @@ T? loadResolvedDartObject<T>(
     onKeySeen: onKeySeen,
     customList: customList,
     customMap: customMap,
+    customScalar: customScalar,
   ),
   logger: logger,
 );
@@ -35,10 +37,12 @@ final class TestTrigger extends CustomTriggers {
     void Function(Object? key)? onKeySeen,
     OnCustomList<Object>? customList,
     OnCustomMap<Object>? customMap,
+    OnCustomScalar<Object>? customScalar,
   }) : _onDocStart = onDoctStart ?? ((_) {}),
        _onKeySeen = onKeySeen ?? ((_) {}),
        _defaultList = customList,
-       _defaultMap = customMap;
+       _defaultMap = customMap,
+       _defaultScalar = customScalar;
 
   final void Function(int index) _onDocStart;
 
@@ -48,6 +52,8 @@ final class TestTrigger extends CustomTriggers {
 
   final OnCustomMap<Object>? _defaultMap;
 
+  final OnCustomScalar<Object>? _defaultScalar;
+
   factory TestTrigger({
     List<ScalarResolver<Object?>>? resolvers,
     Map<TagShorthand, CustomResolver>? customResolvers,
@@ -55,6 +61,7 @@ final class TestTrigger extends CustomTriggers {
     void Function(Object? key)? onKeySeen,
     OnCustomList<Object>? customList,
     OnCustomMap<Object>? customMap,
+    OnCustomScalar<Object>? customScalar,
   }) {
     final creators = (resolvers ?? []).fold(
       <TagShorthand, ResolverCreator<Object?>>{},
@@ -72,6 +79,7 @@ final class TestTrigger extends CustomTriggers {
       onKeySeen: onKeySeen,
       customList: customList,
       customMap: customMap,
+      customScalar: customScalar,
     );
   }
 
@@ -85,7 +93,11 @@ final class TestTrigger extends CustomTriggers {
   OnCustomMap<M>? onDefaultMapping<M>() => _defaultMap as OnCustomMap<M>?;
 
   @override
-  OnCustomList<S>? onDefaultSequence<S>() => _defaultList as OnCustomList<S>?;
+  OnCustomList<L>? onDefaultSequence<L>() => _defaultList as OnCustomList<L>?;
+
+  @override
+  OnCustomScalar<S>? onDefaultScalar<S>() =>
+      _defaultScalar as OnCustomScalar<S>?;
 }
 
 final class SimpleUtfBuffer extends BytesToScalar<List<int>> {
