@@ -95,7 +95,7 @@ String _normalizeTagUri(
 }) {
   final buffer = bufferedUri ?? StringBuffer();
 
-  /// Converts [char] as hex with '%' prefix.
+  // Converts [char] as hex with '%' prefix.
   String asHex(int char) => '%${char.toRadixString(16)}';
 
   void addAsUriString(String string) =>
@@ -201,7 +201,7 @@ String _parseTagUri(
       case _ when !allowRestrictedIndicators && char.isFlowDelimiter():
         break tagParser;
 
-      /// Tag indicators must be escaped when parsing tags
+      // Tag indicators must be escaped when parsing tags
       case tag:
         throwWithSingleOffset(
           iterator,
@@ -257,7 +257,7 @@ void _parseScheme(
     );
   }
 
-  /// Ensure we return in a state where a tag uri can be parsed further
+  // Ensure we return in a state where a tag uri can be parsed further.
   if (isDecoding &&
       iterator.peekNextChar().isNullOr(
         (c) => !isUriChar(c) && c != directive, // %
@@ -296,9 +296,9 @@ void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
       message: 'Expected at least 2 hex digits',
       current: iterator.currentLineInfo.current,
 
-      /// We have highlight the "%" that indicated this is an hex. This will
-      /// help provide accurate and contextual information. The buffer
-      /// indicates how many characters we have read so far.
+      // We have highlight the "%" that indicated this is an hex. This will
+      // help provide accurate and contextual information. The buffer
+      // indicates how many characters we have read so far.
       charCountBefore: (count + 2) - hexCount,
     );
   }
@@ -310,8 +310,8 @@ void _parseHexInUri(SourceIterator iterator, StringBuffer uriBuffer) {
 String parseAnchorOrAliasTrailer(SourceIterator iterator) {
   final buffer = StringBuffer();
 
-  /// Allows only non-space characters. Prefer quick exit once a flow
-  /// delimiter is encountered.
+  // Allows only non-space characters. Prefer quick exit once a flow
+  // delimiter is encountered.
   while (!iterator.isEOF &&
       !iterator.current.isFlowDelimiter() &&
       iterator.current.isNonSpaceChar()) {

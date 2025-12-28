@@ -184,9 +184,9 @@ final class UnicodeIterator implements SourceIterator {
 
     var isNewLine = false;
 
-    /// We always treat \r\n as a single character. Seeing a \r forces us to
-    /// assume it is a line break. Keeping/tracking count serves no purpose
-    /// since both are considered line breaks by YAML.
+    // We always treat \r\n as a single character. Seeing a \r forces us to
+    // assume it is a line break. Keeping/tracking count serves no purpose since
+    // both are considered line breaks by YAML.
     if (_currentChar.isLineBreak()) {
       _markLineAsComplete();
       isNewLine = true;
@@ -216,9 +216,9 @@ final class UnicodeIterator implements SourceIterator {
 
     if (_hasNext) return;
 
-    /// We will not get a chance to buffer this last line. Also this iterator
-    /// has no notion of trailing empty lines. A trailing line break will not
-    /// trigger an empty line to be added to [_lines]
+    // We will not get a chance to buffer this last line. Also this iterator has
+    // no notion of trailing empty lines. A trailing line break will not trigger
+    // an empty line to be added to [_lines]
     _bufferCurrent();
     _markLineAsComplete();
     _hasMoreLines = false;
@@ -245,9 +245,9 @@ final class UnicodeIterator implements SourceIterator {
 
   /// Skips a `\r` if it's followed by a `\n`
   void _skipCarriageReturn() {
-    /// From our point of view, we treat \r\n as a complete line break. We don't
-    /// care if this isn't Windows. In our parsing context, we always fast
-    /// forward this combination
+    // From our point of view, we treat \r\n as a complete line break. We don't
+    // care if this isn't Windows. In our parsing context, we always fast
+    // forward this combination.
     if (_currentChar == carriageReturn && _nextChar == lineFeed) {
       _currentChar = _nextChar;
       _hasNext = _iterator.moveNext();
@@ -333,8 +333,8 @@ int takeFromIteratorUntil<T>(
     ++taken;
   }
 
-  /// Ensures we always leave the iterator in a safe state and prevents
-  /// iterating the same character multiple times.
+  // Ensures we always leave the iterator in a safe state and prevents iterating
+  // the same character multiple times.
   do {
     if (iterator.peekNextChar() case int char) {
       if (stopIf(taken, char)) {

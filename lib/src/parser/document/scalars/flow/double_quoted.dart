@@ -1,6 +1,6 @@
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/flow_scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -30,23 +30,25 @@ Never _closingQuoteException(
 /// scalar which returns a [PreScalar]. This is intentional. The delegate that
 /// will be assigned to this function will contain more context on how this
 /// scalar will be resolved.
+///
+/// Used for testing.
 PreScalar parseDoubleQuoted(
   SourceIterator iterator, {
   required int indent,
   required bool isImplicit,
 }) {
-  final buffer = ScalarBuffer();
+  final buffer = StringDelegate();
   final info = doubleQuotedParser(
     iterator,
-    buffer: buffer.writeChar,
+    buffer: buffer.onWriteRequest,
     indent: indent,
     isImplicit: isImplicit,
   );
 
   return (
-    content: buffer.bufferedContent(),
+    content: buffer.parsed().scalar.value,
+    wroteLineBreak: buffer.bufferedLineBreak,
     scalarInfo: info,
-    wroteLineBreak: buffer.wroteLineBreak,
   );
 }
 
@@ -185,9 +187,6 @@ void _parseEscaped(SourceIterator iterator, {required CharWriter buffer}) {
 
     iterator.nextChar(); // Point the hex character
 
-    /// Further reads are safe peeks to prevent us from pointing
-    /// the cursor too far ahead. Intentionally expressive rather than using
-    /// `scanner.chunkWhile(...)`
     while (hexToRead > 0 && !iterator.isEOF) {
       final hexChar = iterator.current;
 
@@ -207,10 +206,10 @@ void _parseEscaped(SourceIterator iterator, {required CharWriter buffer}) {
         message: '$hexToRead hex digit(s) are missing.',
         current: iterator.currentLineInfo.current,
 
-        /// If no characters were read, we can safely assume the offset will
-        /// point to the hex width identifier (x, u or U). In this case, we just
-        /// include the previous character. In all other cases, we have to
-        /// highlight all the other characters read and hex width identifiers.
+        // If no characters were read, we can safely assume the offset will
+        // point to the hex width identifier (x, u or U). In this case, we just
+        // include the previous character. In all other cases, we have to
+        // highlight all the other characters read and hex width identifiers.
         charCountBefore: (hexWidth - hexToRead) + 1,
       );
     }

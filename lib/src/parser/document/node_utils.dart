@@ -89,10 +89,9 @@ bool nextSafeLineInFlow(
       );
     }
 
-    /// If line breaks are allowed, it must at least be the same or
-    /// greater than the min indent. Indent serves no purpose in flow
-    /// collections. The min indent is used as markup indent enforced parent
-    /// block collection
+    // If line breaks are allowed, it must at least be the same or greater than
+    // the min indent. Indent serves no purpose in flow collections. The min
+    // indent is used as markup indent enforced parent block collection.
     if (indent < minIndent) {
       throwWithApproximateRange(
         iterator,
@@ -108,8 +107,7 @@ bool nextSafeLineInFlow(
   return true;
 }
 
-/// Returns `true` if the next flow sequence entry or flow map entry can be
-/// parsed.
+/// Whether the next flow sequence entry or flow map entry can be parsed.
 bool continueToNextEntry(
   SourceIterator iterator, {
   required int minIndent,
@@ -136,8 +134,8 @@ bool continueToNextEntry(
   );
 }
 
-/// Returns `true` if a flow key was "json-like", that is, a single/double
-/// quoted plain scalar or flow map/sequence.
+/// Whether a flow key was "json-like", that is, a single/double plain scalar
+/// or flow map/sequence.
 bool keyIsJsonLike(NodeDelegate? delegate) => switch (delegate) {
   EfficientScalarDelegate(
     scalarStyle: ScalarStyle.singleQuoted || ScalarStyle.doubleQuoted,
@@ -229,55 +227,55 @@ D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
     return (laxIndent: inferred, inlineFixedIndent: inferred);
   }
 
-  /// Being null indicates the child is okay being indented at least "+1" if
-  /// the rest of its content spans multiple lines. This applies to
-  /// [ScalarStyle.literal] and [ScalarStyle.folded]. Flow collections also
-  /// benefit from this as the indent serves no purpose other than respecting
-  /// the current block parent's indentation. This is its [laxIndent].
-  ///
-  /// Its [inlineFixedIndent] is the character difference upto the current
-  /// parsable char. This indent is enforced on block sequences and maps used
-  /// as:
-  ///   1. a block sequence entry
-  ///   2. content of an explicit key
-  ///   3. content of an explicit key's value
-  ///
-  /// "?" is used as an example but applies to all block nodes that use an
-  /// indicator.
-  ///
-  /// (meh! No markdown hover)
-  /// ```yaml
-  ///
-  /// # With flow. Okay
-  /// ? [
-  ///  "blah", "blah",
-  ///  "blah"]
-  ///
-  /// # With literal. Applies to folded. Okay
-  /// ? |
-  ///  block
-  ///
-  /// # With literal. Applies to folded. We give "+1". Indent determined
-  /// # while parsing as recommended by YAML. See [parseBlockScalar]
-  /// ? |
-  ///     block
-  ///
-  /// # With block sequences. Must do this for okay
-  /// ? - blah
-  ///   - blah
-  ///
-  /// # With implicit or explict map
-  /// ? key: value
-  ///   keyB: value
-  ///   keyC: value # Explicit key ends here
-  /// : actual-value # Explicit key's value
-  ///
-  /// # With block sequence. If this is done. Still okay. Inferred.
-  /// ?
-  ///  - blah
-  ///  - blah
-  ///
-  /// ```
+  // Being null indicates the child is okay being indented at least "+1" if
+  // the rest of its content spans multiple lines. This applies to
+  // [ScalarStyle.literal] and [ScalarStyle.folded]. Flow collections also
+  // benefit from this as the indent serves no purpose other than respecting
+  // the current block parent's indentation. This is its [laxIndent].
+  //
+  // Its [inlineFixedIndent] is the character difference upto the current
+  // parsable char. This indent is enforced on block sequences and maps used
+  // as:
+  //   1. a block sequence entry
+  //   2. content of an explicit key
+  //   3. content of an explicit key's value
+  //
+  // "?" is used as an example but applies to all block nodes that use an
+  // indicator.
+  //
+  // (meh! No markdown hover)
+  // ```yaml
+  //
+  // # With flow. Okay
+  // ? [
+  //  "blah", "blah",
+  //  "blah"]
+  //
+  // # With literal. Applies to folded. Okay
+  // ? |
+  //  block
+  //
+  // # With literal. Applies to folded. We give "+1". Indent determined
+  // # while parsing as recommended by YAML. See [parseBlockScalar]
+  // ? |
+  //     block
+  //
+  // # With block sequences. Must do this for okay
+  // ? - blah
+  //   - blah
+  //
+  // # With implicit or explict map
+  // ? key: value
+  //   keyB: value
+  //   keyC: value # Explicit key ends here
+  // : actual-value # Explicit key's value
+  //
+  // # With block sequence. If this is done. Still okay. Inferred.
+  // ?
+  //  - blah
+  //  - blah
+  //
+  // ```
   return (
     laxIndent: blockParentIndent + 1,
     inlineFixedIndent:

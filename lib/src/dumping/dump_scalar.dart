@@ -25,11 +25,11 @@ ScalarStyle _defaultStyle(
 }) {
   var useDefault = _useNodeStyleDefault(current, content);
 
-  /// Ensure global style matches the scalar style. Block styles are never
-  /// used in flow styles but the opposite is possible. YAML prefers plain style
-  /// but double quoted guarantees compatibility.
-  ///
-  /// Plain styles never have any leading/trailing whitespaces.
+  // Ensure global style matches the scalar style. Block styles are never
+  // used in flow styles but the opposite is possible. YAML prefers plain style
+  // but double quoted guarantees compatibility.
+  //
+  // Plain styles never have any leading/trailing whitespaces.
   if ((parentNodeStyle ?? current?.nodeStyle ?? NodeStyle.flow) ==
       NodeStyle.flow) {
     return (current?.nodeStyle != NodeStyle.flow || useDefault)
@@ -70,8 +70,8 @@ ScalarStyle _defaultStyle(
 
   var content = scalar.toString(); // Scalars are always strings
 
-  /// Default to double quoted for json compatibility and normalize all
-  /// escaped characters and escape the (") quote
+  // Default to double quoted for json compatibility and normalize all
+  // escaped characters and escape the (") quote
   if (jsonCompatible) {
     content = String.fromCharCodes(
       content.codeUnits
@@ -136,8 +136,8 @@ ScalarStyle _defaultStyle(
         );
       }
 
-    /// Normalize every character that is not a tab or linebreak.
-    /// See: https://yaml.org/spec/1.2.2/#733-plain-style:~:text=The%20plain%20(unquoted)%20style%20has%20no%20identifying%20indicators%20and%20provides%20no%20form%20of%20escaping
+    // Normalize every character that is not a tab or linebreak.
+    // See: https://yaml.org/spec/1.2.2/#733-plain-style:~:text=The%20plain%20(unquoted)%20style%20has%20no%20identifying%20indicators%20and%20provides%20no%20form%20of%20escaping
     case ScalarStyle.plain:
       {
         final (_, plain) = _joinScalar(
@@ -164,8 +164,8 @@ ScalarStyle _defaultStyle(
 
     case ScalarStyle.literal || ScalarStyle.folded:
       {
-        /// Leading spaces may be problematic. We can know the indentation level
-        /// from here.
+        // Leading spaces may be problematic. We can know the indentation level
+        // from here.
         if (content.startsWith(' ')) {
           continue doubleQuoted;
         }
@@ -180,8 +180,8 @@ ScalarStyle _defaultStyle(
           includeFirst: true,
         ).$2;
 
-        /// Preserve the block scalar content info from being affected by
-        /// trailing line breaks
+        // Preserve the block scalar content info from being affected by
+        // trailing line breaks
         final chomping = content.endsWith('\n')
             ? ChompingIndicator.keep.indicator
             : ChompingIndicator.strip.indicator;
@@ -191,13 +191,13 @@ ScalarStyle _defaultStyle(
           encodedScalar:
               '${isBlockFolded ? folded.asString() : literal.asString()}'
               '$chomping'
-              /// Never append a header line break if [ScalarStyle.folded] and
-              /// unfolded string has a leading line feed.
-              ///
-              /// The header line break is folded if the first line is empty or
-              /// it is just a linebreak. It is always discarded as long as no
-              /// characters have been written to the buffer a parser is using
-              /// to write characters of this folded block scalar.
+              // Never append a header line break if [ScalarStyle.folded] and
+              // unfolded string has a leading line feed.
+              //
+              // The header line break is folded if the first line is empty or
+              // it is just a linebreak. It is always discarded as long as no
+              // characters have been written to the buffer a parser is using
+              // to write characters of this folded block scalar.
               '${!isBlockFolded || !content.startsWith('\n') ? '\n' : ''}'
               '$content',
         );

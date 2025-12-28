@@ -127,15 +127,15 @@ base mixin _ResolvingCache<T> on NodeDelegate<T> {
           switch (tag) {
             case ContentResolver(:final resolvedTag):
               {
-                /// Cannot override the captured tag; only validate it. This
-                /// allows a non-specific tag to be captured and resolved by
-                /// any scalar.
+                // Cannot override the captured tag; only validate it. This
+                // allows a non-specific tag to be captured and resolved by
+                // any scalar.
                 _checkResolvedTag(resolvedTag);
                 _tag = tag;
               }
 
-            /// Node tags with only non-specific tags and no global tag prefix
-            /// will default to str, mapping or seq based on its schema kind.
+            // Node tags with only non-specific tags and no global tag prefix
+            // will default to str, mapping or seq based on its schema kind.
             case NodeTag nodeTag:
               _tag = _checkResolvedTag(nodeTag);
 

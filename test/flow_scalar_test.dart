@@ -391,8 +391,8 @@ Fun with escapes:
     });
 
     test('Exits gracefully if leading char is restricted', () {
-      /// Never starts with "?<space>" or "-<space>" or ":<space>" combinations
-      /// Intentional with "consts"
+      // Never starts with "?<space>" or "-<space>" or ":<space>" combinations
+      // Intentional with "consts"
 
       check(
         parsePlain(

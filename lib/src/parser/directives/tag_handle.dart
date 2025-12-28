@@ -94,8 +94,8 @@ TagHandle parseTagHandle(SourceIterator iterator) {
     case null || space || tab:
       tagHandle = TagHandle.primary();
 
-    /// For secondary tags, parse as secondary. Let caller handle the "mess" or
-    /// "success" that may follow.
+    // For secondary tags, parse as secondary. Let caller handle the "mess" or
+    // "success" that may follow.
     case tag:
       iterator.nextChar(); // Present in tag handle object
       tagHandle = TagHandle.secondary();
@@ -115,8 +115,8 @@ TagHandle parseTagHandle(SourceIterator iterator) {
 
         iterator.nextChar();
 
-        /// The named tag must not degenerate to a "!" or "!!". "!" is not
-        /// alphanumeric
+        // The named tag must not degenerate to a "!" or "!!". "!" is not
+        // alphanumeric
         if (iterator.current != tag || namedBuffer.length <= 1) {
           throwWithApproximateRange(
             iterator,

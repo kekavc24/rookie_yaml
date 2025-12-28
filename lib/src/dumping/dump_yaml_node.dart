@@ -51,8 +51,8 @@ _UnpackedCompact _unpackCompactYamlNode(
       );
     }
 
-    /// Even if we don't return an alias. We may have an anchor that ensures
-    /// later nodes can be compacted without issues.
+    // Even if we don't return an alias. We may have an anchor that ensures
+    // later nodes can be compacted without issues.
     toUnpack = aliased;
   } else if (node.alias case String alias when hasAlias(alias)) {
     return (
@@ -82,9 +82,9 @@ _UnpackedCompact _unpackCompactYamlNode(
     encodedAlias: null,
     properties: properties.join(' '),
 
-    /// For maximum compatibility with block collections, override the style
-    /// and encode as flow for maps and lists to ensure various parsers can
-    /// handle this correctly.
+    // For maximum compatibility with block collections, override the style
+    // and encode as flow for maps and lists to ensure various parsers can
+    // handle this correctly.
     styleOverride:
         (object is Map || object is Iterable) &&
             nodeStyle != NodeStyle.flow &&
@@ -106,12 +106,12 @@ String _dumpCompactYamlNode<N extends CompactYamlNode>(
 }) {
   final actualUnpacker = nodeUnpacker ?? (n) => n;
 
-  /// Spoof the unpacking function. [YamlSourceNode]s are dumped on our terms
-  /// since we extend native Dart objects (even the Scalar is a clever
-  /// abstraction around a string to support custom types!).
+  // Spoof the unpacking function. [YamlSourceNode]s are dumped on our terms
+  // since we extend native Dart objects (even the Scalar is a clever
+  // abstraction around a string to support custom types!).
   Object? unpack(CompactYamlNode node) {
-    /// Dart allows extension types. They are stripped but the underlying
-    /// type is still a YamlSourceNode.
+    // Dart allows extension types. They are stripped but the underlying
+    // type is still a YamlSourceNode.
     return node is YamlSourceNode
         ? node
         : node is N

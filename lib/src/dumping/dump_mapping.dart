@@ -123,17 +123,17 @@ String _encodeBlockMap<K, V>(
     onEncodedKey: (isFirst, isExplicit, key) {
       final leading = isFirst ? '' : mapIndent;
 
-      /// Explicit keys can omit the value indicator since the key is, well,
-      /// "explicit" and the value will be ignored if not declared.
-      ///
-      /// Intentional "if" statement.
+      // Explicit keys can omit the value indicator since the key is, well,
+      // "explicit" and the value will be ignored if not declared.
+      //
+      // Intentional "if" statement.
       if (isExplicit) {
         return '$leading'
             '? $key';
       }
 
-      /// Implicit keys must have the ":". The ":", in this case, implies a
-      /// value is present/absent.
+      // Implicit keys must have the ":". The ":", in this case, implies a
+      // value is present/absent.
       return '$leading$key'
           '${key.startsWith('*') ? ' ' : ''}' // Aliases accept ":"
           ':';
@@ -147,9 +147,9 @@ String _encodeBlockMap<K, V>(
             '$valueTrailer';
       }
 
-      /// Block sequences or block maps whose first key is explicit need to be
-      /// forced to start on a new line with the necessary indent. This includes
-      /// implicit block maps.
+      // Block sequences or block maps whose first key is explicit need to be
+      // forced to start on a new line with the necessary indent. This includes
+      // implicit block maps.
       final leading = !isFlow && isCollection ? '\n$mapIndent  ' : ' ';
 
       // Readability's sake
@@ -199,11 +199,11 @@ String _encodeFlowMap<K, V>(
     isJsonCompatible: jsonCompatible,
     nodeStyle: NodeStyle.flow,
 
-    /// Flow keys don't determine the occurence of the ":" indicator. That is
-    /// all dependent on the value itself since flow maps cannot know if an
-    /// entry is complete when it sees ",".
-    ///
-    /// This callback doesn't apply the ":". See `onEncodedValue`.
+    // Flow keys don't determine the occurence of the ":" indicator. That is
+    // all dependent on the value itself since flow maps cannot know if an
+    // entry is complete when it sees ",".
+    //
+    // This callback doesn't apply the ":". See `onEncodedValue`.
     onEncodedKey: (_, isExplicit, key) {
       return '$keyIndentation'
           '${isExplicit ? '? ' : ''}'

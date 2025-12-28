@@ -59,24 +59,23 @@ void _chompLineBreaks(
   // Exclude line breaks from content by default
   if (lineBreaks.isEmpty || indicator == ChompingIndicator.strip) return;
 
-  /// For `clip` and `keep`, the final line break is content.
-  ///
-  /// See https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator
-  ///
+  // For `clip` and `keep`, the final line break is content.
+  //
+  // See https://yaml.org/spec/1.2.2/#8112-block-chomping-indicator
   var countToWrite = lineBreaks.length;
 
   if (indicator == ChompingIndicator.clip) {
-    /// We clip all line breaks if the scalar is empty.
-    ///
-    /// See: "https://yaml.org/spec/1.2.2/#812-literal-style:~:text=If
-    /// %20a%20block%20scalar%20consists%20only%20of%20empty%20lines%2C%20
-    /// then%20these%20lines%20are%20considered%20as%20trailing%20lines%20and
-    /// %20hence%20are%20affected%20by%20chomping"
+    // We clip all line breaks if the scalar is empty.
+    //
+    // See: "https://yaml.org/spec/1.2.2/#812-literal-style:~:text=If
+    // %20a%20block%20scalar%20consists%20only%20of%20empty%20lines%2C%20
+    // then%20these%20lines%20are%20considered%20as%20trailing%20lines%20and
+    // %20hence%20are%20affected%20by%20chomping"
     if (!wroteToBuffer) return;
     countToWrite = 1; // Trailing line breaks after final one are ignored
   }
 
-  /// Keep all trailing empty lines after for `keep` indicator
+  // Keep all trailing empty lines after for `keep` indicator
   bufferHelper(lineBreaks.take(countToWrite), buffer);
 }
 
@@ -108,15 +107,15 @@ void _maybeFoldLF(
 
   // Fold only if not literal and last non-empty line was not indented.
   if (!isLiteral && !lastNonEmptyWasIndented) {
-    /// `YAML` requires we emit a space if it's a single line break as it
-    /// indicates we are joining 2 previously broken lines.
-    ///
-    /// The first `\n` is included as part of the folding in `folded` block
-    /// style. We intentionally exclude it if the first line is not empty since
-    /// it serves no purpose but a transition from the block scalar header.
-    ///
-    /// However, if followed by a `\n`, `YAML` implies it should be folded from
-    /// the docs.
+    // `YAML` requires we emit a space if it's a single line break as it
+    // indicates we are joining 2 previously broken lines.
+    //
+    // The first `\n` is included as part of the folding in `folded` block
+    // style. We intentionally exclude it if the first line is not empty since
+    // it serves no purpose but a transition from the block scalar header.
+    //
+    // However, if followed by a `\n`, `YAML` implies it should be folded from
+    // the docs.
     toWrite = lineBreaks.length == 1
         ? [if (wroteToBuffer) space]
         : lineBreaks.skip(1);
@@ -140,9 +139,9 @@ void _maybeFoldLF(
 
   final charAfter = iterator.peekNextChar();
 
-  /// We have to be sure that is not empty.
-  ///
-  /// See: https://yaml.org/spec/1.2.2/#empty-lines
+  // We have to be sure that is not empty.
+  //
+  // See: https://yaml.org/spec/1.2.2/#empty-lines
   if (charAfter.isNotNullAnd((c) => c.isLineBreak())) {
     return (
       inferredIndent: canBeIndent,
@@ -151,10 +150,9 @@ void _maybeFoldLF(
     );
   }
 
-  /// It's still empty if just tabs which qualifies them as separation in a
-  /// line.
-  ///
-  /// See: https://yaml.org/spec/1.2.2/#62-separation-spaces
+  // It's still empty if just tabs which qualifies them as separation in a line.
+  //
+  // See: https://yaml.org/spec/1.2.2/#62-separation-spaces
   if (charAfter == tab) {
     callBeforeTabWrite();
     takeFromIteratorUntil(

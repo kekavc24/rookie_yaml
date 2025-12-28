@@ -84,9 +84,9 @@ Directives parseDirectives(
         /// Skip line breaks greedily
         case lineFeed || carriageReturn || comment:
           {
-            /// Directives must start with "%". Never indented.
-            /// [skipToParsableChar] will ensure all comments and empty lines
-            /// are skipped
+            // Directives must start with "%". Never indented.
+            // [skipToParsableChar] will ensure all comments and empty lines
+            // are skipped
             if (_skipToNextNonEmptyLine(iterator, onParseComment)) {
               continue extractor;
             }
@@ -175,7 +175,7 @@ Directives parseDirectives(
             directiveBuffer.clear();
           }
 
-        /// Directives must see "---" to terminate
+        // Directives must see "---" to terminate
         terminator:
         default:
           {
@@ -196,8 +196,8 @@ Directives parseDirectives(
       }
     }
 
-    /// As long as "%" was seen, we must parse directives and terminate with
-    /// the "---" marker
+    // As long as "%" was seen, we must parse directives and terminate with the
+    // "---" marker
     throwForCurrentLine(
       iterator,
       message: 'Expected a directives end marker after the last directive',

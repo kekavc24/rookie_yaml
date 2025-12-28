@@ -53,15 +53,15 @@ TagShorthand parseTagShorthand(SourceIterator iterator) {
     );
   }
 
-  /// Local tags can be fast forwarded quite easily based on some granular
-  /// quirky checks. Ergo, the non-dependence on [parseTagHandle] is
-  /// intentional. Any refactors should take that into account.
+  // Local tags can be fast forwarded quite easily based on some granular quirky
+  // checks. Ergo, the non-dependence on [parseTagHandle] is intentional. Any
+  // refactors should take that into account.
 
   // *Just a gap*
   iterator.nextChar(); // Ignore leading "!"
 
-  /// Quickly extract the remaining shorthand characters as valid uri chars
-  /// that must be escaped since this is a secondary tag shorthand
+  // Quickly extract the remaining shorthand characters as valid uri chars
+  // that must be escaped since this is a secondary tag shorthand
   if (iterator.current == tag) {
     iterator.nextChar();
     return TagShorthand._(
@@ -84,10 +84,10 @@ TagShorthand parseTagShorthand(SourceIterator iterator) {
       // We have to convert to named tag handle
       case tag:
         {
-          /// This condition is just a safety net. Never happens. Consecutive
-          /// tag indicators forces the shorthand to be treated as a secondary
-          /// tag shorthand. This happens before this loop starts. You can never
-          /// be too sure though :)
+          // This condition is just a safety net. Never happens. Consecutive
+          // tag indicators forces the shorthand to be treated as a secondary
+          // tag shorthand. This happens before this loop starts. You can never
+          // be too sure though :)
           if (buffer.isEmpty) {
             throwWithSingleOffset(
               iterator,
@@ -102,14 +102,14 @@ TagShorthand parseTagShorthand(SourceIterator iterator) {
               message: 'A named tag can only have alphanumeric characters',
               current: iterator.currentLineInfo.current,
 
-              /// Highlight the buffered shorthand including the "!" we skipped
-              /// at the beginning.
+              // Highlight the buffered shorthand including the "!" we skipped
+              // at the beginning.
               charCountBefore: buffer.length + 1,
             );
           }
 
-          /// The rest can be parsed as tag uri characters with strict
-          /// escape requirements
+          // The rest can be parsed as tag uri characters with strict
+          // escape requirements
           iterator.nextChar();
           return TagShorthand._(
             TagHandle.named(buffer.toString()),
@@ -117,10 +117,10 @@ TagShorthand parseTagShorthand(SourceIterator iterator) {
           );
         }
 
-      /// If escaped, quickly parse remaining as tag uri of a shorthand with
-      /// a primary tag handle. Cannot be named as named tag handles only
-      /// accept alphanumeric chars
-      ///   -> !tag%21
+      // If escaped, quickly parse remaining as tag uri of a shorthand with
+      // a primary tag handle. Cannot be named as named tag handles only
+      // accept alphanumeric chars
+      //   -> !tag%21
       case directive:
         {
           _parseTagUri(
@@ -136,8 +136,8 @@ TagShorthand parseTagShorthand(SourceIterator iterator) {
       case _ when char.isAlphaNumeric():
         buffer.writeCharCode(char);
 
-      /// Any character that is not alphanumeric. This ensures we do not
-      /// include non-alphanumeric uri char in a named handle.
+      // Any character that is not alphanumeric. This ensures we do not
+      // include non-alphanumeric uri char in a named handle.
       case _ when isUriChar(char):
         {
           buffer.writeCharCode(char);

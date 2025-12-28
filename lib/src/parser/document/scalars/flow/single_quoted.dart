@@ -1,6 +1,6 @@
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/flow_scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -15,17 +15,17 @@ PreScalar parseSingleQuoted(
   required int indent,
   required bool isImplicit,
 }) {
-  final buffer = ScalarBuffer();
+  final buffer = StringDelegate();
   final info = singleQuotedParser(
     iterator,
-    buffer: buffer.writeChar,
+    buffer: buffer.onWriteRequest,
     indent: indent,
     isImplicit: isImplicit,
   );
 
   return (
-    content: buffer.bufferedContent(),
-    wroteLineBreak: buffer.wroteLineBreak,
+    content: buffer.parsed().scalar.value,
+    wroteLineBreak: buffer.bufferedLineBreak,
     scalarInfo: info,
   );
 }

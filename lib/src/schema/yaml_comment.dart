@@ -48,7 +48,7 @@ final class YamlComment implements Comparable<YamlComment> {
 
   final start = iterator.currentLineInfo.current;
 
-  /// A comment forces us to read the entire line till the end.
+  // A comment forces us to read the entire line till the end.
   final chunkInfo = iterateAndChunk(
     iterator,
     onChar: buffer.writeCharCode,

@@ -29,15 +29,15 @@ BlockInfo parseImplicitBlockEntry<Obj>(
   final iterator = state.iterator;
   state.onParseMapKey(key.parsed());
 
-  /// We parsed the directive end "---" or document end "..." chars. We have no
-  /// key. We reached the end of the doc and parsed the key as that char
+  // We parsed the directive end "---" or document end "..." chars. We have no
+  // key. We reached the end of the doc and parsed the key as that char
   if (blockInfo.docMarker.stopIfParsingDoc) {
     return blockInfo;
   } else if (blockInfo.exitIndent case int? indent
       when indent != null && indent != seamlessIndentMarker) {
-    /// The exit indent *MUST* be null or be seamless (parsed completely with
-    /// no indent change if quoted). This is a key that should *NEVER*
-    /// spill into the next line.
+    // The exit indent *MUST* be null or be seamless (parsed completely with
+    // no indent change if quoted). This is a key that should *NEVER*
+    // spill into the next line.
     throwWithApproximateRange(
       iterator,
       message: 'Implicit block keys are restricted to a single line',
@@ -144,17 +144,17 @@ BlockInfo parseImplicitValue<Obj>(
   return composeSpecialBlockSequence(
     state,
 
-    /// We want to allow this value to degenerate to a block map itself if it
-    /// spans multiple lines. This cannot be determined here lest we duplicate
-    /// code. (PS: Duplication isn't an issue. [parseBlockNode] can handle this
-    /// effortlessly).
-    ///
-    /// A value can also degenerate to a block map if its property is multiline.
-    /// That's why we tell this function:
-    ///   - We don't expect it to (but it can) be inline -> [forceInline]
-    ///   - Compose if this value itself is multiline -> [composeImplicitMap]
-    ///   - Compose if *YOU* ("parseBlockNode") happen to note it is multiline
-    ///     -> [canComposeMapIfMultiline]
+    // We want to allow this value to degenerate to a block map itself if it
+    // spans multiple lines. This cannot be determined here lest we duplicate
+    // code. (PS: Duplication isn't an issue. [parseBlockNode] can handle this
+    // effortlessly).
+    //
+    // A value can also degenerate to a block map if its property is multiline.
+    // That's why we tell this function:
+    //   - We don't expect it to (but it can) be inline -> [forceInline]
+    //   - Compose if this value itself is multiline -> [composeImplicitMap]
+    //   - Compose if *YOU* ("parseBlockNode") happen to note it is multiline
+    //     -> [canComposeMapIfMultiline]
     blockNode: parseBlockNode(
       state,
       blockParentIndent: keyIndent,

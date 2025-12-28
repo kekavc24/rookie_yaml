@@ -48,20 +48,24 @@ ReservedDirective _parseReservedDirective(
     }
   }
 
-  /// Reserved directives are prone to endless grouped token consumption between
-  /// with whitespace. YAML allows comments in directives (tricky). The
-  /// condition below may seem unorthodox. It's simple.
-  /// Exit if:
-  ///   1. If we have no more tokens and the char at cursor is not null
-  ///   2. If (1) stands, capture the non-null [current] and check if we reached
-  ///      the end of the line.
-  ///   3. If (2) stands (we never reached the end of the line), check if the
-  ///      captured non-null [current] is a comment only if the char before was
-  ///      non-null and a separation space (tab/space).
-  while (!iterator.isEOF &&
-      !iterator.current.isLineBreak() &&
-      !(iterator.current == comment &&
-          iterator.before.isNotNullAnd((c) => c.isWhiteSpace()))) {
+  bool stopParsingDirective() {
+    // Reserved directives are prone to endless grouped token consumption
+    // separated by whitespace. YAML allows comments in directives (tricky).
+    // Exit:
+    //   1. If we have no more tokens.
+    //   2. If we reached the end of the line.
+    //   3. If it's a possible comment. The comment will be read until a line
+    //      break is seen.
+    return iterator.isEOF ||
+        iterator.current.matches(
+          (current) =>
+              current.isLineBreak() ||
+              (current == comment &&
+                  iterator.before.isNotNullAnd((c) => c.isWhiteSpace())),
+        );
+  }
+
+  while (!stopParsingDirective()) {
     // Skip separation lines (include tabs). Save current parameter.
     if (iterator.current case space || tab) {
       skipWhitespace(iterator, skipTabs: true);

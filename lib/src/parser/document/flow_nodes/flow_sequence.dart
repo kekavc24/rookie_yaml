@@ -44,9 +44,9 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
   // Track if we switched lines
   final lineIndex = iterator.currentLineInfo.current.lineIndex;
 
-  /// Normally a list is a wildcard. We must assume that we parsed
-  /// an implicit key unless we never see ":". Encountering a
-  /// linebreak means the current flow node cannot be an implicit key.
+  // Normally a list is a wildcard. We must assume that we parsed
+  // an implicit key unless we never see ":". Encountering a
+  // linebreak means the current flow node cannot be an implicit key.
   if (!nextSafeLineInFlow(
         iterator,
         minIndent: minIndent,

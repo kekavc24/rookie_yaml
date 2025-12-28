@@ -97,9 +97,9 @@ GlobalTag<dynamic> _parseGlobalTag(
   if (iterator.current == tag) {
     iterator.nextChar();
 
-    /// A global tag cannot be affected by flow indicators or the tag
-    /// indicator as long we already removed the leading "!". A hack or
-    /// just common sense.
+    // A global tag cannot be affected by flow indicators or the tag
+    // indicator as long we already removed the leading "!". A hack or
+    // just common sense.
     return GlobalTag.fromTagShorthand(
       tagHandle,
       TagShorthand._(

@@ -45,8 +45,8 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
       state: state,
     );
   } else {
-    /// Parse as a wildcard but expect it to degenerate to a block map since we
-    /// cannot determine this at the current stack level.
+    // Parse as a wildcard but expect it to degenerate to a block map since we
+    // cannot determine this at the current stack level.
     nodeInfo = parseBlockNode(
       state,
       indentLevel: indentLevel,

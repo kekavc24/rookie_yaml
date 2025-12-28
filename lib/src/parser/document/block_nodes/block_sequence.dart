@@ -90,8 +90,8 @@ _SequenceState _sequenceNodeOrMarker(
     final indicatorOffset = iterator.currentLineInfo.current;
     iterator.nextChar();
 
-    /// Be mechanical. Call [parseBlockNode] only after we determine the
-    /// correct indent range for this node.
+    // Be mechanical. Call [parseBlockNode] only after we determine the correct
+    // indent range for this node.
     final indentOrSeparation = skipToParsableChar(
       iterator,
       onParseComment: comments.add,

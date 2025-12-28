@@ -136,13 +136,13 @@ DocumentMarker checkForDocumentMarkers(
     writer: writer,
   );
 
-  /// Document markers, that `...` and `---` have no indent. They must be
-  /// top level. Check before falling back to checking if it is a top level
-  /// scalar.
-  ///
-  /// We insist on it being top level because the markers have no indent
-  /// before. They have a -1 indent at this point or zero depending on how
-  /// far along the parsing this is called.
+  // Document markers, that `...` and `---` have no indent. They must be
+  // top level. Check before falling back to checking if it is a top level
+  // scalar.
+  //
+  // We insist on it being top level because the markers have no indent
+  // before. They have a -1 indent at this point or zero depending on how
+  // far along the parsing this is called.
   if (iterator.current case docEndSingle || directiveEndSingle) {
     const expectedCount = 3;
     final match = iterator.current;
@@ -160,8 +160,8 @@ DocumentMarker checkForDocumentMarkers(
     iterator.nextChar();
 
     if (skipped == expectedCount) {
-      /// YAML insists document markers should not have any characters
-      /// after unless its just whitespace or comments.
+      // YAML insists document markers should not have any characters
+      // after unless its just whitespace or comments.
       if (match == docEndSingle) {
         if (!iterator.isEOF && iterator.current.isWhiteSpace()) {
           skipWhitespace(iterator, skipTabs: true);

@@ -105,9 +105,9 @@ ParserEvent inferNextEvent(
 }) {
   final charAfter = iterator.peekNextChar();
 
-  /// Can be allowed after map like indicator such as:
-  ///   - "?" -> an explicit key indicator
-  ///   - ":" -> indicates start of a value
+  // Can be allowed after map like indicator such as:
+  //   - "?" -> an explicit key indicator
+  //   - ":" -> indicates start of a value
   final canBeSeparation = charAfter.isNullOr(
     (c) => c.isWhiteSpace() || c.isLineBreak(),
   );
@@ -135,8 +135,8 @@ ParserEvent inferNextEvent(
     mappingKey when isBlockContext && canBeSeparation =>
       BlockCollectionEvent.startExplicitKey,
 
-    /// In flow collections, it is allow a "?" to occur separately without any
-    /// key beside a "," or "{" or "}" or "[" or "]"
+    // In flow collections, it is allow a "?" to occur separately without any
+    // key beside a "," or "{" or "}" or "[" or "]"
     mappingKey
         when !isBlockContext &&
             (canBeSeparation ||

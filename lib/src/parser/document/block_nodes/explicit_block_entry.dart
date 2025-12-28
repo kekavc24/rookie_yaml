@@ -37,8 +37,8 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
   final isNextLevel = indentOrSeparation != null;
   final expectedLaxIndent = indent + 1;
 
-  /// The indent is on the same level as "?" or ":". This may also indicate
-  /// that we are now pointing to the next key that may be implicit or explicit
+  // The indent is on the same level as "?" or ":". This may also indicate
+  // that we are now pointing to the next key that may be implicit or explicit
   if (isNextLevel && indentOrSeparation < expectedLaxIndent) {
     final ignoreValue = indentOrSeparation < indent;
     final explicit = nullBlockNode(

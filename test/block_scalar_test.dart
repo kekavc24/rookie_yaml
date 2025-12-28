@@ -93,9 +93,9 @@ $indent
         (r) => r.message,
       );
 
-      /// 10 is a double digit. Will throw without checking range. The first
-      /// digit of "10" which "1" is acceptable. Any other violates YAML format.
-      /// We expect a chomping indicator
+      // 10 is a double digit. Will throw without checking range. The first
+      // digit of "10" which "1" is acceptable. Any other violates YAML format.
+      // We expect a chomping indicator
       check(
         () => parseBlockScalar(
           UnicodeIterator.ofString('|10\n'),
@@ -312,8 +312,8 @@ $indent
     });
 
     test('Never folds and preserves empty lines when more indented', () {
-      /// From YAML site: https://yaml.org/spec/1.2.2/#813-folded-style
-      /// Visit if view isn't appealing (applies to the result shown too 😉).
+      // From YAML site: https://yaml.org/spec/1.2.2/#813-folded-style
+      // Visit if view isn't appealing (applies to the result shown too 😉).
       const scalar =
           '>\n'
           '\n'
@@ -330,8 +330,8 @@ $indent
           ' last\n'
           ' line';
 
-      /// Leading indent space consumed for each and result formatted exactly
-      /// as the human eye expects(subjective) it to be.
+      // Leading indent space consumed for each and result formatted exactly
+      // as the human eye expects(subjective) it to be.
       const parsed =
           '\n'
           'folded line\n'

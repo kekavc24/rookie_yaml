@@ -82,15 +82,15 @@ String _applyCarets(Iterable<int> chars, {required Set<int> indices}) {
 
     content.addAll(normalized);
 
-    /// Icky (spacially inefficient) implementation. Will circle back.
-    ///
-    /// Some lines with errors may have an end offset nearer to the start
-    /// which clears any offsets that need to be highlighted quite early.
-    /// At that point, we are just trying to provide the current line's
-    /// state as if the parser has read it but was never parsed.
-    ///
-    ///   "Oh lexer, my lexer,
-    ///    Where art thou?"
+    // Icky (spacially inefficient) implementation. Will circle back.
+    //
+    // Some lines with errors may have an end offset nearer to the start which
+    // clears any offsets that need to be highlighted quite early. At that
+    // point, we are just trying to provide the current line's state as if the
+    // parser has read it but was never parsed.
+    //
+    //   "Oh lexer, my lexer,
+    //    Where art thou?"
     if (indices.isEmpty) continue;
     maybePushHighlight(index, normalized.length);
   }
@@ -163,9 +163,8 @@ Never _rangedThrow(
   if (length >= 1) {
     --length;
     buffer.writeln(
-      /// Basic maths for any array dictates that the starting index indicates
-      /// the number of elements we have to skip. The first line may have an
-      /// offset that is ahead
+      // Starting index indicates the number of elements we have to skip. The
+      // first line may have an offset that is ahead.
       _spannedHighlight(lines.first.chars.skip(columnIndex), 0),
     );
 
@@ -177,8 +176,8 @@ Never _rangedThrow(
     }
   }
 
-  /// Avoid using [spannedHighlight]. We have the end index and we also want to
-  /// show the line to the end but with a ranged highlight
+  // Avoid using [spannedHighlight]. We have the end index and we also want to
+  // show the line to the end but with a ranged highlight
   buffer.write(
     _applyCarets(
       _nonEmpty(lines.last.chars),
@@ -263,9 +262,9 @@ Never throwWithApproximateRange(
     final line = linesAvailable[iterIndex];
     lines.add(line);
 
-    /// Unlike the last line which uses column index, just use the total number
-    /// of characters in the current line. We just need to compensate for the
-    /// transition of the line break from one line to the next
+    // Unlike the last line which uses column index, just use the total number
+    // of characters in the current line. We just need to compensate for the
+    // transition of the line break from one line to the next
     offsetDiff = offsetDiff + line.chars.length + 1;
     --iterIndex;
   }

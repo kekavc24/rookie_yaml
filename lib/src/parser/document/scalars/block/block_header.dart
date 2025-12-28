@@ -111,8 +111,8 @@ _IndicatorInfo _extractIndicators(SourceIterator iterator) {
       chomping = _resolveChompingIndicator(char);
 
       if (chomping == null) {
-        /// Break once we see comment. Let it bubble up and be handled by the
-        /// function parsing the block header
+        // Break once we see comment. Let it bubble up and be handled by the
+        // function parsing the block header
         if (char == comment) break;
 
         _charNotAllowedException(iterator);

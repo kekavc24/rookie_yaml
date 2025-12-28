@@ -1,6 +1,6 @@
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/flow_scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
@@ -27,6 +27,8 @@ final _delimiters = <int>{
 /// scalar which returns a [PreScalar]. This is intentional. The delegate that
 /// will be assigned to this function will contain more context on how this
 /// scalar will be resolved.
+///
+/// Used for testing.
 PreScalar? parsePlain(
   SourceIterator iterator, {
   required int indent,
@@ -34,11 +36,11 @@ PreScalar? parsePlain(
   required bool isImplicit,
   required bool isInFlowContext,
 }) {
-  final buffer = ScalarBuffer();
+  final buffer = StringDelegate();
 
   if (plainParser(
         iterator,
-        buffer: buffer.writeChar,
+        buffer: buffer.onWriteRequest,
         indent: indent,
         charsOnGreedy: charsOnGreedy,
         isImplicit: isImplicit,
@@ -47,9 +49,9 @@ PreScalar? parsePlain(
       case ParsedScalarInfo info) {
     return (
       // Cannot have leading and trailing whitespace (line breaks included).
-      content: buffer.bufferedContent().trim(),
+      content: buffer.parsed().scalar.value.trim(),
+      wroteLineBreak: buffer.bufferedLineBreak,
       scalarInfo: info,
-      wroteLineBreak: buffer.wroteLineBreak,
     );
   }
 
@@ -119,7 +121,7 @@ ParsedScalarInfo? plainParser(
     var charAfter = iterator.peekNextChar();
 
     switch (char) {
-      /// Check for the document end markers first always
+      // Check for the document end markers first always
       case blockSequenceEntry || period
           when indent == 0 &&
               charBefore.isNullOr((c) => c.isLineBreak()) &&
@@ -143,8 +145,8 @@ ParsedScalarInfo? plainParser(
           flushFoldingBuffer(); // Non-space chars found
         }
 
-      /// A mapping key can never be followed by a whitespace. Exit regardless
-      /// of whether we folded this scalar before.
+      // A mapping key can never be followed by a whitespace. Exit regardless
+      // of whether we folded this scalar before.
       case mappingValue
           when charAfter.isNullOr(
             (c) =>
@@ -154,23 +156,23 @@ ParsedScalarInfo? plainParser(
           ):
         break chunker;
 
-      /// A look behind condition if encountered while folding the scalar.
+      // A look behind condition if encountered while folding the scalar.
       case comment
           when charBefore.isNotNullAnd(
             (c) => c.isWhiteSpace() || c.isLineBreak(),
           ):
         break chunker;
 
-      /// A lookahead condition of the rule above before folding the scalar
+      // A lookahead condition of the rule above before folding the scalar
       case space || tab when charAfter == comment:
         break chunker;
 
-      /// Restricted to a single line when implicit. Instead of throwing,
-      /// exit and allow parser to determine next course of action
+      // Restricted to a single line when implicit. Instead of throwing, exit
+      // and allow parser to determine next course of action
       case carriageReturn || lineFeed when isImplicit:
         break chunker;
 
-      /// Attempt to fold by default anytime we see a line break or white space
+      // Attempt to fold by default anytime we see a line break or white space
       case space || tab || carriageReturn || lineFeed:
         {
           final (:indentDidChange, :foldIndent, :hasLineBreak) = foldFlowScalar(

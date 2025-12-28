@@ -72,8 +72,8 @@ void main(List<String> args) {
   final (:currentPassRate, :diff) = _passRateDiff(directory, summary);
   final tempFile = path.joinAll([directory, 'body']);
 
-  /// Avoid some "gh" quirks. Write the file and let "gh" read it whichever way
-  /// it sees fit.
+  // Avoid some "gh" quirks. Write the file and let "gh" read it whichever way
+  // it sees fit.
   File(tempFile).writeAsStringSync('''
 $diff
 ---

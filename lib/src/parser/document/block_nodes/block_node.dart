@@ -82,14 +82,14 @@ void _inlineIfInlineBlockSequence(
     _ => (false, laxBlockIndent, fixedInlineIndent),
   };
 
-  /// Indent remains unchanged. The properties were inline.
-  ///
-  /// - &anchor node
-  ///
-  /// OR
-  ///
-  /// ? &anchor !tag node
-  ///
+  // Indent remains unchanged. The properties were inline.
+  //
+  // - &anchor node
+  //
+  // OR
+  //
+  // ? &anchor !tag node
+  //
   if (propertyExitIndent == null) {
     return (
       adjustedLaxIndent: adjustedLax,
@@ -97,32 +97,32 @@ void _inlineIfInlineBlockSequence(
     );
   }
 
-  /// Always called when indent is equal to or greater than the lax indent. Lax
-  /// indent is just the normal "parentIndent + 1" in most cases. In block
-  /// nodes, the properties must be indented more than the node if the node is
-  /// declared on a new line. Here we check the fixed inline indent for:
-  ///
-  /// # Okay
-  /// -   !!seq
-  ///   - node
-  ///
-  /// # Okay
-  /// - !!seq
-  ///   - node
-  ///
-  /// # Invalid. Cannot be more indented!
-  /// ?
-  ///   !!seq
-  ///      - node
-  ///
-  /// # Invalid
-  /// -
-  ///   !!seq
-  ///     - node
-  ///
-  ///
-  /// See Block Nodes: https://yaml.org/spec/1.2.2/#823-block-nodes
-  ///   - Example "8.20 Node Types"
+  // Always called when indent is equal to or greater than the lax indent. Lax
+  // indent is just the normal "parentIndent + 1" in most cases. In block
+  // nodes, the properties must be indented more than the node if the node is
+  // declared on a new line. Here we check the fixed inline indent for:
+  //
+  // # Okay
+  // -   !!seq
+  //   - node
+  //
+  // # Okay
+  // - !!seq
+  //   - node
+  //
+  // # Invalid. Cannot be more indented!
+  // ?
+  //   !!seq
+  //      - node
+  //
+  // # Invalid
+  // -
+  //   !!seq
+  //     - node
+  //
+  //
+  // See Block Nodes: https://yaml.org/spec/1.2.2/#823-block-nodes
+  //   - Example "8.20 Node Types"
   if (hasParentIndent && propertyExitIndent > adjustedFixedInline) {
     throwWithRangedOffset(
       iterator,
@@ -132,29 +132,29 @@ void _inlineIfInlineBlockSequence(
     );
   }
 
-  /// If [true] applies to:
-  ///
-  /// -
-  ///     !!seq
-  ///     - node
-  ///
-  /// OR
-  ///
-  /// key:
-  ///     !!map
-  ///     nested: value
-  ///
-  /// Otherwise, find minimum because the property was multiline but the parent
-  /// assumed it was inline!
-  ///
-  /// -               !i-am-here # Too indented
-  ///    - psych!
-  ///
-  /// OR
-  ///
-  /// key: !i-am-here
-  ///    - psych!
-  ///
+  // If [true] applies to:
+  //
+  // -
+  //     !!seq
+  //     - node
+  //
+  // OR
+  //
+  // key:
+  //     !!map
+  //     nested: value
+  //
+  // Otherwise, find minimum because the property was multiline but the parent
+  // assumed it was inline!
+  //
+  // -               !i-am-here # Too indented
+  //    - psych!
+  //
+  // OR
+  //
+  // key: !i-am-here
+  //    - psych!
+  //
   final defaultIndent = adjustedLax == adjustedFixedInline
       ? propertyExitIndent
       : min(adjustedFixedInline, propertyExitIndent);
@@ -268,21 +268,21 @@ BlockNode<Obj> parseBlockNode<Obj>(
     fixedInlineIndent: fixedInlineIndent,
   );
 
-  /// Quirky? I know. However, since we are using a lexer-less parser, we may
-  /// inadventently punish multiline implicit values. An inline implicit value
-  /// to an implicit key cannot degenerate to a block map. However, a multiline
-  /// one can.
-  ///
-  /// [*] Cannot degenerate
-  ///
-  /// key: value
-  ///
-  /// [*] Can actually degenerate
-  ///
-  /// key:
-  ///   value: degenerate
-  ///
-  /// See [parseImplicitValue]
+  // Quirky? I know. However, since we are using a lexer-less parser, we may
+  // inadventently punish multiline implicit values. An inline implicit value
+  // to an implicit key cannot degenerate to a block map. However, a multiline
+  // one can.
+  //
+  // [*] Cannot degenerate
+  //
+  // key: value
+  //
+  // [*] Can actually degenerate
+  //
+  // key:
+  //   value: degenerate
+  //
+  // See [parseImplicitValue]
   final definitelyComposeMap =
       composeImplicitMap || canComposeMapIfMultiline && property.isMultiline;
 

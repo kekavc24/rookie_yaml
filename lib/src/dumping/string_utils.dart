@@ -88,8 +88,8 @@ Iterable<String> _coreLazySplit(
     previous = current;
   }
 
-  /// Ensure we flush all buffered contents. A trailing line break signals
-  /// we need it preserved. Thus, emit an empty string too in this case.
+  // Ensure we flush all buffered contents. A trailing line break signals
+  // we need it preserved. Thus, emit an empty string too in this case.
   if (buffer.isNotEmpty || previous == carriageReturn || previous == lineFeed) {
     yield buffer.toString();
   }
@@ -253,8 +253,8 @@ Iterable<String> _coreUnfolding(
       yield* skipEmpty(current, onComplete: (line) => current = line);
 
       if (current == null) {
-        /// Trailing line breaks are never folded, just chomped in block folded
-        /// scalars
+        // Trailing line breaks are never folded, just chomped in block folded
+        // scalars
         if (!isBlockUnfolding && hasFoldTarget) yield _empty;
         break;
       }

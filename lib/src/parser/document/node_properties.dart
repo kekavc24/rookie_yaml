@@ -198,8 +198,8 @@ ParsedProperty _corePropertyParser(
   void resetIndent() => indentOnExit = null;
 
   NodeProperty exitIfBlock(String error) {
-    /// Block node can have a lifeline in cases where a node spans multiple
-    /// lines. The properties may belong to a
+    // Block node can have a lifeline in cases where a node spans multiple
+    // lines. The properties may belong to a
     if (isBlockContext && indentOnExit != null) {
       return NodeProperty(
         startOffset,
@@ -221,11 +221,11 @@ ParsedProperty _corePropertyParser(
     );
   }
 
-  /// A node can only have:
-  ///   - Either a tag or anchor or both
-  ///   - Alias only
-  ///
-  /// The two options above are mutually exclusive.
+  // A node can only have:
+  //   - Either a tag or anchor or both
+  //   - Alias only
+  //
+  // The two options above are mutually exclusive.
   while (!iterator.isEOF && (nodeTag == null || nodeAnchor == null)) {
     switch (iterator.current) {
       case space || tab:
@@ -331,8 +331,8 @@ ParsedProperty _corePropertyParser(
     }
   }
 
-  /// Prefer having accurate indent info. Parsing only reaches here if we
-  /// managed to parse both the tag and anchor.
+  // Prefer having accurate indent info. Parsing only reaches here if we
+  // managed to parse both the tag and anchor.
   skipAndTrackLF();
 
   return ParsedProperty.of(

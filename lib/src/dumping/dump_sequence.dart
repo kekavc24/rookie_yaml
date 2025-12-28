@@ -66,7 +66,7 @@ String _encodeBlockSequence<T>(
   nodeStyle: NodeStyle.block,
   unpack: unpack,
 
-  /// Applies "- " and trailing line break for all except the last
+  // Applies "- " and trailing line break for all except the last
   onEntryEncoded: (isFirst, _, entry) =>
       '${isFirst ? '' : indentation}'
       '- ${_replaceIfEmpty(entry)}'

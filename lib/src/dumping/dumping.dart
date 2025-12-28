@@ -106,7 +106,7 @@ _DumpedObjectInfo _encodeObject<T>(
       );
     }
 
-    /// Only block styles can be overriden in case the child has node properties
+    // Only block styles can be overriden in case the child has node properties
     style = styleOverride != null && style != NodeStyle.flow
         ? styleOverride
         : style;
@@ -161,9 +161,9 @@ _DumpedObjectInfo _encodeObject<T>(
           jsonCompatible: jsonCompatible,
           parentNodeStyle: style,
 
-          /// Always prefer a Scalar's scalar style in case nothing is present.
-          /// A node style will enforce its default style if a scalar style's
-          /// node style is invalid.
+          // Always prefer a Scalar's scalar style in case nothing is present.
+          // A node style will enforce its default style if a scalar style's
+          // node style is invalid.
           dumpingStyle:
               currentScalarStyle ??
               (encodable is Scalar ? encodable.scalarStyle : null),

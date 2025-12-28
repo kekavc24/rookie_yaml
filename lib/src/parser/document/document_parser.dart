@@ -109,8 +109,8 @@ final class DocumentParser<R> {
           globalTags.isNotEmpty ||
           reservedDirectives.isNotEmpty;
 
-      /// When directives are absent, we may see dangling "---". Just to be
-      /// sure, confirm this wasn't the case.
+      // When directives are absent, we may see dangling "---". Just to be sure,
+      // confirm this wasn't the case.
       if (!hasDirectiveEnd &&
           iterator.current == blockSequenceEntry &&
           iterator.peekNextChar() == blockSequenceEntry) {
@@ -153,13 +153,13 @@ final class DocumentParser<R> {
     // YAML allows the secondary tag to be declared with custom global tag
     _parserState.globalTags.addAll(tags);
 
-    /// Why block info? YAML clearly has a favourite child and that is the
-    /// block(-like) styles. They are indeed a human friendly format. Also, the
-    /// doc end chars "..." and "---" exist in this format.
+    // Why block info? YAML clearly has a favourite child and that is the
+    // block(-like) styles. They are indeed a human friendly format. Also, the
+    // doc end chars "..." and "---" exist in this format.
     NodeDelegate<R>? root;
     BlockInfo? rootInfo;
 
-    /// If we attempted to check for doc markers and found none
+    // If we attempted to check for doc markers and found none
     if (docMarkerGreedy != null) {
       final (:start, :greedChars) = docMarkerGreedy;
 
@@ -212,8 +212,8 @@ final class DocumentParser<R> {
     var docMarker = rootInfo.docMarker;
 
     if (!iterator.isEOF && !rootInfo.docMarker.stopIfParsingDoc) {
-      /// We must see document end chars and don't care how they are laid within
-      /// the document. At this point the document is or should be complete
+      // We must see document end chars and don't care how they are laid within
+      // the document. At this point the document is or should be complete
       skipToParsableChar(iterator, onParseComment: comments.add);
 
       // We can safely look for doc end chars

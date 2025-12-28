@@ -154,14 +154,14 @@ FoldFlowInfo foldFlowScalar(
             if (!lastWasLineBreak) {
               foldCurrent(null);
             } else {
-              /// Never apply dangling whitespace if the new line was
-              /// escaped. Safe fallback
+              // Never apply dangling whitespace if the new line was escaped.
+              // Safe fallback
               bufferedWhitespace.clear();
             }
           }
 
-          /// Fold continuously until we encounter a char that is not a
-          /// linebreak or whitespace.
+          // Fold continuously until we encounter a char that is not a linebreak
+          // or whitespace.
           while (current.isLineBreak()) {
             current = skipCrIfPossible(current, iterator: iterator);
             bufferedWhitespace.clear();
@@ -174,8 +174,8 @@ FoldFlowInfo foldFlowScalar(
 
             final isDifferentScalar = indent < minIndent;
 
-            /// We don't want to impede on the next scalar by consuming its
-            /// content
+            // We don't want to impede on the next scalar by consuming its
+            // content
             if (!iteratedIsEOF(current) &&
                 current.isWhiteSpace() &&
                 !isDifferentScalar) {
@@ -198,11 +198,11 @@ FoldFlowInfo foldFlowScalar(
               current = iterator.current;
             }
 
-            /// It could be consecutive line breaks with no indent that made us
-            /// think this is a different scalar. It was just an empty line.
-            ///
-            /// It doesn't matter if the line break was escaped. Resume the
-            /// folding.
+            // It could be consecutive line breaks with no indent that made us
+            // think this is a different scalar. It was just an empty line.
+            //
+            // It doesn't matter if the line break was escaped. Resume the
+            // folding.
             if (!iteratedIsEOF(current) && current.isLineBreak()) {
               current = skipCrIfPossible(current, iterator: iterator);
               foldCurrent(current);
@@ -210,12 +210,12 @@ FoldFlowInfo foldFlowScalar(
               continue;
             }
 
-            /// Plain scalars can be used in block styles. This indent change
-            /// indicates we need to alert any block styles on the indent that
-            /// triggered this exit.
-            ///
-            /// This can also be used to restrict double/single quoted styles
-            /// nested in a block style.
+            // Plain scalars can be used in block styles. This indent change
+            // indicates we need to alert any block styles on the indent that
+            // triggered this exit.
+            //
+            // This can also be used to restrict double/single quoted styles
+            // nested in a block style.
             if (isDifferentScalar) {
               cleanUpFolding();
               return (
@@ -245,8 +245,8 @@ FoldFlowInfo foldFlowScalar(
 
       default:
         {
-          /// Reserved for double quoted scalar where the linebreak can be
-          /// escaped. All other flow styles should return false!
+          // Reserved for double quoted scalar where the linebreak can be
+          // escaped. All other flow styles should return false!
           if (resumeOnEscapedLineBreak &&
               current == backSlash &&
               iterator.peekNextChar().isNotNullAnd((c) => c.isLineBreak())) {

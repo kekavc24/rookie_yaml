@@ -51,21 +51,26 @@ extension Flattened on int? {
 
   /// Whether `null` or [matcher] is `true`.
   bool isNullOr(bool Function(int value) matcher) =>
-      this == null || matcher(this!);
+      this == null || this!.matches(matcher);
 
   /// Whether not `null` and [matcher] is `true`.
   bool isNotNullAnd(bool Function(int value) matcher) =>
-      this != null && matcher(this!);
+      this != null && this!.matches(matcher);
+}
+
+extension MatchInt on int {
+  /// Whether [match] matches.
+  bool matches(bool Function(int value) match) => match(this);
 }
 
 extension SpacingUtils on int {
-  /// Returns `true` if current unicode is a space
+  /// Whether this char is an indentation space.
   bool isIndent() => this == space;
 
-  /// Returns true if the unicode is space or a `\t`
+  /// Whether this char is a space or a `\t`.
   bool isWhiteSpace() => isIndent() || this == tab;
 
-  /// Returns true if the unicode is `\n` or `\r`
+  /// Whether this char is a line break. `\n` or `\r`
   bool isLineBreak() => this == lineFeed || this == carriageReturn;
 }
 
@@ -94,10 +99,10 @@ const _lowerSupplementalPlane = 0x010000;
 const _upperSupplementalPlane = 0x10FFFF;
 
 extension CharUtils on int {
-  /// Checks if digit. `0x30 - 0x39`
+  /// Whether this char is a digit. `0x30 - 0x39`
   bool isDigit() => this >= asciiZero && this <= asciiNine;
 
-  /// Checks if hex digit.
+  /// Whether this char is a hex digit.
   ///   - Valid digit `0x30 - 0x39`
   ///   - `A - F`
   ///   - `a - f`
@@ -106,15 +111,15 @@ extension CharUtils on int {
       (this >= capA && this <= capF) ||
       (this >= lowerA && this <= lowerF);
 
-  /// Checks if valid ASCII letter, that is, alphabetic.
+  /// Whether this char is a valid ASCII letter, that is, alphabetic.
   bool isAsciiLetter() =>
       (this >= capA && this <= _capZ) || (this >= lowerA && this <= _lowerZ);
 
-  /// Checks if alphanumeric or word
+  /// Whether this char is a digit, ascii letter or `-`.
   bool isAlphaNumeric() =>
       isDigit() || isAsciiLetter() || this == blockSequenceEntry;
 
-  /// Checks if printable
+  /// Whether this char is printable.
   bool isPrintable() =>
       this == tab ||
       this == lineFeed ||
@@ -125,7 +130,7 @@ extension CharUtils on int {
       (this >= _lowerAdditionalSet && this <= _upperAdditionalSet) ||
       (this >= _lowerSupplementalPlane && this <= _upperSupplementalPlane);
 
-  /// Delimiters denoting a flow collection context. `{`  `}`  `[`  `]`  `,`
+  /// Whether this char is a flow collection delimiter. `{`  `}`  `[`  `]`  `,`
   bool isFlowDelimiter() =>
       this == mappingStart ||
       this == mappingEnd ||
@@ -133,7 +138,7 @@ extension CharUtils on int {
       this == flowSequenceEnd ||
       this == flowEntryEnd;
 
-  /// Return `true` only if the character is printable and not:
+  /// Whether this char is printable and not:
   ///   - A whitespace character
   ///   - Line break i.e. `\r` or `\n`
   bool isNonSpaceChar() => !isWhiteSpace() && !isLineBreak() && isPrintable();
@@ -165,7 +170,7 @@ const _miscUriChars = <int>{
   flowSequenceEnd, // ]
 };
 
-/// Checks with bias if [uriChar] is a valid character.
+/// Checks with bias if [uriChar] is a valid uri character.
 ///
 /// The bias comes in when non-escaped characters, that is, characters not
 /// in `hex` form (`.%[0-9A-Fa-f]{2}`), must pass in a single character in

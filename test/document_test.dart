@@ -321,8 +321,8 @@ $global
 never parsed
 ''';
 
-      /// Once leading "!" is seen, the rest are treated as normal tag uri
-      /// where "!" must be escaped
+      // Once leading "!" is seen, the rest are treated as normal tag uri
+      // where "!" must be escaped
       check(
         () => bootstrapDocParser(yaml),
       ).throwsParserException(

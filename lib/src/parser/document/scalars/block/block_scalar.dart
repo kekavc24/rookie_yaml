@@ -1,7 +1,7 @@
 import 'dart:math';
 
+import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/scalar_buffer.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
@@ -23,24 +23,26 @@ part 'block_utils.dart';
 /// scalar which returns a [PreScalar]. This is intentional. The delegate that
 /// will be assigned to this function will contain more context on how this
 /// scalar will be resolved.
+///
+/// Used for testing.
 PreScalar parseBlockScalar(
   SourceIterator iterator, {
   required int minimumIndent,
   required int? blockParentIndent,
   required void Function(YamlComment comment) onParseComment,
 }) {
-  final buffer = ScalarBuffer();
+  final buffer = StringDelegate();
   final info = blockScalarParser(
     iterator,
-    charBuffer: buffer.writeChar,
+    charBuffer: buffer.onWriteRequest,
     minimumIndent: minimumIndent,
     blockParentIndent: blockParentIndent,
     onParseComment: onParseComment,
   );
 
   return (
-    content: buffer.bufferedContent(),
-    wroteLineBreak: buffer.wroteLineBreak,
+    content: buffer.parsed().scalar.value,
+    wroteLineBreak: buffer.bufferedLineBreak,
     scalarInfo: info,
   );
 }
@@ -72,8 +74,8 @@ ParsedScalarInfo blockScalarParser(
 
   int? trueIndent;
 
-  /// If not null, we know the indent. Otherwise we have to infer from the
-  /// first non-empty line.
+  // If not null, we know the indent. Otherwise we have to infer from the first
+  // non-empty line.
   if (indentIndicator != null) {
     trueIndent = (blockParentIndent ?? 0) + indentIndicator;
   }
@@ -86,8 +88,8 @@ ParsedScalarInfo blockScalarParser(
   var lastWasIndented = false;
   var didRun = false;
 
-  /// Block scalar have no set indent. They infer indent using the first
-  /// non-empty line.
+  // Block scalar have no set indent. They infer indent using the first
+  // non-empty line.
   int? previousMaxIndent;
 
   var docMarkerType = DocumentMarker.none;
@@ -123,19 +125,18 @@ ParsedScalarInfo blockScalarParser(
           final hasCharAfter = charAfter != null;
 
           if (charAfter != carriageReturn && charAfter != lineFeed) {
-            /// While `YAML` suggested we parse the comment thereafter, it is
-            /// better to exit and allow the `root` parser to determine how to
-            /// parse it.
-            ///
-            /// Also check if we need to exit incase a document/directives
-            /// end marker is found in a top level scalar
+            // While `YAML` suggested we parse the comment thereafter, it is
+            // better to exit and allow the `root` parser to determine how to
+            // parse it.
+            //
+            // Also check if we need to exit incase a document/directives end
+            // marker is found in a top level scalar
             if (!hasCharAfter || scannedIndent < indent) {
               indentOnExit = scannedIndent;
               iterator.nextChar();
 
-              /// If we have more characters, our actual scalar starts where
-              /// the current line starts since the indent change caused the
-              /// exit
+              // If we have more characters, our actual scalar starts where the
+              // current line starts since the indent change caused the exit.
               end = hasCharAfter
                   ? iterator.currentLineInfo.start
                   : iterator.currentLineInfo.current;
