@@ -27,63 +27,22 @@ NodeDelegate<Obj> customFlowNode<Obj>(
     forceInline: forceInline,
     asCustomList: builder,
   ),
-  onMatchScalar: (resolver) => customFlowScalar(
-    flowEvent,
-    state: state,
-    property: property,
-    resolver: resolver,
-    currentIndentLevel: currentIndentLevel,
-    minIndent: minIndent,
-    isImplicit: isImplicit,
-    forceInline: forceInline,
-  ),
-);
-
-/// Parses a custom flow scalar.
-NodeDelegate<Obj> customFlowScalar<Obj>(
-  ParserEvent flowEvent, {
-  required ParserState<Obj> state,
-  required NodeProperty property,
-  required OnCustomScalar<Obj> resolver,
-  required int currentIndentLevel,
-  required int minIndent,
-  required bool isImplicit,
-  required bool forceInline,
-}) {
-  // Recover this custom null scalar on their behalf.
-  final forcedEvent = flowEvent is ScalarEvent
-      ? flowEvent
-      : ScalarEvent.startFlowPlain;
-
-  return parseCustomScalar(
-    forcedEvent,
+  onMatchScalar: (resolver) => parseCustomScalar(
+    flowEvent is ScalarEvent ? flowEvent : ScalarEvent.startFlowPlain,
     iterator: state.iterator,
     resolver: resolver,
     property: property,
     onParseComment: (_) {}, // Flow nodes cannot have comments
     onScalar: (style, indentOnExit, indentDidChange, marker, delegate) {
-      if (forceInline || style != ScalarStyle.plain) {
-        return delegate;
-      }
-
-      // Flow node only ends after parsing a flow delimiter
-      if (marker.stopIfParsingDoc) {
-        throwForCurrentLine(
-          state.iterator,
-          message:
-              'Premature document termination after parsing a custom plain '
-              'scalar',
-        );
-      } else if (indentDidChange && indentOnExit < minIndent) {
-        throwWithApproximateRange(
-          state.iterator,
-          message:
-              'Indent change detected after a custom scalar. Expected'
-              ' $minIndent space(s) but found $indentOnExit space(s)',
-          current: state.iterator.currentLineInfo.current,
-          charCountBefore: indentOnExit,
-        );
-      }
+      throwIfInvalidFlow(
+        style,
+        iterator: state.iterator,
+        isInline: forceInline,
+        marker: marker,
+        flowIndent: minIndent,
+        indentDidChange: indentDidChange,
+        indentOnExit: indentOnExit,
+      );
 
       return delegate;
     },
@@ -92,5 +51,5 @@ NodeDelegate<Obj> customFlowScalar<Obj>(
     indentLevel: currentIndentLevel,
     minIndent: minIndent,
     blockParentIndent: null,
-  );
-}
+  ),
+);

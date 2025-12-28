@@ -5,12 +5,12 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_sequence.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
+import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// Parses a flow scalar based on the current scalar [event].
@@ -39,28 +39,15 @@ ScalarLikeDelegate<R> parseFlowScalar<R>(
   delegateScalar: delegateScalar,
   defaultToString: defaultToString,
   onScalar: (style, indentOnExit, indentDidChange, marker, scalar) {
-    if (style != ScalarStyle.plain || isInline) return scalar;
-
-    // Plain scalars can have document/directive end chars embedded in the
-    // content. Additionally, if not implicit, it can be affected by indent
-    // changes since it has a block-like structure. Neither should be allowed.
-    if (marker.stopIfParsingDoc) {
-      throwForCurrentLine(
-        iterator,
-        message:
-            'Premature document termination after parsing a plain flow'
-            ' scalar',
-      );
-    } else if (indentDidChange && indentOnExit < minIndent) {
-      throwWithApproximateRange(
-        iterator,
-        message:
-            'Indent change detected when parsing plain scalar. Expected'
-            ' $minIndent space(s) but found $indentOnExit space(s)',
-        current: iterator.currentLineInfo.current,
-        charCountBefore: indentOnExit,
-      );
-    }
+    throwIfInvalidFlow(
+      style,
+      iterator: iterator,
+      isInline: isInline,
+      marker: marker,
+      flowIndent: minIndent,
+      indentDidChange: indentDidChange,
+      indentOnExit: indentOnExit,
+    );
 
     return scalar;
   },

@@ -30,6 +30,41 @@ typedef BlockEntry<Obj> =
 typedef OnBlockMapEntry<Obj> =
     void Function(NodeDelegate<Obj> key, NodeDelegate<Obj>? value);
 
+/// Throws if a flow [ScalarStyle.plain] scalar has any document/directive end
+/// characters or its exit indent is less than the minimum [flowIndent].
+void throwIfInvalidFlow(
+  ScalarStyle style, {
+  required SourceIterator iterator,
+  required bool isInline,
+  required DocumentMarker marker,
+  required int flowIndent,
+  required bool indentDidChange,
+  required int indentOnExit,
+}) {
+  if (style != ScalarStyle.plain || isInline) return;
+
+  // Plain scalars can have document/directive end chars embedded in the
+  // content. Additionally, if not implicit, it can be affected by indent
+  // changes since it has a block-like structure. Neither should be allowed.
+  if (marker.stopIfParsingDoc) {
+    throwForCurrentLine(
+      iterator,
+      message:
+          'Premature document termination after parsing a plain flow'
+          ' scalar',
+    );
+  } else if (indentDidChange && indentOnExit < flowIndent) {
+    throwWithApproximateRange(
+      iterator,
+      message:
+          'Indent change detected when parsing plain scalar. Expected'
+          ' $flowIndent space(s) but found $indentOnExit space(s)',
+      current: iterator.currentLineInfo.current,
+      charCountBefore: indentOnExit,
+    );
+  }
+}
+
 /// Skips to the next parsable flow indicator/character.
 ///
 /// If declared on a new line and [forceInline] is `false`, the flow

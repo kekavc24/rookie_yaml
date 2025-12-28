@@ -9,6 +9,27 @@ import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
+/// Adds a [key]-[value] pair to a [map].
+void _addMapEntry<Obj>(
+  MapDuplicateHandler handler,
+  MapLikeDelegate<Obj, Obj> map,
+  NodeDelegate<Obj> key,
+  NodeDelegate<Obj>? value,
+) {
+  if (!map.accept(key.parsed(), value?.parsed())) {
+    handler(
+      key.start,
+      value?.endOffset ?? key.endOffset!,
+      'A block map cannot contain duplicate entries by the same key',
+    );
+  }
+
+  map
+    ..hasLineBreak =
+        key.encounteredLineBreak || (value?.encounteredLineBreak ?? false)
+    ..updateEndOffset = value?.endOffset ?? key.endOffset!;
+}
+
 /// Attempts to compose and parse a block map using the [keyOrNode] as the
 /// first implicit key. [keyOrNode] is not restricted to a [Scalar] but may
 /// also represent any flow collection that is implicit.
@@ -95,11 +116,14 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
   final iterator = state.iterator;
   final NodeDelegate(:indent, :start) = key;
 
-  final map = state.defaultMapDelegate(
-    mapStyle: NodeStyle.block,
-    indentLevel: key.indentLevel,
-    indent: fixedMapIndent,
-    start: start,
+  final (onMapDuplicate, map) = (
+    state.onMapDuplicate,
+    state.defaultMapDelegate(
+      mapStyle: NodeStyle.block,
+      indentLevel: key.indentLevel,
+      indent: fixedMapIndent,
+      start: start,
+    ),
   );
 
   state.onParseMapKey(key.parsed());
@@ -108,24 +132,13 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
     state,
     keyIndent: fixedMapIndent,
     keyIndentLevel: key.indentLevel,
-    onValue: (implicitValue) {
-      map
-        ..accept(key.parsed(), implicitValue.parsed())
-        ..updateEndOffset = implicitValue.endOffset;
-    },
-    onEntryValue: (key, value) {
-      if (!map.accept(key.parsed(), value?.parsed())) {
-        state.onMapDuplicate(
-          key.start,
-          value?.endOffset ?? iterator.currentLineInfo.current,
-          'A block map cannot contain duplicate entries by the same key',
-        );
-      }
-
-      map
-        ..hasLineBreak = true
-        ..updateEndOffset = value?.endOffset ?? key.endOffset!;
-    },
+    onValue: (implicitValue) => _addMapEntry(
+      onMapDuplicate,
+      map,
+      key,
+      implicitValue,
+    ),
+    onEntryValue: (key, value) => _addMapEntry(onMapDuplicate, map, key, value),
   );
 
   final valueExitIndent = blockInfo.exitIndent;
@@ -165,20 +178,8 @@ BlockNode<Obj> parseBlockMap<Obj>(
   final ParserState(:iterator, :onMapDuplicate) = state;
   final MapLikeDelegate(indent: mapIndent, :indentLevel) = map;
 
-  void onParseEntry(NodeDelegate<Obj> key, NodeDelegate<Obj>? value) {
-    if (!map.accept(key.parsed(), value?.parsed())) {
-      onMapDuplicate(
-        key.start,
-        value?.endOffset ?? iterator.currentLineInfo.current,
-        'A block map cannot contain duplicate entries by the same key',
-      );
-    }
-
-    map
-      ..hasLineBreak =
-          key.encounteredLineBreak || (value?.encounteredLineBreak ?? false)
-      ..updateEndOffset = value?.endOffset ?? key.endOffset!;
-  }
+  void onParseEntry(NodeDelegate<Obj> key, NodeDelegate<Obj>? value) =>
+      _addMapEntry(onMapDuplicate, map, key, value);
 
   while (!iterator.isEOF) {
     final blockInfo = switch (inferBlockEvent(iterator)) {

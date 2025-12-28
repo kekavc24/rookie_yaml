@@ -1,10 +1,10 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/plain.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/single_quoted.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:test/test.dart';
 
