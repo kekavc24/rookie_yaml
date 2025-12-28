@@ -258,7 +258,10 @@ void _parseScheme(
   }
 
   /// Ensure we return in a state where a tag uri can be parsed further
-  if (isDecoding && iterator.peekNextChar().isNullOr((c) => !isUriChar(c))) {
+  if (isDecoding &&
+      iterator.peekNextChar().isNullOr(
+        (c) => !isUriChar(c) && c != directive, // %
+      )) {
     throwForCurrentLine(
       iterator,
       message: 'Expected at least a uri character after the scheme',
