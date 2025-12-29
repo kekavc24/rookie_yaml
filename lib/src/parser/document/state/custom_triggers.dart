@@ -8,6 +8,8 @@ typedef _Resolvers = Map<TagShorthand, ResolverCreator<Object?>>;
 typedef AdvancedResolvers = Map<TagShorthand, CustomResolver>;
 
 /// A class with callbacks to some of the inner workings of the parser.
+///
+/// {@category resolvers_intro}
 abstract base class CustomTriggers {
   CustomTriggers({
     List<ScalarResolver<Object?>>? resolvers,
@@ -76,4 +78,15 @@ abstract base class CustomTriggers {
   /// are present. This is never called if the parser can accurately default
   /// the scalar to `null` ahead of time.
   OnCustomScalar<S>? onDefaultScalar<S>() => null;
+}
+
+/// Replaces the [onDocumentStart] and [onParsedKey] with an empty stub.
+///
+/// {@category resolvers_intro}
+base mixin MinimalTriggers on CustomTriggers {
+  @override
+  void onDocumentStart(int _) {}
+
+  @override
+  void onParsedKey(Object? _) {}
 }
