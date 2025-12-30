@@ -31,21 +31,35 @@ abstract class BytesToScalar<T> extends ObjectDelegate<T> {
   /// \*may\* fail to call this method if the scalar was declared as a
   /// [ScalarStyle.plain] node with no content.
   factory BytesToScalar.sliced({
-    required T Function(Uint32List slice) mapper,
+    required T Function(List<int> slice) mapper,
     void Function()? onSliced,
-  }) => _LazyScalarSlice(mapper: mapper, onSliced: onSliced ?? () {});
+  }) => _LazyScalarSlice<T>(mapper: mapper, onSliced: onSliced ?? () {});
 }
 
 /// A delegate that buffers all the utf code points of a scalar's content and
 /// maps it to [T].
 final class _LazyScalarSlice<T> extends BytesToScalar<T> {
+  // TODO: Should this just use List<int>?
   _LazyScalarSlice({required this.mapper, required this.onSliced});
 
-  /// Buffer for the utf code points.
-  final _buffer = Uint32List(0);
+  /// Buffers the unicode code point of the underlying scalar.
+  ///
+  /// The `YamlSource.string` constructor iterates over the runes of the string
+  /// and the surrogate pairs of some characters may be combined already.
+  var _mainBuffer = Uint32List(1024);
+
+  /// Whether the [_mainBuffer] has been compacted before. If `true`, then
+  /// [parsed] was called. Any further inputs serve no purpose.
+  var _compacted = false;
+
+  /// Default start size.
+  var _baseSize = 1024;
+
+  /// Number of elements in buffer.
+  var _bufferCount = 0;
 
   /// Creates [T] from the buffered slice.
-  final T Function(Uint32List slice) mapper;
+  final T Function(List<int> slice) mapper;
 
   /// Called when no more characters are available.
   final void Function() onSliced;
@@ -54,10 +68,32 @@ final class _LazyScalarSlice<T> extends BytesToScalar<T> {
   void onComplete() => onSliced();
 
   @override
-  CharWriter get onWriteRequest => _buffer.add;
+  CharWriter get onWriteRequest => _addToBuffer;
+
+  void _reset() {
+    _baseSize *= 2;
+    _mainBuffer = Uint32List(_baseSize)
+      ..setRange(0, _mainBuffer.length, _mainBuffer);
+  }
+
+  void _addToBuffer(int char) {
+    if (_bufferCount == _mainBuffer.length) {
+      _reset();
+    }
+
+    _mainBuffer[_bufferCount] = char;
+    ++_bufferCount;
+  }
 
   @override
-  T parsed() => mapper(_buffer);
+  T parsed() {
+    if (!_compacted) {
+      _mainBuffer = Uint32List.sublistView(_mainBuffer, 0, _bufferCount);
+      _compacted = true;
+    }
+
+    return mapper(_mainBuffer);
+  }
 }
 
 /// A delegate that accepts a scalar-like value.

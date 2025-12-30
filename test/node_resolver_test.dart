@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';
@@ -73,7 +74,8 @@ block: value
 
     test('Loads default scalar', () {
       const value = '24';
-      final codePoints = [...value.toString().codeUnits, -1];
+      final codePoints = [...value.toString().codeUnits];
+      final tracked = [...codePoints, -1];
 
       for (final style in ScalarStyle.values) {
         final yaml = switch (style) {
@@ -86,6 +88,15 @@ block: value
 
         check(
           loadResolvedDartObject(yaml, customScalar: () => SimpleUtfBuffer()),
+        ).isA<List<int>>().deepEquals(tracked);
+
+        check(
+          loadResolvedDartObject(
+            yaml,
+            customScalar: () => BytesToScalar.sliced(
+              mapper: (slice) => slice,
+            ),
+          ),
         ).isA<List<int>>().deepEquals(codePoints);
       }
     });
