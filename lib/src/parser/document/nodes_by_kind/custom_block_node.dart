@@ -28,7 +28,7 @@ BlockNode<Obj> customBlockNode<Obj>(
   }
 
   // Handler for a flow or block node.
-  BlockNode<Obj> flowOrBlock({
+  BlockNode<Obj> flowOrBlockCollection({
     required BlockNode<Obj> Function() ifBlock,
     bool enforceMap = false,
     OnCustomList<Obj>? ifFlowList,
@@ -70,6 +70,7 @@ BlockNode<Obj> customBlockNode<Obj>(
       block:
       default:
         customNode = ifBlock();
+        state.trackAnchor(customNode.node, property);
     }
 
     return mapEnforcer(customNode, enforceMap: enforceMap);
@@ -78,7 +79,7 @@ BlockNode<Obj> customBlockNode<Obj>(
   return _parseCustomKind<BlockNode<Obj>, Obj>(
     kind,
     property: property,
-    onMatchMap: (mapBuilder) => flowOrBlock(
+    onMatchMap: (mapBuilder) => flowOrBlockCollection(
       enforceMap: true,
       ifBlock: () => parseBlockMap(
         MapLikeDelegate.boxed(
@@ -92,7 +93,7 @@ BlockNode<Obj> customBlockNode<Obj>(
       ),
       ifFlowMap: mapBuilder,
     ),
-    onMatchIterable: (listBuilder) => flowOrBlock(
+    onMatchIterable: (listBuilder) => flowOrBlockCollection(
       ifBlock: () => parseBlockSequence(
         SequenceLikeDelegate<Obj, Obj>.boxed(
           listBuilder(),
