@@ -79,7 +79,7 @@ sealed class ObjectDelegate<T> {
 
 /// Helper mixin that normalizes the local tag information assigned to an
 /// [ObjectDelegate].
-mixin TagInfo on ObjectDelegate {
+mixin TagInfo<T> on ObjectDelegate<T> {
   /// Obtains the resolved local tag information associated with each object.
   /// Always returns `null` for any alias or object having a [VerbatimTag].
   ({GlobalTag? globalTag, TagShorthand suffix})? localTagInfo() {
