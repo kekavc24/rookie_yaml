@@ -48,7 +48,7 @@ final class NodeTag<T> extends ResolvedTag {
         suffix?.content ?? '',
         suffixIsNonSpecific: suffix?.isNonSpecific ?? false,
       ),
-      hasGlobalTag = suffix == null,
+      hasGlobalTag = resolvedTag is GlobalTag,
       suffix = suffix ?? resolvedTag as TagShorthand;
 
   /// A [TagShorthand] shorthand resolved to a [GlobalTag] or the tag itself.
