@@ -82,9 +82,6 @@ sealed class YamlSourceNode extends CompactYamlNode {
   YamlSourceNode();
 
   /// [Tag] directive describing how the node is represented natively.
-  ///
-  /// If a custom [NodeResolver] tag was parsed, the [YamlSourceNode] may be
-  /// viewed in a resolved format by calling `asCustomType` getter on the node.
   @override
   ResolvedTag? get tag => null; // Just to redefine docs
 
@@ -92,11 +89,8 @@ sealed class YamlSourceNode extends CompactYamlNode {
   RuneSpan get nodeSpan;
 }
 
-/// Utility method for mapping any [YamlSourceNode] that has a [NodeResolver]
-/// as its resolved tag.
-///
-/// {@category resolvers}
-extension CustomResolved on YamlSourceNode {
+/// Utility method for casting any [YamlSourceNode].
+extension Cast on YamlSourceNode {
   /// Casts a generic [YamlSourceNode] to a valid (and known) subtype
   T castTo<T extends YamlSourceNode>() => this as T;
 }

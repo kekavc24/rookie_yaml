@@ -24,9 +24,6 @@ dartdoc:
     declare_tags:
       markdown: doc/declaring_tags.md
       displayName: Declaring Tags in Code
-    resolvers:
-      markdown: doc/resolvers.md
-      displayName: Custom Resolvers
     schema:
       markdown: doc/schema_tags.md
       displayName: Supported Schema Tags
@@ -45,6 +42,24 @@ dartdoc:
     dump_doc:
       markdown: doc/dump_document.md
       displayName: Dumping YAML Documents
+    resolvers_intro:
+      markdown: doc/intro_to_resolvers.md
+      displayName: Resolvers
+    scalar_resolvers:
+      markdown: doc/scalar_resolvers.md
+      displayName: Lazy Scalar Resolvers
+    custom_resolvers_intro:
+      markdown: doc/intro_to_custom_resolvers.md
+      displayName: Custom Resolvers
+    bytes_to_scalar:
+      markdown: doc/bytes_to_scalar.md
+      displayName: Bytes To Scalar
+    sequence_to_obj:
+      markdown: doc/sequence_to_obj.md
+      displayName: Object from Sequence
+    mapping_to_obj:
+      markdown: doc/mapping_to_obj.md
+      displayName: Object from Mapping
 
   categoryOrder:
     - intro
@@ -55,10 +70,15 @@ dartdoc:
     - tags
     - tag_types
     - declare_tags
-    - resolvers
     - schema
     - dump_scalar
     - dump_sequence
     - dump_mapping
     - dump_node
     - dump_doc
+    - resolvers_intro
+    - scalar_resolvers
+    - custom_resolvers_intro
+    - bytes_to_scalar
+    - sequence_to_obj
+    - mapping_to_obj

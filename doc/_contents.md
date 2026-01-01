@@ -13,10 +13,16 @@
     - [Types of tags](./tag_types.md)
     - [Supported schema tags](./schema_tags.md)
     - [Declaring tags as code](./declaring_tags.md)
-    - [Declaring custom resolvers for tags](./resolvers.md)
 - Dumping YAML
   - [Dumping scalars](./dump_scalar.md)
   - [Dumping lists/sequences](./dump_sequence.md)
   - [Dumping maps/mappings](./dump_mapping.md)
   - [Dumping `CompactNode`s](./dump_node.md)
   - [Dumping documents](./dump_document.md)
+- External Resolvers
+    - [Introduction to resolvers](./intro_to_resolvers.md)
+    - [Scalar resolvers](./scalar_resolvers.md)
+    - [Intro to custom resolvers](./intro_to_custom_resolvers.md)
+    - [Scalar from bytes](./bytes_to_scalar.md)
+    - [Object from Sequence](./sequence_to_obj.md)
+    - [Object from Mapping](./mapping_to_obj.md)

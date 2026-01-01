@@ -12,6 +12,8 @@ typedef ResolverCreator<R> = ContentResolver<R> Function(NodeTag tag);
 ///
 /// Unlike a [ObjectFromScalarBytes], this resolver allows the parser to recover
 /// if the type could not be assigned.
+///
+/// {@category scalar_resolvers}
 final class ScalarResolver<O> {
   ScalarResolver._(this.target, this.onTarget);
 
@@ -60,7 +62,8 @@ typedef OnCustomScalar<T> = OnObject<T, BytesToScalar<T>>;
 
 /// A resolver for any `Dart` object dumped as YAML.
 ///
-/// {@category resolvers}
+/// {@category resolvers_intro}
+/// {@category custom_resolvers_intro}
 sealed class CustomResolver {
   CustomResolver();
 
@@ -70,7 +73,7 @@ sealed class CustomResolver {
 
 /// A resolver that creates a delegate that accepts a key-value pair.
 ///
-/// {@category resolvers}
+/// {@category mapping_to_obj}
 final class ObjectFromMap<T> extends CustomResolver {
   /// Creates a resolver that lazily instantiates an [ObjectDelegate] which
   /// behaves like a map and accepts a key-value pair. Resolves to an object of
@@ -87,7 +90,7 @@ final class ObjectFromMap<T> extends CustomResolver {
 
 /// A resolver that creates a delegate that accepts elements.
 ///
-/// {@category resolvers}
+/// {@category sequence_to_obj}
 final class ObjectFromIterable<T> extends CustomResolver {
   /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like an iterable and accepts elements. Resolves to an object of
@@ -115,7 +118,7 @@ final class ObjectFromIterable<T> extends CustomResolver {
 /// Consider using a [ScalarResolver] which allows the parser itself to resolve
 /// the parsed string if this seems too mechanical.
 ///
-/// {@category resolvers}
+/// {@category bytes_to_scalar}
 final class ObjectFromScalarBytes<T> extends CustomResolver {
   /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like a scalar and accepts bytes/ utf code units and resolves to an

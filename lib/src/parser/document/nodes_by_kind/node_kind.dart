@@ -2,12 +2,16 @@ import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scal
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Represents the kind of node to be parsed.
+///
+/// {@category custom_resolvers_intro}
 sealed class NodeKind {
   NodeKind();
 
-  /// Creates a node whose kind could not be determined.
+  /// Represents a node whose kind could not be determined.
   factory NodeKind.unknown() = _UnknownKind;
 
+  /// Represents a node with a non-specific tag whose kind will be determined
+  /// by the parser.
   factory NodeKind.generic() = _GenericKind;
 
   /// Whether an object's kind was inferred from its tag.
@@ -33,6 +37,8 @@ final class _GenericKind extends NodeKind {
 }
 
 /// Represents a node with a custom tag.
+///
+/// {@category custom_resolvers_intro}
 enum CustomKind implements NodeKind {
   /// Custom map-like structure that accepts keys.
   map,
@@ -51,6 +57,8 @@ enum CustomKind implements NodeKind {
 }
 
 /// Represents a node with(out) a tag that contains other nodes.
+///
+/// {@category custom_resolvers_intro}
 enum YamlCollectionKind implements NodeKind {
   /// [Set] or [Sequence] with unique elements. This could also represent a
   /// [YamlCollectionKind.orderedMap] or [YamlCollectionKind.mapping].
@@ -74,6 +82,8 @@ enum YamlCollectionKind implements NodeKind {
 }
 
 /// Represents any node with a scalar tag.
+///
+/// {@category custom_resolvers_intro}
 enum YamlScalarKind implements NodeKind {
   /// [String].
   string,

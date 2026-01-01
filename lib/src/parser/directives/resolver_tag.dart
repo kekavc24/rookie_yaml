@@ -8,7 +8,7 @@ part of 'directives.dart';
 /// or [Sequence]
 ///
 /// {@category tag_types}
-/// {@category resolvers}
+/// {@category scalar_resolvers}
 final class ContentResolver<O> extends ResolvedTag {
   ContentResolver(
     this.resolvedTag, {

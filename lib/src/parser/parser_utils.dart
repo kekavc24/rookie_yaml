@@ -9,6 +9,8 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 const seamlessIndentMarker = -2;
 
 /// Callback for writing utf code units from a [SourceIterator].
+///
+/// {@category bytes_to_scalar}
 typedef CharWriter = void Function(int char);
 
 /// Emits all externally [buffered] utf code units to a [writer].

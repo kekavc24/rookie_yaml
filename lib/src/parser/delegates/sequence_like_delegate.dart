@@ -12,6 +12,8 @@ mixin _IterableDelegate<E> {
 /// Additionally, it has been forced to accept a nullable [Object] as an
 /// element. All subclasses need to guarantee their own runtime safety in case
 /// the shape of the YAML sequence doesn't match the desired object.
+///
+/// {@category sequence_to_obj}
 abstract base class SequenceToObject<T> = ObjectDelegate<T>
     with _IterableDelegate<Object?>;
 

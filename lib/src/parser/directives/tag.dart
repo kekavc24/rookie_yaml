@@ -20,11 +20,11 @@ sealed class Tag {
 ///
 /// {@category tag_types}
 /// {@category declare_tags}
-/// {@category resolvers}
+/// {@category custom_resolvers_intro}
 sealed class ResolvedTag extends Tag {
   /// Represents the [TagShorthand] suffix resolved to [GlobalTag] prefix in a
   /// `YAML` source string. Defaults to `null` if the [Tag] is a [VerbatimTag]
-  /// or a [TypeResolverTag]
+  /// or a [ContentResolver].
   TagShorthand? get suffix => null;
 
   /// Full representation of a tag. Any [SpecificTag] can be represented this
@@ -63,8 +63,8 @@ sealed class SpecificTag<T> extends Tag {
 /// By default for a normal [NodeTag], a [TagShorthand] suffix is returned and
 /// optionally its [GlobalTag] prefix if present.
 ///
-/// A [VerbatimTag] is returned in verbatim as a string and a
-/// [TypeResolverTag]'s [NodeTag] is extracted.
+/// A [VerbatimTag] is returned in as a string and a [ContentResolver]'s
+/// [NodeTag] is extracted.
 ({GlobalTag<dynamic>? globalTag, TagShorthand? tag, String? verbatim})
 resolvedTagInfo(ResolvedTag tag) {
   if (tag is VerbatimTag) {

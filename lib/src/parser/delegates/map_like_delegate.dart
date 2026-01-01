@@ -17,6 +17,8 @@ mixin _MapDelegate<E> {
 /// Additionally, it has been forced to accept a nullable [Object] as a
 /// key-value pair. All subclasses need to guarantee their own runtime safety in
 /// case the shape of the YAML map doesn't match the desired object.
+///
+/// {@category mapping_to_obj}
 abstract base class MappingToObject<T> = ObjectDelegate<T>
     with _MapDelegate<Object?>;
 

@@ -8,6 +8,8 @@ import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// A node's parsed property.
+///
+/// {@category custom_resolvers_intro}
 sealed class ParsedProperty {
   ParsedProperty(
     RuneOffset start,
@@ -98,6 +100,8 @@ final class _Empty extends ParsedProperty {
 }
 
 /// Node `anchor` and/or `tag`.
+///
+/// {@category custom_resolvers_intro}
 final class NodeProperty extends ParsedProperty {
   NodeProperty(
     super.start,
@@ -145,6 +149,8 @@ final class Alias extends ParsedProperty {
 
 /// Whether the node with the [property] should be parsed as a generic `!!map`
 /// or `!!seq` or `!!str`.
+///
+/// {@category custom_resolvers_intro}
 bool isGenericNode(ParsedProperty? property) {
   if (property == null) return false;
   final kind = property.kind;

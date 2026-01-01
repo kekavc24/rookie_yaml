@@ -1,7 +1,5 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
-import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:test/test.dart';
 
 import 'helpers/exception_helpers.dart';

@@ -103,7 +103,7 @@ final class NullView extends _InferredValue<String?> {
   String toString() => 'null';
 }
 
-/// Any `Dart` value that is not an [int] or [null]
+/// Any `Dart` value that is not an [int] or `null`.
 final class DartValue<T> extends _InferredValue<T> {
   DartValue(super.value);
 }

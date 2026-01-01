@@ -9,6 +9,8 @@ part of 'object_delegate.dart';
 /// [ObjectDelegate] parent class will be available.
 ///
 /// See also the [TagInfo] mixin.
+///
+/// {@category bytes_to_scalar}
 abstract class BytesToScalar<T> extends ObjectDelegate<T> {
   BytesToScalar();
 

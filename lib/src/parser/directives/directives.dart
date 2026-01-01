@@ -48,8 +48,8 @@ sealed class Directive {
   List<String> get parameters;
 }
 
-/// Parses all [Directive](s) present before the start of a node in a
-/// `YAML` document.
+/// Parses all [Directive]s present before the start of a node in a `YAML`
+/// document.
 Directives parseDirectives(
   SourceIterator iterator, {
   required void Function(YamlComment comment) onParseComment,

@@ -10,6 +10,10 @@ typedef AdvancedResolvers = Map<TagShorthand, CustomResolver>;
 /// A class with callbacks to some of the inner workings of the parser.
 ///
 /// {@category resolvers_intro}
+/// {@category custom_resolvers_intro}
+/// {@category bytes_to_scalar}
+/// {@category sequence_to_obj}
+/// {@category mapping_to_obj}
 class CustomTriggers {
   CustomTriggers({
     List<ScalarResolver<Object?>>? resolvers,

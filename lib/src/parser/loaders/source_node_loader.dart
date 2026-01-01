@@ -105,9 +105,7 @@ Iterable<YamlSourceNode> loadNodes(
 /// Loads the first document's root as a [YamlSourceNode]
 ///
 /// [resolvers] enable the parser to accept a collection of [ContentResolver]
-/// to directly manipulate parsed content before instantiating a [Scalar]
-/// and/or [NodeResolver] to manipulate a parsed [YamlSourceNode] later by
-/// calling its `asCustomType` method after parsing has been completed.
+/// to directly manipulate parsed content before instantiating a [Scalar].
 ///
 /// If [throwOnMapDuplicate] is `true`, the parser exits immediately a
 /// duplicate key is parsed within a map. Otherwise, the parser logs the

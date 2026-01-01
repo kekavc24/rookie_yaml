@@ -79,6 +79,9 @@ sealed class ObjectDelegate<T> {
 
 /// Helper mixin that normalizes the local tag information assigned to an
 /// [ObjectDelegate].
+///
+/// {@category custom_resolvers_intro}
+/// {@category sequence_to_obj}
 mixin TagInfo<T> on ObjectDelegate<T> {
   /// Obtains the resolved local tag information associated with each object.
   /// Always returns `null` for any alias or object having a [VerbatimTag].
