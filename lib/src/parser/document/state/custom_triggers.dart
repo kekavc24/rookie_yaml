@@ -10,7 +10,7 @@ typedef AdvancedResolvers = Map<TagShorthand, CustomResolver>;
 /// A class with callbacks to some of the inner workings of the parser.
 ///
 /// {@category resolvers_intro}
-abstract base class CustomTriggers {
+class CustomTriggers {
   CustomTriggers({
     List<ScalarResolver<Object?>>? resolvers,
     AdvancedResolvers? advancedResolvers,
@@ -34,11 +34,11 @@ abstract base class CustomTriggers {
 
   /// Triggered when the parser parses a valid mapping key and always before
   /// its value is parsed.
-  void onParsedKey(Object? key);
+  void onParsedKey(Object? key) {}
 
   /// Triggered when the parser starts parsing a document within a yaml source
   /// string.
-  void onDocumentStart(int index);
+  void onDocumentStart(int index) {}
 
   /// Obtains a custom resolver that instantiates custom object delegates.
   /// Called before [onScalarResolver] when a local tag is being resolved to a
@@ -78,15 +78,4 @@ abstract base class CustomTriggers {
   /// are present. This is never called if the parser can accurately default
   /// the scalar to `null` ahead of time.
   OnCustomScalar<S>? onDefaultScalar<S>() => null;
-}
-
-/// Replaces the [onDocumentStart] and [onParsedKey] with an empty stub.
-///
-/// {@category resolvers_intro}
-base mixin MinimalTriggers on CustomTriggers {
-  @override
-  void onDocumentStart(int _) {}
-
-  @override
-  void onParsedKey(Object? _) {}
 }
