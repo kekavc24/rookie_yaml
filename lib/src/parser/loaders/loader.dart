@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:logging/logging.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
@@ -16,7 +18,7 @@ part 'dart_objects.dart';
 /// {@category yaml_docs}
 extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
   /// Create an input source from a byte source.
-  YamlSource.bytes(Iterable<int> source) : this._(source);
+  YamlSource.bytes(Uint16List bytes) : this._(bytes);
 
   /// Creates an input from a [yaml] source string.
   YamlSource.string(String yaml) : this._(yaml.runes);
