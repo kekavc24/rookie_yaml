@@ -137,15 +137,13 @@ Iterable<String> splitUnfoldDoubleQuoted(String string) sync* {
 ///
 /// [buffered] and [currentLine] allow other styles to inject an [iterator]
 /// that has been read to a N<sup>th</sup> position.
-Iterable<String> _splitAsYamlDoubleQuoted(
+List<String> _splitAsYamlDoubleQuoted(
   RuneIterator iterator, [
   Iterable<String>? buffered,
   List<_WobblyChar>? currentLine,
-]) sync* {
+]) {
   assert(iterator.current >= 0);
-  if (buffered != null) {
-    yield* buffered;
-  }
+  final lines = <String>[];
 
   final buffer = StringBuffer(
     currentLine?.map((c) => c.safe(isDoubleQuoted: true)).join() ?? '',
@@ -162,22 +160,22 @@ Iterable<String> _splitAsYamlDoubleQuoted(
     buffer.write(_WobblyChar(code).safe(isDoubleQuoted: true));
   }
 
+  void flush() {
+    lines.add(buffer.toString());
+    buffer.clear();
+  }
+
   while (hasNext) {
     final current = iterator.current;
-
-    if (current.isLineBreak()) {
-      yield buffer.toString();
-      buffer.clear();
-    } else {
-      write(current);
-    }
-
+    current.isLineBreak() ? flush() : write(current);
     moveCursor(current);
   }
 
   if (buffer.isNotEmpty || (previous?.isLineBreak() ?? false)) {
-    yield buffer.toString();
+    flush();
   }
+
+  return buffered == null ? lines : buffered.followedBy(lines).toList();
 }
 
 /// Joins the [lines] with a '\n`. All lines except the first line are also
