@@ -113,6 +113,11 @@ ParsedScalarInfo? plainParser(
     }
   }
 
+  // Marks the current offset as the tentative end offset.
+  void markEndNow() {
+    end = iterator.currentLineInfo.current;
+  }
+
   chunker:
   while (!iterator.isEOF) {
     final char = iterator.current;
@@ -127,7 +132,7 @@ ParsedScalarInfo? plainParser(
               charBefore.isNullOr((c) => c.isLineBreak()) &&
               charAfter == char:
         {
-          final maybeEnd = iterator.currentLineInfo.current;
+          markEndNow();
 
           docMarkerType = checkForDocumentMarkers(
             iterator,
@@ -138,7 +143,6 @@ ParsedScalarInfo? plainParser(
           );
 
           if (docMarkerType.stopIfParsingDoc) {
-            end = maybeEnd;
             break chunker;
           }
 
@@ -154,6 +158,7 @@ ParsedScalarInfo? plainParser(
                 c.isWhiteSpace() ||
                 c.isLineBreak(),
           ):
+        markEndNow();
         break chunker;
 
       // A look behind condition if encountered while folding the scalar.
@@ -161,15 +166,18 @@ ParsedScalarInfo? plainParser(
           when charBefore.isNotNullAnd(
             (c) => c.isWhiteSpace() || c.isLineBreak(),
           ):
+        markEndNow();
         break chunker;
 
       // A lookahead condition of the rule above before folding the scalar
       case space || tab when charAfter == comment:
+        markEndNow();
         break chunker;
 
       // Restricted to a single line when implicit. Instead of throwing, exit
       // and allow parser to determine next course of action
       case carriageReturn || lineFeed when isImplicit:
+        markEndNow();
         break chunker;
 
       // Attempt to fold by default anytime we see a line break or white space
@@ -208,7 +216,10 @@ ParsedScalarInfo? plainParser(
             exitIf: (_, c) => _delimiters.contains(c) || c.isFlowDelimiter(),
           );
 
-          if (sourceEnded) break chunker;
+          if (sourceEnded) {
+            markEndNow();
+            break chunker;
+          }
         }
     }
   }
