@@ -394,15 +394,11 @@ final class ScalarDumper {
   /// Creates a [ScalarDumper].
   ///
   /// If [replaceEmpty] is true, empty strings are dumped as `null`.
-  ScalarDumper.fineGrained({
+  const ScalarDumper.fineGrained({
     required bool replaceEmpty,
     required PushProperties pushProperties,
     ScalarStyle style = ScalarStyle.doubleQuoted,
-  }) : this._(
-         style.nodeStyle != NodeStyle.flow ? ScalarStyle.doubleQuoted : style,
-         replaceEmpty,
-         pushProperties,
-       );
+  }) : this._(style, replaceEmpty, pushProperties);
 
   /// Creates a [ScalarDumper] where empty strings are always dumped as `null`
   /// and aliases are compacted.
@@ -426,7 +422,7 @@ final class ScalarDumper {
   DumpedScalar dump(
     Object? scalar, {
     required int indent,
-    required int parentIndent,
+    int parentIndent = 0,
     required ScalarStyle? style,
   }) {
     final nodeToDump = scalar is DumpableNode ? scalar : dumpableType(scalar);
@@ -442,19 +438,14 @@ final class ScalarDumper {
       );
     }
 
-    final ConcreteNode(:dumpable, :anchor, :nodeStyle, :tag) =
+    final ConcreteNode(:dumpable, :anchor, :tag) =
         nodeToDump as ConcreteNode<Object?>;
 
     final localTag = globals(tag, anchor, nodeToDump);
 
     final (:isMultiline, :node, :tentativeOffsetFromMargin) = _dumpScalar(
       dumpable?.toString() ?? '',
-      scalarStyle:
-          style != null &&
-              nodeStyle == NodeStyle.flow &&
-              style.nodeStyle == NodeStyle.block
-          ? defaultStyle
-          : style ?? defaultStyle,
+      scalarStyle: style ?? defaultStyle,
       parentIndent: parentIndent,
       indent: indent,
       usePlainNull: replaceEmpty,
@@ -473,7 +464,7 @@ final class ScalarDumper {
 
     void apply(String? prop, [String prefix = '']) {
       if (prop == null) return;
-      dumped = '$prefix$prop $node';
+      dumped = '$prefix$prop $dumped';
     }
 
     apply(tag);
