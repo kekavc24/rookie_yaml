@@ -127,9 +127,11 @@ extension type _WobblyChar(int code) {
 }
 
 /// Splits and unfolds the [string] as a YAML double quoted string.
-Iterable<String> splitUnfoldDoubleQuoted(String string) sync* {
+Iterable<String> splitUnfoldDoubleQuoted(String string) {
   final iterator = string.runes.iterator;
-  if (iterator.moveNext()) yield* _splitAsYamlDoubleQuoted(iterator);
+  return iterator.moveNext()
+      ? unfoldDoubleQuoted(_splitAsYamlDoubleQuoted(iterator))
+      : Iterable.empty();
 }
 
 /// Splits a string using its [iterator] as a YAML double quoted string with
