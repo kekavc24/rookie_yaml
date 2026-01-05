@@ -42,6 +42,24 @@ extension type _WobblyChar(int code) {
   }
 }
 
+/// Skips the `\r` only if the next char in the [iterator] is a `\n`.
+void _skipCarriageReturn(
+  int current, {
+  required RuneIterator iterator,
+  required bool hasNext,
+}) {
+  if (!hasNext) return;
+
+  if (current == carriageReturn) {
+    iterator.moveNext();
+
+    if (iterator.current != lineFeed) {
+      iterator.movePrevious();
+      return;
+    }
+  }
+}
+
 /// Scans and unfolds a [string] using the [unfolding] function only if all its
 /// code points pass the [tester] function provided. Degenerates to YAML's
 /// double-quoted style if any code points fail the [tester] predicate.
@@ -115,6 +133,7 @@ extension type _WobblyChar(int code) {
       return (true, fallback());
     } else if (current.isLineBreak()) {
       flushLine();
+      _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
     } else {
       currentLine.add(_WobblyChar(current));
     }
@@ -169,7 +188,14 @@ List<String> _splitAsYamlDoubleQuoted(
 
   while (hasNext) {
     final current = iterator.current;
-    current.isLineBreak() ? flush() : write(current);
+
+    if (current.isLineBreak()) {
+      flush();
+      _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
+    } else {
+      write(current);
+    }
+
     moveCursor(current);
   }
 
@@ -294,13 +320,16 @@ DumpedScalar _dumpScalar(
 
             return switch (previous) {
               // Cannot start plain with "#". That's just a comment.
-              null when current == comment => false,
+              null ||
+              space ||
+              tab ||
+              carriageReturn ||
+              lineFeed when current == comment => false,
 
               // Not allowed by YAML.
               mappingKey ||
               mappingValue ||
-              blockSequenceEntry ||
-              comment when current.isWhiteSpace() => false,
+              blockSequenceEntry when current.isWhiteSpace() => false,
 
               // Not safe in flow styles.
               _
