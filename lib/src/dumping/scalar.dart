@@ -21,6 +21,7 @@ extension type _WobblyChar(int code) {
   ///
   /// If [isSingleQuoted] is `true`, all single quotes `'` are escaped as `''`.
   String safe({
+    required bool forceInline,
     bool isPlain = false,
     bool isSingleQuoted = false,
     bool isDoubleQuoted = false,
@@ -34,7 +35,7 @@ extension type _WobblyChar(int code) {
     return String.fromCharCodes(
       code.normalizeEscapedChars(
         includeTab: false,
-        includeLineBreaks: false,
+        includeLineBreaks: isDoubleQuoted && forceInline,
         includeSlashes: isDoubleQuoted,
         includeDoubleQuote: isDoubleQuoted,
       ),
@@ -70,6 +71,7 @@ void _skipCarriageReturn(
 /// If [isSingleQuoted] is `true`, all single quotes `'` are escaped as `''`.
 (bool failed, Iterable<String> unfoldedLines) unfoldScanned(
   String string, {
+  required bool forceInline,
   bool isSingleQuoted = false,
   bool isPlain = false,
   required bool Function(bool hasNext, int? previous, int current) tester,
@@ -86,6 +88,7 @@ void _skipCarriageReturn(
       (line) => line
           .map(
             (c) => c.safe(
+              forceInline: forceInline,
               isPlain: isPlain && !isDoubleQuoted,
               isSingleQuoted: isSingleQuoted && !isDoubleQuoted,
               isDoubleQuoted: isDoubleQuoted,
@@ -100,8 +103,9 @@ void _skipCarriageReturn(
     return unfoldDoubleQuoted(
       _splitAsYamlDoubleQuoted(
         iterator,
-        generic(isDoubleQuoted: true),
-        currentLine,
+        forceInline: forceInline,
+        buffered: generic(isDoubleQuoted: true),
+        currentLine: currentLine,
       ),
     );
   }
@@ -128,10 +132,11 @@ void _skipCarriageReturn(
 
   while (hasNext) {
     final current = iterator.current;
+    final splitLine = current.isLineBreak();
 
-    if (!tester(hasNext, previous, current)) {
+    if ((forceInline && splitLine) || !tester(hasNext, previous, current)) {
       return (true, fallback());
-    } else if (current.isLineBreak()) {
+    } else if (splitLine) {
       flushLine();
       _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
     } else {
@@ -146,10 +151,15 @@ void _skipCarriageReturn(
 }
 
 /// Splits and unfolds the [string] as a YAML double quoted string.
-Iterable<String> splitUnfoldDoubleQuoted(String string) {
+Iterable<String> splitUnfoldDoubleQuoted(String string, bool forceInline) {
   final iterator = string.runes.iterator;
   return iterator.moveNext()
-      ? unfoldDoubleQuoted(_splitAsYamlDoubleQuoted(iterator))
+      ? unfoldDoubleQuoted(
+          _splitAsYamlDoubleQuoted(
+            iterator,
+            forceInline: forceInline,
+          ),
+        )
       : Iterable.empty();
 }
 
@@ -159,15 +169,19 @@ Iterable<String> splitUnfoldDoubleQuoted(String string) {
 /// [buffered] and [currentLine] allow other styles to inject an [iterator]
 /// that has been read to a N<sup>th</sup> position.
 List<String> _splitAsYamlDoubleQuoted(
-  RuneIterator iterator, [
+  RuneIterator iterator, {
+  required bool forceInline,
   Iterable<String>? buffered,
   List<_WobblyChar>? currentLine,
-]) {
+}) {
   assert(iterator.current >= 0);
   final lines = <String>[];
 
   final buffer = StringBuffer(
-    currentLine?.map((c) => c.safe(isDoubleQuoted: true)).join() ?? '',
+    currentLine
+            ?.map((c) => c.safe(forceInline: forceInline, isDoubleQuoted: true))
+            .join() ??
+        '',
   );
 
   int? previous;
@@ -178,7 +192,9 @@ List<String> _splitAsYamlDoubleQuoted(
   }
 
   void write(int code) {
-    buffer.write(_WobblyChar(code).safe(isDoubleQuoted: true));
+    buffer.write(
+      _WobblyChar(code).safe(forceInline: forceInline, isDoubleQuoted: true),
+    );
   }
 
   void flush() {
@@ -189,7 +205,7 @@ List<String> _splitAsYamlDoubleQuoted(
   while (hasNext) {
     final current = iterator.current;
 
-    if (current.isLineBreak()) {
+    if (!forceInline && current.isLineBreak()) {
       flush();
       _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
     } else {
@@ -244,6 +260,7 @@ DumpedScalar _dumpScalar(
   required int parentIndent,
   required int indent,
   required bool usePlainNull,
+  required bool forceInline,
 }) {
   if (object.isEmpty && (usePlainNull || scalarStyle == ScalarStyle.plain)) {
     return (
@@ -298,6 +315,7 @@ DumpedScalar _dumpScalar(
       {
         final (isDoubleQuoted, lines) = unfoldScanned(
           object,
+          forceInline: forceInline,
           isSingleQuoted: true,
 
           // Single quoted style only accepts printable chars
@@ -312,6 +330,7 @@ DumpedScalar _dumpScalar(
       {
         final (isDoubleQuoted, lines) = unfoldScanned(
           object,
+          forceInline: forceInline,
           isPlain: true,
           tester: (hasNext, previous, current) {
             if (!hasNext && (current.isLineBreak() || current.isWhiteSpace())) {
@@ -350,7 +369,10 @@ DumpedScalar _dumpScalar(
       }
 
     case ScalarStyle.doubleQuoted:
-      return _dumped(quoted(splitUnfoldDoubleQuoted(object)), indent);
+      return _dumped(
+        quoted(splitUnfoldDoubleQuoted(object, forceInline)),
+        indent,
+      );
 
     // Block styles
     default:
@@ -359,6 +381,7 @@ DumpedScalar _dumpScalar(
 
         final (isDoubleQuoted, lines) = unfoldScanned(
           object,
+          forceInline: forceInline,
 
           // Block styles only accept printable chars
           tester: (_, _, current) => current.isPrintable(),
@@ -418,7 +441,12 @@ typedef PushProperties =
 
 /// A persistent dumper for scalars.
 final class ScalarDumper {
-  const ScalarDumper._(this.defaultStyle, this.replaceEmpty, this.globals);
+  const ScalarDumper._(
+    this.defaultStyle,
+    this.replaceEmpty,
+    this.forceInline,
+    this.globals,
+  );
 
   /// Creates a [ScalarDumper].
   ///
@@ -427,18 +455,26 @@ final class ScalarDumper {
     required bool replaceEmpty,
     required PushProperties pushProperties,
     ScalarStyle style = ScalarStyle.doubleQuoted,
-  }) : this._(style, replaceEmpty, pushProperties);
+    bool forceInline = false,
+  }) : this._(style, replaceEmpty, forceInline, pushProperties);
 
   /// Creates a [ScalarDumper] where empty strings are always dumped as `null`
   /// and aliases are compacted.
   const ScalarDumper.classic(PushProperties push)
-    : this._(ScalarStyle.doubleQuoted, true, push);
+    : this._(ScalarStyle.doubleQuoted, true, false, push);
 
   /// Style to use when a block node is inserted into node
   final ScalarStyle defaultStyle;
 
   /// Whether empty strings are dumped as `null`.
   final bool replaceEmpty;
+
+  /// Whether the scalar should be forced inline if a line break is seen.
+  ///
+  /// The dumper will prioritize respecting the style provided when [dump] is
+  /// called or the [defaultStyle]. However, if not possible, degenerates to
+  /// [ScalarStyle.doubleQuoted] and normalizes the line break.
+  final bool forceInline;
 
   /// Tracks the object and its properties.
   final PushProperties globals;
@@ -478,6 +514,7 @@ final class ScalarDumper {
       parentIndent: parentIndent,
       indent: indent,
       usePlainNull: replaceEmpty,
+      forceInline: forceInline,
     );
 
     return (

@@ -39,13 +39,13 @@ void main() {
     });
 
     test('Applies properties correctly', () {
-      final test = dumpableType(24)..anchor = '24';
+      final scalar = dumpableType(24)..anchor = '24';
 
       void checkDump(String expected, [ScalarStyle? style]) {
         check(
           classicDumper(
             (_, _, _) => '!!24',
-          ).dump(test, indent: 1, style: style),
+          ).dump(scalar, indent: 1, style: style),
         ).dumps('&24 !!24 $expected');
       }
 
@@ -57,6 +57,24 @@ void main() {
       checkDump('>-\n 24', ScalarStyle.folded);
       checkDump('|-\n 24', ScalarStyle.literal);
     });
+
+    test(
+      'Defaults to double quoted and normalizes line breaks if forced inline',
+      () {
+        const value = 'hello \n\n here';
+        const dumped = r'"hello \n\n here"';
+
+        for (final style in ScalarStyle.values) {
+          check(
+            ScalarDumper.fineGrained(
+              replaceEmpty: false,
+              pushProperties: (_, _, _) => null,
+              forceInline: true,
+            ).dump(value, indent: 0, style: style),
+          ).dumps(dumped);
+        }
+      },
+    );
   });
 
   group('Dumps plain', () {
