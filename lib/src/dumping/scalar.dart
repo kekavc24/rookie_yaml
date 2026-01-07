@@ -224,7 +224,12 @@ List<String> _splitAsYamlDoubleQuoted(
 
 /// Joins the [lines] with a '\n`. All lines except the first line are also
 /// indented accordingly.
-DumpedScalar _dumped(Iterable<String> lines, int indent, [bool? isExplicit]) {
+DumpedScalar _dumped(
+  Iterable<String> lines,
+  int indent, {
+  bool? isExplicit,
+  bool isBlock = false,
+}) {
   final indentation = ' ' * indent;
   final node = lines
       .take(1)
@@ -234,8 +239,10 @@ DumpedScalar _dumped(Iterable<String> lines, int indent, [bool? isExplicit]) {
   final dumpedAsExplicit =
       (isExplicit ?? lines.length > 1) || node.length > 1024;
 
-  final offsetFromMargin =
-      indent + (dumpedAsExplicit ? lines.lastOrNull?.length ?? 0 : node.length);
+  final offsetFromMargin = isBlock
+      ? indent
+      : indent +
+            (dumpedAsExplicit ? lines.lastOrNull?.length ?? 0 : node.length);
 
   return (
     isMultiline: dumpedAsExplicit,
@@ -406,7 +413,12 @@ DumpedScalar _dumpScalar(
         final first = lines.firstOrNull;
 
         if (first == null || (first.isEmpty && lines.length == 1)) {
-          return _dumped([header(ChompingIndicator.strip), ''], indent, true);
+          return _dumped(
+            [header(ChompingIndicator.strip), ''],
+            indent,
+            isExplicit: true,
+            isBlock: true,
+          );
         } else if (first.startsWith(' ')) {
           // Block styles infer indent from the first non-empty line and ignore
           // any indentation recommendations by the parser. Force the node
@@ -424,7 +436,8 @@ DumpedScalar _dumpScalar(
             ),
           ].followedBy(isLiteral || first.isNotEmpty ? lines : lines.skip(1)),
           blockIndent,
-          true,
+          isExplicit: true,
+          isBlock: true,
         );
       }
   }
