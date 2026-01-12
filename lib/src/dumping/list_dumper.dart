@@ -1,17 +1,12 @@
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
-import 'package:rookie_yaml/src/dumping/scalar.dart';
+import 'package:rookie_yaml/src/dumping/map_dumper.dart';
+import 'package:rookie_yaml/src/dumping/scalar_dumper.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-/// Information about a dumped [Iterable].
-typedef DumpedSequence = ({bool preferExplicit, String node});
-
 /// An input for an [IterableDumper].
-typedef IterableEntry = (
-  Object? entry,
-  String Function(Object? object)? dumper,
-);
+typedef IterableEntry = CollectionEntry<Object?, String>;
 
 /// Callback for inserting a nested [Iterable] into a previous evicted parent
 /// [Iterable] after it has been completely dumped.
@@ -19,7 +14,7 @@ typedef _OnNestedDone =
     (bool hasTrailing, String node) Function(String content);
 
 /// Information about an [Iterable] that was evicted to allow a nested
-/// [Iterable] to be parsed.
+/// [Iterable] to be dumped.
 typedef _IterableState = ({
   bool isRoot,
   bool preferExplicit,
@@ -36,13 +31,22 @@ sealed class IterableDumper {
     required this.commentDumper,
     required this.scalarDumper,
     required this.globals,
+    required this.iterableStyle,
+    required this.canApplyTrailingComments,
   });
 
-  /// Comment style
+  final NodeStyle iterableStyle;
+
+  final bool canApplyTrailingComments;
+
+  /// Dumper for comments.
   final CommentDumper commentDumper;
 
-  /// Dumper for scalars
+  /// Dumper for scalars.
   final ScalarDumper scalarDumper;
+
+  /// Dumper for maps.
+  late final MapDumper mapDumper;
 
   /// Tracks the object and its properties.
   final PushProperties globals;
@@ -101,6 +105,7 @@ sealed class IterableDumper {
       _isExplicit = stashed.preferExplicit;
       _indent = stashed.currentIndent;
       _current = stashed.iterator;
+      _lastHadTrailing = stashed.lastHadTrailingComments;
 
       _dumpedIterable.write(stashed.state);
       return;
@@ -146,10 +151,10 @@ sealed class IterableDumper {
   }
 
   /// Checks whether the current [entry] can be dumped.
-  (bool canDump, Object? entry) _canDump(IterableEntry entry) {
+  (bool canDump, Object? entry) _canDump(int indent, IterableEntry entry) {
     final (object, dumper) = entry;
     if (dumper != null) {
-      _writeEntry(dumper(object));
+      _writeEntry(dumper(indent, object));
       return (false, null);
     }
 
@@ -173,7 +178,7 @@ sealed class IterableDumper {
   String _iterableProperties(String? tag, String? anchor, String node);
 
   /// Dumps an [iterable] with the provided [indent].
-  DumpedSequence dump(
+  DumpedCollection dump(
     ConcreteNode<Iterable<IterableEntry>> iterable,
     int indent,
   ) {
@@ -204,13 +209,12 @@ sealed class IterableDumper {
       _writeEntry(obj, hasTrailingComments: hasTrailing, indentation: null);
     } while (true);
 
+    final dumped = _dumpedIterable.toString();
+
     final dumpedIterable = (
-      preferExplicit: _isExplicit,
-      node: _iterableProperties(
-        globals(tag, anchor, iterable),
-        anchor,
-        _dumpedIterable.toString(),
-      ),
+      preferExplicit: _isExplicit || dumped.length > 1024,
+      node: _iterableProperties(globals(tag, anchor, iterable), anchor, dumped),
+      applyTrailingComments: canApplyTrailingComments,
     );
 
     _reset();
@@ -221,16 +225,18 @@ sealed class IterableDumper {
   ///
   /// The [tag] and [anchor] are included with the [object] after the [expand]
   /// has been called.
-  DumpedSequence dumpObject<T>(
+  DumpedCollection dumpObject<T>(
     T object, {
     required Iterable<IterableEntry> Function(T object) expand,
     required int indent,
     ResolvedTag? tag,
     String? anchor,
+    List<String> comments = const [],
   }) => dump(
     dumpableType(expand(object))
       ..tag = tag
-      ..anchor = anchor,
+      ..anchor = anchor
+      ..comments.addAll(comments),
     indent,
   );
 }
@@ -241,7 +247,7 @@ final class BlockSequenceDumper extends IterableDumper with PropertyDumper {
     required super.commentDumper,
     required super.scalarDumper,
     required super.globals,
-  });
+  }) : super(iterableStyle: NodeStyle.block, canApplyTrailingComments: false);
 
   @override
   String _iterableProperties(String? tag, String? anchor, String node) =>
@@ -271,16 +277,48 @@ final class BlockSequenceDumper extends IterableDumper with PropertyDumper {
     final indentation = ' ' * _indent;
 
     while (_current!.moveNext()) {
-      final (canDump, object) = _canDump(_current!.current);
+      final (canDump, object) = _canDump(entryIndent, _current!.current);
       if (!canDump) continue;
 
       final dumpable = dumpableObject(object);
 
       switch (dumpable.dumpable) {
         case Map<Object?, Object?> map:
-          _stashIterator();
-          _writeEntry('{}');
-          _stashIterator(pop: true);
+          {
+            _stashIterator();
+
+            final mapIndent = mapDumper.mapStyle == NodeStyle.block
+                ? entryIndent + 1
+                : entryIndent;
+
+            final (preferExplicit: _, :applyTrailingComments, :node) = mapDumper
+                .dump(
+                  dumpableType(map.entries.map((e) => (e, null)))
+                    ..anchor = dumpable.anchor
+                    ..tag = dumpable.tag,
+                  mapIndent,
+                );
+
+            _stashIterator(pop: true);
+
+            final offsetFromMargin = applyTrailingComments
+                ? switch (node.lastIndexOf('\n')) {
+                    -1 => node.length + mapIndent,
+                    int value => (node.length - value),
+                  }
+                : -1;
+
+            _writeEntry(
+              commentDumper.applyComments(
+                node,
+                comments: dumpable.comments,
+                forceBlock: !applyTrailingComments,
+                indent: mapIndent,
+                offsetFromMargin: offsetFromMargin,
+              ),
+              indentation: indentation,
+            );
+          }
 
         // Iterable. Nested objects must define their own dumping functions
         // which is called before reaching here.
@@ -320,7 +358,7 @@ final class BlockSequenceDumper extends IterableDumper with PropertyDumper {
                 comments: dumpable.comments,
                 forceBlock: forceBlock,
                 indent: entryIndent + 1,
-                offsetFromMargin: tentativeOffsetFromMargin,
+                offsetFromMargin: tentativeOffsetFromMargin + 1,
               ),
               indentation: indentation,
             );
@@ -334,6 +372,7 @@ final class BlockSequenceDumper extends IterableDumper with PropertyDumper {
     }
 
     _current = null;
+    _isExplicit = true;
   }
 
   /// Applies the comments present in the [dumpable] wrapper to its dumped
@@ -365,7 +404,7 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
     required super.commentDumper,
     required super.scalarDumper,
     required super.globals,
-  }) {
+  }) : super(iterableStyle: NodeStyle.flow, canApplyTrailingComments: true) {
     _isExplicit = !preferInline;
   }
 
@@ -382,13 +421,19 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
     String? indentation,
     bool hasTrailingComments = false,
   }) {
-    if (!_lastHadTrailing && _dumpedIterable.length > 1) {
+    final hasContent = _dumpedIterable.length > 1;
+
+    if (!_lastHadTrailing && hasContent) {
       _dumpedIterable.write(',');
     }
 
-    _dumpedIterable
-      ..write(preferInline ? ' ' : '\n${indentation ?? ' ' * (_indent + 1)}')
-      ..write(entry);
+    if (preferInline && hasContent) {
+      _dumpedIterable.write(' ');
+    } else if (!preferInline) {
+      _dumpedIterable.write('\n${indentation ?? ' ' * (_indent + 1)}');
+    }
+
+    _dumpedIterable.write(entry);
     _lastHadTrailing = hasTrailingComments;
   }
 
@@ -404,16 +449,41 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
     final indentation = ' ' * entryIndent;
 
     while (_current!.moveNext()) {
-      final (canDump, object) = _canDump(_current!.current);
+      final (canDump, object) = _canDump(entryIndent, _current!.current);
       if (!canDump) continue;
 
       final dumpable = dumpableObject(object);
 
       switch (dumpable.dumpable) {
         case Map<Object?, Object?> map:
-          _stashIterator();
-          _writeEntry('{}');
-          _stashIterator(pop: true);
+          {
+            _stashIterator();
+
+            final (:preferExplicit, :applyTrailingComments, :node) = mapDumper
+                .dump(
+                  dumpableType(map.entries.map((e) => (e, null)))
+                    ..anchor = dumpable.anchor
+                    ..tag = dumpable.tag,
+                  entryIndent,
+                );
+
+            _isExplicit = _isExplicit || preferExplicit;
+
+            _stashIterator(pop: true);
+
+            final (hasTrailing, dumpedMap) = _applyComments(
+              dumpable.comments,
+              node: node,
+              indent: entryIndent,
+              offsetFromMargin: null,
+            );
+
+            _writeEntry(
+              dumpedMap,
+              indentation: indentation,
+              hasTrailingComments: hasTrailing,
+            );
+          }
 
         // Iterable. Nested objects must define their own dumping functions
         // which is called before reaching here.
@@ -445,7 +515,7 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
               dumpable.comments,
               node: node,
               indent: entryIndent,
-              offsetFromMargin: tentativeOffsetFromMargin,
+              offsetFromMargin: tentativeOffsetFromMargin + 1,
             );
 
             _writeEntry(
@@ -461,8 +531,6 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
 
     if (!preferInline && hasContent) {
       _dumpedIterable.write('\n${' ' * _indent}');
-    } else if (hasContent) {
-      _dumpedIterable.write(' ');
     }
 
     _dumpedIterable.write(']');
@@ -494,18 +562,20 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
       );
     }
 
+    final dumped = '$node,';
+
     return (
       true,
       commentDumper.applyComments(
-        '$node,',
+        dumped,
         comments: comments,
         forceBlock: false,
         indent: indent,
         offsetFromMargin:
             offsetFromMargin ??
-            switch (node.lastIndexOf('\n')) {
-              -1 => node.length + indent,
-              int value => (node.length - value),
+            switch (dumped.lastIndexOf('\n')) {
+              -1 => dumped.length + indent,
+              int value => (dumped.length - value),
             },
       ),
     );
