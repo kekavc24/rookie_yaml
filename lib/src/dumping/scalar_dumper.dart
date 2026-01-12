@@ -1,6 +1,6 @@
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
+import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
-import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -443,17 +443,8 @@ DumpedScalar _dumpScalar(
   }
 }
 
-// TODO: Move dis!
-// TODO: Validate props my guy
-typedef PushProperties =
-    String? Function(
-      ResolvedTag? tag,
-      String? anchor,
-      ConcreteNode<Object?> object,
-    );
-
 /// A persistent dumper for scalars.
-final class ScalarDumper {
+final class ScalarDumper with PropertyDumper {
   const ScalarDumper._(
     this.defaultStyle,
     this.replaceEmpty,
@@ -533,21 +524,7 @@ final class ScalarDumper {
     return (
       isMultiline: isMultiline,
       tentativeOffsetFromMargin: tentativeOffsetFromMargin,
-      node: _applyProperties(localTag, anchor, node),
+      node: applyInline(localTag, anchor, node),
     );
-  }
-
-  /// Applies the scalar's properties inline.
-  String _applyProperties(String? tag, String? anchor, String node) {
-    var dumped = node;
-
-    void apply(String? prop, [String prefix = '']) {
-      if (prop == null) return;
-      dumped = '$prefix$prop $dumped';
-    }
-
-    apply(tag);
-    apply(anchor, '&');
-    return dumped;
   }
 }
