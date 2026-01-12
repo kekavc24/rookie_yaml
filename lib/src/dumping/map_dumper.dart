@@ -216,6 +216,7 @@ final class MapDumper with PropertyDumper {
     _lastHadTrailing = lastHadTrailing;
     _current = iterator;
     _dumpedMap.clear();
+    _entryStore.reset();
   }
 
   /// Stashes the current iterator.
@@ -282,7 +283,6 @@ final class MapDumper with PropertyDumper {
       isRoot: false,
       isExplicit: alwayExplicit,
     );
-    _entryStore.reset();
   }
 
   /// Writes the first character needed for a map. No op for block maps.

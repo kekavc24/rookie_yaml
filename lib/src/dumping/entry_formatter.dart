@@ -244,7 +244,10 @@ _DumpedEntry _dumpImplicitEntry(
       : '$formattedKey ';
 
   final commentsMayTrail = value.info.canApplyTrailingComments;
-  final willTrail = commentsMayTrail && commentsAreInline;
+
+  final comments = value.info.comments;
+  final willTrail =
+      commentsMayTrail && commentsAreInline && comments.isNotEmpty;
 
   var formattedValue = willTrail && isFlow
       ? '${value.info.content},'
@@ -256,7 +259,7 @@ _DumpedEntry _dumpImplicitEntry(
     char: '',
     indent: valueIndent,
     dumper: dumper,
-    comments: value.info.comments,
+    comments: comments,
     canApplyTrailing: commentsMayTrail,
     offsetFromMargin: value.info.offsetFromMargin,
   ).trimLeft();
