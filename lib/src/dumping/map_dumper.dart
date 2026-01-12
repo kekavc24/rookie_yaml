@@ -7,12 +7,15 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 part 'entry_formatter.dart';
 
+/// An input for a [MapDumper].
 typedef Entry =
     CollectionEntry<
       MapEntry<Object?, Object?>,
       ({bool isMultiline, bool isBlockCollection, String content})
     >;
 
+/// A single view for an [Entry]. Represents a single key or value based on
+/// the dumping progress.
 typedef _ExpandedEntry = (
   Object? toDump,
   ({bool isMultiline, bool isBlockCollection, String content}) Function(
@@ -21,11 +24,27 @@ typedef _ExpandedEntry = (
   )?,
 );
 
+/// A callback every parent provides once its child has been dumped.
 typedef _OnNestedMap = void Function(bool isExplicit, String content);
 
+/// A callback used to dump the root parent depending on its [NodeStyle].
 typedef _OnMapDumped =
     String Function(String? tag, String? anchor, int mapIndent, String node);
 
+/// A callback used once a map has been dumped completely. May vary depending
+/// on the [NodeStyle].
+typedef _OnMapEnd =
+    ({bool? explicit, String mapEnding}) Function(
+      bool hasContent,
+      bool isInline,
+      String indentation,
+    );
+
+/// Used by maps dumped as [NodeStyle.block].
+const _noEnding = (explicit: null, mapEnding: '');
+
+/// Information about a [Map] that was evicted to allow a nested [Map] to be
+/// dumped.
 typedef _MapState = ({
   bool isRoot,
   bool preferExplicit,
@@ -39,14 +58,18 @@ typedef _MapState = ({
   _OnNestedMap onMapDone,
 });
 
+/// A dumper for a [Map].
 final class MapDumper with PropertyDumper {
   MapDumper._(
     this._entryStore, {
     required this.mapStyle,
     required this.canApplyTrailingComments,
     required this.globals,
+    required _EntryFormatter formatter,
+    required _OnMapEnd onMapEnd,
     required this.scalarDumper,
-  }) {
+  }) : _onWrite = formatter,
+       _onMapEnd = onMapEnd {
     _onMapDumped = (tag, anchor, indent, node) =>
         mapStyle == NodeStyle.flow || node.startsWith('{')
         ? applyInline(tag, anchor, node)
@@ -64,6 +87,12 @@ final class MapDumper with PropertyDumper {
          canApplyTrailingComments: false,
          globals: globals,
          scalarDumper: scalarDumper,
+         formatter: (entry, indentation, _, _, isNotFirst) =>
+             _formatBlock(entry, indentation, isNotFirst: isNotFirst),
+         onMapEnd: (hasContent, _, _) {
+           if (hasContent) return _noEnding;
+           return (explicit: true, mapEnding: '{}\n');
+         },
        );
 
   /// Dumper for flow maps.
@@ -82,6 +111,20 @@ final class MapDumper with PropertyDumper {
          canApplyTrailingComments: true,
          scalarDumper: scalarDumper,
          globals: globals,
+         formatter: (entry, indentation, isInline, ignoreComma, isNotFirst) =>
+             _formatFlow(
+               entry,
+               indentation,
+               preferInline: isInline,
+               lastHadTrailing: ignoreComma,
+               isNotFirst: isNotFirst,
+             ),
+         onMapEnd: (hasContent, isInline, indent) {
+           return (
+             explicit: null,
+             mapEnding: '${hasContent && !isInline ? '\n$indent' : ''}}',
+           );
+         },
        );
 
   /// Map style
@@ -96,11 +139,20 @@ final class MapDumper with PropertyDumper {
   /// Called after the map has been dumped. Applies the node's properties.
   late final _OnMapDumped _onMapDumped;
 
+  /// Called when an entry has been dumped.
+  final _EntryFormatter _onWrite;
+
+  /// Called when no more entries are present.
+  final _OnMapEnd _onMapEnd;
+
   /// Dumper for scalars.
   final ScalarDumper scalarDumper;
 
+  /// Whether an [_iterableDumper] has been initialized.
+  var _hasIterableDumper = false;
+
   /// Dumper for iterables.
-  late final IterableDumper iterableDumper;
+  late final IterableDumper _iterableDumper;
 
   /// Tracks evicted [Map]s while another nested [Map] is being parsed.
   final _states = <_MapState>[];
@@ -130,6 +182,27 @@ final class MapDumper with PropertyDumper {
   /// a line break.
   var _lastHadTrailing = false;
 
+  /// Sets the internal [IterableDumper] to the [dumper] provided only if none
+  /// is assigned.
+  ///
+  /// If the [dumper] is a flow sequence dumper with `preferInline` set to
+  /// `true` then this dumper is also set to `true` for `preferInline` only if
+  /// it is a flow map dumper.
+  set iterableDumper(IterableDumper dumper) {
+    if (_hasIterableDumper) return;
+
+    _hasIterableDumper = true;
+    _iterableDumper = dumper;
+
+    // Force map inline if
+    if (dumper case FlowSequenceDumper(
+      preferInline: true,
+    ) when _entryStore.isFlow) {
+      _entryStore.preferInline = true;
+    }
+  }
+
+  /// Resets the internal state of the dumper.
   void _reset({
     Iterator<Entry>? iterator,
     int indent = -1,
@@ -212,72 +285,49 @@ final class MapDumper with PropertyDumper {
     _entryStore.reset();
   }
 
+  /// Writes the first character needed for a map. No op for block maps.
   void _mapStart() {
     if (mapStyle == NodeStyle.flow) {
       _dumpedMap.write('{');
     }
   }
 
+  /// Writes the current state of the [_entryStore] to the [_dumpedMap] buffer.
   void _writeEntry() {
-    String indent() => ' ' * _entryStore.entryIndent;
     final (:content, :hasTrailing) = _entryStore.formatEntry();
+    final isNotFirst = _entryStore.isFlow
+        ? _dumpedMap.length > 1
+        : _dumpedMap.isNotEmpty;
 
-    switch (mapStyle) {
-      case NodeStyle.flow:
-        {
-          if (_lastHadTrailing && _dumpedMap.length > 1) {
-            _dumpedMap.write(',');
-          }
-
-          if (!_entryStore.preferInline) {
-            _dumpedMap.write('\n${indent()}');
-          }
-
-          _dumpedMap.write(content);
-        }
-
-      default:
-        {
-          // Never append indent to the first entry of the block map.
-          _dumpedMap.write(
-            _dumpedMap.isNotEmpty ? '${indent()}$content' : content,
-          );
-        }
-    }
+    final onWrite = _onWrite(
+      content,
+      ' ' * _entryStore.entryIndent,
+      _entryStore.preferInline,
+      _lastHadTrailing,
+      isNotFirst,
+    );
+    _dumpedMap.write(onWrite);
 
     _lastHadTrailing = hasTrailing;
     _entryStore.reset(); // Avoid resetting indent.
   }
 
+  /// Terminates the current map being dumped.
   void _mapEnd() {
-    switch (mapStyle) {
-      case NodeStyle.block:
-        {
-          if (_dumpedMap.isNotEmpty) {
-            _isExplicit = true;
-            break;
-          }
+    final (:explicit, :mapEnding) = _onMapEnd(
+      _entryStore.isFlow ? _dumpedMap.length > 1 : _dumpedMap.isNotEmpty,
+      _entryStore.preferInline,
+      ' ' * _mapIndent,
+    );
 
-          _dumpedMap.write('{}\n');
-          _isExplicit = false;
-        }
-
-      case NodeStyle.flow:
-        {
-          // Account for "{".
-          if (_dumpedMap.length > 1 && !_entryStore.preferInline) {
-            _dumpedMap.write('\n${' ' * _mapIndent}');
-          }
-
-          _dumpedMap.write('}');
-        }
-    }
-
+    _isExplicit = explicit ?? _isExplicit;
+    _dumpedMap.write(mapEnding);
     _current = null;
     _lastHadTrailing = false;
     _entryStore.reset(null, null, -1);
   }
 
+  /// Initializes a map being dumped.
   void _warmUpEntry() {
     // We want flow maps to look "pretty" even if they are inline. The
     // distinction should be somewhat clear. It should be noted indent is
@@ -286,11 +336,13 @@ final class MapDumper with PropertyDumper {
     _mapStart();
   }
 
+  /// Expands an [Entry] and returns the object being dumped.
   _ExpandedEntry _expand(bool isKey) {
     final (entry, dumper) = _current!.current;
     return (isKey ? entry.key : entry.value, dumper);
   }
 
+  /// Dumpes the key or value of the current [Entry] in the iterator.
   void _dumpEntry({required bool isKey}) {
     final dumpingIndent =
         _entryStore.entryIndent + (isKey || _entryStore.keyWasExplicit ? 2 : 1);
@@ -390,7 +442,7 @@ final class MapDumper with PropertyDumper {
             :applyTrailingComments,
             :preferExplicit,
             :node,
-          ) = iterableDumper.dump(
+          ) = _iterableDumper.dump(
             dumpableType(iterable.map((e) => (e, null)))
               ..anchor = dumpable.anchor
               ..tag = dumpable.tag,
@@ -400,8 +452,8 @@ final class MapDumper with PropertyDumper {
           _stashIterator(pop: true);
 
           completeEntry(
-            isExplicit: preferExplicit || mapStyle == NodeStyle.block,
-            isBlockNode: iterableDumper.iterableStyle == NodeStyle.block,
+            isExplicit: preferExplicit,
+            isBlockNode: _iterableDumper.iterableStyle == NodeStyle.block,
             applyTrailingComments: applyTrailingComments,
             comments: dumpable.comments,
             content: node,
@@ -425,6 +477,7 @@ final class MapDumper with PropertyDumper {
     }
   }
 
+  /// Dumps a map based on its stored state.
   void _dumpCurrent() {
     if (_entryStore.hasKey) {
       if (!_entryStore.hasValue) return _dumpEntry(isKey: false);
@@ -438,6 +491,7 @@ final class MapDumper with PropertyDumper {
     _mapEnd();
   }
 
+  /// Dumps a sequence of [mapEntries] with the provided [indent] of the map.
   DumpedCollection dump(ConcreteNode<Iterable<Entry>> mapEntries, int indent) {
     final ConcreteNode(:dumpable, :tag, :anchor) = mapEntries;
     _reset(iterator: dumpable.iterator, indent: indent);
@@ -490,7 +544,7 @@ final class MapDumper with PropertyDumper {
     return dumpedMap;
   }
 
-  /// Dumps a custom [object] as an [Map].
+  /// Dumps an [object] as a [Map].
   ///
   /// The [tag] and [anchor] are included with the [object] after the [expand]
   /// has been called.
@@ -500,10 +554,12 @@ final class MapDumper with PropertyDumper {
     required int indent,
     ResolvedTag? tag,
     String? anchor,
+    List<String> comments = const [],
   }) => dump(
     dumpableType(expand(object))
       ..tag = tag
-      ..anchor = anchor,
+      ..anchor = anchor
+      ..comments.addAll(comments),
     indent,
   );
 }
