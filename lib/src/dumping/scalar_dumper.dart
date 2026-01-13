@@ -449,6 +449,7 @@ final class ScalarDumper with PropertyDumper {
     this.defaultStyle,
     this.replaceEmpty,
     this.forceInline,
+    this.onObject,
     this.globals,
   );
 
@@ -457,15 +458,16 @@ final class ScalarDumper with PropertyDumper {
   /// If [replaceEmpty] is true, empty strings are dumped as `null`.
   const ScalarDumper.fineGrained({
     required bool replaceEmpty,
+    required Compose onScalar,
     required PushProperties pushProperties,
     ScalarStyle style = ScalarStyle.doubleQuoted,
     bool forceInline = false,
-  }) : this._(style, replaceEmpty, forceInline, pushProperties);
+  }) : this._(style, replaceEmpty, forceInline, onScalar, pushProperties);
 
   /// Creates a [ScalarDumper] where empty strings are always dumped as `null`
   /// and aliases are compacted.
-  const ScalarDumper.classic(PushProperties push)
-    : this._(ScalarStyle.doubleQuoted, true, false, push);
+  const ScalarDumper.classic(Compose onScalar, PushProperties push)
+    : this._(ScalarStyle.plain, true, false, onScalar, push);
 
   /// Style to use when a block node is inserted into node
   final ScalarStyle defaultStyle;
@@ -479,6 +481,9 @@ final class ScalarDumper with PropertyDumper {
   /// called or the [defaultStyle]. However, if not possible, degenerates to
   /// [ScalarStyle.doubleQuoted] and normalizes the line break.
   final bool forceInline;
+
+  /// A helper function for composing a dumpable object.
+  final Compose onObject;
 
   /// Tracks the object and its properties.
   final PushProperties globals;
@@ -494,7 +499,7 @@ final class ScalarDumper with PropertyDumper {
     int parentIndent = 0,
     required ScalarStyle? style,
   }) {
-    final nodeToDump = scalar is DumpableNode ? scalar : dumpableType(scalar);
+    final nodeToDump = onObject(scalar);
 
     // Aliases here are returned "as-is".
     if (nodeToDump is DumpableAsAlias) {

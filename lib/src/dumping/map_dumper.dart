@@ -64,6 +64,7 @@ final class MapDumper with PropertyDumper {
     this._entryStore, {
     required this.mapStyle,
     required this.canApplyTrailingComments,
+    required this.onObject,
     required this.globals,
     required _EntryFormatter formatter,
     required _OnMapEnd onMapEnd,
@@ -80,11 +81,13 @@ final class MapDumper with PropertyDumper {
   MapDumper.block({
     required ScalarDumper scalarDumper,
     required CommentDumper commentDumper,
+    required Compose onObject,
     required PushProperties globals,
   }) : this._(
          _EntryStore(commentDumper),
          mapStyle: NodeStyle.block,
          canApplyTrailingComments: false,
+         onObject: onObject,
          globals: globals,
          scalarDumper: scalarDumper,
          formatter: (entry, indentation, _, _, isNotFirst) =>
@@ -100,6 +103,7 @@ final class MapDumper with PropertyDumper {
     required bool preferInline,
     required ScalarDumper scalarDumper,
     required CommentDumper commentDumper,
+    required Compose onObject,
     required PushProperties globals,
   }) : this._(
          _EntryStore(
@@ -110,6 +114,7 @@ final class MapDumper with PropertyDumper {
          mapStyle: NodeStyle.flow,
          canApplyTrailingComments: true,
          scalarDumper: scalarDumper,
+         onObject: onObject,
          globals: globals,
          formatter: (entry, indentation, isInline, ignoreComma, isNotFirst) =>
              _formatFlow(
@@ -132,6 +137,9 @@ final class MapDumper with PropertyDumper {
 
   /// Whether this map accepts trailing comments.
   final bool canApplyTrailingComments;
+
+  /// A helper function for composing a dumpable object.
+  final Compose onObject;
 
   /// Tracks the object and its properties.
   final PushProperties globals;
@@ -403,7 +411,7 @@ final class MapDumper with PropertyDumper {
       );
     }
 
-    final dumpable = dumpableObject(object);
+    final dumpable = onObject(object);
 
     switch (dumpable.dumpable) {
       case Map<Object?, Object?> map:

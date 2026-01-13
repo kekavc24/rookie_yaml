@@ -30,6 +30,7 @@ sealed class IterableDumper {
   IterableDumper({
     required this.commentDumper,
     required this.scalarDumper,
+    required this.onObject,
     required this.globals,
     required this.iterableStyle,
     required this.canApplyTrailingComments,
@@ -47,6 +48,9 @@ sealed class IterableDumper {
 
   /// Dumper for maps.
   late final MapDumper mapDumper;
+
+  /// A helper function for composing a dumpable object.
+  final Compose onObject;
 
   /// Tracks the object and its properties.
   final PushProperties globals;
@@ -246,6 +250,7 @@ final class BlockSequenceDumper extends IterableDumper with PropertyDumper {
   BlockSequenceDumper({
     required super.commentDumper,
     required super.scalarDumper,
+    required super.onObject,
     required super.globals,
   }) : super(iterableStyle: NodeStyle.block, canApplyTrailingComments: false);
 
@@ -280,7 +285,7 @@ final class BlockSequenceDumper extends IterableDumper with PropertyDumper {
       final (canDump, object) = _canDump(entryIndent, _current!.current);
       if (!canDump) continue;
 
-      final dumpable = dumpableObject(object);
+      final dumpable = onObject(object);
 
       switch (dumpable.dumpable) {
         case Map<Object?, Object?> map:
@@ -403,6 +408,7 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
     required this.preferInline,
     required super.commentDumper,
     required super.scalarDumper,
+    required super.onObject,
     required super.globals,
   }) : super(iterableStyle: NodeStyle.flow, canApplyTrailingComments: true) {
     _isExplicit = !preferInline;
@@ -452,7 +458,7 @@ final class FlowSequenceDumper extends IterableDumper with PropertyDumper {
       final (canDump, object) = _canDump(entryIndent, _current!.current);
       if (!canDump) continue;
 
-      final dumpable = dumpableObject(object);
+      final dumpable = onObject(object);
 
       switch (dumpable.dumpable) {
         case Map<Object?, Object?> map:
