@@ -1,60 +1,18 @@
 part of 'map_dumper.dart';
 
-/// Node information about a dumped node
-typedef _NodeInfo = ({
-  int indent,
-  int? offsetFromMargin,
-  bool canApplyTrailingComments,
-  List<String> comments,
-  String content,
-});
+/// Information about the current key of an [_KVStore].
+typedef _KeyStore = ({bool explicit, NodeInfo info});
 
-/// Information about the current key of an [_EntryStore].
-typedef _KeyStore = ({bool explicit, _NodeInfo info});
-
-/// Information about the current value of an [_EntryStore].
-typedef _ValueStore = ({bool isBlock, _NodeInfo info});
-
-/// A dumped [MapEntry].
-typedef _DumpedEntry = ({bool hasTrailing, String content});
+/// Information about the current value of an [_KVStore].
+typedef _ValueStore = ({bool isBlock, NodeInfo info});
 
 /// Adds a space before the `:` of an implicit key that is an alias. The `:`
 /// is considered a valid alias character.
 String _spacedIfAlias(String key) => key.startsWith('*') ? '$key ' : key;
 
-/// A callback for a dumped entry that formats it to match the state of the
-/// map which contained it.
-typedef _EntryFormatter =
-    String Function(
-      String entry,
-      String indentation,
-      bool isInline,
-      bool lastHadTrailing,
-      bool isNotFirst,
-    );
-
-/// Formats a flow map entry.
-String _formatFlow(
-  String entry,
-  String indentation, {
-  required bool preferInline,
-  required bool lastHadTrailing,
-  required bool isNotFirst,
-}) {
-  return '${lastHadTrailing && isNotFirst ? ',' : ''}'
-      '${preferInline ? (isNotFirst ? ' ' : '') : '\n$indentation'}$entry';
-}
-
-/// Formats a block map entry.
-String _formatBlock(
-  String entry,
-  String indentation, {
-  required bool isNotFirst,
-}) => isNotFirst ? '$indentation$entry' : entry;
-
-/// Represents an entry that is being processed and has not been dumped.
-final class _EntryStore {
-  _EntryStore(
+/// Represents a [MapEntry] that is being processed and has not been dumped.
+final class _KVStore {
+  _KVStore(
     this.dumper, {
     bool alwaysInline = false,
     bool isFlowMap = false,
@@ -76,7 +34,7 @@ final class _EntryStore {
 
   /// Whether flow map entries are dumped inline. In this state, comments are
   /// ignored.
-  bool preferInline;
+  final bool preferInline;
 
   /// Tracks the parsed key.
   _KeyStore? key;
@@ -95,7 +53,7 @@ final class _EntryStore {
   bool get keyWasExplicit => key?.explicit ?? false;
 
   /// Formats the buffered entry.
-  _DumpedEntry formatEntry() {
+  DumpedEntry formatEntry() {
     _throwIfIncomplete();
 
     if (isFlow && preferInline) {
@@ -216,7 +174,7 @@ String _dumpGeneric(
 }
 
 /// Dumps an implicit entry to a flow/block map.
-_DumpedEntry _dumpImplicitEntry(
+DumpedEntry _dumpImplicitEntry(
   CommentDumper dumper,
   _KeyStore key,
   _ValueStore value, [
@@ -268,9 +226,9 @@ _DumpedEntry _dumpImplicitEntry(
 }
 
 /// Dumps an explicit entry to a block map or multiline flow map.
-_DumpedEntry _dumpBlockExplicitEntry(
+DumpedEntry _dumpBlockExplicitEntry(
   CommentDumper dumper,
-  _NodeInfo keyInfo,
+  NodeInfo keyInfo,
   _ValueStore value,
   int entryIndent, [
   bool isFlow = false,
@@ -309,7 +267,7 @@ _DumpedEntry _dumpBlockExplicitEntry(
 }
 
 /// Dumps an entry to a flow/block map.
-_DumpedEntry _dumpEntry(
+DumpedEntry _dumpEntry(
   int entryIndent, {
   required CommentDumper dumper,
   required _KeyStore key,
