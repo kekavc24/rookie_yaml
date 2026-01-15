@@ -11,30 +11,8 @@ typedef _ValueStore = ({bool isBlock, NodeInfo info});
 String _spacedIfAlias(String key) => key.startsWith('*') ? '$key ' : key;
 
 /// Represents a [MapEntry] that is being processed and has not been dumped.
-final class _KVStore {
-  _KVStore(
-    this.dumper, {
-    bool alwaysInline = false,
-    bool isFlowMap = false,
-  }) : isFlow = isFlowMap,
-       preferInline = isFlowMap && alwaysInline;
-
-  /// Represents the indent of the entry relative to the map that instatiated
-  /// it.
-  ///
-  /// For block maps, this is the indent of the block map itself. For flow maps,
-  /// this is `mapIndent + 1`.
-  int entryIndent = -1;
-
-  /// Dumper for comments.
-  final CommentDumper dumper;
-
-  /// Whether this is an entry in a flow map
-  final bool isFlow;
-
-  /// Whether flow map entries are dumped inline. In this state, comments are
-  /// ignored.
-  final bool preferInline;
+final class _KVStore extends FormattingEntry {
+  _KVStore(super.dumper, {super.alwaysInline, super.isFlowNode});
 
   /// Tracks the parsed key.
   _KeyStore? key;
@@ -42,7 +20,7 @@ final class _KVStore {
   /// Tracks the parsed value.
   _ValueStore? value;
 
-  /// Whether this is entry has no key and value.
+  @override
   bool get isEmpty => !hasKey && !hasValue;
 
   bool get hasKey => key != null;
@@ -52,9 +30,15 @@ final class _KVStore {
   /// Whether the key was parsed as an explicit key.
   bool get keyWasExplicit => key?.explicit ?? false;
 
-  /// Formats the buffered entry.
-  DumpedEntry formatEntry() {
-    _throwIfIncomplete();
+  @override
+  DumpedEntry format() {
+    throwIfIncomplete(
+      throwIf: key == null || value == null,
+      message:
+          'Invalid dumping state: \n'
+          '\tkey: $key\n'
+          '\tvalue: $value',
+    );
 
     if (isFlow && preferInline) {
       return (
@@ -76,28 +60,29 @@ final class _KVStore {
     return (content: _postProcess(content), hasTrailing: hasTrailing);
   }
 
+  @override
+  void next() {
+    key = null;
+    value = null;
+    ++countFormatted;
+  }
+
   /// Reverts the entry to an empty state.
-  void reset([_KeyStore? newKey, _ValueStore? newValue, int? indent]) {
+  void reset({
+    _KeyStore? newKey,
+    _ValueStore? newValue,
+    int? indent,
+    int? count,
+  }) {
     key = newKey;
     value = newValue;
     entryIndent = indent ?? entryIndent;
-  }
-
-  /// Throws if the entry is being dumped to the actual map buffer and the
-  /// [key] or [value] is null.
-  void _throwIfIncomplete() {
-    if (key == null || value == null) {
-      throw StateError(
-        'Invalid dumping state: \n'
-        '\tkey: $key\n'
-        '\tvalue: $value',
-      );
-    }
+    resetCount(count);
   }
 
   /// Applies the trailing line break as required for all block maps.
   String _postProcess(String dumped) =>
-      !isFlow && !dumped.endsWith('\n') ? '$dumped\n' : dumped;
+      isFlow || dumped.endsWith('\n') ? dumped : '$dumped\n';
 }
 
 /// Dumps an key or value.
@@ -243,8 +228,12 @@ DumpedEntry _dumpBlockExplicitEntry(
     offsetFromMargin: keyInfo.offsetFromMargin,
   );
 
+  final comments = value.info.comments;
+
   final definitelyTrailing =
-      !value.isBlock && value.info.canApplyTrailingComments;
+      !value.isBlock &&
+      value.info.canApplyTrailingComments &&
+      comments.isNotEmpty;
   final dumpedValue = definitelyTrailing && isFlow
       ? '${value.info.content},'
       : value.info.content;
@@ -259,7 +248,7 @@ DumpedEntry _dumpBlockExplicitEntry(
           char: ':',
           indent: value.info.indent,
           dumper: dumper,
-          comments: value.info.comments,
+          comments: comments,
           canApplyTrailing: definitelyTrailing,
           offsetFromMargin: value.info.offsetFromMargin,
         )}',

@@ -214,3 +214,62 @@ final class CommentDumper {
         : '$node $dumpedComments';
   }
 }
+
+abstract base class FormattingEntry {
+  FormattingEntry(
+    this.dumper, {
+    bool alwaysInline = false,
+    bool isFlowNode = false,
+  }) : isFlow = isFlowNode,
+       preferInline = isFlowNode && alwaysInline;
+
+  /// Represents the indent of the entry relative to the map that instatiated
+  /// it.
+  ///
+  /// For block collections, this is the indent of the block node itself. For
+  /// flow collections, this is `flowNode + 1`.
+  var entryIndent = -1;
+
+  /// Number of entries that have been formatted for a collection.
+  var countFormatted = 0;
+
+  /// Dumper for comments.
+  final CommentDumper dumper;
+
+  /// Whether this is an entry in a flow map
+  final bool isFlow;
+
+  /// Whether flow map entries are dumped inline. In this state, comments are
+  /// ignored.
+  final bool preferInline;
+
+  /// Whether this is entry has any content to format.
+  bool get isEmpty;
+
+  /// Whether any entries were formatted.
+  bool get formattedAny => countFormatted > 0;
+
+  /// Whether parent is multiline.
+  bool parentIsMultiline() => !preferInline && formattedAny;
+
+  /// Formats the entry to match a collection's [NodeStyle].
+  DumpedEntry format();
+
+  /// Resets and proceeds to the next state. Any mutable state should be reset
+  /// here if the collection context hasn't changed.
+  void next();
+
+  /// Throws if the entry is being dumped is in an incomplete state.
+  @pragma('vm:prefer-inline')
+  void throwIfIncomplete({required bool throwIf, required String message}) {
+    if (throwIf) {
+      throw StateError(message);
+    }
+  }
+
+  /// Resets the number of entries formatted.
+  @pragma('vm:prefer-inline')
+  void resetCount([int? count]) {
+    countFormatted = count ?? 0;
+  }
+}

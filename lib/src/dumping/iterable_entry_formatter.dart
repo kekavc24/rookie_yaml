@@ -2,33 +2,14 @@ part of 'list_dumper.dart';
 
 /// Represents an [Iterable] entry that is being processed and has not been
 /// dumped.
-final class _ListEntry {
+final class _ListEntry extends FormattingEntry {
   _ListEntry(
-    this.dumper, {
-    bool alwaysInline = false,
-    bool isFlowSequence = false,
-  }) : isFlow = isFlowSequence,
-       preferInline = isFlowSequence && alwaysInline,
-       _formatted = isFlowSequence
+    super.dumper, {
+    super.alwaysInline,
+    super.isFlowNode,
+  }) : _formatted = isFlowNode
            ? ((e) => e)
            : ((e) => '- $e${e.endsWith('\n') ? '' : '\n'}');
-
-  /// Represents the indent of the entry relative to the map that instatiated
-  /// it.
-  ///
-  /// For block sequences, this is the indent of the block map itself. For flow
-  /// sequences, this is `mapIndent + 1`.
-  int entryIndent = -1;
-
-  /// Dumper for comments.
-  final CommentDumper dumper;
-
-  /// Whether this is an entry in a flow sequence.
-  final bool isFlow;
-
-  /// Whether sequence entries are dumped inline. In this state, comments are
-  /// ignored.
-  final bool preferInline;
 
   /// Formats a string after it has been dumped and comments applied.
   final String Function(String content) _formatted;
@@ -36,14 +17,15 @@ final class _ListEntry {
   /// The entry's unformatted content.
   NodeInfo? node;
 
-  /// Whether this is entry has any value.
+  @override
   bool get isEmpty => node == null;
 
-  /// Formats the entry.
+  @override
   DumpedEntry format() {
-    if (node == null) {
-      throw StateError('Invalid dumping state. No entry found.');
-    }
+    throwIfIncomplete(
+      throwIf: node == null,
+      message: 'Invalid dumping state. No entry found.',
+    );
 
     final (
       :indent,
@@ -80,9 +62,16 @@ final class _ListEntry {
     );
   }
 
+  @override
+  void next() {
+    node = null;
+    ++countFormatted;
+  }
+
   /// Reverts the entry to an empty state.
-  void reset([NodeInfo? update, int? indent]) {
+  void reset({NodeInfo? update, int? indent, int? count}) {
     node = update;
     entryIndent = indent ?? entryIndent;
+    resetCount(count);
   }
 }

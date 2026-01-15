@@ -21,7 +21,9 @@ typedef _IterableState = ({
   bool preferExplicit,
   bool lastHadTrailingComments,
   int currentIndent,
+  int entryIndent,
   Iterator<IterableEntry> iterator,
+  int elementsDumped,
   String state,
   _OnNestedIterable onIterableDone,
 });
@@ -67,7 +69,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
          globals: globals,
          onIterableEnd: (hasContent, _, _) {
            if (hasContent) return noCollectionEnd;
-           return (explicit: true, ending: '[]\n');
+           return (explicit: false, ending: '[]');
          },
          scalarDumper: scalarDumper,
        );
@@ -81,7 +83,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
   }) : this._(
          _ListEntry(
            commentDumper,
-           isFlowSequence: true,
+           isFlowNode: true,
            alwaysInline: preferInline,
          ),
          iterableStyle: NodeStyle.flow,
@@ -150,6 +152,12 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
   /// always dumped on a new line with a `-` before.
   var _lastHadTrailing = false;
 
+  /// Whether the [Iterable] span multiple lines.
+  bool _preferExplicit(String node) {
+    // Block nodes must not be empty.
+    return _listEntry.parentIsMultiline() || _isExplicit || node.length > 1024;
+  }
+
   /// Sets the internal [MapDumper] to [dumper].
   ///
   /// `NOTE:` A [NodeStyle.block] map [dumper] should not be provided to a
@@ -186,7 +194,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
       ),
     };
 
-    mapDumper = dumper..iterableDumper = this;
+    _mapDumper = dumper..iterableDumper = this;
   }
 
   /// Resets the internal state of the dumper.
@@ -203,6 +211,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     _lastHadTrailing = lastHadTrailing;
     _current = iterator;
     _dumpedIterable.clear();
+    _listEntry.reset();
   }
 
   /// Stashes the current iterator.
@@ -218,6 +227,11 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
       _current = stashed.iterator;
       _lastHadTrailing = stashed.lastHadTrailingComments;
 
+      _listEntry.reset(
+        indent: stashed.entryIndent,
+        count: stashed.elementsDumped,
+      );
+
       _dumpedIterable.write(stashed.state);
       return;
     }
@@ -226,8 +240,10 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
       isRoot: _isRoot,
       preferExplicit: _isExplicit,
       currentIndent: _indent,
+      entryIndent: _listEntry.entryIndent,
       lastHadTrailingComments: _lastHadTrailing,
       iterator: _current!,
+      elementsDumped: _listEntry.countFormatted,
       state: _dumpedIterable.toString(),
       onIterableDone: (_, _) => {},
     ));
@@ -250,7 +266,9 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
       onIterableDone: onIterableDone,
       state: _dumpedIterable.toString(),
       currentIndent: _indent,
+      entryIndent: _listEntry.entryIndent,
       iterator: _current!,
+      elementsDumped: _listEntry.countFormatted,
     ));
 
     _reset(
@@ -273,29 +291,24 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
   void _writeEntry() {
     final (:hasTrailing, :content) = _listEntry.format();
 
-    final isNotFirst = _listEntry.isFlow
-        ? _dumpedIterable.length > 1
-        : _dumpedIterable.isNotEmpty;
-
     _dumpedIterable.write(
       _onFormat(
         content,
         ' ' * _listEntry.entryIndent,
         _lastHadTrailing,
-        isNotFirst,
+        _listEntry.formattedAny,
       ),
     );
 
+    _isExplicit = _isExplicit || _listEntry.parentIsMultiline();
     _lastHadTrailing = hasTrailing;
-    _listEntry.reset(); // Avoid resetting indent.
+    _listEntry.next();
   }
 
   /// Terminates the current iterable being dumped.
   void _listEnd() {
     final (:explicit, :ending) = _onIterableEnd(
-      _listEntry.isFlow
-          ? _dumpedIterable.length > 1
-          : _dumpedIterable.isNotEmpty,
+      _listEntry.formattedAny,
       _listEntry.preferInline,
       ' ' * _indent,
     );
@@ -304,7 +317,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     _dumpedIterable.write(ending);
     _current = null;
     _lastHadTrailing = false;
-    _listEntry.reset(null, -1);
+    _listEntry.reset(indent: -1);
   }
 
   /// Initializes the current iterable being dumped.
@@ -468,7 +481,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
 
       final parent = _states.removeLast();
       final nested = _dumpedIterable.toString();
-      final nestedIsExplicit = _isExplicit;
+      final nestedIsExplicit = _preferExplicit(nested);
 
       _reset(
         iterator: parent.iterator,
@@ -478,6 +491,11 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
         lastHadTrailing: parent.lastHadTrailingComments,
       );
 
+      _listEntry.reset(
+        indent: parent.entryIndent,
+        count: parent.elementsDumped,
+      );
+
       _dumpedIterable.write(parent.state);
       parent.onIterableDone(nestedIsExplicit, nested);
     } while (true);
@@ -485,7 +503,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     final dumped = _dumpedIterable.toString();
 
     final dumpedIterable = (
-      preferExplicit: _isExplicit || dumped.length > 1024,
+      preferExplicit: _preferExplicit(dumped),
       node: _onIterableDumped(
         globals(tag, anchor, iterable),
         anchor,
@@ -503,7 +521,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
   ///
   /// The [tag] and [anchor] are included with the [object] after the [expand]
   /// has been called.
-  DumpedCollection dumpObject<T>(
+  DumpedCollection dumpIterableLike<T>(
     T object, {
     required Iterable<IterableEntry> Function(T object) expand,
     required int indent,

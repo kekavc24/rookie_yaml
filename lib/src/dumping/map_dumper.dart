@@ -31,6 +31,7 @@ typedef _MapState = ({
   Iterator<Entry> iterator,
   _KeyStore? currentKey,
   _ValueStore? currentValue,
+  int entriesFormatted,
   String mapState,
   _OnNestedMap onMapDone,
 });
@@ -78,7 +79,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
          scalarDumper: scalarDumper,
          onMapEnd: (hasContent, _, _) {
            if (hasContent) return noCollectionEnd;
-           return (explicit: true, ending: '{}\n');
+           return (explicit: true, ending: '{}');
          },
        );
 
@@ -92,7 +93,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
   }) : this._(
          _KVStore(
            commentDumper,
-           isFlowMap: true,
+           isFlowNode: true,
            alwaysInline: preferInline,
          ),
          mapStyle: NodeStyle.flow,
@@ -166,6 +167,11 @@ final class MapDumper with PropertyDumper, EntryFormatter {
   /// a line break.
   var _lastHadTrailing = false;
 
+  /// Whether the [Map] span multiple lines.
+  bool _preferExplicit(String node) {
+    return _entryStore.parentIsMultiline() || _isExplicit || node.length > 1024;
+  }
+
   /// Sets the internal [Iterable] to [dumper].
   ///
   /// `NOTE:` A [NodeStyle.block] iterable [dumper] should not be provided to a
@@ -202,7 +208,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
       ),
     };
 
-    iterableDumper = dumper..mapDumper = this;
+    _iterableDumper = dumper..mapDumper = this;
   }
 
   /// Resets the internal state of the dumper.
@@ -234,9 +240,10 @@ final class MapDumper with PropertyDumper, EntryFormatter {
       _mapIndent = stashed.mapIndent;
       _current = stashed.iterator;
       _entryStore.reset(
-        stashed.currentKey,
-        stashed.currentValue,
-        stashed.entryIndent,
+        newKey: stashed.currentKey,
+        newValue: stashed.currentValue,
+        indent: stashed.entryIndent,
+        count: stashed.entriesFormatted,
       );
 
       _dumpedMap.write(stashed.mapState);
@@ -252,6 +259,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
       iterator: _current!,
       currentKey: _entryStore.key,
       currentValue: _entryStore.value,
+      entriesFormatted: _entryStore.countFormatted,
       mapState: _dumpedMap.toString(),
       onMapDone: (_, _) {},
     ));
@@ -276,6 +284,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
       iterator: _current!,
       currentKey: _entryStore.key,
       currentValue: _entryStore.value,
+      entriesFormatted: _entryStore.countFormatted,
       mapState: _dumpedMap.toString(),
       onMapDone: onMapDone,
     ));
@@ -297,27 +306,24 @@ final class MapDumper with PropertyDumper, EntryFormatter {
 
   /// Writes the current state of the [_entryStore] to the [_dumpedMap] buffer.
   void _writeEntry() {
-    final (:content, :hasTrailing) = _entryStore.formatEntry();
-    final isNotFirst = _entryStore.isFlow
-        ? _dumpedMap.length > 1
-        : _dumpedMap.isNotEmpty;
+    final (:content, :hasTrailing) = _entryStore.format();
 
     _dumpedMap.write(
       _onWrite(
         content,
         ' ' * _entryStore.entryIndent,
         _lastHadTrailing,
-        isNotFirst,
+        _entryStore.formattedAny,
       ),
     );
     _lastHadTrailing = hasTrailing;
-    _entryStore.reset(); // Avoid resetting indent.
+    _entryStore.next();
   }
 
   /// Terminates the current map being dumped.
   void _mapEnd() {
     final (:explicit, :ending) = _onMapEnd(
-      _entryStore.isFlow ? _dumpedMap.length > 1 : _dumpedMap.isNotEmpty,
+      _entryStore.formattedAny,
       _entryStore.preferInline,
       ' ' * _mapIndent,
     );
@@ -326,7 +332,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
     _dumpedMap.write(ending);
     _current = null;
     _lastHadTrailing = false;
-    _entryStore.reset(null, null, -1);
+    _entryStore.reset(indent: -1);
   }
 
   /// Initializes a map being dumped.
@@ -509,7 +515,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
 
       final mapBefore = _states.removeLast();
       final nested = _dumpedMap.toString();
-      final nestedIsExplicit = _isExplicit;
+      final nestedIsExplicit = _preferExplicit(nested);
 
       _reset(
         iterator: mapBefore.iterator,
@@ -520,9 +526,10 @@ final class MapDumper with PropertyDumper, EntryFormatter {
       );
 
       _entryStore.reset(
-        mapBefore.currentKey,
-        mapBefore.currentValue,
-        mapBefore.entryIndent,
+        newKey: mapBefore.currentKey,
+        newValue: mapBefore.currentValue,
+        indent: mapBefore.entryIndent,
+        count: mapBefore.entriesFormatted,
       );
 
       _dumpedMap.write(mapBefore.mapState);
@@ -551,7 +558,7 @@ final class MapDumper with PropertyDumper, EntryFormatter {
   ///
   /// The [tag] and [anchor] are included with the [object] after the [expand]
   /// has been called.
-  DumpedCollection dumpObject<T>(
+  DumpedCollection dumpMapLike<T>(
     T object, {
     required Iterable<Entry> Function(T object) expand,
     required int indent,
