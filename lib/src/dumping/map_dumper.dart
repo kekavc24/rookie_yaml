@@ -1,5 +1,6 @@
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
+import 'package:rookie_yaml/src/dumping/formatter.dart';
 import 'package:rookie_yaml/src/dumping/list_dumper.dart';
 import 'package:rookie_yaml/src/dumping/scalar_dumper.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';

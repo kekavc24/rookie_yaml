@@ -40,6 +40,8 @@ final class YamlCollectionEquality extends DeepCollectionEquality {
 /// {@category intro}
 /// {@category yaml_nodes}
 sealed class YamlNode {
+  const YamlNode();
+
   /// Style used to serialize the node within the `YAML` source string
   NodeStyle get nodeStyle;
 }
@@ -48,14 +50,12 @@ sealed class YamlNode {
 /// limited to YAML's compact notation unless such a notation is required when
 /// the object is being dumped.
 ///
-/// `[NOTE]`: This interface is a blueprint and a contract. If any object
-/// provides an `alias` then `anchor` and `tag` **MUST** be `null`. If `anchor`
-/// or `tag` is provided, `alias` **MUST** be null.
-///
 /// {@category intro}
 /// {@category yaml_nodes}
 /// {@category dump_node}
-abstract interface class CompactYamlNode extends YamlNode {
+abstract class CompactYamlNode extends YamlNode {
+  const CompactYamlNode();
+
   /// [Tag] directive describing how the node is represented natively.
   ResolvedTag? get tag => null;
 
@@ -79,12 +79,6 @@ abstract interface class CompactYamlNode extends YamlNode {
 /// {@category intro}
 /// {@category yaml_nodes}
 sealed class YamlSourceNode extends CompactYamlNode {
-  YamlSourceNode();
-
-  /// [Tag] directive describing how the node is represented natively.
-  @override
-  ResolvedTag? get tag => null; // Just to redefine docs
-
   /// Start offset (inclusive) and end offset (exclusive) in the source parsed.
   RuneSpan get nodeSpan;
 }

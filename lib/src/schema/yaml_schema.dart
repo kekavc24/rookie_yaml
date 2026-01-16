@@ -7,7 +7,7 @@ const _yamlPrefix = 'tag:yaml.org,2002:';
 /// Default handle for the global `YAML` tag.
 ///
 /// See [_yamlPrefix]
-final _defaultYamlHandle = TagHandle.secondary();
+final defaultYamlHandle = TagHandle.secondary();
 
 /// `YAML` global tag
 ///
@@ -16,32 +16,32 @@ final _defaultYamlHandle = TagHandle.secondary();
 /// ```
 ///
 /// {@category schema}
-final yamlGlobalTag = GlobalTag.fromTagUri(_defaultYamlHandle, _yamlPrefix);
+final yamlGlobalTag = GlobalTag.fromTagUri(defaultYamlHandle, _yamlPrefix);
 
 /// Generic [Map]
 ///
 /// {@category schema}
-final mappingTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'map');
+final mappingTag = TagShorthand.fromTagUri(defaultYamlHandle, 'map');
 
 /// Generic ordered [Map]
 ///
 /// {@category schema}
-final orderedMappingTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'omap');
+final orderedMappingTag = TagShorthand.fromTagUri(defaultYamlHandle, 'omap');
 
 /// Generic [List]
 ///
 /// {@category schema}
-final sequenceTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'seq');
+final sequenceTag = TagShorthand.fromTagUri(defaultYamlHandle, 'seq');
 
 /// Generic [String]
 ///
 /// {@category schema}
-final stringTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'str');
+final stringTag = TagShorthand.fromTagUri(defaultYamlHandle, 'str');
 
 /// Generic [Set]
 ///
 /// {@category schema}
-final setTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'set');
+final setTag = TagShorthand.fromTagUri(defaultYamlHandle, 'set');
 
 //
 // ** JSON SCHEMA TAGS **
@@ -51,22 +51,22 @@ final setTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'set');
 /// `JSON` `null`
 ///
 /// {@category schema}
-final nullTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'null');
+final nullTag = TagShorthand.fromTagUri(defaultYamlHandle, 'null');
 
 /// `JSON` [bool]
 ///
 /// {@category schema}
-final booleanTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'bool');
+final booleanTag = TagShorthand.fromTagUri(defaultYamlHandle, 'bool');
 
 /// `JSON` [int]
 ///
 /// {@category schema}
-final integerTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'int');
+final integerTag = TagShorthand.fromTagUri(defaultYamlHandle, 'int');
 
 /// `JSON` [double]
 ///
 /// {@category schema}
-final floatTag = TagShorthand.fromTagUri(_defaultYamlHandle, 'float');
+final floatTag = TagShorthand.fromTagUri(defaultYamlHandle, 'float');
 
 /// Whether a [tag] can be used as both a [Sequence] and [Mapping] tag.
 bool _canBeSequenceOrMap(TagShorthand tag) =>

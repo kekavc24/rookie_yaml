@@ -1,99 +1,5 @@
+import 'package:rookie_yaml/src/dumping/unfolding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-
-/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
-/// line breaks in YAML.
-///
-/// Unlike [splitStringLazy], this function allows you to declare a [replacer]
-/// for [Runes] being iterated. [lineOnSplit] callback is triggered everytime a
-/// line is split after a `\r` or `\n` or `\r\n`. May be inaccurate.
-Iterable<String> splitLazyChecked(
-  String string, {
-  required Iterable<int> Function(int offset, int charCode) replacer,
-  required void Function() lineOnSplit,
-}) => _coreLazySplit(string, replacer: replacer, lineOnSplit: lineOnSplit);
-
-/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
-/// line breaks in YAML.
-///
-/// This function breaks the lines indiscriminately and does not track the
-/// dominant line break based on the platform unless the `\r\n` is seen.
-Iterable<String> splitStringLazy(String string) => _coreLazySplit(string);
-
-/// Splits a string lazily at `\r` or `\n` or `\r\n` which are recognized as
-/// line breaks in YAML.
-///
-/// Unlike [splitStringLazy], this function allows you to declare a [replacer]
-/// for [Runes] being iterated. [lineOnSplit] callback is triggered everytime a
-/// line is split after a `\r` or `\n` or `\r\n`. May be inaccurate.
-Iterable<String> _coreLazySplit(
-  String string, {
-  Iterable<int> Function(int offset, int charCode)? replacer,
-  void Function()? lineOnSplit,
-}) sync* {
-  final subchecker =
-      replacer ??
-      (_, c) sync* {
-        yield c;
-      };
-
-  final splitCallback = lineOnSplit ?? () {};
-
-  final runeIterator = string.runes.iterator;
-
-  bool canIterate() => runeIterator.moveNext();
-
-  final buffer = StringBuffer();
-  int? previous; // Track trailing line breaks for preservation
-
-  splitter:
-  while (canIterate()) {
-    var current = runeIterator.current;
-
-    switch (current) {
-      case carriageReturn:
-        {
-          // If just "\r", exit immediately without overwriting trailing "\r"
-          if (!canIterate()) {
-            splitCallback();
-            yield buffer.toString();
-            buffer.clear();
-            break splitter;
-          }
-
-          current = runeIterator.current;
-          continue gen; // Let "lf" handle this.
-        }
-
-      gen:
-      case lineFeed:
-        {
-          splitCallback();
-
-          yield buffer.toString();
-          buffer.clear();
-
-          // In case we got this char from the carriage return
-          if (current != lineFeed && current != -1) {
-            continue writer;
-          }
-        }
-
-      writer:
-      default:
-        for (final char in subchecker(runeIterator.rawIndex, current)) {
-          buffer.writeCharCode(char);
-        }
-    }
-
-    previous = current;
-  }
-
-  // Ensure we flush all buffered contents. A trailing line break signals
-  // we need it preserved. Thus, emit an empty string too in this case.
-  if (buffer.isNotEmpty || previous == carriageReturn || previous == lineFeed) {
-    yield buffer.toString();
-  }
-}
 
 extension Normalizer on int {
   /// Normalizes all character that can be escaped.
@@ -172,152 +78,212 @@ extension Normalizer on int {
   }
 }
 
-const _empty = '';
-const _slash = r'\';
-const _nerfedTab =
-    '$_slash'
-    't';
-
-/// Unfolds a previously folded string. This is a generic unfolding
-/// implementation that allows any [ScalarStyle] that is not
-/// [ScalarStyle.literal] to unfold a previously folded string.
-///
-/// Each (foldable) [ScalarStyle] can specify a [preflight] callback that allows
-/// the current line to be preprocessed before it is "yielded" and a [isFolded]
-/// callback that evaluates if the `current` line can be folded based on the
-/// state of the `previous` line.
-///
-/// [isFolded] usually evaluates to `true` for all [ScalarStyle] that can be
-/// used in [NodeStyle.flow]. See [unfoldBlockFolded] for conditions that
-/// result in this function to returning `true` in [ScalarStyle.folded].
-///
-/// [preflight] allows [ScalarStyle.doubleQuoted] to preprocess the current
-/// line to ensure that it's state is preserved when it has leading and
-/// trailing whitespace. See [unfoldDoubleQuoted].
-///
-/// See [unfoldNormal] for other [ScalarStyle]s.
-Iterable<String> _coreUnfolding(
-  Iterable<String> lines, {
-  bool isBlockUnfolding = false,
-  String Function(bool isFirst, bool hasNext, String line)? preflight,
-  bool Function(String previous, String current)? isFolded,
-}) sync* {
-  final canUnfold = isFolded ?? (_, _) => true;
-  final yielder = preflight ?? (_, _, line) => line;
-
-  final iterator = lines.iterator;
-  var hasNext = false;
-
-  void moveCursor() => hasNext = iterator.moveNext();
-
-  /// Skips empty lines. This is a utility nested closure.
-  /// `TIP`: Collapse it.
-  Iterable<String> skipEmpty(
-    String current, {
-    required void Function(String? current) onComplete,
-  }) sync* {
-    String? onExit;
-
-    yield current;
-    moveCursor();
-
-    while (hasNext) {
-      final line = iterator.current;
-
-      if (line.isNotEmpty) {
-        onExit = line;
-        break;
-      }
-
-      yield line;
-      moveCursor();
+extension type _WobblyChar(int code) {
+  /// Normalizes a code point based on the style.
+  ///
+  /// If [isPlain] is `true`, all escaped characters (except `\t` and `\n`) are
+  /// normalized. Slashes and double quotes are only escaped if [isDoubleQuoted]
+  /// is `true`.
+  ///
+  /// If [isSingleQuoted] is `true`, all single quotes `'` are escaped as `''`.
+  String safe({
+    required bool forceInline,
+    bool isPlain = false,
+    bool isSingleQuoted = false,
+    bool isDoubleQuoted = false,
+  }) {
+    if (isSingleQuoted && code == singleQuote) {
+      return "''";
+    } else if (!isPlain && !isDoubleQuoted) {
+      return String.fromCharCode(code);
     }
 
-    onComplete(onExit);
-  }
-
-  moveCursor(); // Start.
-
-  var previous = iterator.current;
-
-  moveCursor();
-  yield yielder(true, hasNext, previous); // Emit first line always
-
-  while (hasNext) {
-    String? current = iterator.current;
-
-    // Eval with the last non-empty line if present
-    final hasFoldTarget = canUnfold(previous, current);
-
-    if (current.isEmpty) {
-      yield* skipEmpty(current, onComplete: (line) => current = line);
-
-      if (current == null) {
-        // Trailing line breaks are never folded, just chomped in block folded
-        // scalars
-        if (!isBlockUnfolding && hasFoldTarget) yield _empty;
-        break;
-      }
-    }
-
-    if (hasFoldTarget) {
-      yield _empty;
-    }
-
-    moveCursor();
-
-    yield yielder(false, hasNext, current!);
-    previous = current!;
+    return String.fromCharCodes(
+      code.normalizeEscapedChars(
+        includeTab: false,
+        includeLineBreaks: isDoubleQuoted && forceInline,
+        includeSlashes: isDoubleQuoted,
+        includeDoubleQuote: isDoubleQuoted,
+      ),
+    );
   }
 }
 
-/// Unfolds [lines] to be encoded as [ScalarStyle.folded].
-Iterable<String> unfoldBlockFolded(Iterable<String> lines) => _coreUnfolding(
-  lines,
-  isBlockUnfolding: true,
+/// Skips the `\r` only if the next char in the [iterator] is a `\n`.
+void _skipCarriageReturn(
+  int current, {
+  required RuneIterator iterator,
+  required bool hasNext,
+}) {
+  if (!hasNext) return;
 
-  // Indented lines cannot be unfolded.
-  isFolded: (previous, current) =>
-      !previous.startsWith(' ') && !current.startsWith(' '),
-);
+  if (current == carriageReturn) {
+    iterator.moveNext();
 
-/// Unfolds [lines] to be encoded as [ScalarStyle.plain] and
-/// [ScalarStyle.singleQuoted]. These styles are usually folded without any
-/// restrictions.
-Iterable<String> unfoldNormal(Iterable<String> lines) => _coreUnfolding(lines);
+    if (iterator.current != lineFeed) {
+      iterator.movePrevious();
+      return;
+    }
+  }
+}
 
-/// Unfolds [lines] to be encoded as [ScalarStyle.doubleQuoted].
+/// Splits a string using its [iterator] as a YAML double quoted string with
+/// the assumption that the [iterator]'s current code point is not invalid.
 ///
-/// `YAML` allows linebreaks to be escaped in [ScalarStyle.doubleQuoted] if
-/// you need trailing whitespace to be preserved. Leading whitespace can be
-/// preserved if you escape the whitespace itself. A leading tab is preserved
-/// in its raw form of `\` and `t`.
-Iterable<String> unfoldDoubleQuoted(Iterable<String> lines) => _coreUnfolding(
-  lines,
-  preflight: (isFirst, hasNext, current) {
-    var string = current;
+/// [buffered] and [currentLine] allow other styles to inject an [iterator]
+/// that has been read to a N<sup>th</sup> position.
+List<String> _splitAsYamlDoubleQuoted(
+  RuneIterator iterator, {
+  required bool forceInline,
+  Iterable<String>? buffered,
+  List<_WobblyChar>? currentLine,
+}) {
+  assert(iterator.current >= 0);
+  final lines = <String>[];
 
-    /// The first line cannot suffer from the truncated whitespace issue in flow
-    /// scalars. Double quoted allows us to escape the whitespace itself. For
-    /// tabs, we just "nerf" it since we have no line break to escape.
-    ///
-    /// This is only valid if we have more characters after the whitespace.
-    if (!isFirst) {
-      string = current.startsWith(' ')
-          ? '$_slash$string'
-          : current.startsWith('\t')
-          ? '$_nerfedTab${string.substring(1)}'
-          : string;
+  final buffer = StringBuffer(
+    currentLine
+            ?.map((c) => c.safe(forceInline: forceInline, isDoubleQuoted: true))
+            .join() ??
+        '',
+  );
 
-      /// Make string compact. We don't want to pollute it with additional
-      /// trailing escaped linebreak when the leading whitespace is escaped/
-      /// "nerfed"
-      if (current.length == 1) return string;
+  int? previous;
+  var hasNext = true;
+  void moveCursor(int current) {
+    previous = current;
+    hasNext = iterator.moveNext();
+  }
+
+  void write(int code) {
+    buffer.write(
+      _WobblyChar(code).safe(forceInline: forceInline, isDoubleQuoted: true),
+    );
+  }
+
+  void flush() {
+    lines.add(buffer.toString());
+    buffer.clear();
+  }
+
+  while (hasNext) {
+    final current = iterator.current;
+
+    if (!forceInline && current.isLineBreak()) {
+      flush();
+      _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
+    } else {
+      write(current);
     }
 
-    // Escape the linebreak itself for trailing whitespace
-    return hasNext && (current.endsWith(' ') || current.endsWith('\t'))
-        ? '$string$_slash\n'
-        : string;
-  },
-);
+    moveCursor(current);
+  }
+
+  if (buffer.isNotEmpty || (previous?.isLineBreak() ?? false)) {
+    flush();
+  }
+
+  return buffered == null ? lines : buffered.followedBy(lines).toList();
+}
+
+/// Scans and unfolds a [string] using the [unfolding] function only if all its
+/// code points pass the [scan] function provided. Degenerates to YAML's
+/// double-quoted style if any code points fail the [scan] predicate.
+///
+/// If [isPlain] is `true`, all escaped characters (except `\t` and `\n`) are
+/// normalized. Additional checks are defined in the [scan].
+///
+/// If [isSingleQuoted] is `true`, all single quotes `'` are escaped as `''`.
+(bool failed, Iterable<String> unfoldedLines) splitUnfoldScanned(
+  String string, {
+  required bool forceInline,
+  bool isSingleQuoted = false,
+  bool isPlain = false,
+  required bool Function(bool hasNext, int? previous, int current) scan,
+  required Iterable<String> Function(Iterable<String> lines) unfolding,
+}) {
+  const naught = Iterable<_WobblyChar>.empty();
+  final lines = <Iterable<_WobblyChar>>[];
+  var currentLine = <_WobblyChar>[];
+  final iterator = string.runes.iterator;
+
+  /// Joins the chars of each line and applies the necessary formatting.
+  Iterable<String> generic({bool isDoubleQuoted = false}) {
+    return lines.map(
+      (line) => line
+          .map(
+            (c) => c.safe(
+              forceInline: forceInline,
+              isPlain: isPlain && !isDoubleQuoted,
+              isSingleQuoted: isSingleQuoted && !isDoubleQuoted,
+              isDoubleQuoted: isDoubleQuoted,
+            ),
+          )
+          .join(''),
+    );
+  }
+
+  /// Degenerates to double quoted in the current state.
+  Iterable<String> fallback() {
+    return unfoldDoubleQuoted(
+      _splitAsYamlDoubleQuoted(
+        iterator,
+        forceInline: forceInline,
+        buffered: generic(isDoubleQuoted: true),
+        currentLine: currentLine,
+      ),
+    );
+  }
+
+  int? previous;
+  var hasNext = false;
+  void moveCursor(int? current) {
+    previous = current;
+    hasNext = iterator.moveNext();
+  }
+
+  moveCursor(null);
+
+  /// Adds the current line to the buffer only if it is not empty or [splitLine]
+  /// is true.
+  void flushLine({bool splitLine = true}) {
+    if (currentLine.isNotEmpty) {
+      lines.add(currentLine);
+      currentLine = [];
+    } else if (splitLine || (previous?.isLineBreak() ?? false)) {
+      lines.add(naught);
+    }
+  }
+
+  while (hasNext) {
+    final current = iterator.current;
+    final splitLine = current.isLineBreak();
+
+    if ((forceInline && splitLine) || !scan(hasNext, previous, current)) {
+      return (true, fallback());
+    } else if (splitLine) {
+      flushLine();
+      _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
+    } else {
+      currentLine.add(_WobblyChar(current));
+    }
+
+    moveCursor(current);
+  }
+
+  flushLine(splitLine: false);
+  return (false, unfolding(generic()));
+}
+
+/// Splits and unfolds the [string] as a YAML double quoted string.
+Iterable<String> splitUnfoldDoubleQuoted(String string, bool forceInline) {
+  final iterator = string.runes.iterator;
+  return iterator.moveNext()
+      ? unfoldDoubleQuoted(
+          _splitAsYamlDoubleQuoted(
+            iterator,
+            forceInline: forceInline,
+          ),
+        )
+      : Iterable.empty();
+}

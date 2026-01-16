@@ -1,6 +1,5 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
-import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
 import 'package:rookie_yaml/src/dumping/scalar_dumper.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
@@ -15,7 +14,10 @@ extension on Subject<DumpedScalar> {
 }
 
 ScalarDumper classicDumper([PushProperties? push]) {
-  return ScalarDumper.classic(push ?? (_, _, _) => null);
+  return ScalarDumper.classic(
+    (o) => dumpableObject(o),
+    push ?? (_, _, _) => null,
+  );
 }
 
 void main() {
@@ -34,6 +36,7 @@ void main() {
       check(
         ScalarDumper.fineGrained(
           replaceEmpty: false,
+          onScalar: (o) => dumpableType(o),
           pushProperties: (_, _, _) => null,
         ).dump('', indent: 0, style: ScalarStyle.plain),
       ).dumps('null');
@@ -50,7 +53,7 @@ void main() {
         ).dumps('&24 !!24 $expected');
       }
 
-      checkDump('"24"'); // No style
+      checkDump('24'); // No style
 
       checkDump('"24"', ScalarStyle.doubleQuoted);
       checkDump("'24'", ScalarStyle.singleQuoted);
@@ -69,6 +72,7 @@ void main() {
           check(
             ScalarDumper.fineGrained(
               replaceEmpty: false,
+              onScalar: (o) => dumpableType(o),
               pushProperties: (_, _, _) => null,
               forceInline: true,
             ).dump(value, indent: 0, style: style),
@@ -303,31 +307,6 @@ void main() {
             style: ScalarStyle.doubleQuoted,
           ),
         ).dumps(r'"\0\a\b\v\f\N\L\P\e\_\"\\\/"');
-      },
-    );
-
-    test(
-      'Normalizes all escaped characters including tabs and linebreaks'
-      ' when in json mode',
-      () {
-        check(
-          dumpJsonObject(
-            '${unicodeNull.asString()}'
-            '${bell.asString()}'
-            '${backspace.asString()}'
-            '${verticalTab.asString()}'
-            '${formFeed.asString()}'
-            '${nextLine.asString()}'
-            '${lineSeparator.asString()}'
-            '${paragraphSeparator.asString()}'
-            '${asciiEscape.asString()}'
-            '${nbsp.asString()}'
-            '"'
-            r'\/'
-            '\t\n',
-            unpackAliases: false,
-          ),
-        ).equals(r'"\0\a\b\v\f\N\L\P\e\_\"\\\/\t\n"');
       },
     );
   });

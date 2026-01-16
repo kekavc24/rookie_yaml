@@ -1,5 +1,5 @@
 import 'package:checks/checks.dart';
-import 'package:rookie_yaml/src/dumping/string_utils.dart';
+import 'package:rookie_yaml/src/dumping/unfolding.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/double_quoted.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/plain.dart';
@@ -23,7 +23,7 @@ multiline string.
 ''';
 
   final defaultStringSplit = Iterable.withIterator(
-    () => splitStringLazy(defaultFolded).iterator,
+    () => defaultFolded.split('\n').iterator,
   );
 
   // Forgiving to the human eye.
@@ -135,10 +135,7 @@ multiline string.
             r'\'
             ' \tnon-content';
 
-        final unfolded = unfoldDoubleQuoted(
-          splitStringLazy(foldTarget),
-        ).join('\n');
-
+        final unfolded = unfoldDoubleQuoted(foldTarget.split('\n')).join('\n');
         check(unfolded).equals(expected);
 
         parserMatches(
@@ -174,10 +171,7 @@ multiline string.
           '\n\n' // Not unfolded. Last non-empty line was indented!
           'last line\n'; // Trailing line breaks are chomped not folded
 
-      final unfolded = unfoldBlockFolded(
-        splitStringLazy(foldTarget),
-      ).join('\n');
-
+      final unfolded = unfoldBlockFolded(foldTarget.split('\n')).join('\n');
       check(unfolded).equals(expected);
 
       parserMatches(

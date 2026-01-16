@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
+import 'package:rookie_yaml/src/dumping/unfolding.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -11,216 +12,6 @@ typedef DumpedScalar = ({
   int tentativeOffsetFromMargin,
   String node,
 });
-
-extension type _WobblyChar(int code) {
-  /// Normalizes a code point based on the style.
-  ///
-  /// If [isPlain] is `true`, all escaped characters (except `\t` and `\n`) are
-  /// normalized. Slashes and double quotes are only escaped if [isDoubleQuoted]
-  /// is `true`.
-  ///
-  /// If [isSingleQuoted] is `true`, all single quotes `'` are escaped as `''`.
-  String safe({
-    required bool forceInline,
-    bool isPlain = false,
-    bool isSingleQuoted = false,
-    bool isDoubleQuoted = false,
-  }) {
-    if (isSingleQuoted && code == singleQuote) {
-      return "''";
-    } else if (!isPlain && !isDoubleQuoted) {
-      return String.fromCharCode(code);
-    }
-
-    return String.fromCharCodes(
-      code.normalizeEscapedChars(
-        includeTab: false,
-        includeLineBreaks: isDoubleQuoted && forceInline,
-        includeSlashes: isDoubleQuoted,
-        includeDoubleQuote: isDoubleQuoted,
-      ),
-    );
-  }
-}
-
-/// Skips the `\r` only if the next char in the [iterator] is a `\n`.
-void _skipCarriageReturn(
-  int current, {
-  required RuneIterator iterator,
-  required bool hasNext,
-}) {
-  if (!hasNext) return;
-
-  if (current == carriageReturn) {
-    iterator.moveNext();
-
-    if (iterator.current != lineFeed) {
-      iterator.movePrevious();
-      return;
-    }
-  }
-}
-
-/// Scans and unfolds a [string] using the [unfolding] function only if all its
-/// code points pass the [tester] function provided. Degenerates to YAML's
-/// double-quoted style if any code points fail the [tester] predicate.
-///
-/// If [isPlain] is `true`, all escaped characters (except `\t` and `\n`) are
-/// normalized. Additional checks are defined in the [tester].
-///
-/// If [isSingleQuoted] is `true`, all single quotes `'` are escaped as `''`.
-(bool failed, Iterable<String> unfoldedLines) unfoldScanned(
-  String string, {
-  required bool forceInline,
-  bool isSingleQuoted = false,
-  bool isPlain = false,
-  required bool Function(bool hasNext, int? previous, int current) tester,
-  required Iterable<String> Function(Iterable<String> lines) unfolding,
-}) {
-  const naught = Iterable<_WobblyChar>.empty();
-  final lines = <Iterable<_WobblyChar>>[];
-  var currentLine = <_WobblyChar>[];
-  final iterator = string.runes.iterator;
-
-  /// Joins the chars of each line and applies the necessary formatting.
-  Iterable<String> generic({bool isDoubleQuoted = false}) {
-    return lines.map(
-      (line) => line
-          .map(
-            (c) => c.safe(
-              forceInline: forceInline,
-              isPlain: isPlain && !isDoubleQuoted,
-              isSingleQuoted: isSingleQuoted && !isDoubleQuoted,
-              isDoubleQuoted: isDoubleQuoted,
-            ),
-          )
-          .join(''),
-    );
-  }
-
-  /// Degenerates to double quoted in the current state.
-  Iterable<String> fallback() {
-    return unfoldDoubleQuoted(
-      _splitAsYamlDoubleQuoted(
-        iterator,
-        forceInline: forceInline,
-        buffered: generic(isDoubleQuoted: true),
-        currentLine: currentLine,
-      ),
-    );
-  }
-
-  int? previous;
-  var hasNext = false;
-  void moveCursor(int? current) {
-    previous = current;
-    hasNext = iterator.moveNext();
-  }
-
-  moveCursor(null);
-
-  /// Adds the current line to the buffer only if it is not empty or [splitLine]
-  /// is true.
-  void flushLine({bool splitLine = true}) {
-    if (currentLine.isNotEmpty) {
-      lines.add(currentLine);
-      currentLine = [];
-    } else if (splitLine || (previous?.isLineBreak() ?? false)) {
-      lines.add(naught);
-    }
-  }
-
-  while (hasNext) {
-    final current = iterator.current;
-    final splitLine = current.isLineBreak();
-
-    if ((forceInline && splitLine) || !tester(hasNext, previous, current)) {
-      return (true, fallback());
-    } else if (splitLine) {
-      flushLine();
-      _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
-    } else {
-      currentLine.add(_WobblyChar(current));
-    }
-
-    moveCursor(current);
-  }
-
-  flushLine(splitLine: false);
-  return (false, unfolding(generic()));
-}
-
-/// Splits and unfolds the [string] as a YAML double quoted string.
-Iterable<String> splitUnfoldDoubleQuoted(String string, bool forceInline) {
-  final iterator = string.runes.iterator;
-  return iterator.moveNext()
-      ? unfoldDoubleQuoted(
-          _splitAsYamlDoubleQuoted(
-            iterator,
-            forceInline: forceInline,
-          ),
-        )
-      : Iterable.empty();
-}
-
-/// Splits a string using its [iterator] as a YAML double quoted string with
-/// the assumption that the [iterator]'s current code point is not invalid.
-///
-/// [buffered] and [currentLine] allow other styles to inject an [iterator]
-/// that has been read to a N<sup>th</sup> position.
-List<String> _splitAsYamlDoubleQuoted(
-  RuneIterator iterator, {
-  required bool forceInline,
-  Iterable<String>? buffered,
-  List<_WobblyChar>? currentLine,
-}) {
-  assert(iterator.current >= 0);
-  final lines = <String>[];
-
-  final buffer = StringBuffer(
-    currentLine
-            ?.map((c) => c.safe(forceInline: forceInline, isDoubleQuoted: true))
-            .join() ??
-        '',
-  );
-
-  int? previous;
-  var hasNext = true;
-  void moveCursor(int current) {
-    previous = current;
-    hasNext = iterator.moveNext();
-  }
-
-  void write(int code) {
-    buffer.write(
-      _WobblyChar(code).safe(forceInline: forceInline, isDoubleQuoted: true),
-    );
-  }
-
-  void flush() {
-    lines.add(buffer.toString());
-    buffer.clear();
-  }
-
-  while (hasNext) {
-    final current = iterator.current;
-
-    if (!forceInline && current.isLineBreak()) {
-      flush();
-      _skipCarriageReturn(current, iterator: iterator, hasNext: hasNext);
-    } else {
-      write(current);
-    }
-
-    moveCursor(current);
-  }
-
-  if (buffer.isNotEmpty || (previous?.isLineBreak() ?? false)) {
-    flush();
-  }
-
-  return buffered == null ? lines : buffered.followedBy(lines).toList();
-}
 
 /// Joins the [lines] with a '\n`. All lines except the first line are also
 /// indented accordingly.
@@ -320,13 +111,13 @@ DumpedScalar _dumpScalar(
   switch (scalarStyle) {
     case ScalarStyle.singleQuoted:
       {
-        final (isDoubleQuoted, lines) = unfoldScanned(
+        final (isDoubleQuoted, lines) = splitUnfoldScanned(
           object,
           forceInline: forceInline,
           isSingleQuoted: true,
 
           // Single quoted style only accepts printable chars
-          tester: (_, _, current) => current.isPrintable(),
+          scan: (_, _, current) => current.isPrintable(),
           unfolding: unfoldNormal,
         );
 
@@ -335,11 +126,11 @@ DumpedScalar _dumpScalar(
 
     case ScalarStyle.plain:
       {
-        final (isDoubleQuoted, lines) = unfoldScanned(
+        final (isDoubleQuoted, lines) = splitUnfoldScanned(
           object,
           forceInline: forceInline,
           isPlain: true,
-          tester: (hasNext, previous, current) {
+          scan: (hasNext, previous, current) {
             if (!hasNext && (current.isLineBreak() || current.isWhiteSpace())) {
               return false;
             }
@@ -386,12 +177,12 @@ DumpedScalar _dumpScalar(
       {
         final isLiteral = scalarStyle == ScalarStyle.literal;
 
-        final (isDoubleQuoted, lines) = unfoldScanned(
+        final (isDoubleQuoted, lines) = splitUnfoldScanned(
           object,
           forceInline: forceInline,
 
           // Block styles only accept printable chars
-          tester: (_, _, current) => current.isPrintable(),
+          scan: (_, _, current) => current.isPrintable(),
           unfolding: (lines) {
             // Literal is canonically a restrictive WYSIWYG style.
             if (isLiteral) return lines;

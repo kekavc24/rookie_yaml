@@ -44,7 +44,7 @@ final class _KVStore extends FormattingEntry {
       return (
         hasTrailing: false,
         content:
-            '${key!.explicit ? '?' : ''}${_spacedIfAlias(key!.info.content)}:'
+            '${key!.explicit ? '? ' : ''}${_spacedIfAlias(key!.info.content)}:'
             ' ${value!.info.content}',
       );
     }
