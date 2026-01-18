@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/object_dumper.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:test/test.dart';
@@ -16,16 +17,15 @@ void main() {
     bool preferInline = false,
     ScalarStyle scalarStyle = ScalarStyle.doubleQuoted,
   }) {
-    return ObjectDumper.of(
-      scalarStyle: scalarStyle,
-      mapStyle: style,
-      flowIterableInline: preferInline,
-      flowMapInline: preferInline,
-      forceScalarsInline: preferInline,
-    ).dump(
+    return dumpObject(
       funkyMap,
-      includeYamlDirective: false,
-      includeDocumendEnd: false,
+      dumper: ObjectDumper.of(
+        scalarStyle: scalarStyle,
+        mapStyle: style,
+        flowIterableInline: preferInline,
+        flowMapInline: preferInline,
+        forceScalarsInline: preferInline,
+      ),
     );
   }
 

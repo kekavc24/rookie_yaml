@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
+import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/object_dumper.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/loaders/loader.dart';
@@ -20,8 +21,9 @@ void main() {
 ''';
 
       check(
-        ObjectDumper.of(iterableStyle: NodeStyle.flow).dump(
+        dumpObject(
           loadYamlNode(YamlSource.string(source)),
+          dumper: ObjectDumper.of(iterableStyle: NodeStyle.flow),
           includeYamlDirective: true,
         ),
       ).equals('''
@@ -59,8 +61,9 @@ void main() {
       check(
         loadAllDocuments(YamlSource.string(source))
             .map(
-              (doc) => dumper.dump(
+              (doc) => dumpObject(
                 doc.root,
+                dumper: dumper,
                 includeDocumendEnd: doc.hasExplicitEnd,
                 directives: doc.tagDirectives.cast<Directive>().followedBy(
                   doc.otherDirectives,
@@ -108,10 +111,13 @@ void main() {
       ];
 
       check(
-        ObjectDumper.of(
-          iterableStyle: NodeStyle.block,
-          scalarStyle: ScalarStyle.doubleQuoted,
-        ).dump(object),
+        dumpObject(
+          object,
+          dumper: ObjectDumper.of(
+            iterableStyle: NodeStyle.block,
+            scalarStyle: ScalarStyle.doubleQuoted,
+          ),
+        ),
       ).equals('''
 $globalFromTag
 $globalFromUri
@@ -132,10 +138,13 @@ $globalFromUri
       ];
 
       check(
-        ObjectDumper.of(
-          mapStyle: NodeStyle.flow,
-          flowMapInline: true,
-        ).dump(object),
+        dumpObject(
+          object,
+          dumper: ObjectDumper.of(
+            mapStyle: NodeStyle.flow,
+            flowMapInline: true,
+          ),
+        ),
       ).equals('''
 - clean
 - &anchor scalar

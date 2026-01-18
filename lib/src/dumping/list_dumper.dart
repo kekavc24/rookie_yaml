@@ -8,9 +8,6 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 part 'iterable_entry_formatter.dart';
 
-/// An input for an [IterableDumper].
-typedef IterableEntry = CollectionEntry<Object?>;
-
 /// Callback for inserting a nested [Iterable] into a previous evicted parent
 /// [Iterable] after it has been completely dumped.
 typedef _OnNestedIterable = void Function(bool isExplicit, String content);
@@ -36,7 +33,8 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     required this.iterableStyle,
     required this.canApplyTrailingComments,
     required this.onObject,
-    required this.globals,
+    required this.pushAnchor,
+    required this.asLocalTag,
     required OnCollectionEnd onIterableEnd,
     required this.scalarDumper,
   }) : _onIterableEnd = onIterableEnd {
@@ -61,13 +59,15 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     required ScalarDumper scalarDumper,
     required CommentDumper commentDumper,
     required Compose onObject,
-    required PushProperties globals,
+    required PushAnchor pushAnchor,
+    required AsLocalTag asLocalTag,
   }) : this._(
          _ListEntry(commentDumper),
          iterableStyle: NodeStyle.block,
          canApplyTrailingComments: false,
          onObject: onObject,
-         globals: globals,
+         pushAnchor: pushAnchor,
+         asLocalTag: asLocalTag,
          onIterableEnd: (hasContent, _, _) {
            if (hasContent) return noCollectionEnd;
            return (explicit: false, ending: '[]');
@@ -80,7 +80,8 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     required ScalarDumper scalarDumper,
     required CommentDumper commentDumper,
     required Compose onObject,
-    required PushProperties globals,
+    required PushAnchor pushAnchor,
+    required AsLocalTag asLocalTag,
   }) : this._(
          _ListEntry(
            commentDumper,
@@ -90,7 +91,8 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
          iterableStyle: NodeStyle.flow,
          canApplyTrailingComments: true,
          onObject: onObject,
-         globals: globals,
+         pushAnchor: pushAnchor,
+         asLocalTag: asLocalTag,
          onIterableEnd: (hasContent, isInline, indent) {
            return (
              explicit: null,
@@ -115,8 +117,11 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
   /// A helper function for composing a dumpable object.
   final Compose onObject;
 
-  /// Tracks the object and its properties.
-  final PushProperties globals;
+  /// A callback for pushing anchors.
+  final PushAnchor pushAnchor;
+
+  /// A callback for validating, tracking and normalizing a resolved tag.
+  final AsLocalTag asLocalTag;
 
   final _ListEntry _listEntry;
 
@@ -184,14 +189,16 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
         scalarDumper: scalarDumper,
         commentDumper: _listEntry.dumper,
         onObject: onObject,
-        globals: globals,
+        pushAnchor: pushAnchor,
+        asLocalTag: asLocalTag,
       ),
       _ => MapDumper.flow(
         preferInline: _listEntry.preferInline,
         scalarDumper: scalarDumper,
         commentDumper: _listEntry.dumper,
         onObject: onObject,
-        globals: globals,
+        pushAnchor: pushAnchor,
+        asLocalTag: asLocalTag,
       ),
     };
 
@@ -255,7 +262,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
   /// Stashes the current parent and set its [child] (a nested [Iterable]) as
   /// the current [Iterable] being dumped.
   void _evictParent(
-    Iterable<Object?> child, {
+    Iterator<IterableEntry> child, {
     required int childIndent,
     required _OnNestedIterable onIterableDone,
     bool alwayExplicit = false,
@@ -273,7 +280,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
     ));
 
     _reset(
-      iterator: child.map((e) => (e, null)).iterator,
+      iterator: child,
       indent: childIndent,
       isRoot: false,
       isExplicit: alwayExplicit,
@@ -384,77 +391,87 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
 
     final dumpable = onObject(object);
 
-    switch (dumpable.dumpable) {
-      case Map<Object?, Object?> map:
-        {
-          _stashIterator();
+    // Dumps an iterable in the current dumper's context.
+    void iterativeSelf(Iterator<IterableEntry> iterator) {
+      final isBlockList = iterableStyle == NodeStyle.block;
+      final iterableIndent = indent(isBlockList);
 
-          final mapIndent = indent(_mapDumper.mapStyle == NodeStyle.block);
-
-          final (:applyTrailingComments, :preferExplicit, :node) = _mapDumper
-              .dump(
-                dumpableType(map.entries.map((e) => (e, null)))
-                  ..anchor = dumpable.anchor
-                  ..tag = dumpable.tag,
-                mapIndent,
-              );
-
-          _stashIterator(pop: true);
-
-          completeEntry(
-            indent: mapIndent,
-            preferExplicit: preferExplicit,
-            applyTrailingComments: applyTrailingComments,
-            content: node,
-            comments: dumpable.comments,
-          );
-        }
-
-      case Iterable<Object?> iterable:
-        {
-          final isBlockList = iterableStyle == NodeStyle.block;
-          final iterableIndent = indent(isBlockList);
-
-          _evictParent(
-            iterable,
-            childIndent: iterableIndent,
-            onIterableDone: (isExplicit, content) => completeEntry(
-              indent: iterableIndent,
-              preferExplicit: isExplicit || isBlockList,
-              applyTrailingComments: canApplyTrailingComments,
-              content: _onIterableDumped(
-                globals(
-                  dumpable.tag,
-                  dumpable.anchor,
-                  dumpable as ConcreteNode<Object?>,
-                ),
-                dumpable.anchor,
-                iterableIndent,
-                content,
-              ),
-              comments: dumpable.comments,
-            ),
-          );
-        }
-
-      default:
-        {
-          final indentation = indent();
-
-          final (:isMultiline, :tentativeOffsetFromMargin, :node) = scalarDumper
-              .dump(dumpable, indent: indentation, style: null);
-
-          completeEntry(
-            indent: indentation,
-            preferExplicit: isMultiline,
-            applyTrailingComments:
-                scalarDumper.defaultStyle.nodeStyle != NodeStyle.block,
-            offsetFromMargin: tentativeOffsetFromMargin + 1,
-            comments: dumpable.comments,
-            content: node,
-          );
-        }
+      _evictParent(
+        iterator,
+        childIndent: iterableIndent,
+        onIterableDone: (isExplicit, content) => completeEntry(
+          indent: iterableIndent,
+          preferExplicit: isExplicit || isBlockList,
+          applyTrailingComments: canApplyTrailingComments,
+          content: _onIterableDumped(
+            asLocalTag(dumpable.tag),
+            dumpable.anchor,
+            iterableIndent,
+            content,
+          ),
+          comments: dumpable.comments,
+        ),
+      );
     }
+
+    // Dumps a map after stashing the state of the current dumper.
+    void iterativeMap(DumpedCollection Function(int mapIndent) dumpMap) {
+      _stashIterator();
+      final mapIndent = indent(_mapDumper.mapStyle == NodeStyle.block);
+      final (:applyTrailingComments, :preferExplicit, :node) = dumpMap(
+        mapIndent,
+      );
+      _stashIterator(pop: true);
+      completeEntry(
+        indent: mapIndent,
+        preferExplicit: preferExplicit,
+        applyTrailingComments: applyTrailingComments,
+        content: node,
+        comments: dumpable.comments,
+      );
+    }
+
+    unwrappedDumpable(
+      dumpable.dumpable,
+      onMappedIterable: (iterable) => iterativeSelf(iterable.iterator),
+      onVanillaIterable: (iterable) =>
+          iterativeSelf(iterable.map((e) => (e, null)).iterator),
+      onMappedMap: (iterable) => iterativeMap(
+        (mapIndent) => _mapDumper.dump(
+          dumpableType(iterable)
+            ..anchor = dumpable.anchor
+            ..tag = dumpable.tag,
+          mapIndent,
+        ),
+      ),
+      onMap: (map) => iterativeMap(
+        (mapIndent) => _mapDumper.dumpMapLike(
+          map,
+          expand: (m) => m.entries.map((e) => (e, null)),
+          indent: mapIndent,
+          tag: dumpable.tag,
+          anchor: dumpable.anchor,
+        ),
+      ),
+      onScalar: () {
+        final indentation = indent();
+
+        final (:isMultiline, :tentativeOffsetFromMargin, :node) = scalarDumper
+            .dump(dumpable, indent: indentation, style: null);
+
+        completeEntry(
+          indent: indentation,
+          preferExplicit: isMultiline,
+          applyTrailingComments:
+              scalarDumper.defaultStyle.nodeStyle != NodeStyle.block,
+          offsetFromMargin: tentativeOffsetFromMargin + 1,
+          comments: dumpable.comments,
+          content: node,
+        );
+      },
+    );
+
+    pushAnchor(dumpable.anchor, dumpable);
   }
 
   /// Dumps the next entry in an [Iterable] using its set iterator, [_current].
@@ -505,12 +522,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
 
     final dumpedIterable = (
       preferExplicit: _preferExplicit(dumped),
-      node: _onIterableDumped(
-        globals(tag, anchor, iterable),
-        anchor,
-        _indent,
-        dumped,
-      ),
+      node: _onIterableDumped(asLocalTag(tag), anchor, _indent, dumped),
       applyTrailingComments: canApplyTrailingComments,
     );
 

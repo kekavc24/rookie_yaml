@@ -22,7 +22,8 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
 /// YAML does not allow [NodeStyle.block] to be used in [NodeStyle.flow].
 (IterableDumper list, MapDumper map) _initializeCollections({
   required Compose onObject,
-  required PushProperties validator,
+  required PushAnchor pushAnchor,
+  required AsLocalTag asLocalTag,
   required ScalarDumper scalar,
   required CommentDumper comments,
   required bool flowIterableInline,
@@ -44,14 +45,16 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
       scalarDumper: scalar,
       commentDumper: comments,
       onObject: onObject,
-      globals: validator,
+      pushAnchor: pushAnchor,
+      asLocalTag: asLocalTag,
     ),
     ifFlow: () => MapDumper.flow(
       preferInline: flowMapInline,
       scalarDumper: scalar,
       commentDumper: comments,
       onObject: onObject,
-      globals: validator,
+      pushAnchor: pushAnchor,
+      asLocalTag: asLocalTag,
     ),
   );
 
@@ -61,14 +64,16 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
       scalarDumper: scalar,
       commentDumper: comments,
       onObject: onObject,
-      globals: validator,
+      pushAnchor: pushAnchor,
+      asLocalTag: asLocalTag,
     ),
     ifFlow: () => IterableDumper.flow(
       preferInline: flowIterableInline,
       scalarDumper: scalar,
       commentDumper: comments,
       onObject: onObject,
-      globals: validator,
+      pushAnchor: pushAnchor,
+      asLocalTag: asLocalTag,
     ),
   );
 

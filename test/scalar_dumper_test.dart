@@ -13,11 +13,8 @@ extension on Subject<DumpedScalar> {
   void dumps(String node) => has((s) => s.node, 'Dumped node').equals(node);
 }
 
-ScalarDumper classicDumper([PushProperties? push]) {
-  return ScalarDumper.classic(
-    (o) => dumpableObject(o),
-    push ?? (_, _, _) => null,
-  );
+ScalarDumper classicDumper([AsLocalTag? push]) {
+  return ScalarDumper.classic((o) => dumpableObject(o), push ?? (_) => null);
 }
 
 void main() {
@@ -37,7 +34,7 @@ void main() {
         ScalarDumper.fineGrained(
           replaceEmpty: false,
           onScalar: (o) => dumpableType(o),
-          pushProperties: (_, _, _) => null,
+          asLocalTag: (_) => null,
         ).dump('', indent: 0, style: ScalarStyle.plain),
       ).dumps('null');
     });
@@ -47,9 +44,7 @@ void main() {
 
       void checkDump(String expected, [ScalarStyle? style]) {
         check(
-          classicDumper(
-            (_, _, _) => '!!24',
-          ).dump(scalar, indent: 1, style: style),
+          classicDumper((_) => '!!24').dump(scalar, indent: 1, style: style),
         ).dumps('&24 !!24 $expected');
       }
 
@@ -73,7 +68,7 @@ void main() {
             ScalarDumper.fineGrained(
               replaceEmpty: false,
               onScalar: (o) => dumpableType(o),
-              pushProperties: (_, _, _) => null,
+              asLocalTag: (_) => null,
               forceInline: true,
             ).dump(value, indent: 0, style: style),
           ).dumps(dumped);

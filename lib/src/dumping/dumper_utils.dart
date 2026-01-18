@@ -11,13 +11,10 @@ extension StringUtils on String {
   }
 }
 
-/// Callback for normalizing a resolved tag and tracking an object's anchor.
-typedef PushProperties =
-    String? Function(
-      ResolvedTag? tag,
-      String? anchor,
-      ConcreteNode<Object?> object,
-    );
+typedef PushAnchor =
+    void Function(String? anchor, DumpableNode<Object?> object);
+
+typedef AsLocalTag = String? Function(ResolvedTag? tag);
 
 /// Callback for creating a [DumpableNode].
 typedef Compose = DumpableNode<Object?> Function(Object? object);
@@ -52,6 +49,12 @@ typedef CollectionEntry<T> = (
   T entry,
   CustomInCollection Function(int indent, Object? object)? dumper,
 );
+
+/// An input for an `IterableDumper`.
+typedef IterableEntry = CollectionEntry<Object?>;
+
+/// An input for a `MapDumper`.
+typedef Entry = CollectionEntry<MapEntry<Object?, Object?>>;
 
 /// Helper for dumping node properties.
 mixin PropertyDumper {
@@ -166,3 +169,21 @@ final class CommentDumper {
         : '$node $dumpedComments';
   }
 }
+
+void unwrappedDumpable(
+  Object? dumpable, {
+  required void Function(Iterable<IterableEntry> iterable) onMappedIterable,
+  required void Function(Iterable<Object?> iterable) onVanillaIterable,
+  required void Function(Iterable<Entry> iterable) onMappedMap,
+  required void Function(Map<Object?, Object?> map) onMap,
+  required void Function() onScalar,
+}) => switch (dumpable) {
+  Iterable<Object?> iterable =>
+    iterable is Iterable<IterableEntry>
+        ? onMappedIterable(iterable)
+        : iterable is Iterable<Entry>
+        ? onMappedMap(iterable)
+        : onVanillaIterable(iterable),
+  Map<Object?, Object?> map => onMap(map),
+  _ => onScalar(),
+};
