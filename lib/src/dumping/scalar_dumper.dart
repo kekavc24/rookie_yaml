@@ -257,8 +257,11 @@ final class ScalarDumper with PropertyDumper {
 
   /// Creates a [ScalarDumper] where empty strings are always dumped as `null`
   /// and aliases are compacted.
-  const ScalarDumper.classic(Compose onScalar, AsLocalTag asLocalTag)
-    : this._(ScalarStyle.plain, true, false, onScalar, asLocalTag);
+  const ScalarDumper.classic(
+    Compose onScalar,
+    AsLocalTag asLocalTag, [
+    bool inline = false,
+  ]) : this._(ScalarStyle.plain, true, inline, onScalar, asLocalTag);
 
   /// Style to use when a block node is inserted into node
   final ScalarStyle defaultStyle;

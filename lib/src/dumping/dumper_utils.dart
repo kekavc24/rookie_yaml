@@ -38,24 +38,6 @@ typedef NodeInfo = ({
   String content,
 });
 
-typedef CustomInCollection = ({
-  bool isMultiline,
-  bool isBlockCollection,
-  List<String>? comments,
-  String content,
-});
-
-typedef CollectionEntry<T> = (
-  T entry,
-  CustomInCollection Function(int indent, Object? object)? dumper,
-);
-
-/// An input for an `IterableDumper`.
-typedef IterableEntry = CollectionEntry<Object?>;
-
-/// An input for a `MapDumper`.
-typedef Entry = CollectionEntry<MapEntry<Object?, Object?>>;
-
 /// Helper for dumping node properties.
 mixin PropertyDumper {
   /// Applies the node's properties inline. Apply to any scalars and flow
@@ -170,20 +152,27 @@ final class CommentDumper {
   }
 }
 
+@pragma('vm:prefer-inline')
 void unwrappedDumpable(
-  Object? dumpable, {
-  required void Function(Iterable<IterableEntry> iterable) onMappedIterable,
-  required void Function(Iterable<Object?> iterable) onVanillaIterable,
-  required void Function(Iterable<Entry> iterable) onMappedMap,
+  DumpableNode<Object?> dumpable, {
+  required void Function(Iterable<Object?> iterable) onIterable,
   required void Function(Map<Object?, Object?> map) onMap,
   required void Function() onScalar,
-}) => switch (dumpable) {
-  Iterable<Object?> iterable =>
-    iterable is Iterable<IterableEntry>
-        ? onMappedIterable(iterable)
-        : iterable is Iterable<Entry>
-        ? onMappedMap(iterable)
-        : onVanillaIterable(iterable),
+}) => switch (dumpable.dumpable) {
+  Iterable<Object?> iterable => onIterable(iterable),
   Map<Object?, Object?> map => onMap(map),
   _ => onScalar(),
 };
+
+typedef IterativeCollection<T> =
+    DumpedCollection Function(int indent, T dumper);
+
+@pragma('vm:prefer-inline')
+void flowInBlockDumper<T>({
+  required T Function() dumper,
+  required DumpedCollection Function(T dumper) dump,
+  required void Function(DumpedCollection dumped) onDump,
+}) => onDump(dump(dumper()));
+
+@pragma('vm:prefer-inline')
+I identity<I>(I object) => object;

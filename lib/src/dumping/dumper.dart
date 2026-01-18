@@ -196,35 +196,23 @@ String dumpObject(
   }
 
   unwrappedDumpable(
-    dumpable.dumpable,
-    onMappedIterable: (iterable) => dumpedCollection(
-      dumper.iterableDumper.dump(
-        iterable as ConcreteNode<Iterable<IterableEntry>>,
-        indent,
-      ),
-    ),
-    onVanillaIterable: (iterable) => dumpedCollection(
+    dumpable,
+    onIterable: (iterable) => dumpedCollection(
       dumper.iterableDumper.dumpIterableLike(
         iterable,
-        expand: (e) => e.map((e) => (e, null)),
+        expand: identity,
         indent: indent,
-        anchor: dumpable.anchor,
         tag: dumpable.tag,
-      ),
-    ),
-    onMappedMap: (iterable) => dumpedCollection(
-      dumper.mapDumper.dump(
-        iterable as ConcreteNode<Iterable<Entry>>,
-        indent,
+        anchor: dumpable.anchor,
       ),
     ),
     onMap: (map) => dumpedCollection(
       dumper.mapDumper.dumpMapLike(
         map,
-        expand: (m) => m.entries.map((e) => (e, null)),
+        expand: identity,
         indent: indent,
-        anchor: dumpable.anchor,
         tag: dumpable.tag,
+        anchor: dumpable.anchor,
       ),
     ),
     onScalar: () {

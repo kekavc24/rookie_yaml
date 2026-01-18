@@ -69,7 +69,7 @@ final class ConcreteNode<T> extends DumpableNode<T> {
   String? anchor;
 
   @override
-  NodeStyle nodeStyle = NodeStyle.flow;
+  NodeStyle nodeStyle = NodeStyle.block;
 
   @override
   ResolvedTag? tag;

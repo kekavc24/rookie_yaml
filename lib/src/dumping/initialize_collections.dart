@@ -47,6 +47,8 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
       onObject: onObject,
       pushAnchor: pushAnchor,
       asLocalTag: asLocalTag,
+      inlineNestedFlowIterable: flowIterableInline,
+      inlineNestedFlowMap: flowMapInline,
     ),
     ifFlow: () => MapDumper.flow(
       preferInline: flowMapInline,
@@ -55,6 +57,7 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
       onObject: onObject,
       pushAnchor: pushAnchor,
       asLocalTag: asLocalTag,
+      inlineIterable: flowIterableInline,
     ),
   );
 
@@ -66,6 +69,8 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
       onObject: onObject,
       pushAnchor: pushAnchor,
       asLocalTag: asLocalTag,
+      inlineNestedFlowIterable: flowIterableInline,
+      inlineNestedFlowMap: flowMapInline,
     ),
     ifFlow: () => IterableDumper.flow(
       preferInline: flowIterableInline,
@@ -74,6 +79,7 @@ void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
       onObject: onObject,
       pushAnchor: pushAnchor,
       asLocalTag: asLocalTag,
+      inlineMap: flowMapInline,
     ),
   );
 
