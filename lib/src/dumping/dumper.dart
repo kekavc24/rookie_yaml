@@ -8,17 +8,21 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
+/// Callback for properties captured after a [YamlDumper] has fully dumped an
+/// object.
 typedef OnProperties =
     void Function(
       Iterable<MapEntry<TagHandle, GlobalTag>> tags,
       Iterable<(String anchor, Object? object)> anchors,
     );
 
+/// Anchors and [GlobalTag]s obtained from a dumped object.
 typedef ObjectProperties = ({
   Map<String, Object?> anchors,
   Map<TagHandle, GlobalTag> globalTags,
 });
 
+/// A yaml dumper.
 abstract class YamlDumper {
   YamlDumper({
     required this.unpackAliases,
@@ -56,19 +60,7 @@ abstract class YamlDumper {
   /// and return its true reference if [unpackAliases] is `true`.
   ///
   /// If your object has a special steps before it can be a dumpable
-  DumpableNode<Object?> dumpable(Object? object) {
-    final dumpable = dumpableObject(object, unpackAnchor: unpackAliases);
-
-    if (dumpable is DumpableAsAlias) {
-      if (readAnchor(dumpable.alias) case ConcreteNode<Object?> anchor) {
-        return unpackAliases ? anchor : dumpable;
-      }
-
-      throw ArgumentError('The alias "$dumpable" has no corresponding anchor');
-    }
-
-    return dumpable;
-  }
+  DumpableNode<Object?> dumpable(Object? object) => dumpableType(object);
 
   /// Anchors and tags captured when dumping objects after unpacking a
   /// [ResolvedTag]. The map with the [GlobalTag]s must be modifiable.
@@ -190,6 +182,7 @@ String dumpObject(
   var commentsAsBlock = true;
   int? offsetFromMargin;
 
+  // Saves the output from a dumped map/iterable.
   void dumpedCollection(DumpedCollection dumped) {
     commentsAsBlock = !dumped.applyTrailingComments;
     dumpedObject = dumped.node;

@@ -6,14 +6,18 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 extension StringUtils on String {
+  /// Applies the [indent].
   String indented(int indent) {
     return '${' ' * max(0, indent)}$this';
   }
 }
 
+/// A callback for updating an anchor if present.
 typedef PushAnchor =
     void Function(String? anchor, DumpableNode<Object?> object);
 
+/// A callback that formats a [ResolvedTag] and returns a local/verbatim tag
+/// that can be dumped before the object.
 typedef AsLocalTag = String? Function(ResolvedTag? tag);
 
 /// Callback for creating a [DumpableNode].
@@ -152,6 +156,7 @@ final class CommentDumper {
   }
 }
 
+/// Unwraps a wrapped [dumpable] object and calls the relevant callback.
 @pragma('vm:prefer-inline')
 void unwrappedDumpable(
   DumpableNode<Object?> dumpable, {
@@ -164,9 +169,13 @@ void unwrappedDumpable(
   _ => onScalar(),
 };
 
+/// Callback that forwards a dumper and an indent to apply to an object that
+/// is being dumped iteratively rather than recursively.
 typedef IterativeCollection<T> =
     DumpedCollection Function(int indent, T dumper);
 
+/// Dumps an flow node embedded within a block node that is being iteratively
+/// rather than recursively.
 @pragma('vm:prefer-inline')
 void flowInBlockDumper<T>({
   required T Function() dumper,
@@ -174,5 +183,8 @@ void flowInBlockDumper<T>({
   required void Function(DumpedCollection dumped) onDump,
 }) => onDump(dump(dumper()));
 
+/// Expands an [object] as itself.
+///
+/// This is just a helper used when [unwrappedDumpable] is called.
 @pragma('vm:prefer-inline')
 I identity<I>(I object) => object;

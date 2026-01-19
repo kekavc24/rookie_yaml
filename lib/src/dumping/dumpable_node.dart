@@ -40,7 +40,12 @@ extension type Alias._(DumpableAsAlias alias) {
   Alias(String anchor) : this._(DumpableAsAlias._(anchor));
 }
 
-/// A sandboxed dumpable view of a `Dart` type that is not an alias.
+/// A shallow sandboxed dumpable view of a `Dart` type that is not an alias.
+///
+/// "Shallow" here just means only the top level object passed to this class is
+/// wrapped. For lists and maps, any nested object is implicitly is assumed to
+/// share the [NodeStyle] of the parent. For scalars, the [NodeStyle] has no
+/// effect.
 final class ConcreteNode<T> extends DumpableNode<T> {
   ConcreteNode._(this.dumpable) {
     switch (dumpable) {
