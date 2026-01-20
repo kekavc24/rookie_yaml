@@ -88,24 +88,16 @@ final class ConcreteNode<T> extends DumpableNode<T> {
 ///
 /// Avoid calling this function if your object is already a [DumpableNode].
 ConcreteNode<T> dumpableType<T>(T object) {
-  assert(
-    object is! DumpableAsAlias || object is! ConcreteNode,
-    'An alias cannot have properties',
-  );
-  assert(object is! YamlSourceNode, 'Prefer calling [dumpableSourceNode]');
+  if (T is ConcreteNode) {
+    throw ArgumentError(
+      'Cannot recursively wrap a [ConcreteNode]. Use [dumpableObject] instead',
+    );
+  } else if (object is DumpableAsAlias) {
+    throw ArgumentError('An alias cannot have properties');
+  }
 
-  return ConcreteNode._(object);
+  return ConcreteNode._((object is AliasNode ? object.aliased : object) as T);
 }
-
-/// Creates a dumpable and modifiable concrete view of a [YamlSourceNode].
-///
-/// If the [node] is an [AliasNode], its anchor is returned instead.
-ConcreteNode<YamlSourceNode> dumpableSourceNode(
-  YamlSourceNode node,
-) => ConcreteNode._(switch (node) {
-  AliasNode alias => alias.aliased,
-  _ => node,
-});
 
 /// Creates a dumpable node view of the [object].
 ///

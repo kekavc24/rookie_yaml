@@ -76,6 +76,7 @@ void _writeDirectives(
   YamlDumper dumper,
   StringBuffer buffer, {
   required bool includeYamlDirective,
+  required bool includeGlobalTags,
   required Iterable<Directive>? docDirectives,
   required OnProperties? onProperties,
 }) {
@@ -97,13 +98,16 @@ void _writeDirectives(
 
   if (dumper.capturedProperties() case ObjectProperties properties) {
     final (:globalTags, :anchors) = properties;
+    final hasCallback = onProperties != null;
 
-    if (onProperties != null) {
+    if (hasCallback) {
       onProperties(
         globalTags.entries,
         anchors.entries.map((e) => (e.key, e.value)),
       );
-    } else {
+    }
+
+    if (includeGlobalTags) {
       // The YAML global tag is always implied.
       if (dropGlobalYamlTag(globalTags[defaultYamlHandle])) {
         globalTags.remove(defaultYamlHandle);
@@ -114,6 +118,13 @@ void _writeDirectives(
         directives.whereNot(
           (e) => dropDirective(e, (g) => globalTags.containsKey(g.tagHandle)),
         ),
+      );
+    }
+
+    if (!hasCallback && !includeGlobalTags) {
+      throw ArgumentError(
+        "You must provide [onProperties] or allow global tags in the object's "
+        'YAML content',
       );
     }
   }
@@ -161,8 +172,9 @@ String _applyCommentsIfAny(
 /// `package:rookie_yaml`. See [parserVersion].
 ///
 /// Any global tags extracted while dumping the [object] are included as
-/// directives before the [object]'s YAML content. If [objectProperties] is
-/// provided, they will be omitted from the object string.
+/// directives before the [object]'s YAML content if [includeGlobalTags] is
+/// `true`. If [objectProperties] is provided, they will be omitted from the
+/// object string.
 ///
 /// Any additional [directives] provided will be dumped. However, any
 /// [GlobalTag]s found in the [object] take precedence over those present in
@@ -174,6 +186,7 @@ String dumpObject(
   bool includeYamlDirective = false,
   Iterable<Directive>? directives,
   OnProperties? objectProperties,
+  bool includeGlobalTags = true,
   bool includeDocumendEnd = false,
 }) {
   final dumpable = dumper.dumpable(object);
@@ -226,6 +239,7 @@ String dumpObject(
     dumper,
     buffer,
     includeYamlDirective: includeYamlDirective,
+    includeGlobalTags: includeGlobalTags,
     docDirectives: directives,
     onProperties: objectProperties,
   );

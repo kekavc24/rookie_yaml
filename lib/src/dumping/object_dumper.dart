@@ -90,6 +90,22 @@ final class ObjectDumper extends YamlDumper {
       ..mapDumper = map;
   }
 
+  /// Creates a resuable dumper that outputs a compact YAML string.
+  ///
+  /// The [ObjectDumper] dumps [Map]s and [Iterable]s as block nodes with any
+  /// explicit flow nodes forced inline.
+  ///
+  /// Scalars are styled as [ScalarStyle.plain] and forced inline. When line
+  /// breaks are encountered, the dumper uses [ScalarStyle.doubleQuoted] as a
+  /// fallback style.
+  ///
+  /// Aliases are not dumped as the node they alias.
+  factory ObjectDumper.compact() => ObjectDumper.of(
+    forceScalarsInline: true,
+    forceIterablesInline: true,
+    forceMapsInline: true,
+  );
+
   /// Tracks an [object]'s [anchor] only if it's not an alias.
   static void _pushAnchor(String? anchor, DumpableNode<Object?> object) {
     if (anchor == null || object is DumpableAsAlias) return;
