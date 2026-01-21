@@ -460,13 +460,15 @@ final class MapDumper with PropertyDumper, EntryFormatter {
         );
       }
 
+      final isBlockNode = isBlockMap && isBlockDumper;
+
       _evictParent(
         map.entries.iterator,
         childIndent: dumpingIndent,
         onMapDone: (isExplicit, dumped) {
           completeEntry(
-            isExplicit: isExplicit || isBlockMap,
-            isBlockNode: isBlockMap,
+            isExplicit: isExplicit || isBlockNode,
+            isBlockNode: isBlockNode,
             applyTrailingComments: canApplyTrailingComments,
             comments: dumpable.comments,
             content: _onMapDumped(

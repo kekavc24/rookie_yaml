@@ -392,7 +392,8 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
 
     // Dumps an iterable in the current dumper's context.
     void iterativeSelf(Iterable<Object?> iterable) {
-      final isBlockList = dumpable.nodeStyle == NodeStyle.block;
+      final isBlockList =
+          dumpable.nodeStyle == NodeStyle.block && isBlockDumper;
       final iterableIndent = indent(isBlockList);
 
       if (isBlockDumper && !isBlockList) {
@@ -449,7 +450,7 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
 
     // Dumps a map after stashing the state of the current dumper.
     void iterativeMap(IterativeCollection<MapDumper> dumpMap) {
-      final isBlockMap = dumpable.nodeStyle == NodeStyle.block;
+      final isBlockMap = dumpable.nodeStyle == NodeStyle.block && isBlockDumper;
       final mapIndent = indent(isBlockMap);
 
       if (_mapDumper.isBlockDumper && !isBlockMap) {
