@@ -105,7 +105,6 @@ String _dumpGeneric(
   required CommentDumper dumper,
   required List<String> comments,
   required bool canApplyTrailing,
-  required int? offsetFromMargin,
 }) {
   if (comments.isEmpty) {
     return '$char $content';
@@ -124,10 +123,10 @@ String _dumpGeneric(
     comments: comments,
     forceBlock: false,
     indent: indent,
-    offsetFromMargin: offsetFromMargin ?? switch (content.lastIndexOf('\n')) {
-          -1 => content.length + indent,
-          int value => (content.length - value),
-        },
+    offsetFromMargin: switch (content.lastIndexOf('\n')) {
+      -1 => content.length + indent,
+      int value => (content.length - (value + 1)),
+    },
   )}';
 }
 
@@ -204,7 +203,6 @@ DumpedEntry _dumpImplicitEntry(
     dumper: dumper,
     comments: comments,
     canApplyTrailing: commentsMayTrail,
-    offsetFromMargin: value.info.offsetFromMargin,
   ).trimLeft();
 
   return (hasTrailing: willTrail, content: '$formattedKey$formattedValue');
@@ -225,7 +223,6 @@ DumpedEntry _dumpBlockExplicitEntry(
     dumper: dumper,
     comments: keyInfo.comments,
     canApplyTrailing: keyInfo.canApplyTrailingComments,
-    offsetFromMargin: keyInfo.offsetFromMargin,
   );
 
   final comments = value.info.comments;
@@ -250,7 +247,6 @@ DumpedEntry _dumpBlockExplicitEntry(
           dumper: dumper,
           comments: comments,
           canApplyTrailing: definitelyTrailing,
-          offsetFromMargin: value.info.offsetFromMargin,
         )}',
   );
 }

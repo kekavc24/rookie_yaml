@@ -54,7 +54,7 @@ final class _ListEntry extends FormattingEntry {
               (willTrail
                   ? switch (nodeToDump.lastIndexOf('\n')) {
                       -1 => nodeToDump.length + indent,
-                      int value => (nodeToDump.length - value),
+                      int value => (nodeToDump.length - (value + 1)),
                     }
                   : -1),
         ),

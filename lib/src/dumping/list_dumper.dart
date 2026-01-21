@@ -515,7 +515,10 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
             .dump(dumpable, indent: indentation, style: null);
 
         completeEntry(
-          indent: indentation,
+          // Align the comments correctly.
+          indent: isBlockDumper && _listEntry.dumper.style == CommentStyle.block
+              ? indentation + 1
+              : indentation,
           preferExplicit: isMultiline,
           applyTrailingComments:
               scalarDumper.defaultStyle.nodeStyle != NodeStyle.block,

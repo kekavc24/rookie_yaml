@@ -160,7 +160,7 @@ String _applyCommentsIfAny(
             : (offsetFromMargin ??
                   switch (object.lastIndexOf('\n')) {
                     -1 => object.length + indent,
-                    int offset => object.length - offset,
+                    int offset => object.length - (offset + 1),
                   }),
       );
 
