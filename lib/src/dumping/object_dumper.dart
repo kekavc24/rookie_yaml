@@ -158,7 +158,7 @@ A global tag with the current tag handle already exists.
     if (tag == null) return null;
 
     // Ensure our named handle has a global tag.
-    if (tag.tagHandle.handleVariant == TagHandleVariant.secondary &&
+    if (tag.tagHandle.handleVariant == TagHandleVariant.named &&
         !namedHasGlobal) {
       throw FormatException(
         'The named local tag "$tag" has no global tag for its named handle',

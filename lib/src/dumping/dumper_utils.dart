@@ -66,7 +66,7 @@ mixin PropertyDumper {
     // PS: This "if-case" is intentional. Expressive :)
     if (applyInline(tag, anchor, '').trim() case final properties
         when properties.isNotEmpty) {
-      return '$properties\n${' ' * nodeIndent}$node';
+      return '$properties\n${' ' * nodeIndent}${node.trimLeft()}';
     }
 
     return node;
