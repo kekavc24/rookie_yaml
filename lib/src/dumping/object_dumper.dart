@@ -202,3 +202,8 @@ A global tag with the current tag handle already exists.
     _globalTags.clear();
   }
 }
+
+void forceReset() {
+  ObjectDumper._anchors.clear();
+  ObjectDumper._globalTags.clear();
+}

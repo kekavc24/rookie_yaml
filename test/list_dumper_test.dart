@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/object_dumper.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
@@ -24,8 +25,8 @@ void main() {
       dumper: ObjectDumper.of(
         scalarStyle: scalarStyle,
         iterableStyle: style,
-        flowIterableInline: preferInline,
-        flowMapInline: preferInline,
+        forceIterablesInline: preferInline,
+        forceMapsInline: preferInline,
         forceScalarsInline: preferInline,
       ),
     );
@@ -236,6 +237,35 @@ void main() {
 - true: 24.0
 - 24\n\n 0
 ''');
+    });
+
+    test('Preserves leading whitespace correctly in nested block scalars', () {
+      const scalar = ' sh-Kalar';
+      const iterable = [
+        scalar,
+        [
+          scalar,
+          [scalar],
+        ],
+      ];
+
+      final dumped = dumpObject(
+        iterable,
+        dumper: ObjectDumper.of(scalarStyle: ScalarStyle.literal),
+      );
+
+      check(dumped).equals('''
+- |1-
+ $scalar
+- - |1-
+   $scalar
+  - - |1-
+     $scalar
+''');
+
+      check(
+        loadDartObject(YamlSource.string(dumped)),
+      ).isA<Iterable>().deepEquals(iterable);
     });
   });
 }

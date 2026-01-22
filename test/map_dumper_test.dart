@@ -1,6 +1,8 @@
 import 'package:checks/checks.dart';
+import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/object_dumper.dart';
+import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:test/test.dart';
 
@@ -22,8 +24,8 @@ void main() {
       dumper: ObjectDumper.of(
         scalarStyle: scalarStyle,
         mapStyle: style,
-        flowIterableInline: preferInline,
-        flowMapInline: preferInline,
+        forceIterablesInline: preferInline,
+        forceMapsInline: preferInline,
         forceScalarsInline: preferInline,
       ),
     );
@@ -257,6 +259,34 @@ key: 24
   0
 : value
 ''');
+    });
+
+    test('Preserves leading whitespace in nested block scalars', () {
+      const scalar = ' sh-Kalar';
+
+      const map = {scalar: scalar, 'nested': scalar};
+      final dumped = dumpObject(
+        map,
+        dumper: ObjectDumper.of(scalarStyle: ScalarStyle.literal),
+      );
+
+      check(dumped).equals('''
+? |1-
+ $scalar
+: |1-
+ $scalar
+? |-
+  nested
+: |1-
+ $scalar
+''');
+
+      check(
+        DeepCollectionEquality.unordered().equals(
+          loadDartObject(YamlSource.string(dumped)),
+          map,
+        ),
+      ).isTrue();
     });
   });
 }
