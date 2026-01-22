@@ -513,7 +513,12 @@ final class IterableDumper with PropertyDumper, EntryFormatter {
         final indentation = indent();
 
         final (:isMultiline, :tentativeOffsetFromMargin, :node) = scalarDumper
-            .dump(dumpable, indent: indentation, style: null);
+            .dump(
+              dumpable,
+              indent: indentation,
+              parentIndent: _listEntry.entryIndent,
+              style: null,
+            );
 
         completeEntry(
           // Align the comments correctly.

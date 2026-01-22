@@ -542,7 +542,14 @@ final class MapDumper with PropertyDumper, EntryFormatter {
       onMap: iterativeSelf,
       onScalar: () {
         final (:isMultiline, :tentativeOffsetFromMargin, :node) = scalarDumper
-            .dump(dumpable, indent: dumpingIndent, style: null);
+            .dump(
+              dumpable,
+              indent: dumpingIndent,
+              parentIndent: (_entryStore.key?.explicit ?? true)
+                  ? _entryStore.entryIndent
+                  : _entryStore.key!.info.indent,
+              style: null,
+            );
 
         completeEntry(
           isExplicit: isMultiline,

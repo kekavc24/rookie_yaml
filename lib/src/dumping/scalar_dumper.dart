@@ -185,8 +185,7 @@ DumpedScalar _dumpScalar(
           scan: (_, _, current) => current.isPrintable(),
           unfolding: (lines) {
             // Literal is canonically a restrictive WYSIWYG style.
-            if (isLiteral) return lines;
-            return unfoldBlockFolded(lines);
+            return isLiteral ? lines : unfoldBlockFolded(lines);
           },
         );
 
