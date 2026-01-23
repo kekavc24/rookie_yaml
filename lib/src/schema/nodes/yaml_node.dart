@@ -133,28 +133,3 @@ final class AliasNode extends YamlSourceNode {
   @override
   String toString() => aliased.toString();
 }
-
-/// A simple wrapper for most `Dart` types. Effective if you want to access
-/// keys in a [Mapping]
-///
-/// {@category yaml_nodes}
-final class DartNode<T> extends YamlNode {
-  DartNode(T dartValue)
-    : assert(
-        dartValue != YamlNode,
-        'Expected a Dart type that is not a YamlNode',
-      ),
-      value = dartValue;
-
-  /// Wrapped value
-  final T value;
-
-  @override
-  NodeStyle get nodeStyle => NodeStyle.block;
-
-  @override
-  bool operator ==(Object other) => yamlCollectionEquality.equals(other, value);
-
-  @override
-  int get hashCode => yamlCollectionEquality.hash(value);
-}
