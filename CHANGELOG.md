@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.4.0
+
+Happy (belated) new year! 🎉
+
+This release overhauls the dumper and improves the developer experience for external resolvers.
+
+- `breaking`:
+  - Drops support for `DartNode` and `DynamicMapping`. Use built-in Dart type loaders instead.
+  - Drops support for `NodeResolver` and `TypeResolver` tags. Use built-in Dart type loaders instead.
+  - Drops support for the `asCustomType` extension added for `YamlSourceNode`. Use built-in Dart type loaders instead.
+
+- `feat(parser)`:
+  - Improves `ScalarResolver` dx.
+  - Improves support for external resolvers.
+    - Adds `CustomTriggers`. Acts as a top-level plugin to the underlying parser.
+    - Adds `CustomResolver`. Replaces `NodeResolver`.
+    - Adds support for custom objects via external delegates which interact with the parser.
+  - Improves tags-as-code dx.
+  - Improves how scalars are parsed. Parser can now parse scalars in a single-pass.
+
+- `feat(dumper)`:
+  - Overhauls the dumper.
+  - Adds support for intuitively adding properties to objects being dumped. See docs.
+  - Adds support for adding comments to objects being dumped.
+
+- `fix`:
+  - Ensures the end offset for plain scalars is set correctly.
+  - Fixes an issue where all flow delimiters where treated as uri chars.
+  - Calculates the indent correctly for block scalars with an indentation indicator.
+    - Folds empty lines correctly when an indentation indicator is present in `ScalarStyle.folded`.
+
 ## 0.3.1
 
 This release focuses on adding support for more YAML features and the internal test coverage making it a solid alternative to existing YAML parsers.
@@ -19,7 +50,7 @@ This release focuses on adding support for more YAML features and the internal t
 
 ## 0.3.0
 
-This release bring extensive improvements to the recursive parsing strategy. The parser can now handle a wide variety of edge cases with regards to block nodes and their properties. The recursive parsing strategy has been modelled to match the official YAML grammar and syntax.
+This release brings extensive improvements to the recursive parsing strategy. The parser can now handle a wide variety of edge cases with regards to block nodes and their properties. The recursive parsing strategy has been modelled to match the official YAML grammar and syntax.
 
 - `breaking`:
   - Added a `YamlSource` extension type. All loaders no longer have the `source` and `byteSource` parameter. `YamlSource` provides named constructors for both with all loaders accepting a single `YamlSource` input.
