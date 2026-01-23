@@ -1,4 +1,4 @@
-Scalars or scalar-like objects are dumped by calling the object's `toString` method before applying the heuristics of the `dumpScalar` function. Each `ScalarStyle` has a set of constraints declared in the spec. These constraints are actively enforced to ensure the correctness of the YAML string generated.
+Scalars or scalar-like objects are dumped by calling the object's `toString` method before applying the heuristics of a `ScalarStyle`. Each `ScalarStyle` has a set of constraints declared in the spec. These constraints are actively enforced to ensure the correctness of the YAML string generated.
 
 ## Double Quoted Style
 
@@ -17,9 +17,9 @@ In this style, all escaped characters are normalized except:
 The escaped characters are always recovered when the dumped string is parsed. Additionally, line breaks are "unfolded" with trailing and leading whitespaces on each line preserved as described in the spec.
 
 ```dart
-dumpScalar(
+dumpObject(
   'Bell \a with tab \t and line breaks \n \r',
-  dumpingStyle: ScalarStyle.doubleQuoted,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.doubleQuoted),
 );
 ```
 
@@ -37,13 +37,15 @@ dumpScalar(
 This double quoted style is supported by YAML out of the box. All escaped characters including tabs (`\t`) and line breaks (`\n` and `\r`) are normalized.
 
 > [!NOTE]
-> You need to pass in `jsonCompactible` as `true` when calling `dumpScalar`. The scalar style you provided will be ignored.
+> You need to pass in `forceScalarsInline` as `true` to the `ObjectDumper`.
 
 ```dart
-dumpScalar(
+dumpObject(
   'Bell \a with tab \t and line breaks \n \r',
-  dumpingStyle: ScalarStyle.plain,
-  jsonCompatible: true,
+  dumper: ObjectDumper.of(
+    scalarStyle: ScalarStyle.doubleQuoted,
+    forceScalarsInline: true,
+  ),
 );
 ```
 
@@ -63,12 +65,12 @@ In this style:
 - Line breaks are "unfolded".
 - Tabs and backslashes are never normalized.
 
-This style, however, **PROHIBITS** any form of escaping. Only printable characters are allowed. Always throws if any are found.
+This style, however, **\*PROHIBITS\*** any form of escaping. Only printable characters are allowed. Defaults to `ScalarStyle.doubleQuoted` if the object cannot dumped as a single-quoted scalar.
 
 ```dart
-dumpScalar(
+dumpObject(
   "Single quote ' , tab \t and line breaks\n\n",
-  dumpingStyle: ScalarStyle.singleQuoted,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.singleQuoted),
 );
 ```
 
@@ -84,12 +86,12 @@ dumpScalar(
 
 ## Plain Style
 
-This style is **RESTRICTED** but **LENIENT**. Instead of throwing, all escaped characters are normalized except tabs and line breaks. Line breaks are always "unfolded".
+This style is **RESTRICTED** but **LENIENT**. All escaped characters are normalized except tabs and line breaks. Line breaks are always "unfolded".
 
 ```dart
-dumpScalar(
+dumpObject(
   "Bell \a with tab \t and line breaks \n\n",
-  dumpingStyle: ScalarStyle.plain,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.plain),
 );
 ```
 
@@ -104,24 +106,23 @@ Bell \a with tab → and line breaks ↓
 ↓
 ```
 
+> [!IMPORTANT]
+> A plain scalar cannot start with the `#` in any context. This always defaults the scalar to a comment.
+
 ## Block Literal Style
 
-This style is simple but **STRICT** and has the principle, "What you see is what you get". Ergo, it only allows printable characters and throws if any non-printable characters are present in the string.
+This style is simple but **STRICT** and has the principle, "What you see is what you get". Ergo, it only allows printable characters and defaults to `ScalarStyle.doubleQuoted` if any non-printable characters are present in the string.
 
 You cannot specify the `ChompingIndicator`. This is intentional.
-
-```dart
-dumpScalar("Ascii Bell \a", dumpingStyle: ScalarStyle.literal); // Throws
-```
 
 ### Simple String
 
 Applies `strip` chomping indicator (`-`), by default.
 
 ```dart
-dumpScalar(
+dumpObject(
   "This is a simple string",
-  dumpingStyle: ScalarStyle.literal,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.literal),
 );
 ```
 
@@ -135,9 +136,9 @@ This is a simple string
 Applies the `keep` chomping indicator (`+`) to preserve trailing line breaks as part of the content and prevent issues if the scalar is embedded in a sequence or mapping with multiple elements.
 
 ```dart
-dumpScalar(
+dumpObject(
   "Woohoo! I have line breaks\n\n",
-  dumpingStyle: ScalarStyle.literal,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.literal),
 );
 ```
 
@@ -149,24 +150,45 @@ Woohoo! I have line breaks↓
 ↓
 ```
 
-## Block Folded Style
+### String with leading whitespace
 
-Line breaks are always "unfolded" (Peep style's name). Tabs are not normalized. However, this style throws if any non-printable characters are present in the string.
+Indent for block scalars is inferred from the first line when parsing instead of depending the indent provided by the global lexer/parser. To prevent this, the string is indented further and a block indentation indicator is provided in the block scalar header.
 
-You cannot specify the `ChompingIndicator`. This is intentional.
+The indentation indicator restricts the parser to consume only `n+m` spaces where:
+
+* `n` - is the number of indentation spaces it is currently pinned to from the parent node/global lexer.
+* `m` - the additional space(s) it needs to consume to determine the block scalar's indent. YAML allows `m` to range from `1-9`. We only emit `1` for our usecase.
 
 ```dart
-dumpScalar("Ascii Bell \a", dumpingStyle: ScalarStyle.folded); // Throws
+dumpObject(
+  " Leading space present\nin the line",
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.literal),
+);
 ```
+
+```yaml
+# In yaml (characters below are visual aids. They are not included):
+# ↓ - for line break
+# · = indent
+|1-
+· Leading space present↓
+·in the line
+```
+
+## Block Folded Style
+
+Line breaks are always "unfolded" (Peep style's name). Tabs are not normalized. However, may default to `ScalarStyle.doubleQuoted` if any non-printable characters are present in the string.
+
+You cannot specify the `ChompingIndicator`. This is intentional.
 
 ### Simple String
 
 Applies `strip` chomping indicator (`-`), by default.
 
 ```dart
-dumpScalar(
+dumpObject(
   "This is a folded\nstring",
-  dumpingStyle: ScalarStyle.folded,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.folded),
 );
 ```
 
@@ -184,9 +206,9 @@ string
 Similar to `ScalarStyle.literal`, the `keep` chomping indicator (`+`) is applied to preserve trailing line breaks as part of the content. Trailing line breaks are never "unfolded".
 
 ```dart
-dumpScalar(
+dumpObject(
   "Folded\nalways! I have trailing line breaks\n\n",
-  dumpingStyle: ScalarStyle.folded,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.folded),
 );
 ```
 
@@ -200,13 +222,34 @@ always! I have line breaks↓
 ↓
 ```
 
+### String with leading whitespace
+
+`ScalarStyle.literal` and `ScalarStyle.folded` are block scalar styles. Indentation indicator is also used in `ScalarStyle.folded`.
+
+```dart
+dumpObject(
+  " Leading space present\nin the line",
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.folded),
+);
+```
+
+```yaml
+# Output in yaml (characters below are visual aids. They are not included):
+# ↓ - for line break
+# · = indent
+>1-
+· Leading space present↓
+↓
+·in the line
+```
+
 ### String with non-leading indented lines
 
 Line breaks joining indented lines with other lines (indented or not) are never "unfolded" since YAML parsers do not fold such lines.
 
 ```dart
 // Dart multiline string used for simplicity
-dumpScalar(
+dumpObject(
 '''
 Will be unfolded
 normally. Next one not unfolded
@@ -215,7 +258,7 @@ normally. Next one not unfolded
 
 Unfolding continues after
 this line''',
-  dumpingStyle: ScalarStyle.folded,
+  dumper: ObjectDumper.of(scalarStyle: ScalarStyle.folded),
 );
 ```
 
@@ -233,6 +276,3 @@ Unfolding continues after↓
 ↓
 this line
 ```
-
-> [!NOTE]
-> Block styles with leading whitespace will always be encoded as `ScalarStyle.doubleQuoted` to prevent issues since block styles use the first non-empty line to determine indent.

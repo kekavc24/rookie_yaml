@@ -1,17 +1,20 @@
-Dumps any `Map`-like objects.
+Dumps any `Map`-like objects. The default scalar style is `ScalarStyle.plain` (you can override this).
+
+> [!NOTE]
+> From version `0.3.1` and below keys and values could have different scalar styles. In the current version, both keys and values with use the same scalar style. Future changes may allow granular customisation of this behaviour.
 
 ## Flow Mappings
 
-Flow mappings start with `{` and terminate with `}`. All entries are always dumped on a new line. The default scalar style for flow mappings is `ScalarStyle.doubleQuoted`.
+Flow mappings start with `{` and terminate with `}`. All entries are always dumped on a new line.
 
 ### Implicit keys
 
 Inline keys are dumped as implicit keys.
 
 ```dart
-dumpMapping(
-  { 'key': 'value' },
-  collectionNodeStyle: NodeStyle.flow,
+dumpObject(
+  {'key': 'value'},
+  dumper: ObjectDumper.of(mapStyle: NodeStyle.flow),
 );
 ```
 
@@ -27,9 +30,9 @@ dumpMapping(
 Collections or multiline scalars are encoded with an explicit key.
 
 ```dart
-dumpMapping(
-  { {'key': 'value'} : {'key': 'value'} },
-  collectionNodeStyle: NodeStyle.flow,
+dumpObject(
+  {{'key': 'value'} : {'key': 'value'}},
+  dumper: ObjectDumper.of(mapStyle: NodeStyle.flow),
 );
 ```
 
@@ -37,16 +40,33 @@ dumpMapping(
 # Output in yaml
 {
  ? {
-  "key": "value"
- }: {
-   "key": "value"
-  }
+    "key": "value"
+   }
+ : {
+    "key": "value"
+   }
 }
+```
+
+### Inlined flow maps
+
+You can always inline flow maps. This is quite handy since some flow nodes can act as implicit keys as long as they do not exceed the 1024 unicode-count-limit.
+
+```dart
+dumpObject(
+  {{'key': 'value'} : {'key': 'value'}},
+  dumper: ObjectDumper.of(mapStyle: NodeStyle.flow, forceMapsInline: true),
+);
+```
+
+```yaml
+# Output in yaml
+{{key: value}: {key: value}}
 ```
 
 ## Block Mappings
 
-Block mapping have no explicit starting or terminating indicators. The default scalar style for block mappings is `ScalarStyle.literal`.
+Block mapping have no explicit starting or terminating indicators.
 
 ### Explicit keys
 
@@ -57,35 +77,42 @@ Block mappings have a low threshold for explicit keys. Keys are encoded as expli
 3. The key is a collection (`Map` or `Iterable`).
 
 ```dart
-dumpMapping(
-  { 'key': 'value' },
-  collectionNodeStyle: NodeStyle.block,
-  keyScalarStyle: ScalarStyle.literal,
-  valueScalarStyle: ScalarStyle.plain
+dumpObject(
+  {['block', 'list']: 'value' },
+  dumper: ObjectDumper.of(
+    mapStyle: NodeStyle.block,
+    iterableStyle: NodeStyle.block,
+  ),
 );
 ```
 
 ```yaml
 # Output in yaml
-? |-
-  key
+? - block
+  - list
 : value
 ```
 
 ### Implicit keys
 
-Only inline flow scalars are dumped as implicit keys.
+Only inline flow scalars/collections are dumped as implicit keys.
 
 ```dart
-dumpMapping(
-  { 'key': 'value' },
-  collectionNodeStyle: NodeStyle.block,
-  keyScalarStyle: ScalarStyle.plain,
-  valueScalarStyle: ScalarStyle.singleQuoted,
+dumpObject(
+  {
+    ['flow', 'list']: 'value',
+    'next': 'entry',
+  },
+  dumper: ObjectDumper.of(
+    mapStyle: NodeStyle.block,
+    iterableStyle: NodeStyle.flow,
+    forceIterablesInline: true,
+  ),
 );
 ```
 
 ```yaml
 # Output in yaml
-key: 'value'
+[flow, list]: value
+next: entry
 ```

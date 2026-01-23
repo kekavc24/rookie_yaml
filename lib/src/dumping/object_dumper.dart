@@ -10,6 +10,10 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 part 'initialize_collections.dart';
 
 /// A class used to dump objects.
+///
+/// {@category dump_scalar}
+/// {@category dump_sequence}
+/// {@category dump_mapping}
 final class ObjectDumper extends YamlDumper {
   ObjectDumper._({required super.unpackAliases, required CommentDumper dumper})
     : super(

@@ -36,9 +36,9 @@ dartdoc:
     dump_mapping:
       markdown: doc/dump_mapping.md
       displayName: Dumping Mapping
-    dump_node:
-      markdown: doc/dump_node.md
-      displayName: Dumping YAML Nodes
+    dump_type:
+      markdown: doc/dump_type.md
+      displayName: Dumping Types
     dump_doc:
       markdown: doc/dump_document.md
       displayName: Dumping YAML Documents
@@ -74,7 +74,7 @@ dartdoc:
     - dump_scalar
     - dump_sequence
     - dump_mapping
-    - dump_node
+    - dump_type
     - dump_doc
     - resolvers_intro
     - scalar_resolvers

@@ -179,6 +179,12 @@ String _applyCommentsIfAny(
 /// Any additional [directives] provided will be dumped. However, any
 /// [GlobalTag]s found in the [object] take precedence over those present in
 /// [directives].
+///
+/// {@category dump_scalar}
+/// {@category dump_sequence}
+/// {@category dump_mapping}
+/// {@category dump_type}
+/// {@category dump_doc}
 String dumpObject(
   Object? object, {
   required YamlDumper dumper,

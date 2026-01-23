@@ -73,6 +73,9 @@ mixin PropertyDumper {
   }
 }
 
+/// Style for dumping comments.
+///
+/// {@category dump_type}
 enum CommentStyle {
   /// Comments are dumped before the node with each comment on a new line. This
   /// style is optimized for readability.
@@ -109,6 +112,8 @@ enum CommentStyle {
 }
 
 /// A class that dumps comments based on the [CommentStyle].
+///
+/// {@category dump_type}
 final class CommentDumper {
   /// Style used to dump comments.
   final CommentStyle style;

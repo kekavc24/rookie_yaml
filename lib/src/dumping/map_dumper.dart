@@ -28,6 +28,8 @@ typedef _MapState = ({
 });
 
 /// A dumper for a [Map].
+///
+/// {@category dump_mapping}
 final class MapDumper with PropertyDumper, EntryFormatter {
   MapDumper._(
     this._entryStore, {

@@ -17,7 +17,7 @@
   - [Dumping scalars](./dump_scalar.md)
   - [Dumping lists/sequences](./dump_sequence.md)
   - [Dumping maps/mappings](./dump_mapping.md)
-  - [Dumping `CompactNode`s](./dump_node.md)
+  - [Dumping types](./dump_type.md.md)
   - [Dumping documents](./dump_document.md)
 - External Resolvers
     - [Introduction to resolvers](./intro_to_resolvers.md)

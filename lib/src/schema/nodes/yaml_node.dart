@@ -52,7 +52,7 @@ sealed class YamlNode {
 ///
 /// {@category intro}
 /// {@category yaml_nodes}
-/// {@category dump_node}
+/// {@category dump_type}
 abstract class CompactYamlNode extends YamlNode {
   const CompactYamlNode();
 

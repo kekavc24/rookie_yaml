@@ -2,6 +2,8 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// An object that can be dumped.
+///
+/// {@category dump_type}
 sealed class DumpableNode<T> extends CompactYamlNode {
   DumpableNode();
 
@@ -19,6 +21,8 @@ sealed class DumpableNode<T> extends CompactYamlNode {
 }
 
 /// An alias to an anchor that has been declared.
+///
+/// {@category dump_type}
 final class DumpableAsAlias extends DumpableNode<String> {
   DumpableAsAlias._(this.alias);
 
@@ -36,6 +40,8 @@ final class DumpableAsAlias extends DumpableNode<String> {
 }
 
 /// A simple alias to an anchor.
+///
+/// {@category dump_type}
 extension type Alias._(DumpableAsAlias alias) {
   Alias(String anchor) : this._(DumpableAsAlias._(anchor));
 }
@@ -46,6 +52,8 @@ extension type Alias._(DumpableAsAlias alias) {
 /// wrapped. For lists and maps, any nested object is implicitly is assumed to
 /// share the [NodeStyle] of the parent. For scalars, the [NodeStyle] has no
 /// effect.
+///
+/// {@category dump_type}
 final class ConcreteNode<T> extends DumpableNode<T> {
   ConcreteNode._(this.dumpable) {
     switch (dumpable) {
@@ -87,6 +95,8 @@ final class ConcreteNode<T> extends DumpableNode<T> {
 /// can accept node properties.
 ///
 /// Avoid calling this function if your object is already a [DumpableNode].
+///
+/// {@category dump_type}
 ConcreteNode<T> dumpableType<T>(T object) {
   if (T is ConcreteNode) {
     throw ArgumentError(
@@ -104,6 +114,8 @@ ConcreteNode<T> dumpableType<T>(T object) {
 /// If [unpackAnchor] is `true`, an [AliasNode] will be unpacked and its anchor
 /// used as the dumpable object. It should be noted an [Alias] cannot be
 /// unpacked.
+///
+/// {@category dump_type}
 DumpableNode<Object?> dumpableObject(
   Object? object, {
   bool unpackAnchor = false,
@@ -117,6 +129,7 @@ DumpableNode<Object?> dumpableObject(
   _ => ConcreteNode._(object),
 };
 
+/// {@category dump_type}
 extension Sandboxed<T> on ConcreteNode<T> {
   /// Updates the object's [ResolvedTag] to a verbatim [tag].
   ConcreteNode<T> withVerbatimTag(VerbatimTag tag) => this..tag = tag;

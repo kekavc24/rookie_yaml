@@ -27,6 +27,8 @@ typedef _IterableState = ({
 });
 
 /// A dumper for an [Iterable].
+///
+/// {@category dump_sequence}
 final class IterableDumper with PropertyDumper, EntryFormatter {
   IterableDumper._(
     this._listEntry, {

@@ -2,6 +2,7 @@ part of 'object_dumper.dart';
 
 /// Calls [ifBlock] or [ifFlow] if [style] is [NodeStyle.block] or
 /// [NodeStyle.flow] respectively.
+@pragma('vm:prefer-inline')
 T _initialize<T>(
   NodeStyle style, {
   required T Function() ifBlock,
@@ -12,6 +13,7 @@ T _initialize<T>(
 };
 
 /// Calls [ifThis] only if [style] is [NodeStyle.block].
+@pragma('vm:prefer-inline')
 void _isBlock(NodeStyle style, void Function() ifThis) => _initialize(
   style,
   ifBlock: ifThis,

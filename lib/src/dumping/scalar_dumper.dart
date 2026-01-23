@@ -234,6 +234,8 @@ DumpedScalar _dumpScalar(
 }
 
 /// A persistent dumper for scalars.
+///
+/// {@category dump_scalar}
 final class ScalarDumper with PropertyDumper {
   const ScalarDumper._(
     this.defaultStyle,
