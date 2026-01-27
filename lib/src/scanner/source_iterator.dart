@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
@@ -6,6 +7,7 @@ import 'package:rookie_yaml/src/dumping/string_utils.dart';
 part 'character_encoding.dart';
 part 'encoding_utils.dart';
 part 'error_utils.dart';
+part 'utf_utils.dart';
 
 /// Custom offset information.
 ///

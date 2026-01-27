@@ -17,11 +17,50 @@ part 'dart_objects.dart';
 /// {@category yaml_nodes}
 /// {@category yaml_docs}
 extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
-  /// Create an input source from a byte source.
-  YamlSource.bytes(Uint16List bytes) : this._(bytes);
+  /// Creates an input from an UTF-8 byte source. No dangling surrogate pairs
+  /// are allowed and the BOM character has no side effects.
+  YamlSource.strictUtf8(Uint8List bytes) : this._(decodeUtf8Strict(bytes));
 
-  /// Creates an input from a [yaml] source string.
-  YamlSource.string(String yaml) : this._(yaml.runes);
+  /// Creates an input from a UTF-16 byte source which is parsed "as-is" if no
+  /// BOM (byte order mark) is present.
+  ///
+  /// If the `U+FEFF` BOM (byte order mark) is present, the input is parsed
+  /// "as-is" as UTF-16 Big-Endian.
+  ///
+  /// If the `U+FFFE` BOM (byte order mark) is present, each code point is
+  /// manipulated and read as a big endian integer.
+  ///
+  /// Most systems, however, handle the endianess issues out of the box when
+  /// storing integers. Keep the BOM if you are sure your input will benefit
+  /// from it.
+  YamlSource.strictUtf16(Iterable<int> source) : this._(decodeUtf16(source));
+
+  /// Creates an input from a source with UTF-16 [words].
+  ///
+  /// If the first code unit is a BOM (byte order mark), the input may be
+  /// interpreted differently based on the endianess it specifies.
+  YamlSource.fixedUtf16(Uint16List words) : this.strictUtf16(words);
+
+  /// Creates an input from a [yaml] source string that does not allow unpaired
+  /// surrogate code units.
+  ///
+  /// If the first code unit is a BOM (byte order mark), the input may be
+  /// interpreted differently based on the endianess it specifies.
+  YamlSource.string(String yaml) : this.strictUtf16(yaml.codeUnits);
+
+  /// Creates an input from a UTF-32 byte source which is parsed "as-is" if no
+  /// BOM (byte order mark) is present.
+  ///
+  /// If the `U+0000FEFF` BOM (byte order mark) is present, the input is parsed
+  /// "as-is" as UTF-32 Big-Endian.
+  ///
+  /// If the `U+0000FFFE` BOM (byte order mark) is present, each code point is
+  /// manipulated and read as a big endian integer.
+  ///
+  /// Most systems, however, handle the endianess issues out of the box when
+  /// storing integers. Keep the BOM if you are sure your input will benefit
+  /// from it.
+  YamlSource.fixedUtf32(Uint32List source) : this._(decodeUtf32(source));
 }
 
 /// Internal logger used when no logger is provided
