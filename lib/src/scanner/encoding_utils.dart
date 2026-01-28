@@ -142,6 +142,11 @@ extension CharUtils on int {
   ///   - A whitespace character
   ///   - Line break i.e. `\r` or `\n`
   bool isNonSpaceChar() => !isWhiteSpace() && !isLineBreak() && isPrintable();
+
+  /// Whether the current character is the unicode BOM (byte order mark)
+  /// `U+FEFF`.
+  bool isByteOrderMark({bool checkLE = false}) =>
+      this == unicodeBomCharacterRune || (checkLE && this == 0xFFFE);
 }
 
 /// Characters allowed in a `URI` not included in `isAlphaNumeric` or

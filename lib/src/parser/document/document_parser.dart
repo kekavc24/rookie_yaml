@@ -76,6 +76,8 @@ final class DocumentParser<R> {
 
     if (iterator.isEOF) return (false, null);
 
+    iterator.allowBOM(true);
+
     _onDocReset(_parserState.current);
 
     GreedyPlain? docMarkerGreedy;
@@ -89,6 +91,7 @@ final class DocumentParser<R> {
       leadingAsIndent: !_parserState.docStartExplicit,
     );
 
+    iterator.skipBOM();
     var rootInDirectiveEndLine = false;
 
     if (!_parserState.docStartExplicit &&

@@ -3,7 +3,7 @@ part of 'source_iterator.dart';
 /// Byte range for a UTF-8 byte sequence. (start and end inclusive)
 typedef _MinMax = (int, int);
 
-extension on int {
+extension UtfUtils on int {
   String readableHex() => '0x${toRadixString(16)}';
 }
 
@@ -230,7 +230,7 @@ Iterable<int> _decodeUtf32Strict(Iterable<int> source) sync* {
       );
     } else if (_surrogateRange.hasValue(codeUnit)) {
       throw StateError(
-        'Illformed surrogate code unit "${codeUnit.readableHex()}" not allowed'
+        'Ill-formed surrogate code unit "${codeUnit.readableHex()}" not allowed'
         'in UTF-32.',
       );
     }

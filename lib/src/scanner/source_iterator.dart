@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
 
 part 'character_encoding.dart';
@@ -50,7 +52,7 @@ final class SourceLine {
 /// An iterator that iterates over any parsable YAML source string.
 ///
 /// `[NOTE]`: This class does not subclass [Iterator]. This is intentional.
-abstract interface class SourceIterator {
+abstract base class SourceIterator {
   /// Whether a char is present after the [current] char.
   bool get hasNext;
 
@@ -78,7 +80,10 @@ abstract interface class SourceIterator {
   /// allows [current] to be skipped if it is the last character allowing
   /// [isEOF] to provide fine grained information on the current state of the
   /// iterator.
-  void nextChar();
+  @mustCallSuper
+  void nextChar() {
+    _throwIfBOM();
+  }
 
   /// Peeks ahead and returns the next character which may be `null` if no
   /// more characters are present.
@@ -91,11 +96,41 @@ abstract interface class SourceIterator {
 
   /// Returns the lines that have been iterated so far.
   List<SourceLine> lines({int startIndex = 0});
+
+  /// Whether to treat the BOM as a valid character.
+  var _allowBOM = false;
+
+  /// Skips the current unicode character if it is the unicode BOM character.
+  void skipBOM() {
+    if (current.isByteOrderMark()) {
+      nextChar();
+    }
+
+    _allowBOM = false;
+  }
+
+  /// Toggles the [state] of the iterator to (not) accept the unicode BOM
+  /// character.
+  void allowBOM(bool state) => _allowBOM = state;
+
+  /// Throws if the BOM is not allowed in the current iterator's state.
+  void _throwIfBOM() {
+    if (_allowBOM || !current.isByteOrderMark(checkLE: true)) return;
+
+    // Byte order mark is never allowed in YAML content.
+    throwWithSingleOffset(
+      this,
+      message:
+          'The BOM (byte order mark) "0xFEFF" can only appear at the start of'
+          ' a document',
+      offset: currentLineInfo.current,
+    );
+  }
 }
 
 /// A [SourceIterator] that iterates the utf16 unicode points of a source
 /// string/file.
-final class UnicodeIterator implements SourceIterator {
+final class UnicodeIterator extends SourceIterator {
   UnicodeIterator._(this._iterator) {
     // Always point to the first character
     if (_iterator.moveNext()) {
@@ -116,6 +151,7 @@ final class UnicodeIterator implements SourceIterator {
     }
 
     _lines.add(const SourceLine(0, 0, chars: []));
+    allowBOM(true);
   }
 
   /// Creates a [UnicodeIterator] that uses the underlying code units to iterate
@@ -199,6 +235,8 @@ final class UnicodeIterator implements SourceIterator {
     _charBefore = _currentChar;
     _currentChar = _nextChar;
     _hasNext = _iterator.moveNext();
+
+    super.nextChar();
     _nextChar = _hasNext ? _iterator.current : -1;
 
     ++_graphemeIndex;

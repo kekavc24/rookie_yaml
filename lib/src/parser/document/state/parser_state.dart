@@ -262,6 +262,7 @@ final class ParserState<R> {
         (iterator.current == comment ||
             iterator.current.isWhiteSpace() ||
             iterator.current.isLineBreak())) {
+      iterator.allowBOM(true);
       skipToParsableChar(iterator, onParseComment: comments.add);
     }
   }

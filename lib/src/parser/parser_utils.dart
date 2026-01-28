@@ -193,7 +193,8 @@ DocumentMarker checkForDocumentMarkers(
 
       if (iterator.isEOF ||
           iterator.current.isLineBreak() ||
-          iterator.current.isWhiteSpace()) {
+          iterator.current.isWhiteSpace() ||
+          iterator.current.isByteOrderMark()) {
         return DocumentMarker.directiveEnd;
       }
     }
