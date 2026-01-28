@@ -117,10 +117,10 @@ typedef DelegatedValue = ScalarValueDelegate<Object?> Function();
 /// Maps a scalar [kind] to its `BytesToScalar` delegate and creates the
 /// callback.
 DelegatedValue scalarImpls(YamlScalarKind kind) => switch (kind) {
-  YamlScalarKind.nullString => () => NullDelegate(),
-  YamlScalarKind.booleanString => () => BoolDelegate(),
+  YamlScalarKind.nullString => () => LazyType.forNull(),
+  YamlScalarKind.booleanString => () => LazyType.boolean(),
   YamlScalarKind.integer => () => RecoverableDelegate.forInt(),
-  YamlScalarKind.float => () => FloatDelegate(),
+  YamlScalarKind.float => () => LazyType.float(),
   _ => () => StringDelegate(),
 };
 

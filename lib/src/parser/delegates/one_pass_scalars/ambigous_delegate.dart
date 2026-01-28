@@ -51,10 +51,10 @@ final class AmbigousDelegate extends ScalarValueDelegate<Object?> {
       // intentionally do not match for integers and floats.
       _scalar = switch (char) {
         // f, F in "false" or "False". t, T in "true" or "True"
-        capF || lowerF || 0x54 || 0x74 => BoolDelegate(),
+        capF || lowerF || 0x54 || 0x74 => LazyType.boolean(),
 
         // n, N in "null" or "Null" or "NULL". "~" tilde.
-        0x4E || 0x6E || 0x7E => NullDelegate(),
+        0x4E || 0x6E || 0x7E => LazyType.forNull(),
         _ => _FallbackBuffer(),
       };
     }

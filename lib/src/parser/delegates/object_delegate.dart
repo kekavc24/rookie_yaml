@@ -1,5 +1,4 @@
 import 'dart:collection';
-import 'dart:typed_data';
 
 import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';

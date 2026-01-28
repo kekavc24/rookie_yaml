@@ -65,14 +65,51 @@ base class _FallbackBuffer extends ScalarValueDelegate<String> {
 /// A generic string buffer whose initial state is always empty.
 final class StringDelegate extends _FallbackBuffer {}
 
-base class _LazyTypeFromString<L> extends ScalarValueDelegate<Object?> {
-  _LazyTypeFromString({required this.onParsed});
+/// A delegate whose type is inferred after the entire scalar has been buffered
+/// as a string.
+final class LazyType<L> extends ScalarValueDelegate<Object?> {
+  LazyType._({required this.onParsed});
 
   /// Underlying string buffer.
   final _delegate = StringDelegate();
 
   /// Custom type if string is
   final BufferedScalar<L>? Function(String content) onParsed;
+
+  /// Creates a delegate that infers `null` from a string.
+  LazyType.forNull()
+    : this._(
+        onParsed: (content) => switch (content) {
+          'null' || 'Null' || 'NULL' || '~' => (
+            schemaTag: nullTag,
+            scalar: NullView(content) as ScalarValue<L>,
+          ),
+          _ => null,
+        },
+      );
+
+  /// Creates a delegate that infers [bool] from a string.
+  LazyType.boolean()
+    : this._(
+        onParsed: (content) => switch (content) {
+          'true' ||
+          'True' ||
+          'TRUE' => (schemaTag: booleanTag, scalar: DartValue(true as L)),
+          'false' ||
+          'False' ||
+          'FALSE' => (schemaTag: booleanTag, scalar: DartValue(false as L)),
+          _ => null,
+        },
+      );
+
+  /// Creates a delegate that infers [double] from a string.
+  LazyType.float()
+    : this._(
+        onParsed: (content) => switch (double.tryParse(content)) {
+          double value => (schemaTag: floatTag, scalar: DartValue(value as L)),
+          _ => null,
+        },
+      );
 
   @override
   bool get bufferedLineBreak => _delegate._wroteLineBreak;
@@ -85,47 +122,6 @@ base class _LazyTypeFromString<L> extends ScalarValueDelegate<Object?> {
     final string = _delegate.parsed();
     return _wroteLineBreak ? string : onParsed(string.scalar.value) ?? string;
   }
-}
-
-/// A delegate that infers a null from a string.
-final class NullDelegate extends _LazyTypeFromString<String?> {
-  NullDelegate()
-    : super(
-        onParsed: (content) => switch (content) {
-          'null' ||
-          'Null' ||
-          'NULL' ||
-          '~' => (schemaTag: nullTag, scalar: NullView(content)),
-          _ => null,
-        },
-      );
-}
-
-/// A delegate that infers a [bool] from a string.
-final class BoolDelegate extends _LazyTypeFromString<bool> {
-  BoolDelegate()
-    : super(
-        onParsed: (content) => switch (content) {
-          'true' ||
-          'True' ||
-          'TRUE' => (schemaTag: booleanTag, scalar: DartValue(true)),
-          'false' ||
-          'False' ||
-          'FALSE' => (schemaTag: booleanTag, scalar: DartValue(false)),
-          _ => null,
-        },
-      );
-}
-
-/// A delegate that infers a [double] from a string.
-final class FloatDelegate extends _LazyTypeFromString<double> {
-  FloatDelegate()
-    : super(
-        onParsed: (content) => switch (double.tryParse(content)) {
-          double value => (schemaTag: floatTag, scalar: DartValue(value)),
-          _ => null,
-        },
-      );
 }
 
 /// A callback for delegates that can reset to their initial state.
