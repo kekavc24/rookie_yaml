@@ -39,12 +39,7 @@ $indent
     });
 
     test('Parses block header with comments', () {
-      final holder = (columnIndex: 0, lineIndex: 0, utfOffset: 0);
-
-      final comment = YamlComment(
-        'Block comment',
-        commentSpan: (start: holder, end: holder),
-      );
+      final comment = '# Block comment';
 
       final trailing =
           '''
@@ -61,7 +56,9 @@ $indent
       }
 
       // Parsed in folded & literal in tandem
-      check(comments).unorderedEquals([comment, comment]);
+      check(
+        comments,
+      ).every((c) => c.has((e) => e.toString(), 'Comment').equals(comment));
     });
 
     test('Parses block scalar with header only', () {

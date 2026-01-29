@@ -16,21 +16,16 @@ final class YamlComment implements Comparable<YamlComment> {
 
   /// Sorting based on position in document
   @override
-  int compareTo(YamlComment other) {
-    if (other.commentSpan.end.utfOffset < commentSpan.start.utfOffset) {
-      return -1;
-    }
-
-    if (other.commentSpan.start.utfOffset > commentSpan.end.utfOffset) {
-      return 1;
-    }
-
-    return 0;
-  }
+  int compareTo(YamlComment other) =>
+      other.commentSpan.end.utfOffset < commentSpan.start.utfOffset
+      ? -1
+      : other.commentSpan.start.utfOffset > commentSpan.end.utfOffset
+      ? 1
+      : 0;
 
   @override
   bool operator ==(Object other) =>
-      other is YamlComment && other.comment == comment;
+      other is YamlComment && compareTo(other) == 0;
 
   @override
   String toString() => '# $comment';
