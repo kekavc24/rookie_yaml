@@ -99,14 +99,13 @@ void _defaultOnMapDuplicate(
   _logger.info(message);
 }
 
-/// Loads all yaml documents using the provided [parser] with [O] representing
-/// the document and [R] representing the root node of the document.
-List<O> _loadYaml<O, R>(DocumentParser<R> parser) {
+/// Loads all yaml documents using the provided [parser].
+List<Doc> _loadYaml<Doc, R>(DocumentParser<Doc, R> parser) {
   hierarchicalLoggingEnabled = true;
-  final objects = <O>[];
+  final objects = <Doc>[];
 
   do {
-    if (parser.parseNext<O>() case (true, O object)) {
+    if (parser.parseNext() case (true, Doc object)) {
       objects.add(object);
       continue;
     }

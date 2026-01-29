@@ -1,5 +1,13 @@
 part of 'yaml_document.dart';
 
+/// Callback for creating a document with the current parser's information.
+typedef DocumentBuilder<Doc, R> =
+    Doc Function(
+      ParsedDirectives directives,
+      DocumentInfo documentInfo,
+      RootNode<R> rootNode,
+    );
+
 typedef GreedyPlain = ({RuneOffset start, String greedChars});
 
 typedef _OnDocStart = void Function(int document);
@@ -38,7 +46,7 @@ void _throwIfBlockUnsafe(
 }
 
 /// A [YamlDocument] parser.
-final class DocumentParser<R> {
+final class DocumentParser<Doc, R> {
   DocumentParser(
     SourceIterator iterator, {
     required AliasFunction<R> aliasFunction,
@@ -47,8 +55,9 @@ final class DocumentParser<R> {
     required ScalarFunction<R> scalarFunction,
     required ParserLogger logger,
     required MapDuplicateHandler onMapDuplicate,
+    required this.builder,
     CustomTriggers? triggers,
-  }) : _parserState = ParserState<R>(
+  }) : _state = ParserState<R>(
          iterator,
          aliasFunction: aliasFunction,
          listFunction: listFunction,
@@ -60,7 +69,9 @@ final class DocumentParser<R> {
        ),
        _onDocReset = triggers?.onDocumentStart ?? ((_) {});
 
-  final ParserState<R> _parserState;
+  final DocumentBuilder<Doc, R> builder;
+
+  final ParserState<R> _state;
 
   /// Called when a new document's parsing begins.
   final _OnDocStart _onDocReset;
@@ -69,16 +80,16 @@ final class DocumentParser<R> {
   ///
   /// `NOTE:` This advances the parsing forward and holds no reference to a
   /// previously parsed [YamlDocument].
-  (bool didParse, T? parsed) parseNext<T>() {
-    _parserState.reset();
+  (bool didParse, Doc? parsed) parseNext() {
+    _state.reset();
 
-    final ParserState(:iterator, :comments, :logger) = _parserState;
+    final ParserState(:iterator, :comments, :logger) = _state;
 
     if (iterator.isEOF) return (false, null);
 
     iterator.allowBOM(true);
 
-    _onDocReset(_parserState.current);
+    _onDocReset(_state.current);
 
     GreedyPlain? docMarkerGreedy;
     YamlDirective? version;
@@ -88,14 +99,13 @@ final class DocumentParser<R> {
     var rootIndent = skipToParsableChar(
       iterator,
       onParseComment: comments.add,
-      leadingAsIndent: !_parserState.docStartExplicit,
+      leadingAsIndent: !_state.docStartExplicit,
     );
 
     iterator.skipBOM();
     var rootInDirectiveEndLine = false;
 
-    if (!_parserState.docStartExplicit &&
-        (rootIndent == null || rootIndent == 0)) {
+    if (!_state.docStartExplicit && (rootIndent == null || rootIndent == 0)) {
       final (
         :yamlDirective,
         :globalTags,
@@ -107,7 +117,7 @@ final class DocumentParser<R> {
         warningLogger: (message) => logger(false, message),
       );
 
-      _parserState.hasDirectives =
+      _state.hasDirectives =
           yamlDirective != null ||
           globalTags.isNotEmpty ||
           reservedDirectives.isNotEmpty;
@@ -127,16 +137,16 @@ final class DocumentParser<R> {
         );
 
         marker == DocumentMarker.directiveEnd
-            ? _parserState.docStartExplicit = true
+            ? _state.docStartExplicit = true
             : docMarkerGreedy = (
                 start: startOnMissing,
                 greedChars: '-' * greedy,
               );
       } else {
-        _parserState.docStartExplicit = hasDirectiveEnd;
+        _state.docStartExplicit = hasDirectiveEnd;
       }
 
-      if (_parserState.docStartExplicit) {
+      if (_state.docStartExplicit) {
         // Fast forward to the first ns-char (line break excluded)
         if (iterator.current.isWhiteSpace()) {
           skipWhitespace(iterator, skipTabs: true);
@@ -154,7 +164,7 @@ final class DocumentParser<R> {
     }
 
     // YAML allows the secondary tag to be declared with custom global tag
-    _parserState.globalTags.addAll(tags);
+    _state.globalTags.addAll(tags);
 
     // Why block info? YAML clearly has a favourite child and that is the
     // block(-like) styles. They are indeed a human friendly format. Also, the
@@ -167,7 +177,7 @@ final class DocumentParser<R> {
       final (:start, :greedChars) = docMarkerGreedy;
 
       final (:blockInfo, :node) = parseBlockScalar(
-        _parserState,
+        _state,
         event: ScalarEvent.startFlowPlain,
         blockParentIndent: null,
         minIndent: 0,
@@ -192,12 +202,12 @@ final class DocumentParser<R> {
       _throwIfBlockUnsafe(
         iterator,
         indent: rootIndent ?? 0,
-        hasDirectives: _parserState.hasDirectives,
+        hasDirectives: _state.hasDirectives,
         inlineWithDirectiveMarker: rootInDirectiveEndLine,
       );
 
       final (:blockInfo, :node) = parseBlockNode(
-        _parserState,
+        _state,
         blockParentIndent: null, // No parent
         inferredFromParent: rootIndent,
         indentLevel: rootIndentLevel,
@@ -249,29 +259,23 @@ final class DocumentParser<R> {
           : sourceInfo.current;
     }
 
-    _parserState.updateDocEndChars(docMarker);
+    _state.updateDocEndChars(docMarker);
 
     return (
       true,
-      switch (root.parsed()) {
-        YamlSourceNode node =>
-          YamlDocument._(
-                _parserState.current,
-                version,
-                tags.values.toSet(),
-                reserved,
-                comments,
-                node,
-                YamlDocType.inferType(
-                  hasDirectives: _parserState.hasDirectives,
-                  isDocStartExplicit: _parserState.docStartExplicit,
-                ),
-                _parserState.docStartExplicit,
-                _parserState.docEndExplicit,
-              )
-              as T,
-        R object => object as T?,
-      },
+      builder(
+        (version: version, tags: tags.values, unknown: reserved),
+        (
+          index: _state.current,
+          docType: YamlDocType.inferType(
+            hasDirectives: _state.hasDirectives,
+            isDocStartExplicit: _state.docStartExplicit,
+          ),
+          hasExplicitStart: _state.docStartExplicit,
+          hasExplicitEnd: _state.docEndExplicit,
+        ),
+        (root: root.parsed(), comments: comments),
+      ),
     );
   }
 }

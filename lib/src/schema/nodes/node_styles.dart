@@ -1,5 +1,52 @@
 part of 'yaml_node.dart';
 
+/// Represents the type of YAML document based on the use of directives,
+/// directives end marker (`---`) and document end marker (`...`)
+///
+/// {@category yaml_docs}
+enum YamlDocType {
+  /// Yaml document without any directives or directives end markers
+  ///
+  /// ```yaml
+  /// # Bare document
+  /// ...
+  /// # Bare document with node
+  /// key: value
+  /// ...
+  /// ```
+  bare,
+
+  /// A YAML document with an explicit directives end marker at the beginning
+  /// but no directives
+  ///
+  /// ```yaml
+  /// ---
+  /// # Explicit empty doc
+  /// ...
+  /// ---
+  /// # Explicit doc with node
+  /// key: value
+  /// ...
+  /// ```
+  explicit,
+
+  /// A YAML document with directives, an explicit directives end marker and
+  /// an optional document end marker.
+  ///
+  /// The document marker is not required if this is the last document. It is
+  /// implied.
+  directiveDoc;
+
+  static YamlDocType inferType({
+    required bool hasDirectives,
+    required bool isDocStartExplicit,
+  }) => hasDirectives
+      ? YamlDocType.directiveDoc
+      : isDocStartExplicit
+      ? YamlDocType.explicit
+      : YamlDocType.bare;
+}
+
 /// Indicates how each [YamlNode] is presented in the serialized yaml string.
 ///
 /// {@category yaml_nodes}

@@ -1,15 +1,5 @@
 part of 'loader.dart';
 
-final class _SourceNodeTrigger extends CustomTriggers {
-  _SourceNodeTrigger._({super.resolvers});
-
-  @override
-  void onDocumentStart(int index) {}
-
-  @override
-  void onParsedKey(Object? key) {}
-}
-
 /// Loads every document as a [YamlDocument] and each root node as a
 /// [YamlSourceNode].
 List<YamlDocument> _loadYamlDocuments(
@@ -44,13 +34,18 @@ List<YamlDocument> _loadYamlDocuments(
       nodeSpan: span,
     ),
     logger: logger ?? _defaultLogger,
-    triggers: _SourceNodeTrigger._(resolvers: resolvers),
+    triggers: CustomTriggers(resolvers: resolvers),
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
       iterator,
       start: keyStart,
       end: keyEnd,
       message: message,
       throwOnMapDuplicate: throwOnMapDuplicate,
+    ),
+    builder: (directives, documentInfo, rootNode) => YamlDocument.parsed(
+      directives: directives,
+      documentInfo: documentInfo,
+      node: rootNode,
     ),
   ),
 );

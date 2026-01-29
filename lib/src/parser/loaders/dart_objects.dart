@@ -82,6 +82,7 @@ List<Object?> _loadAsDartObject(
       message: message,
       throwOnMapDuplicate: throwOnMapDuplicate,
     ),
+    builder: (_, _, rootNode) => rootNode.root,
   ),
 );
 

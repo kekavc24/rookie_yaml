@@ -13,6 +13,27 @@ const seamlessIndentMarker = -2;
 /// {@category bytes_to_scalar}
 typedef CharWriter = void Function(int char);
 
+/// Contains all parsed [Directive]s of a document.
+typedef ParsedDirectives = ({
+  YamlDirective? version,
+  Iterable<GlobalTag> tags,
+  List<ReservedDirective> unknown,
+});
+
+/// Contains information about a document's position in the YAML bytes/string
+/// and its type.
+typedef DocumentInfo = ({
+  int index,
+  YamlDocType docType,
+  bool hasExplicitStart,
+  bool hasExplicitEnd,
+});
+
+/// Contains information about the document's root yaml node and any comments
+/// parsed within the document. YAML spec bluntly states that a comment should
+/// not be associated with a node.
+typedef RootNode<T> = ({T root, List<YamlComment> comments});
+
 /// Emits all externally [buffered] utf code units to a [writer].
 void bufferHelper(Iterable<int> buffered, CharWriter writer) {
   for (final char in buffered) {

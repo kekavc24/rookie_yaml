@@ -16,53 +16,6 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 part 'document_parser.dart';
 
-/// Represents the type of YAML document based on the use of directives,
-/// directives end marker (`---`) and document end marker (`...`)
-///
-/// {@category yaml_docs}
-enum YamlDocType {
-  /// Yaml document without any directives or directives end markers
-  ///
-  /// ```yaml
-  /// # Bare document
-  /// ...
-  /// # Bare document with node
-  /// key: value
-  /// ...
-  /// ```
-  bare,
-
-  /// A YAML document with an explicit directives end marker at the beginning
-  /// but no directives
-  ///
-  /// ```yaml
-  /// ---
-  /// # Explicit empty doc
-  /// ...
-  /// ---
-  /// # Explicit doc with node
-  /// key: value
-  /// ...
-  /// ```
-  explicit,
-
-  /// A YAML document with directives, an explicit directives end marker and
-  /// an optional document end marker.
-  ///
-  /// The document marker is not required if this is the last document. It is
-  /// implied.
-  directiveDoc;
-
-  static YamlDocType inferType({
-    required bool hasDirectives,
-    required bool isDocStartExplicit,
-  }) => hasDirectives
-      ? YamlDocType.directiveDoc
-      : isDocStartExplicit
-      ? YamlDocType.explicit
-      : YamlDocType.bare;
-}
-
 /// A document representing the entire `YAML` string or a single
 /// scalar/collection node within a group of documents in `YAML`.
 ///
@@ -80,6 +33,23 @@ final class YamlDocument {
     this.hasExplicitStart,
     this.hasExplicitEnd,
   );
+
+  /// Creates a [YamlDocument] from a parsed YAML string or bytes.
+  YamlDocument.parsed({
+    required ParsedDirectives directives,
+    required DocumentInfo documentInfo,
+    required RootNode<YamlSourceNode> node,
+  }) : this._(
+         documentInfo.index,
+         directives.version,
+         directives.tags.toSet(),
+         directives.unknown,
+         node.comments,
+         node.root,
+         documentInfo.docType,
+         documentInfo.hasExplicitStart,
+         documentInfo.hasExplicitEnd,
+       );
 
   /// Position in the `YAML` string.
   final int index;
