@@ -5,6 +5,7 @@ import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
+import 'package:rookie_yaml/src/scanner/encoding/utf_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 

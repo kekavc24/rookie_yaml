@@ -3,7 +3,7 @@ import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
 import 'package:rookie_yaml/src/dumping/scalar_dumper.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:test/test.dart';
 

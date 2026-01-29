@@ -1,4 +1,6 @@
-part of 'source_iterator.dart';
+import 'dart:convert';
+
+part 'encoding_utils.dart';
 
 //
 // Line breaks

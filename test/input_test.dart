@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/encoding/utf_utils.dart';
 import 'package:test/test.dart';
 
 void main() {

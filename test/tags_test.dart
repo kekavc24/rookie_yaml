@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:test/test.dart';
 

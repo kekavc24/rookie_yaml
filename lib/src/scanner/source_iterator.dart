@@ -1,15 +1,11 @@
-import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 
-part 'character_encoding.dart';
-part 'encoding_utils.dart';
 part 'error_utils.dart';
-part 'utf_utils.dart';
 
 /// Custom offset information.
 ///

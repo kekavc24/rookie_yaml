@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/flow/flow_scalar_utils.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 

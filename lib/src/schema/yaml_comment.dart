@@ -1,3 +1,4 @@
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 
 const _pattern = '# ';

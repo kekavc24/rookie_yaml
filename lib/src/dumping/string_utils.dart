@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/dumping/unfolding.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 
 extension Normalizer on int {
   /// Normalizes all character that can be escaped.

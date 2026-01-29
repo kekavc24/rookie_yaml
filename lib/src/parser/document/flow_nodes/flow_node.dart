@@ -10,6 +10,7 @@ import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 

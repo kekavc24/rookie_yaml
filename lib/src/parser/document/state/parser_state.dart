@@ -5,6 +5,7 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';

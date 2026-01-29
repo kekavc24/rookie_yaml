@@ -3,7 +3,15 @@ library;
 export 'src/dumping/dumping.dart';
 export 'src/parser/custom_resolvers.dart';
 export 'src/parser/delegates/object_delegate.dart'
-    show TagInfo, MappingToObject, BytesToScalar, SequenceToObject;
+    show
+        TagInfo,
+        MappingToObject,
+        BytesToScalar,
+        SequenceToObject,
+        AliasFunction,
+        ListFunction,
+        MapFunction,
+        ScalarFunction;
 export 'src/parser/directives/directives.dart'
     hide
         Directives,
@@ -19,9 +27,13 @@ export 'src/parser/document/node_properties.dart'
 export 'src/parser/document/nodes_by_kind/node_kind.dart'
     show NodeKind, CustomKind, YamlCollectionKind, YamlScalarKind;
 export 'src/parser/document/state/custom_triggers.dart';
-export 'src/parser/document/yaml_document.dart' show YamlDocument;
+export 'src/parser/document/state/parser_state.dart' show MapDuplicateHandler;
+export 'src/parser/document/yaml_document.dart'
+    show YamlDocument, DocumentParser, DocumentBuilder;
 export 'src/parser/loaders/loader.dart';
-export 'src/parser/parser_utils.dart' show CharWriter;
+export 'src/parser/parser_utils.dart'
+    show CharWriter, ParsedDirectives, DocumentInfo, RootNode;
+export 'src/scanner/source_iterator.dart';
 export 'src/schema/nodes/yaml_node.dart' hide CompactYamlNode;
 export 'src/schema/yaml_comment.dart' hide parseComment;
 export 'src/schema/yaml_schema.dart';

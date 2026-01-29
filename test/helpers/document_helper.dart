@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
+import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 const doc = [
   '# Nothing here',

@@ -1,4 +1,5 @@
-part of 'source_iterator.dart';
+import 'dart:math';
+import 'dart:typed_data';
 
 /// Byte range for a UTF-8 byte sequence. (start and end inclusive)
 typedef _MinMax = (int, int);

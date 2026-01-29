@@ -1,4 +1,4 @@
-part of 'source_iterator.dart';
+part of 'character_encoding.dart';
 
 /// ASCII characters not represented/recognized correctly in a `Dart` string.
 /// This is (..maybe?..) great if we also get raw strings as input.
