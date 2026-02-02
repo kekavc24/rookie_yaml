@@ -15,13 +15,16 @@ part 'initialize_collections.dart';
 /// {@category dump_sequence}
 /// {@category dump_mapping}
 final class ObjectDumper extends YamlDumper {
-  ObjectDumper._({required super.unpackAliases, required CommentDumper dumper})
-    : super(
-        commentDumper: dumper,
-        pushAnchor: _pushAnchor,
-        readAnchor: (anchor) => _anchors[anchor],
-        asLocalTag: _validateTag,
-      );
+  ObjectDumper._({
+    required super.unpackAliases,
+    required CommentDumper dumper,
+    required this.unwrap,
+  }) : super(
+         commentDumper: dumper,
+         pushAnchor: _pushAnchor,
+         readAnchor: (anchor) => _anchors[anchor],
+         asLocalTag: _validateTag,
+       );
 
   /// Tracks the global tags associated with a specific tag handle.
   static final _globalTags = <TagHandle, GlobalTag>{};
@@ -29,7 +32,12 @@ final class ObjectDumper extends YamlDumper {
   /// Tracks the anchors in case a
   static final _anchors = <String, ConcreteNode<Object?>>{};
 
+  /// Maps an object.
+  final Object? Function(Object? object) unwrap;
+
   /// Creates a reusable dumper.
+  ///
+  /// If [mapper] is provided, it is called for every object it dumped.
   ///
   /// If [unpackAliases] is `true`, any aliases are dumped as the objects they
   /// reference.
@@ -59,11 +67,13 @@ final class ObjectDumper extends YamlDumper {
     bool forceMapsInline = false,
     NodeStyle mapStyle = NodeStyle.block,
     NodeStyle iterableStyle = NodeStyle.block,
+    Object? Function(Object? object)? mapper,
   }) {
     final commentDumper = CommentDumper(commentStyle, commentStepSize);
     final dumper = ObjectDumper._(
       unpackAliases: unpackAliases,
       dumper: commentDumper,
+      unwrap: (o) => o is DumpableNode ? o : (mapper ?? identity)(o),
     );
     final onObject = dumper.dumpable;
     final validator = dumper.asLocalTag;
@@ -176,7 +186,10 @@ A global tag with the current tag handle already exists.
   DumpableNode<Object?> dumpable(Object? object) {
     // Ignore explicit concrete node in case the node style is different.
     if (object is ConcreteNode) return object;
-    final dumpable = dumpableObject(object, unpackAnchor: unpackAliases);
+    final dumpable = dumpableObject(
+      unwrap(object),
+      unpackAnchor: unpackAliases,
+    );
 
     if (dumpable is DumpableAsAlias) {
       if (_anchors[dumpable.alias] case ConcreteNode<Object?> anchor) {
