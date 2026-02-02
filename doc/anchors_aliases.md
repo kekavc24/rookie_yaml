@@ -1,4 +1,6 @@
-An `alias` acts as a reference to an `anchor`. Think `pointer`s in `C` and any language that has them and object references in `Dart` and any other language that is object oriented. You must declare an `anchor` before using it. Their characters must also be valid [uri characters][uri_char_url].
+An `alias` acts as a reference to an `anchor`. Think object references in `Dart` and any other language that is object oriented and `pointer`s in `C`.
+
+You must declare an `anchor` before using it. The characters must also be valid [non-space printable characters][uri_char_url] that are not flow delimiters.
 
 A node cannot have both an `anchor` and `alias`. `YAML` demands them to be mutually exclusive. This also disqualifies an `alias` from having a `tag` since it "borrows" its kind from the `anchor` node.
 
@@ -81,7 +83,7 @@ print(docs[1].root.anchor != null); // False
 
 ## Block Explicit Keys & Block Sequences
 
-Block explicit keys and block sequences cannot have properties before their `?` and `-` indicators respectively. Their node content begins after these indicators. The parser currently allows you to declare such properties only if they are multiline and the block sequence entry or explicit key entry is the first entry in a block list and map respectively.
+Block explicit keys and block sequences cannot have properties before their `?` and `-` indicators respectively. Their node content begins after these indicators. You can only declare such properties if they are multiline and the block sequence entry or explicit key entry is the first entry in a block list and map respectively.
 
 ```dart
 const yaml = '''
@@ -179,9 +181,6 @@ print(
 
 > [!WARNING]
 >
-> Currently, an `alias` cannot be recursive. The node must be parsed completely and resolved before an `anchor` can be used. In addition to those in the spec, the parser *CURRENTLY* abides by the following rules:
->
->1. An `anchor` to a collection cannot be used by an entry in the same collection.
->2. An `anchor` can be redeclared to point to another node. Ergo, if rule `1` and `2` are satisfied and the `anchor` exists, an `alias` is valid.
+> Currently, an `alias` cannot be recursive. The node must be parsed completely and resolved before an `anchor` can be used.
 
 [uri_char_url]: https://yaml.org/spec/1.2.2/#692-node-anchors

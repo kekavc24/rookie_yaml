@@ -5,34 +5,150 @@
 ![Coverage Status][coverage]
 ![test_suite](https://img.shields.io/badge/YAML_Test_Suite-89.05%25-green)
 
-> [!WARNING]
-> The parser is still in active development and has missing features/intermediate functionalities. Until a stable `1.0.0` is released, package API may have breaking changes in each minor/patch version.
+> [!NOTE]
+> The package is in a "ready-for-use" state. However, until a `v1.0.0` is released, the package API may have (minor) breaking changes in each minor release.
 
 A (rookie) `Dart` [YAML][yaml] 1.2+ parser.
 
 ## What's Included
 
-- A fail-fast YAML parser.
-- Opinionated YAML dumper functions that prioritize compatibility and portability.
+Earlier YAML versions are parsed with YAML 1.2+ grammar rules. The parser will warn you if an explicit YAML version directive which is not supported is present.
 
-## Supported Schema Tags
+- ✅ - Supported
+- 🔁 - Supported but read `Notes` column for more context.
+- ❌ - Not supported. May be implemented if package users express interest/need.
 
-The secondary tag handle `!!` is limited to tags below which all resolve to the YAML global tag prefix, `tag:yaml.org,2002`.
+### YAML parser
 
-- `YAML` schema tags
-  - `!!map` - `Map`
-  - `!!seq` - `List`
-  - `!!str` - `String`
+The package implements the full YAML 1.2+ spec. See the table below for more information and any teething issues the parser has.
 
-- `JSON` schema tags
-  - `!!null` - `null`
-  - `!!bool` - Boolean.
-  - `!!int` - Integer. `hex`, `octal` and `base 10` should use this.
-  - `!!float` - double.
+> [!TIP]
+> For enthusiasts, the underlying `DocumentParser` is now exported by this package (but with guard-rails). You can build a fine-grained parser on top of the low-level internal parser functions it uses. See the [external resolvers](https://pub.dev/documentation/rookie_yaml/latest/topics/custom_resolvers_intro-topic.html) section and consider extending the `CustomTriggers` class.
+
+<table>
+  <thead>
+    <tr>
+      <th scope="col">Feature</th>
+      <th scope="col" style="white-space: nowrap">Secondary Features</th>
+      <th scope="col">Supported</th>
+      <th scope="col">Notes</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <th scope="row">Directives</th>
+      <td>
+        <span>YAML directive<br></span>
+        <span>Global Tags<br></span>
+        <span>Reserved<br></span>
+      </td>
+      <td align="center">
+        <span>✅<br></span>
+        <span>✅<br></span>
+        <span>🔁<br></span>
+      </td>
+      <td>
+        <ul>
+          <li>API for directives-as-code available.</li>
+          <li>Reserved directives can be parsed but cannot be constructed.</li>
+        </ul>
+      </td>
+    </tr>
+    <!--  -->
+    <tr>
+      <th scope="row">Tag Handles</th>
+      <td>
+        <span>Primary<br></span>
+        <span>Secondary<br></span>
+        <span>Named<br></span>
+      </td>
+      <td align="center">
+        <span>✅<br></span>
+        <span>✅<br></span>
+        <span>✅<br></span>
+      </td>
+      <td>API for tag-handles-as-code available</td>
+    </tr>
+    <!--  -->
+    <tr>
+      <th scope="row">Tags</th>
+      <td>
+        <span>Local tags<br></span>
+        <span>Verbatim tags<br></span>
+        <span>Custom tags<br></span>
+      </td>
+      <td align="center">
+        <span>✅<br></span>
+        <span>✅<br></span>
+        <span>✅<br></span>
+      </td>
+      <td>
+        <ul>
+          <li>Local-to-global tag handle resolution is required for all tag types (even custom tags).</li>
+          <li>API for tags-as-code available.</li>
+        </ul>
+      </td>
+    </tr>
+    <!--  -->
+    <tr>
+      <th scope="row">Tag Resolution</th>
+      <td>
+        <span>YAML Schema<br></span>
+        <span>External Resolvers<br></span>
+      </td>
+      <td align="center">
+        <span>✅<br></span>
+        <span>✅<br></span>
+      </td>
+      <td>
+        <ul>
+          <li>Built-in Dart types supported in YAML are inferred out-of-the-box even without tags.</li>
+          <li>External resolvers are restricted to tags. See/extend <code>CustomTriggers</code> for all other usecases.</li>
+        </ul>
+      </td>
+    </tr>
+    <!--  -->
+    <tr>
+      <th scope="row">Other node properties</th>
+      <td>
+        <span>Anchors<br></span>
+        <span>Aliases<br></span>
+        <span>Recursive aliases<br></span>
+      </td>
+      <td align="center">
+        <span>✅<br></span>
+        <span>✅<br></span>
+        <span>❌<br></span>
+      </td>
+      <td>
+        You can configure whether list and map aliases should be dereferenced (deep copied) when using the loader for built-in Dart types. Dereferencing isn't the default behaviour.
+      </td>
+    </tr>
+    <!--  -->
+    <tr>
+      <th scope="row">Nodes</th>
+      <td>_</td>
+      <td align="center">🔁</td>
+      <td>
+        <ul>
+          <li>Any valid YAML 1.2 and below syntax can be parsed using YAML 1.2 grammar rules.</li>
+          <li>Implicit keys for maps are not restricted to at most 1024 unicode characters (for now).</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+### YAML Dumper
+
+The package also exports some APIs that can dump objects back to YAML. The dumped object formatting will always match the current YAML version supported by the parser.
+
+Start [here](https://pub.dev/documentation/rookie_yaml/latest/topics/dump_scalar-topic.html) for more information.
 
 ## Documentation & Examples (Still in progress 🏗️)
 
-- The `docs` folder in the repository. Use the [table of contents](./doc/_contents.md) as a guide.
+- The `docs` folder in the repository. Use the [table of contents](https://github.com/kekavc24/rookie_yaml/blob/main/doc/_contents.md) as a guide.
 - Visit [pub guide][guide] which provides an automatic guided order for the docs above.
 - The `example` folder.
 

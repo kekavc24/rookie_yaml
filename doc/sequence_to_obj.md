@@ -2,7 +2,7 @@ The parser pushes sequence/list entries after parsing them into a `SequenceToObj
 
 ## Matrix example
 
-The example is meant to show you how to implement a `SequenceToObject` and use a `TagInfo` mixin. This code can be found in the [example/scalar_resolver.dart](../example/matrix.dart) file.
+The example is meant to show you how to implement a `SequenceToObject` and use the `TagInfo` mixin. This code can be found in the [example/matrix.dart](https://github.com/kekavc24/rookie_yaml/blob/main/example/matrix.dart) file.
 
 Consider a 2D matrix that can have an arbitrary number of sequences with a random number of integers as entries whose sequences can be referenced more than once. Thus we have 3 levels:
 

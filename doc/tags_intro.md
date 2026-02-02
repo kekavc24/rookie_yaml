@@ -1,6 +1,8 @@
-Tags are also node properties declared in tandem with an `anchor` but never with an `alias`. The package has an expressive way to write tags in `Dart` (in line with the spec). They form the backbone of the custom resolvers this package allows. Do not skip this section (compacted version of the spec). You can use this as a reference to read the spec (Create an issue if there is an error).
+Tags are also node properties declared in tandem with an `anchor` but never with an `alias`. They form the backbone of the custom resolvers this package allows. Do not skip this section (compacted version of the spec). You can use this as a reference to read the spec (Create an issue if there is an error).
 
 Every node tag begins with the `!` indicator. This signifies the start of a node tag's `tag handle`. There are 3 types of tag handles in `YAML`.
+
+The package also has an expressive way to write tags in `Dart` (in line with the spec).
 
 ## Primary Tag Handle `!`
 

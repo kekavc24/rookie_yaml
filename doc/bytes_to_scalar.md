@@ -2,7 +2,7 @@ The parser writes directly to a `BytesToScalar` after stripping the non-content 
 
 ## Examples
 
-All examples are meant to provide the gist on how to implement a custom `BytesToScalar`. They can be found in the [example/scalar_resolver.dart](../example/base_64_decoding.dart) file.
+All examples are meant to provide the gist on how to implement a custom `BytesToScalar`. They can be found in the [example/base_64_decoding.dart](https://github.com/kekavc24/rookie_yaml/blob/main/example/base_64_decoding.dart) file.
 
 - [Simple Base64 example](#simple-base64-example)
 - [Base64 with Sinks](#pedantic-base64-with-sinks)
@@ -57,7 +57,7 @@ print(
 
 ### Base64 with Sinks
 
-Another (subjectively nuanced) approach would be using the sinks provided by Dart to decode the string. Using the same string above:
+Another approach would be using the sinks provided by Dart to decode the string. Using the same string above:
 
 - The delegate
 

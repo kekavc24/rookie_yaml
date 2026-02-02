@@ -14,7 +14,7 @@ A `CustomResolver` allows a custom delegate to be used by the parser to parse ob
 
 | Delegate            | Description                                                                             | `CustomResolver` provider-of-callee   |
 |---------------------|-----------------------------------------------------------------------------------------|:-------------------------------------:|
-| `BytesToScalar`     | Has access to the underlying code points of a scalar. The parser writes directly to it. | `ObjectFromMap`                       |
+| `BytesToScalar`     | Has access to the underlying code points of a scalar. The parser writes directly to it. | `ObjectFromScalarBytes`                       |
 | `SequenceToObject`  | Accepts entries as a sequence/list would.                                               | `ObjectFromIterable`                  |
 | `MappingToObject`   | Accepts a key-value pair as a map/mapping would.                                        | `ObjectFromMap`                       |
 

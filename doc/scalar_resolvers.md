@@ -7,7 +7,7 @@ A `ScalarResolver` is lazy and gives up control to the parser on condition that 
 
 ## Examples
 
-All examples are meant to provide the gist on how to use the `ScalarResolver`. They can be found in the [example/scalar_resolver.dart](../example/scalar_resolver.dart) file.
+All examples are meant to provide the gist on how to use the `ScalarResolver`. They can be found in the [example/scalar_resolver.dart](https://github.com/kekavc24/rookie_yaml/blob/main/example/scalar_resolver.dart) file.
 
 - [BigInt example](#bigint-example)
 - [YAML Range example](#yaml-range-example)

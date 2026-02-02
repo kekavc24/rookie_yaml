@@ -17,7 +17,7 @@ YAML supports various types out of the box which, by default, are built-in Dart 
 | `seq`                                             | `List`                                              |
 | `omap`, `map`                                     | `Map` (default maps behave like `LinkedHashMap`s)   |
 
-The parser deterimines these YAML types automatically as required by the spec. All tags, aliases, anchors and styles are stripped and objects returned as any of the Dart types mentioned above. The types are not wrapped in any intermediate class. Any unsupported scalar type will always be returned as a `String`.
+The parser determines these YAML types automatically as required by the spec. All tags, aliases, anchors and styles are stripped and objects returned as any of the Dart types mentioned above. The types are not wrapped in any intermediate class. Any unsupported scalar type will always be returned as a `String`.
 
 ## YamlSourceNode
 

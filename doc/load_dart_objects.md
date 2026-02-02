@@ -13,21 +13,38 @@ You can load a single Dart object from a YAML source string/bytes by calling `lo
 
 ```dart
 // Type inferred automatically. A YAML spec philosophy!
-print(loadDartObject<int>(source: YamlSource.string('24')));
+print(
+  loadDartObject<int>(
+    source: YamlSource.string('24'),
+  ),
+);
 
-print(loadDartObject<bool>(source: YamlSource.string('true')));
+print(
+  loadDartObject<bool>(
+    source: YamlSource.string('true'),
+  ),
+);
 
-print(loadDartObject<double>(source: YamlSource.string('24.0')));
+print(
+  loadDartObject<double>(
+    source: YamlSource.string('24.0'),
+  ),
+);
 
-print(loadDartObject<String>(source: YamlSource.string('''
+print(
+  loadDartObject<String>(
+    source: YamlSource.string('''
 >+
- 24
-''')));
+24
+'''),
+  ),
+);
 ```
 
 Any directives, tags, anchors and aliases are stripped.
 
 ```dart
+// true
 print(loadDartObject<bool>(source: YamlSource.string('''
 %YAML 1.2
 %SOME directive
@@ -35,7 +52,12 @@ print(loadDartObject<bool>(source: YamlSource.string('''
 !!bool "true"
 ''')));
 
-print(loadDartObject<String>(source: YamlSource.string('&anchor Am I a ship?'))); // Prints "Am I a ship?"
+// Prints "Am I a ship?"
+print(
+  loadDartObject<String>(
+    source: YamlSource.string('&anchor Am I a ship?'),
+  ),
+);
 ```
 
 ## Loading a Sequence/Mapping as a built-in Dart List/Map
@@ -47,15 +69,33 @@ The parser, however, guarantees that if a node only exists as type `R` in both D
 This ensures the parser just works out of the box and doesn't trip itself from any unexpected type constraints.
 
 ```dart
-// Dart throws. Casting happens after the list is already List<dynamic> which Dart won't allow.
-print(loadDartObject<List<int>>(source: YamlSource.string('[24, 25]')));
+// Dart throws. Casting happens after the list is already List<Object?> which Dart won't allow.
+print(
+  loadDartObject<List<int>>(
+    source: YamlSource.string('[24, 25]'),
+  ),
+);
 
-print(loadDartObject<List>(source: YamlSource.string('[24, 25]'))); // Okay. [24, 25]
+// Okay. [24, 25]
+print(
+  loadDartObject<List>(
+    source: YamlSource.string('[24, 25]'),
+  ),
+);
 
-// Enforce the cast later instead during iteration!
-print(loadDartObject<List>(source: YamlSource.string('[24, 25]'))?.cast<int>()); // Okay. [24, 25]
+// Enforce the cast later instead during iteration! Okay. [24, 25]
+print(
+  loadDartObject<List>(
+    source: YamlSource.string('[24, 25]'),
+  )?.cast<int>(),
+);
 
-print(loadDartObject<Map>(source: YamlSource.string('{ key: value }'))); // Okay. {key: value}
+// Okay. {key: value}
+print(
+  loadDartObject<Map>(
+    source: YamlSource.string('{ key: value }'),
+  ),
+);
 
 // Okay. {24: int, 25: cast}
 print(
@@ -114,7 +154,7 @@ print(
 
 ## Loading multiple documents
 
-You can also load multiple documents by calling `loadAsDartObjects`. It explicitly returns a `List<dynamic>` which contains the built-in Dart types for every root node in each document in the order the parser encountered/parsed them.
+You can also load multiple documents by calling `loadAsDartObjects`. It explicitly returns a `List<Object?>` which contains the built-in Dart types for every root node in each document in the order the parser encountered/parsed them.
 
 ```dart
 // Prints: [first, second, third]

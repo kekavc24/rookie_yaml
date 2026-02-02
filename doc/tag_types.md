@@ -148,9 +148,9 @@ Every valid (un)resolved tag can be declared in "verbatim" based on its resoluti
 > [!NOTE]
 > If a non-specific tag is declared for a node with no accompanying `GlobalTag` or custom `Resolver` (more on this later), it is resolved to its kind and the tag embedded within the node. In verbatim:
 >
->- A flow/block map default to `!<!tag:yaml.org,2002:map>`.
->- A flow/block sequence defaults to `!<!tag:yaml.org,2002:seq>`.
->- A scalar's resolved secondary tag depends on the type inferred and embedded within the scalar itself. Never defaults to `!<!tag:yaml.org,2002:str>`.
+>- A flow/block map defaults to a generic map (`!<!tag:yaml.org,2002:map>`).
+>- A flow/block sequence defaults to a generic list (`!<!tag:yaml.org,2002:seq>`).
+>- A scalar defaults to a string (`!<!tag:yaml.org,2002:str>`).
 
 A verbatim tag is a node's tag declared in verbatim rather than as a `tag shorthand`. Such tags are handed off "as is" with no resolution to any `global tag`.
 

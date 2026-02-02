@@ -2,7 +2,7 @@ The parser pushes a map's key and value at the same time after parsing them into
 
 ## YamlSet example
 
-The example is meant to provide the gist on how to implement a `MappingToObject`. This code can be found in the [example/scalar_resolver.dart](../example/matrix.dart) file.
+The example is meant to provide the gist on how to implement a `MappingToObject`. This code can be found in the [example/yaml_set.dart](https://github.com/kekavc24/rookie_yaml/blob/main/example/yaml_set.dart) file.
 
 Most (if not all) programming languages use a hashtable under-the-hood to implement a set which YAML [mentions][set_mention] but doesn't include as part of the official YAML 1.2 spec. Let's create a generic set that accepts elements.
 
@@ -30,7 +30,8 @@ final class YamlSet<T> extends MappingToObject<Set<T>> {
 // {hello, world}
 print(
   loadDartObject<Set<String>>(
-    YamlSource.string('$setTag { hello, hello, world, world }'), // flow maps
+    // flow map
+    YamlSource.string('$setTag { hello, hello, world, world }'),
     triggers: CustomTriggers(
       advancedResolvers: {
         setTag: ObjectFromMap(

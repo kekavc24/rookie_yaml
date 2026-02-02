@@ -5,13 +5,13 @@ dartdoc:
       displayName: Introduction
     dart_objects:
       markdown: doc/load_dart_objects.md
-      displayName: Loading as Dart built-in types
+      displayName: Built-in Dart types
     yaml_docs:
       markdown: doc/load_document.md
-      displayName: Loading a YamlDocument
+      displayName: YamlDocument
     yaml_nodes:
       markdown: doc/loading_nodes.md
-      displayName: Loading a YamlSourceNode
+      displayName: YamlSourceNodes
     anchor_alias:
       markdown: doc/anchors_aliases.md
       displayName: Anchors and Aliases

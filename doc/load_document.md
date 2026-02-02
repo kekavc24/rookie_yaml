@@ -60,7 +60,7 @@ print(
 
 ## Directive Documents
 
-Documents with directives. The directives must always end with marker (`---`) even if the document is empty!
+Documents with directives. The directives must always end with the marker (`---`) even if the document is empty!
 
 ```dart
   const yaml = '''

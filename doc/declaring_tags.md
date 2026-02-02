@@ -11,9 +11,9 @@ print(TagHandle.named('example')); // !example!
 ## Tag Shorthands
 
 ```dart
-print(TagShorthand.fromTagUri(TagHandle.primary(), 'primary')); // !primary
-print(TagShorthand.fromTagUri(TagHandle.secondary(), 'int')); // !!int
-print(TagShorthand.fromTagUri(TagHandle.named('example'), 'named')); // !example!named
+print(TagShorthand.primary('primary')); // !primary
+print(TagShorthand.secondary('int')); // !!int
+print(TagShorthand.named('example', 'named')); // !example!named
 ```
 
 ## Global Tags
@@ -32,7 +32,7 @@ print(TagShorthand.fromTagUri(TagHandle.named('example'), 'named')); // !example
 print(
   GlobalTag.fromTagShorthand(
     TagHandle.secondary(),
-    TagShorthand.fromTagUri(TagHandle.primary(), 'no-yaml-uri'),
+    TagShorthand.primary('no-yaml-uri'),
   ),
 );
 
@@ -51,7 +51,7 @@ print(
 print(
   GlobalTag.fromTagShorthand(
     TagHandle.primary(),
-    TagShorthand.fromTagUri(TagHandle.primary(), 'non-specific-looks-naked'),
+    TagShorthand.primary('non-specific-looks-naked'),
   ),
 );
 ```
@@ -73,14 +73,14 @@ Verbatim tags are, well, verbatim. You are to provide the tag in its fully resol
 /// you to match yaml requirements.
 ///
 /// In verbatim: !<!tag:yaml.org,2002:int>
-print(VerbatimTag.fromTagUri('tag:yaml.org%2C2002:int'));
+print(VerbatimTag.fromTagUri('tag:yaml.org,2002:int'));
 
 /// Tag shorthand: "!my-custom-tag"
 ///
 /// In verbatim: !<!my-custom-tag>
 print(
   VerbatimTag.fromTagShorthand(
-    TagShorthand.fromTagUri(TagHandle.primary(), 'my-custom-tag'),
+    TagShorthand.primary('my-custom-tag'),
   ),
 );
 ```
@@ -89,4 +89,4 @@ print(
 > If you declared a tag shorthand in verbatim:
 >
 > 1. It cannot have a named tag handle. All verbatim tags are resolved to their global tag prefixes
-> 2. It cannot be a `non-specific tag`
+> 2. It cannot be a `non-specific` tag.
