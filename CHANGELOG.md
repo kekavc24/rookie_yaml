@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0
+
+This version focuses on adding support for parsing objects directly from raw UTF input.
+
+- `feat(parser)`:
+  - Adds support for parsing a yaml document directly from a raw UTF input.
+  - Exposes the internal `DocumentParser` API.
+
+- `feat(dumper)`:
+  - Adds support for providing a mapper function when dumping objects.
+
+- `docs`
+  - README and pub guide improvements.
+  - Fixes typos in docs.
+
 ## 0.4.0
 
 Happy (belated) new year! 🎉
@@ -27,7 +42,7 @@ This release overhauls the dumper and improves the developer experience for exte
 
 - `fix`:
   - Ensures the end offset for plain scalars is set correctly.
-  - Fixes an issue where all flow delimiters where treated as uri chars.
+  - Fixes an issue where all flow delimiters were treated as uri chars.
   - Calculates the indent correctly for block scalars with an indentation indicator.
     - Folds empty lines correctly when an indentation indicator is present in `ScalarStyle.folded`.
 

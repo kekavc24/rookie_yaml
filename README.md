@@ -37,6 +37,26 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
 
   <tbody>
     <tr>
+      <th scope="row">Input</th>
+      <td>
+        <span>Strings<br></span>
+        <span>Async Input Stream<br></span>
+        <span>Sync UTF input<br></span>
+      </td>
+      <td align="center">
+        <span>✅<br></span>
+        <span>❌<br></span>
+        <span>✅<br></span>
+      </td>
+      <td>
+        <ul>
+          <li>Uniform API provided via the <code>YamlSource</code> extension type.</li>
+          <li>A raw UTF-8, UTF-16 and UTF-32 input stream can be parsed without allocating a string.</li>
+        </ul>
+      </td>
+    </tr>
+    <!--  -->
+    <tr>
       <th scope="row">Directives</th>
       <td>
         <span>YAML directive<br></span>
