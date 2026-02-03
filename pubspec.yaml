@@ -1,9 +1,10 @@
 name: rookie_yaml
 description: A highly configurable parser and dumper for YAML (and optionally json).
-version: 0.5.0
+version: 0.5.1
 repository: https://github.com/kekavc24/rookie_yaml
 topics:
   - yaml
+  - json
 
 platforms:
   android:

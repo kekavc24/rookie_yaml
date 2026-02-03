@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Fixes README and adds topic for pub.
+
 ## 0.5.0
 
 This version focuses on adding support for parsing objects directly from raw UTF input.

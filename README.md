@@ -30,7 +30,6 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="col">Feature</th>
       <th scope="col" style="white-space: nowrap">Secondary Features</th>
-      <th scope="col">Supported</th>
       <th scope="col">Notes</th>
     </tr>
   </thead>
@@ -39,14 +38,11 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row">Input</th>
       <td>
-        <span>Strings<br></span>
-        <span>Async Input Stream<br></span>
-        <span>Sync UTF input<br></span>
-      </td>
-      <td align="center">
-        <span>✅<br></span>
-        <span>❌<br></span>
-        <span>✅<br></span>
+        <ul style="list-style: none; text-align: left; padding-left: 0">
+          <li>✅ Strings</li>
+          <li>❌ Async Input Stream</li>
+          <li>✅ Sync UTF input</li>
+        </ul>
       </td>
       <td>
         <ul>
@@ -59,14 +55,11 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row">Directives</th>
       <td>
-        <span>YAML directive<br></span>
-        <span>Global Tags<br></span>
-        <span>Reserved<br></span>
-      </td>
-      <td align="center">
-        <span>✅<br></span>
-        <span>✅<br></span>
-        <span>🔁<br></span>
+        <ul style="list-style: none; text-align: left; padding-left: 0">
+          <li>✅ YAML Directive</li>
+          <li>✅ Global Tags</li>
+          <li>🔁 Reserved Directives</li>
+        </ul>
       </td>
       <td>
         <ul>
@@ -79,14 +72,11 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row">Tag Handles</th>
       <td>
-        <span>Primary<br></span>
-        <span>Secondary<br></span>
-        <span>Named<br></span>
-      </td>
-      <td align="center">
-        <span>✅<br></span>
-        <span>✅<br></span>
-        <span>✅<br></span>
+        <ul style="list-style: none; text-align: left; padding-left: 0">
+          <li>✅ Primary</li>
+          <li>✅ Secondary</li>
+          <li>✅ Named</li>
+        </ul>
       </td>
       <td>API for tag-handles-as-code available</td>
     </tr>
@@ -94,14 +84,11 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row">Tags</th>
       <td>
-        <span>Local tags<br></span>
-        <span>Verbatim tags<br></span>
-        <span>Custom tags<br></span>
-      </td>
-      <td align="center">
-        <span>✅<br></span>
-        <span>✅<br></span>
-        <span>✅<br></span>
+        <ul style="list-style: none; text-align: left; padding-left: 0">
+          <li>✅ Local tags</li>
+          <li>✅ Verbatim tags</li>
+          <li>✅ Custom tags</li>
+        </ul>
       </td>
       <td>
         <ul>
@@ -114,12 +101,10 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row">Tag Resolution</th>
       <td>
-        <span>YAML Schema<br></span>
-        <span>External Resolvers<br></span>
-      </td>
-      <td align="center">
-        <span>✅<br></span>
-        <span>✅<br></span>
+        <ul style="list-style: none; text-align: left; padding-left: 0">
+          <li>✅ YAML Schema</li>
+          <li>✅ External Resolvers</li>
+        </ul>
       </td>
       <td>
         <ul>
@@ -132,14 +117,11 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row">Other node properties</th>
       <td>
-        <span>Anchors<br></span>
-        <span>Aliases<br></span>
-        <span>Recursive aliases<br></span>
-      </td>
-      <td align="center">
-        <span>✅<br></span>
-        <span>✅<br></span>
-        <span>❌<br></span>
+        <ul style="list-style: none; text-align: left; padding-left: 0">
+          <li>✅ Anchors</li>
+          <li>✅ Aliases</li>
+          <li>❌ Recursive aliases</li>
+        </ul>
       </td>
       <td>
         You can configure whether list and map aliases should be dereferenced (deep copied) when using the loader for built-in Dart types. Dereferencing isn't the default behaviour.
@@ -148,7 +130,6 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <!--  -->
     <tr>
       <th scope="row">Nodes</th>
-      <td>_</td>
       <td align="center">🔁</td>
       <td>
         <ul>
