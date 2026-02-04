@@ -140,7 +140,7 @@ final class ParserState<R> {
   bool hasDirectives = false;
 
   /// Tracks anchors that can be used as aliases
-  final _anchorNodes = <String, R>{};
+  var anchorNodes = <String, R>{};
 
   /// Buffers all parsed comments
   var comments = <YamlComment>[];
@@ -154,7 +154,7 @@ final class ParserState<R> {
     delegate.updateNodeProperties = property;
 
     if (property case NodeProperty(:final String anchor)) {
-      _anchorNodes[anchor] = delegate.parsed();
+      anchorNodes[anchor] = delegate.parsed();
     }
 
     return delegate;
@@ -173,9 +173,9 @@ final class ParserState<R> {
   }) {
     final Alias(:alias, :span) = property;
 
-    if (_anchorNodes.containsKey(alias)) {
+    if (anchorNodes.containsKey(alias)) {
       return AliasDelegate<R>(
-        _anchorNodes[alias] as R,
+        anchorNodes[alias] as R,
         refResolver: aliasFunction,
         indentLevel: indentLevel,
         indent: indent,
@@ -248,7 +248,7 @@ final class ParserState<R> {
       ..clear()
       ..addEntries([_defaultGlobalTag]);
 
-    _anchorNodes.clear();
+    anchorNodes = {};
     comments = [];
   }
 

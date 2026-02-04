@@ -34,7 +34,11 @@ typedef DocumentInfo = ({
 /// Contains information about the document's root yaml node and any comments
 /// parsed within the document. YAML spec bluntly states that a comment should
 /// not be associated with a node.
-typedef RootNode<T> = ({T root, List<YamlComment> comments});
+typedef RootNode<T> = ({
+  T root,
+  Map<String, T> anchors,
+  List<YamlComment> comments,
+});
 
 /// Emits all externally [buffered] utf code units to a [writer].
 void bufferHelper(Iterable<int> buffered, CharWriter writer) {

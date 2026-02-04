@@ -274,7 +274,7 @@ final class DocumentParser<Doc, R> {
           hasExplicitStart: _state.docStartExplicit,
           hasExplicitEnd: _state.docEndExplicit,
         ),
-        (root: root.parsed(), comments: comments),
+        (root: root.parsed(), comments: comments, anchors: _state.anchorNodes),
       ),
     );
   }
