@@ -35,6 +35,10 @@ sealed class ResolvedTag extends Tag {
   /// !<!foo> # Local Tag
   /// ```
   String get verbatim;
+
+  /// Whether this is tag was explicit or assigned by the parser automatically
+  /// after resolving a node and its tag.
+  bool get isGeneric;
 }
 
 /// Represents a [Tag] that can be represented as a [GlobalTag] or

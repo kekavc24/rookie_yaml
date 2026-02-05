@@ -73,7 +73,7 @@ extension ParsedNodeHelper on Subject<YamlSourceNode?> {
   void hasTag<T>(SpecificTag<T> tag, {TagShorthand? suffix}) => withTag()
       .isNotNull()
       .has((t) => t.verbatim, 'As verbatim')
-      .equals(NodeTag(tag, suffix).verbatim);
+      .equals(NodeTag(tag, suffix: suffix).verbatim);
 
   void asSimpleString(String node) => isNotNull()
       .has((n) => n.toString(), 'Node as simple string')

@@ -72,7 +72,7 @@ final class VerbatimTag extends ResolvedTag {
   final String verbatim;
 
   @override
-  String toString() => verbatim;
+  bool get isGeneric => false;
 
   @override
   bool operator ==(Object other) =>
@@ -80,6 +80,9 @@ final class VerbatimTag extends ResolvedTag {
 
   @override
   int get hashCode => verbatim.hashCode;
+
+  @override
+  String toString() => verbatim;
 }
 
 /// Parses a [VerbatimTag]

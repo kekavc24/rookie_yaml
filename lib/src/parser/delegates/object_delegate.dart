@@ -16,7 +16,7 @@ part 'sequence_like_delegate.dart';
 
 /// Creates a default [NodeTag] with the [yamlGlobalTag] as its prefix. [tag]
 /// must be a secondary tag.
-NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, tag);
+NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, suffix: tag);
 
 /// Overrides the [current] node tag to a [kindDefault] if [current] is
 /// non-specific.

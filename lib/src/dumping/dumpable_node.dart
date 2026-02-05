@@ -140,5 +140,6 @@ extension Sandboxed<T> on ConcreteNode<T> {
   ConcreteNode<T> withNodeTag({
     required TagShorthand localTag,
     GlobalTag? globalTag,
-  }) => this..tag = NodeTag(globalTag ?? localTag, localTag);
+  }) => this
+    ..tag = NodeTag(globalTag ?? localTag, suffix: localTag, isGeneric: false);
 }

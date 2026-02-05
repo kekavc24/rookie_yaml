@@ -332,7 +332,7 @@ final class ParserState<R> {
 
     NodeKind? kind;
     CustomResolver? customResolver;
-    ResolvedTag nodeTag = NodeTag(prefix, suffix);
+    ResolvedTag nodeTag = NodeTag(prefix, suffix: suffix, isGeneric: false);
 
     // A local tag cannot be treated as both a custom resolver and a scalar
     // resolver. Give preference to a custom resolver. This conveniently

@@ -42,7 +42,7 @@ String _formatAsVerbatim(
 /// {@category tag_types}
 /// {@category declare_tags}
 final class NodeTag<T> extends ResolvedTag {
-  NodeTag(this.resolvedTag, [TagShorthand? suffix])
+  NodeTag(this.resolvedTag, {TagShorthand? suffix, this.isGeneric = true})
     : verbatim = _formatAsVerbatim(
         resolvedTag,
         suffix?.content ?? '',
@@ -50,6 +50,9 @@ final class NodeTag<T> extends ResolvedTag {
       ),
       hasGlobalTag = resolvedTag is GlobalTag,
       suffix = suffix ?? resolvedTag as TagShorthand;
+
+  @override
+  final bool isGeneric;
 
   /// A [TagShorthand] shorthand resolved to a [GlobalTag] or the tag itself.
   final SpecificTag<T> resolvedTag;

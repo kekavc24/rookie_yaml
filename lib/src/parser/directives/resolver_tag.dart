@@ -40,6 +40,9 @@ final class ContentResolver<O> extends ResolvedTag {
   String get verbatim => resolvedTag.verbatim;
 
   @override
+  bool get isGeneric => false;
+
+  @override
   bool operator ==(Object other) => resolvedTag == other;
 
   @override
