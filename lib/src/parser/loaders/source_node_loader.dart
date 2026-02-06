@@ -12,20 +12,25 @@ List<YamlDocument> _loadYamlDocuments(
     iterator,
     aliasFunction: (alias, reference, nodeSpan) =>
         AliasNode(alias, reference, nodeSpan: nodeSpan),
-    listFunction: (buffer, listStyle, tag, anchor, nodeSpan) => Sequence(
-      buffer,
-      nodeStyle: listStyle,
-      tag: tag,
-      anchor: anchor,
-      nodeSpan: nodeSpan,
-    ),
-    mapFunction: (buffer, mapStyle, tag, anchor, nodeSpan) => Mapping(
-      buffer,
-      nodeStyle: mapStyle,
-      tag: tag,
-      anchor: anchor,
-      nodeSpan: nodeSpan,
-    ),
+    collectionFunction: (buffer, style, tag, anchor, nodeSpan) {
+      if (buffer is Iterable<YamlSourceNode>) {
+        return Sequence(
+          buffer,
+          nodeStyle: style,
+          tag: tag,
+          anchor: anchor,
+          nodeSpan: nodeSpan,
+        );
+      }
+
+      return Mapping(
+        buffer as Map<YamlSourceNode, YamlSourceNode?>,
+        nodeStyle: style,
+        tag: tag,
+        anchor: anchor,
+        nodeSpan: nodeSpan,
+      );
+    },
     scalarFunction: (inferred, style, tag, anchor, span) => Scalar(
       inferred,
       scalarStyle: style,

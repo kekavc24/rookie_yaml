@@ -102,8 +102,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
   NodeKind kind = YamlCollectionKind.sequence,
   OnCustomList<Obj>? asCustomList,
 }) {
-  final ParserState(:iterator, :comments, :listFunction, :onMapDuplicate) =
-      state;
+  final ParserState(:iterator, :comments, :onMapDuplicate) = state;
 
   final sequence = initFlowCollection(
     iterator,

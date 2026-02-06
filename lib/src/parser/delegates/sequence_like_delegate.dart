@@ -113,14 +113,14 @@ final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
   final _OnSequenceInput<I> _pushFunc;
 
   /// A dynamic resolver function assigned at runtime by the [DocumentParser].
-  final ListFunction<I> listResolver;
+  final YamlCollectionBuilder<I> listResolver;
 
   factory GenericSequence.byKind({
     required NodeStyle style,
     required int indent,
     required int indentLevel,
     required RuneOffset start,
-    required ListFunction<I> resolver,
+    required YamlCollectionBuilder<I> resolver,
     NodeKind kind = YamlCollectionKind.sequence,
   }) {
     final (iterable, pushFunc) = kind == YamlCollectionKind.set

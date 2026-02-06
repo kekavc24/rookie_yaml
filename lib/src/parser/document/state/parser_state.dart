@@ -52,8 +52,7 @@ final class ParserState<R> {
   ParserState(
     this.iterator, {
     required this.aliasFunction,
-    required this.listFunction,
-    required this.mapFunction,
+    required this.collectionBuilder,
     required this.scalarFunction,
     required this.logger,
     required this.onMapDuplicate,
@@ -71,11 +70,8 @@ final class ParserState<R> {
   /// Alias builder
   final AliasFunction<R> aliasFunction;
 
-  /// Sequence builder
-  final ListFunction<R> listFunction;
-
-  /// Map builder
-  final MapFunction<R> mapFunction;
+  /// Sequence & Map builder
+  final YamlCollectionBuilder<R> collectionBuilder;
 
   /// Scalar builder
   final ScalarFunction<R> scalarFunction;
@@ -388,7 +384,7 @@ final class ParserState<R> {
       indentLevel: indentLevel,
       indent: indent,
       start: start,
-      mapResolver: mapFunction,
+      mapResolver: collectionBuilder,
     ),
   };
 
@@ -412,7 +408,7 @@ final class ParserState<R> {
       indent: indent,
       indentLevel: indentLevel,
       start: start,
-      resolver: listFunction,
+      resolver: collectionBuilder,
       kind: kind,
     ),
   };

@@ -68,10 +68,7 @@ List<Object?> _loadAsDartObject(
     iterator,
     aliasFunction: (_, reference, _) =>
         _dereferenceAliases(reference, dereferenceAlias: dereferenceAliases),
-    listFunction: (buffer, _, _, _, _) => buffer,
-    mapFunction: (buffer, _, _, _, _) => buffer,
-
-    // Extract the type inferred at the scalar level.
+    collectionFunction: (buffer, _, _, _, _) => buffer,
     scalarFunction: (inferred, _, _, _, _) => inferred.value,
     triggers: triggers,
     logger: logger ?? _defaultLogger,

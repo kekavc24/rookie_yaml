@@ -50,8 +50,7 @@ final class DocumentParser<Doc, R> {
   DocumentParser(
     SourceIterator iterator, {
     required AliasFunction<R> aliasFunction,
-    required ListFunction<R> listFunction,
-    required MapFunction<R> mapFunction,
+    required YamlCollectionBuilder<R> collectionFunction,
     required ScalarFunction<R> scalarFunction,
     required ParserLogger logger,
     required MapDuplicateHandler onMapDuplicate,
@@ -60,8 +59,7 @@ final class DocumentParser<Doc, R> {
   }) : _state = ParserState<R>(
          iterator,
          aliasFunction: aliasFunction,
-         listFunction: listFunction,
-         mapFunction: mapFunction,
+         collectionBuilder: collectionFunction,
          scalarFunction: scalarFunction,
          logger: logger,
          onMapDuplicate: onMapDuplicate,

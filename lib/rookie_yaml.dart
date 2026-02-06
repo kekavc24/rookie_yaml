@@ -9,8 +9,7 @@ export 'src/parser/delegates/object_delegate.dart'
         BytesToScalar,
         SequenceToObject,
         AliasFunction,
-        ListFunction,
-        MapFunction,
+        YamlCollectionBuilder,
         ScalarFunction;
 export 'src/parser/directives/directives.dart'
     hide

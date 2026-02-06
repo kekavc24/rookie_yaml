@@ -97,8 +97,8 @@ final class GenericMap<I> extends MapLikeDelegate<I, I>
     hashCode: yamlCollectionEquality.hash,
   );
 
-  /// A dynamic resolver function assigned at runtime by the [DocumentParser].
-  final MapFunction<I> mapResolver;
+  /// A dynamic resolver function assigned at runtime by the parser.
+  final YamlCollectionBuilder<I> mapResolver;
 
   @override
   NodeTag<dynamic> _checkResolvedTag(NodeTag tag) {

@@ -39,13 +39,7 @@ typedef YamlObjectBuilder<S, I, O> =
     );
 
 /// A constructor for collection-like builders.
-typedef YamlCollectionBuilder<I, O> = YamlObjectBuilder<NodeStyle, I, O>;
-
-/// A builder function for [List] or [Sequence].
-typedef ListFunction<I> = YamlCollectionBuilder<Iterable<I>, I>;
-
-/// A builder function for [Map] or [Mapping]
-typedef MapFunction<I> = YamlCollectionBuilder<Map<I, I?>, I>;
+typedef YamlCollectionBuilder<O> = YamlObjectBuilder<NodeStyle, Object?, O>;
 
 /// A builder function for a scalar or a Dart built-in type that is not a [Map]
 /// or [List]
