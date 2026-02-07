@@ -34,14 +34,15 @@ SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
   // Check if this special sequence was annotated with custom properties
   if (property case NodeProperty(
     kind: CustomKind.iterable,
-    customResolver: ObjectFromIterable<Obj>(:final onCustomIterable),
+    customResolver: ObjectFromIterable<Obj, Obj> resolver,
   )) {
     return SequenceLikeDelegate.boxed(
-      onCustomIterable(),
+      resolver.onCustomIterable(),
       collectionStyle: NodeStyle.block,
       indentLevel: indentLevel,
       indent: indent,
       start: start,
+      afterSequence: resolver.afterCollection,
     );
   }
 

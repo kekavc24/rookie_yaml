@@ -16,7 +16,7 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
   required int indentLevel,
   required int minIndent,
   required bool forceInline,
-  OnCustomMap<Obj>? asCustomMap,
+  ObjectFromMap<Obj, Obj, Obj>? asCustomMap,
 }) {
   final ParserState(:iterator, :comments, :onMapDuplicate) = state;
 
@@ -29,12 +29,13 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
     flowEndIndicator: mappingEnd,
     init: (start) {
       if (asCustomMap != null) {
-        return MapLikeDelegate<Obj, Obj>.boxed(
-          asCustomMap(),
+        return MapLikeDelegate.boxed(
+          asCustomMap.onCustomMap(),
           collectionStyle: NodeStyle.flow,
           indentLevel: indentLevel,
           indent: minIndent,
           start: start,
+          afterMapping: asCustomMap.afterCollection,
         );
       }
 

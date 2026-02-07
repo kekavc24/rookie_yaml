@@ -38,11 +38,11 @@ typedef _OnScalarResolver<R> =
 
 typedef OnMapKey = void Function(Object? key);
 
-typedef _OnDefaultSeq<S> = OnCustomList<S>? Function();
+typedef _OnDefaultSeq<S> = ObjectFromIterable<S, S>? Function();
 
-typedef _OnDefaultMap<M> = OnCustomMap<M>? Function();
+typedef _OnDefaultMap<M> = ObjectFromMap<M, M, M>? Function();
 
-typedef OnDefaultScalar<S> = OnCustomScalar<S>? Function();
+typedef OnDefaultScalar<S> = ObjectFromScalarBytes<S>? Function();
 
 /// Just a null-ish helper.
 R? _nullish<R>() => null;
@@ -366,18 +366,19 @@ final class ParserState<R> {
   }
 
   /// Creates a generic map delegate.
-  MapLikeDelegate<R, R> defaultMapDelegate({
+  MapLikeDelegate<R, R, R> defaultMapDelegate({
     required NodeStyle mapStyle,
     required int indentLevel,
     required int indent,
     required RuneOffset start,
   }) => switch (_defaultMap()) {
-    OnCustomMap<R> customMap => MapLikeDelegate.boxed(
-      customMap(),
+    ObjectFromMap<R, R, R> customMap => MapLikeDelegate.boxed(
+      customMap.onCustomMap(),
       collectionStyle: mapStyle,
       indentLevel: indentLevel,
       indent: indent,
       start: start,
+      afterMapping: customMap.afterCollection,
     ),
     _ => GenericMap(
       collectionStyle: mapStyle,
@@ -396,12 +397,13 @@ final class ParserState<R> {
     required RuneOffset start,
     NodeKind kind = YamlCollectionKind.sequence,
   }) => switch (_defaultSequence()) {
-    OnCustomList<R> customList => SequenceLikeDelegate.boxed(
-      customList(),
+    ObjectFromIterable<R, R> customList => SequenceLikeDelegate.boxed(
+      customList.onCustomIterable(),
       collectionStyle: style,
       indentLevel: indentLevel,
       indent: indent,
       start: start,
+      afterSequence: customList.afterCollection,
     ),
     _ => GenericSequence.byKind(
       style: style,

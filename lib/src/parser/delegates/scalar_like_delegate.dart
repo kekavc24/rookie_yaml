@@ -81,18 +81,23 @@ sealed class ScalarLikeDelegate<T> extends NodeDelegate<T> {
 /// Unlike internal implementations wrapped by the [EfficientScalarDelegate],
 /// the parser never resolves the [BytesToScalar] wrapped by this class. Any
 /// parsed properties are left untouched and only called `parsed`.
-final class BoxedScalar<T> extends ScalarLikeDelegate<T> {
+final class BoxedScalar<T> extends ScalarLikeDelegate<T>
+    with _BoxedCallOnce<T> {
   BoxedScalar(
     this.delegate, {
     required super.scalarStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
+    required this.afterScalar,
   });
 
   /// External delegate that accepts code points representing the scalar's
   /// content.
   final BytesToScalar<T> delegate;
+
+  /// Called when the scalar is complete.
+  final AfterScalar<T> afterScalar;
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
@@ -101,7 +106,15 @@ final class BoxedScalar<T> extends ScalarLikeDelegate<T> {
   }
 
   @override
-  T parsed() => delegate.parsed();
+  T parsed() => _callOnce(
+    delegate.parsed(),
+    ifNotCalled: (type) => afterScalar(
+      scalarStyle,
+      type,
+      _anchor,
+      nodeSpan(),
+    ),
+  );
 }
 
 /// A delegate that resolves to a [Scalar].
@@ -178,7 +191,7 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
       throw FormatException('A scalar cannot be resolved as "$suffix" kind');
     }
 
-    return _overrideNonSpecific(tag, stringTag);
+    return overrideNonSpecific(tag, stringTag);
   }
 
   @override

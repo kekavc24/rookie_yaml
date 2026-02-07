@@ -66,6 +66,7 @@ NodeDelegate<Obj> emptyBlockNode<Obj>(
 T parseScalar<R, T>(
   ScalarEvent event, {
   required OnCustomScalar<R>? onDefault,
+  required AfterScalar<R>? afterScalar,
   required SourceIterator iterator,
   required ScalarFunction<R> scalarFunction,
   required void Function(YamlComment comment) onParseComment,
@@ -102,6 +103,7 @@ T parseScalar<R, T>(
         resolver: scalarFunction,
       );
     },
+    afterScalar: afterScalar,
     property: null,
     onParseComment: onParseComment,
     onScalar: onScalar,

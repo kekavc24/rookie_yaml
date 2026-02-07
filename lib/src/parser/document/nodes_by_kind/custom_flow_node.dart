@@ -30,7 +30,8 @@ NodeDelegate<Obj> customFlowNode<Obj>(
   onMatchScalar: (resolver) => parseCustomScalar(
     flowEvent is ScalarEvent ? flowEvent : ScalarEvent.startFlowPlain,
     iterator: state.iterator,
-    resolver: resolver,
+    resolver: resolver.onCustomScalar,
+    afterScalar: resolver.afterScalar,
     property: property,
     onParseComment: (_) {}, // Flow nodes cannot have comments
     onScalar: (style, indentOnExit, indentDidChange, marker, delegate) {

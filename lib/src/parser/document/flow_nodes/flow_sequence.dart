@@ -100,7 +100,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
   required int minIndent,
   required bool forceInline,
   NodeKind kind = YamlCollectionKind.sequence,
-  OnCustomList<Obj>? asCustomList,
+  ObjectFromIterable<Obj, Obj>? asCustomList,
 }) {
   final ParserState(:iterator, :comments, :onMapDuplicate) = state;
 
@@ -114,11 +114,12 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
     init: (start) {
       if (asCustomList != null) {
         return SequenceLikeDelegate<Obj, Obj>.boxed(
-          asCustomList(),
+          asCustomList.onCustomIterable(),
           collectionStyle: NodeStyle.flow,
           indentLevel: indentLevel,
           indent: minIndent,
           start: start,
+          afterSequence: asCustomList.afterCollection,
         );
       }
 

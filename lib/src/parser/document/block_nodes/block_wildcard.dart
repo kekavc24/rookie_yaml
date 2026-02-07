@@ -94,8 +94,8 @@ BlockNode<Obj> parseFlowNodeInBlock<Obj>(
   required bool composeImplicitMap,
   required int composedMapIndent,
   required ParsedProperty flowProperty,
-  OnCustomList<Obj>? asCustomList,
-  OnCustomMap<Obj>? asCustomMap,
+  ObjectFromIterable<Obj, Obj>? asCustomList,
+  ObjectFromMap<Obj, Obj, Obj>? asCustomMap,
 }) {
   // All flow events must be start of flow map or sequence
   final flow = switch (event) {
@@ -161,10 +161,13 @@ BlockNode<Obj> parseBlockScalar<Obj>(
       (!composeImplicitMap || !(scalarProperty?.isMultiline ?? true)) &&
       isGenericNode(scalarProperty);
 
+  final defaultScalar = state.defaultScalar();
+
   final (delegate, indentOnExit, docMarker, indentDidChange) = parseScalar(
     event,
     iterator: state.iterator,
-    onDefault: state.defaultScalar(),
+    onDefault: defaultScalar?.onCustomScalar,
+    afterScalar: defaultScalar?.afterScalar,
     scalarFunction: state.scalarFunction,
     onParseComment: state.comments.add,
     isImplicit: isImplicit,

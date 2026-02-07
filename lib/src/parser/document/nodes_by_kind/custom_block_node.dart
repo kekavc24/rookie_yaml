@@ -31,8 +31,8 @@ BlockNode<Obj> customBlockNode<Obj>(
   BlockNode<Obj> flowOrBlockCollection({
     required BlockNode<Obj> Function() ifBlock,
     bool enforceMap = false,
-    OnCustomList<Obj>? ifFlowList,
-    OnCustomMap<Obj>? ifFlowMap,
+    ObjectFromIterable<Obj, Obj>? ifFlowList,
+    ObjectFromMap<Obj, Obj, Obj>? ifFlowMap,
   }) {
     BlockNode<Obj> customNode;
 
@@ -83,11 +83,12 @@ BlockNode<Obj> customBlockNode<Obj>(
       enforceMap: true,
       ifBlock: () => parseBlockMap(
         MapLikeDelegate.boxed(
-          mapBuilder(),
+          mapBuilder.onCustomMap(),
           collectionStyle: NodeStyle.block,
           indentLevel: indentLevel,
           indent: fixedInlineIndent,
           start: property.span.start,
+          afterMapping: mapBuilder.afterCollection,
         ),
         state: state,
       ),
@@ -96,11 +97,12 @@ BlockNode<Obj> customBlockNode<Obj>(
     onMatchIterable: (listBuilder) => flowOrBlockCollection(
       ifBlock: () => parseBlockSequence(
         SequenceLikeDelegate<Obj, Obj>.boxed(
-          listBuilder(),
+          listBuilder.onCustomIterable(),
           collectionStyle: NodeStyle.block,
           indentLevel: indentLevel,
           indent: fixedInlineIndent,
           start: property.span.start,
+          afterSequence: listBuilder.afterCollection,
         ),
         state: state,
         levelWithBlockMap: false,
@@ -111,7 +113,8 @@ BlockNode<Obj> customBlockNode<Obj>(
       customBlockScalar(
         event,
         state: state,
-        resolver: resolver,
+        resolver: resolver.onCustomScalar,
+        afterScalar: resolver.afterScalar,
         property: property,
         blockParentIndent: blockParentIndent,
         indentLevel: indentLevel,
@@ -129,6 +132,7 @@ BlockNode<Obj> customBlockScalar<Obj>(
   ParserEvent scalarEvent, {
   required ParserState<Obj> state,
   required OnCustomScalar<Obj> resolver,
+  required AfterScalar<Obj> afterScalar,
   required NodeProperty property,
   required int? blockParentIndent,
   required int indentLevel,
@@ -148,6 +152,7 @@ BlockNode<Obj> customBlockScalar<Obj>(
       actualEvent,
       iterator: state.iterator,
       resolver: resolver,
+      afterScalar: afterScalar,
       property: property,
       onParseComment: state.comments.add,
       onScalar: (_, indentOnExit, _, marker, delegate) =>

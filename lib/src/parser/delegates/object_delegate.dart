@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
@@ -13,6 +14,7 @@ part 'map_like_delegate.dart';
 part 'node_delegate.dart';
 part 'scalar_like_delegate.dart';
 part 'sequence_like_delegate.dart';
+part 'delegate_mixins.dart';
 
 /// Creates a default [NodeTag] with the [yamlGlobalTag] as its prefix. [tag]
 /// must be a secondary tag.
@@ -20,7 +22,7 @@ NodeTag _defaultTo(TagShorthand tag) => NodeTag(yamlGlobalTag, suffix: tag);
 
 /// Overrides the [current] node tag to a [kindDefault] if [current] is
 /// non-specific.
-NodeTag _overrideNonSpecific(NodeTag current, TagShorthand kindDefault) {
+NodeTag overrideNonSpecific(NodeTag current, TagShorthand kindDefault) {
   if (!current.suffix.isNonSpecific) return current;
 
   // No need to override if the non-specific tag has a global tag prefix

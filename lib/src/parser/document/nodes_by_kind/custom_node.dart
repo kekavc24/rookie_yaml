@@ -34,18 +34,18 @@ part 'custom_flow_node.dart';
 T _parseCustomKind<T, Obj>(
   CustomKind kind, {
   required NodeProperty property,
-  required T Function(OnCustomMap<Obj> mapBuilder) onMatchMap,
-  required T Function(OnCustomList<Obj> listBuilder) onMatchIterable,
-  required T Function(OnCustomScalar<Obj> resolver) onMatchScalar,
+  required T Function(ObjectFromMap<Obj, Obj, Obj> mapBuilder) onMatchMap,
+  required T Function(ObjectFromIterable<Obj, Obj> listBuilder) onMatchIterable,
+  required T Function(ObjectFromScalarBytes<Obj> resolver) onMatchScalar,
 }) {
   final resolver = property.customResolver!;
 
   return switch (kind) {
-    CustomKind.map => onMatchMap((resolver as ObjectFromMap<Obj>).onCustomMap),
+    CustomKind.map => onMatchMap(resolver as ObjectFromMap<Obj, Obj, Obj>),
     CustomKind.iterable => onMatchIterable(
-      (resolver as ObjectFromIterable<Obj>).onCustomIterable,
+      resolver as ObjectFromIterable<Obj, Obj>,
     ),
-    _ => onMatchScalar((resolver as ObjectFromScalarBytes<Obj>).onCustomScalar),
+    _ => onMatchScalar(resolver as ObjectFromScalarBytes<Obj>),
   };
 }
 
@@ -77,6 +77,7 @@ R parseCustomScalar<R, Obj>(
   ScalarEvent event, {
   required SourceIterator iterator,
   required OnCustomScalar<Obj> resolver,
+  required AfterScalar<Obj>? afterScalar,
   required NodeProperty? property,
   required void Function(YamlComment comment) onParseComment,
   required OnScalar<R, Obj> onScalar,
@@ -104,6 +105,7 @@ R parseCustomScalar<R, Obj>(
               indentLevel: indentLevel,
               indent: minIndent,
               start: property?.span.start ?? iterator.currentLineInfo.current,
+              afterScalar: afterScalar!,
             ),
           );
   }

@@ -1,6 +1,7 @@
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Callback for creating a [ContentResolver] tag.
@@ -52,19 +53,48 @@ final class ScalarResolver<O> {
 typedef OnObject<T, D extends ObjectDelegate<T>> = D Function();
 
 /// Callback that creates a [MappingToObject].
-typedef OnCustomMap<T> = OnObject<T, MappingToObject<T>>;
+typedef OnCustomMap<K, V, T> = OnObject<T, MappingToObject<K, V, T>>;
 
 /// Callback that creates a [SequenceToObject].
-typedef OnCustomList<T> = OnObject<T, SequenceToObject<T>>;
+typedef OnCustomList<E, T> = OnObject<T, SequenceToObject<E, T>>;
 
 /// Callback that creates a [ScalarLikeDelegate].
 typedef OnCustomScalar<T> = OnObject<T, BytesToScalar<T>>;
+
+/// Called when a custom object [T] of style [S] has been completely parsed.
+///
+/// This allows external delegates to be treated like a [NodeDelegate] without
+/// the tag-to-type resolution process by giving access to the node's styles.
+///
+/// Called only once.
+typedef OnResolvedObject<S, T> =
+    T Function(S style, T object, String? anchor, RuneSpan nodeSpan);
+
+/// Called when a custom object from a [MappingToObject] or [SequenceToObject]
+/// has been parsed completely.
+///
+/// This allows an external [MappingToObject] or [SequenceToObject] to be
+/// treated like a qualified [NodeDelegate] to the parser without the
+/// tag-to-type resolution process by giving access to the node's styles.
+///
+/// Called only once.
+typedef AfterCollection<T> = OnResolvedObject<NodeStyle, T>;
+
+/// Called when a custom object from a [ScalarLikeDelegate] has been parsed
+/// completely.
+///
+/// This allows an external [BytesToScalar] to be  treated like a qualified
+/// [EfficientScalarDelegate] to the parser without the tag-to-type resolution
+/// process by giving access to the node's information.
+///
+/// Called only once.
+typedef AfterScalar<T> = OnResolvedObject<ScalarStyle, T>;
 
 /// A resolver for any `Dart` object dumped as YAML.
 ///
 /// {@category resolvers_intro}
 /// {@category custom_resolvers_intro}
-sealed class CustomResolver {
+sealed class CustomResolver<T> {
   CustomResolver();
 
   /// [NodeKind] represent by this resolver.
@@ -74,15 +104,21 @@ sealed class CustomResolver {
 /// A resolver that creates a delegate that accepts a key-value pair.
 ///
 /// {@category mapping_to_obj}
-final class ObjectFromMap<T> extends CustomResolver {
+final class ObjectFromMap<K, V, T> extends CustomResolver<T> {
   /// Creates a resolver that lazily instantiates an [ObjectDelegate] which
   /// behaves like a map and accepts a key-value pair. Resolves to an object of
   /// type [T].
-  ObjectFromMap({required this.onCustomMap});
+  ObjectFromMap({
+    required this.onCustomMap,
+    AfterCollection<T>? onParsed,
+  }) : afterCollection = onParsed ?? ((_, type, _, _) => type);
 
   /// A callback used to instatiate a delegate when a matching [TagShorthand] is
   /// encountered.
-  final OnCustomMap<T> onCustomMap;
+  final OnCustomMap<K, V, T> onCustomMap;
+
+  /// Called when the map is done.
+  final AfterCollection<T> afterCollection;
 
   @override
   CustomKind get kind => CustomKind.map;
@@ -91,15 +127,21 @@ final class ObjectFromMap<T> extends CustomResolver {
 /// A resolver that creates a delegate that accepts elements.
 ///
 /// {@category sequence_to_obj}
-final class ObjectFromIterable<T> extends CustomResolver {
+final class ObjectFromIterable<E, T> extends CustomResolver<T> {
   /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like an iterable and accepts elements. Resolves to an object of
   /// type [T].
-  ObjectFromIterable({required this.onCustomIterable});
+  ObjectFromIterable({
+    required this.onCustomIterable,
+    AfterCollection<T>? onParsed,
+  }) : afterCollection = onParsed ?? ((_, type, _, _) => type);
 
   /// A callback used to instatiate a delegate when a matching [TagShorthand] is
   /// encountered.
-  final OnCustomList<T> onCustomIterable;
+  final OnCustomList<E, T> onCustomIterable;
+
+  /// Called when the list is done.
+  final AfterCollection<T> afterCollection;
 
   @override
   CustomKind get kind => CustomKind.iterable;
@@ -119,15 +161,27 @@ final class ObjectFromIterable<T> extends CustomResolver {
 /// the parsed string if this seems too mechanical.
 ///
 /// {@category bytes_to_scalar}
-final class ObjectFromScalarBytes<T> extends CustomResolver {
+final class ObjectFromScalarBytes<T> extends CustomResolver<T> {
   /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like a scalar and accepts bytes/ utf code units and resolves to an
   /// object of type [T].
-  ObjectFromScalarBytes({required this.onCustomScalar});
+  ObjectFromScalarBytes({
+    required this.onCustomScalar,
+    AfterScalar<T>? onParsed,
+  }) : afterScalar = onParsed ?? ((_, type, _, _) => type);
 
   /// A callback used to instatiate a delegate when a matching [TagShorthand] is
   /// encountered.
   final OnCustomScalar<T> onCustomScalar;
+
+  /// Called when the scalar is done.
+  ///
+  /// Unlike the `onComplete` method provided by the [BytesToScalar] interface,
+  /// this function will always be called once the scalar is complete even when
+  /// no content is available.
+  ///
+  /// See docs for `onComplete` for more information.
+  final AfterScalar<T> afterScalar;
 
   @override
   CustomKind get kind => CustomKind.scalar;

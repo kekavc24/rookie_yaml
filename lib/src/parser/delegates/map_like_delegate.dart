@@ -1,30 +1,26 @@
 part of 'object_delegate.dart';
 
 /// A delegate that behaves like a map.
-mixin _MapDelegate<E> {
+mixin _MapDelegate<K, V> {
   /// Adds a [key]-[value] pair.
   ///
   /// Returning `false` makes the parser assume this is a duplicate key. Prefer
   /// returning `true` or throwing.
-  bool accept(E key, E? value);
+  bool accept(K key, V? value);
 }
 
-/// A delegate that directly maps a YAML map to an object [T]. No intermediate
-/// [Map] is constructed. Both the key and value are presented at the same time
-/// after the complete entry has been parsed. You must override the `parsed`
-/// method.
-///
-/// Additionally, it has been forced to accept a nullable [Object] as a
-/// key-value pair. All subclasses need to guarantee their own runtime safety in
-/// case the shape of the YAML map doesn't match the desired object.
+/// A delegate that directly maps a YAML map to an object [T] and accepts an
+/// object key [K] and object value [V]. No intermediate [Map] is constructed.
+/// Both the key and value are presented at the same time after the complete
+/// entry has been parsed. You must override the `parsed` method.
 ///
 /// {@category mapping_to_obj}
-abstract base class MappingToObject<T> = ObjectDelegate<T>
-    with _MapDelegate<Object?>;
+abstract base class MappingToObject<K, V, T> = ObjectDelegate<T>
+    with _MapDelegate<K, V>;
 
 /// A delegate that buffers to a map-like structure.
-sealed class MapLikeDelegate<E, T> extends NodeDelegate<T>
-    with _MapDelegate<E> {
+sealed class MapLikeDelegate<K, V, T> extends NodeDelegate<T>
+    with _MapDelegate<K, V> {
   MapLikeDelegate({
     required this.collectionStyle,
     required super.indentLevel,
@@ -37,35 +33,40 @@ sealed class MapLikeDelegate<E, T> extends NodeDelegate<T>
 
   /// Creates a [MapLikeDelegate] for an external map linked to a tag.
   factory MapLikeDelegate.boxed(
-    MappingToObject<T> delegate, {
+    MappingToObject<K, V, T> delegate, {
     required NodeStyle collectionStyle,
     required int indentLevel,
     required int indent,
     required RuneOffset start,
-  }) =>
-      _BoxedMap(
-            delegate,
-            collectionStyle: collectionStyle,
-            indentLevel: indentLevel,
-            indent: indent,
-            start: start,
-          )
-          as MapLikeDelegate<E, T>;
+    required AfterCollection<T> afterMapping,
+  }) => _BoxedMap(
+    delegate,
+    collectionStyle: collectionStyle,
+    indentLevel: indentLevel,
+    indent: indent,
+    start: start,
+    afterMapping: afterMapping,
+  );
 }
 
 /// Wraps an external [MappingToObject] and allows it to behave like a
 /// [MapLikeDelegate] that the parser can interact with.
-final class _BoxedMap<T> extends MapLikeDelegate<Object?, T> {
+final class _BoxedMap<K, V, T> extends MapLikeDelegate<K, V, T>
+    with _BoxedCallOnce<T> {
   _BoxedMap(
     this._delegate, {
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
+    required this.afterMapping,
   });
 
   /// Delegate with external map implementation.
-  final MappingToObject<T> _delegate;
+  final MappingToObject<K, V, T> _delegate;
+
+  /// Called when the sequence is complete.
+  final AfterCollection<T> afterMapping;
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
@@ -74,14 +75,22 @@ final class _BoxedMap<T> extends MapLikeDelegate<Object?, T> {
   }
 
   @override
-  T parsed() => _delegate.parsed();
+  T parsed() => _callOnce(
+    _delegate.parsed(),
+    ifNotCalled: (type) => afterMapping(
+      collectionStyle,
+      type,
+      _anchor,
+      nodeSpan(),
+    ),
+  );
 
   @override
-  bool accept(Object? key, Object? value) => _delegate.accept(key, value);
+  bool accept(K key, V? value) => _delegate.accept(key, value);
 }
 
 /// A delegate that resolves to a [Mapping] or [Map].
-final class GenericMap<I> extends MapLikeDelegate<I, I>
+final class GenericMap<I> extends MapLikeDelegate<I, I, I>
     with _ResolvingCache<I> {
   GenericMap({
     required super.collectionStyle,
@@ -108,7 +117,7 @@ final class GenericMap<I> extends MapLikeDelegate<I, I>
       throw FormatException('A mapping cannot be resolved as "$suffix" kind');
     }
 
-    return _overrideNonSpecific(tag, mappingTag);
+    return overrideNonSpecific(tag, mappingTag);
   }
 
   /// Adds an [key]-[value] pair only if the [key] is absent in the map and

@@ -13,7 +13,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 /// Adds a [key]-[value] pair to a [map].
 void _addMapEntry<Obj>(
   MapDuplicateHandler handler,
-  MapLikeDelegate<Obj, Obj> map,
+  MapLikeDelegate<Obj, Obj, Obj> map,
   NodeDelegate<Obj> key,
   NodeDelegate<Obj>? value,
 ) {
@@ -173,7 +173,7 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
 
 /// Parses the entries of a block [map].
 BlockNode<Obj> parseBlockMap<Obj>(
-  MapLikeDelegate<Obj, Obj> map, {
+  MapLikeDelegate<Obj, Obj, Obj> map, {
   required ParserState<Obj> state,
 }) {
   final ParserState(:iterator, :onMapDuplicate) = state;

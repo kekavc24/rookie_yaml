@@ -18,7 +18,7 @@ import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 ScalarLikeDelegate<R> parseFlowScalar<R>(
   ScalarEvent event, {
   required SourceIterator iterator,
-  required OnCustomScalar<R>? onDefault,
+  required ObjectFromScalarBytes<R>? onDefault,
   required ScalarFunction<R> scalarFunction,
   required void Function(YamlComment comment) onParseComment,
   required bool isInline,
@@ -29,7 +29,8 @@ ScalarLikeDelegate<R> parseFlowScalar<R>(
 }) => parseScalar(
   event,
   iterator: iterator,
-  onDefault: onDefault,
+  onDefault: onDefault?.onCustomScalar,
+  afterScalar: onDefault?.afterScalar,
   scalarFunction: scalarFunction,
   onParseComment: onParseComment,
   isImplicit: isInline,

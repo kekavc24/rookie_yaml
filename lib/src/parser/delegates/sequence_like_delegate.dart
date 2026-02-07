@@ -6,16 +6,13 @@ mixin _IterableDelegate<E> {
   void accept(E input);
 }
 
-/// A delegate that maps an iterable to an object [T]. No intermediate [List] or
-/// [Iterable] is constructed. You must override the `parsed` method.
-///
-/// Additionally, it has been forced to accept a nullable [Object] as an
-/// element. All subclasses need to guarantee their own runtime safety in case
-/// the shape of the YAML sequence doesn't match the desired object.
+/// A delegate that maps an iterable to an object [T] and accepts an object [E].
+/// No intermediate [List] or [Iterable] is constructed. You must override the
+/// `parsed` method.
 ///
 /// {@category sequence_to_obj}
-abstract base class SequenceToObject<T> = ObjectDelegate<T>
-    with _IterableDelegate<Object?>;
+abstract base class SequenceToObject<E, T> = ObjectDelegate<T>
+    with _IterableDelegate<E>;
 
 /// A delegate that buffers to a sequence-like structure.
 abstract base class SequenceLikeDelegate<E, T> extends NodeDelegate<T>
@@ -32,35 +29,40 @@ abstract base class SequenceLikeDelegate<E, T> extends NodeDelegate<T>
 
   /// Creates a [SequenceLikeDelegate] for an external sequence linked to a tag.
   factory SequenceLikeDelegate.boxed(
-    SequenceToObject<T> delegate, {
+    SequenceToObject<E, T> delegate, {
     required NodeStyle collectionStyle,
     required int indentLevel,
     required int indent,
     required RuneOffset start,
-  }) =>
-      _BoxedSequence(
-            delegate,
-            collectionStyle: collectionStyle,
-            indentLevel: indentLevel,
-            indent: indent,
-            start: start,
-          )
-          as SequenceLikeDelegate<E, T>;
+    required AfterCollection<T> afterSequence,
+  }) => _BoxedSequence(
+    delegate,
+    collectionStyle: collectionStyle,
+    indentLevel: indentLevel,
+    indent: indent,
+    start: start,
+    afterSequence: afterSequence,
+  );
 }
 
 /// Wraps an external [SequenceToObject] and allows it to behave like a
 /// [SequenceLikeDelegate] that the parser can interact with.
-final class _BoxedSequence<T> extends SequenceLikeDelegate<Object?, T> {
+final class _BoxedSequence<E, T> extends SequenceLikeDelegate<E, T>
+    with _BoxedCallOnce<T> {
   _BoxedSequence(
     this._delegate, {
     required super.collectionStyle,
     required super.indentLevel,
     required super.indent,
     required super.start,
+    required this.afterSequence,
   });
 
   /// Delegate with external sequence implementation.
-  final SequenceToObject<T> _delegate;
+  final SequenceToObject<E, T> _delegate;
+
+  /// Called when the sequence is complete.
+  final AfterCollection<T> afterSequence;
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
@@ -69,10 +71,18 @@ final class _BoxedSequence<T> extends SequenceLikeDelegate<Object?, T> {
   }
 
   @override
-  void accept(Object? input) => _delegate.accept(input);
+  void accept(E input) => _delegate.accept(input);
 
   @override
-  T parsed() => _delegate.parsed();
+  T parsed() => _callOnce(
+    _delegate.parsed(),
+    ifNotCalled: (type) => afterSequence(
+      collectionStyle,
+      type,
+      _anchor,
+      nodeSpan(),
+    ),
+  );
 }
 
 /// Callback for pushing elements into an iterable
@@ -153,7 +163,7 @@ final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
       throw FormatException('A sequence cannot be resolved as "$suffix" kind');
     }
 
-    return _overrideNonSpecific(tag, sequenceTag);
+    return overrideNonSpecific(tag, sequenceTag);
   }
 
   @override

@@ -5,7 +5,7 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 typedef _Resolvers = Map<TagShorthand, ResolverCreator<Object?>>;
 
 /// A map with [CustomResolver]s associated with a local tag.
-typedef AdvancedResolvers = Map<TagShorthand, CustomResolver>;
+typedef AdvancedResolvers = Map<TagShorthand, CustomResolver<Object?>>;
 
 /// A class with callbacks to some of the inner workings of the parser.
 ///
@@ -71,15 +71,15 @@ class CustomTriggers {
 
   /// Triggered when the parser requires a generic sequence delegate when no
   /// tags are present.
-  OnCustomList<S>? onDefaultSequence<S>() => null;
+  ObjectFromIterable<E, S>? onDefaultSequence<E, S>() => null;
 
   /// Triggered when the parser requires a generic mapping delegate when no
   /// tags are present. This could be used to return custom objects for
   /// top-level and nested mappings if paired correctly with [onParsedKey].
-  OnCustomMap<M>? onDefaultMapping<M>() => null;
+  ObjectFromMap<K, V, M>? onDefaultMapping<K, V, M>() => null;
 
   /// Triggered when the parser requires a generic scalar delegate when no tags
   /// are present. This is never called if the parser can accurately default
   /// the scalar to `null` ahead of time.
-  OnCustomScalar<S>? onDefaultScalar<S>() => null;
+  ObjectFromScalarBytes<S>? onDefaultScalar<S>() => null;
 }

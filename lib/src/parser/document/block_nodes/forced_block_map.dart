@@ -34,13 +34,16 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
       );
     }
 
+    final resolver = property.customResolver as ObjectFromMap<Obj, Obj, Obj>;
+
     nodeInfo = parseBlockMap(
       MapLikeDelegate.boxed(
-        (property.customResolver as ObjectFromMap<Obj>).onCustomMap(),
+        resolver.onCustomMap(),
         collectionStyle: NodeStyle.block,
         indentLevel: indentLevel,
         indent: inlineFixedIndent,
         start: property.span.start,
+        afterMapping: resolver.afterCollection,
       ),
       state: state,
     );
