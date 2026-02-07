@@ -67,9 +67,6 @@ final class ConcreteNode<T> extends DumpableNode<T> {
           };
         }
 
-      case YamlNode node:
-        nodeStyle = node.nodeStyle;
-
       default:
         return;
     }
@@ -106,7 +103,7 @@ ConcreteNode<T> dumpableType<T>(T object) {
     throw ArgumentError('An alias cannot have properties');
   }
 
-  return ConcreteNode._((object is AliasNode ? object.aliased : object) as T);
+  return ConcreteNode._((object is AliasNode ? object.node : object) as T);
 }
 
 /// Creates a dumpable node view of the [object].
@@ -122,9 +119,7 @@ DumpableNode<Object?> dumpableObject(
 }) => switch (object) {
   DumpableNode<Object?> dumpable => dumpable,
   AliasNode node =>
-    (unpackAnchor
-            ? ConcreteNode._(node.aliased)
-            : DumpableAsAlias._(node.alias))
+    (unpackAnchor ? ConcreteNode._(node.node) : DumpableAsAlias._(node.alias))
         as DumpableNode<Object?>,
   _ => ConcreteNode._(object),
 };

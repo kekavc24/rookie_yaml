@@ -11,9 +11,9 @@ final class Scalar<T> extends YamlSourceNode {
   Scalar(
     this._type, {
     required this.scalarStyle,
-    required this.tag,
-    required this.anchor,
     required this.nodeSpan,
+    required this.anchor,
+    required this.tag,
   });
 
   /// Type inferred from the scalar's content
@@ -23,26 +23,36 @@ final class Scalar<T> extends YamlSourceNode {
   /// `flow` too.
   final ScalarStyle scalarStyle;
 
-  /// A native value represented by the parsed scalar.
-  T get value => _type.value;
-
   @override
-  final ResolvedTag? tag;
+  final RuneSpan nodeSpan;
 
   @override
   final String? anchor;
 
   @override
-  final RuneSpan nodeSpan;
+  final ResolvedTag? tag;
+
+  /// A native value represented by the parsed scalar.
+  @override
+  T get node => _type.value;
 
   @override
   NodeStyle get nodeStyle => scalarStyle.nodeStyle;
 
   @override
-  bool operator ==(Object other) => other == value;
+  bool get isTransversable => false;
 
   @override
-  int get hashCode => value.hashCode;
+  bool get isAlias => false;
+
+  @override
+  List<YamlSourceNode> get children => const [];
+
+  @override
+  bool operator ==(Object other) => node == other;
+
+  @override
+  int get hashCode => node.hashCode;
 
   @override
   String toString() => _type.toString();
