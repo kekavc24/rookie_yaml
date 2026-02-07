@@ -1,5 +1,33 @@
 part of 'loader.dart';
 
+final class _SourceNodeTriggers extends CustomTriggers {
+  _SourceNodeTriggers({super.resolvers});
+
+  @override
+  ObjectFromMap<K, V, M> onDefaultMapping<K, V, M>() {
+    return ObjectFromMap(
+          onCustomMap: () => YamlSourceMap(),
+          onParsed: (style, object, anchor, nodeSpan) => (object as Mapping)
+            ..nodeStyle = style
+            ..anchor = anchor
+            ..nodeSpan = nodeSpan,
+        )
+        as ObjectFromMap<K, V, M>;
+  }
+
+  @override
+  ObjectFromIterable<E, S> onDefaultSequence<E, S>() {
+    return ObjectFromIterable(
+          onCustomIterable: () => YamlSourceList(),
+          onParsed: (style, object, anchor, nodeSpan) => (object as Sequence)
+            ..nodeStyle = style
+            ..anchor = anchor
+            ..nodeSpan = nodeSpan,
+        )
+        as ObjectFromIterable<E, S>;
+  }
+}
+
 /// Loads every document as a [YamlDocument] and each root node as a
 /// [YamlSourceNode].
 List<YamlDocument> _loadYamlDocuments(
@@ -11,35 +39,17 @@ List<YamlDocument> _loadYamlDocuments(
   DocumentParser(
     iterator,
     aliasFunction: (alias, reference, nodeSpan) =>
-        AliasNode(alias, reference, nodeSpan: nodeSpan),
-    collectionFunction: (buffer, style, tag, anchor, nodeSpan) {
-      if (buffer is Iterable<YamlSourceNode>) {
-        return Sequence(
-          buffer,
-          nodeStyle: style,
-          tag: tag,
-          anchor: anchor,
-          nodeSpan: nodeSpan,
-        );
-      }
-
-      return Mapping(
-        buffer as Map<YamlSourceNode, YamlSourceNode?>,
-        nodeStyle: style,
-        tag: tag,
-        anchor: anchor,
-        nodeSpan: nodeSpan,
-      );
-    },
+        AliasNode(alias, reference, nodeSpan),
+    collectionFunction: (buffer, _, _, _, _) => buffer as YamlSourceNode,
     scalarFunction: (inferred, style, tag, anchor, span) => Scalar(
       inferred,
       scalarStyle: style,
+      nodeSpan: span,
       tag: tag,
       anchor: anchor,
-      nodeSpan: span,
     ),
     logger: logger ?? _defaultLogger,
-    triggers: CustomTriggers(resolvers: resolvers),
+    triggers: _SourceNodeTriggers(resolvers: resolvers),
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
       iterator,
       start: keyStart,
@@ -123,4 +133,4 @@ T? loadYamlNode<T extends YamlSourceNode>(
   throwOnMapDuplicate: throwOnMapDuplicate,
   resolvers: resolvers,
   logger: logger,
-).firstOrNull?.castTo<T>();
+).firstOrNull?.cast<T>();

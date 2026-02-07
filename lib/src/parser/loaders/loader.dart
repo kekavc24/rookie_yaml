@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
+import 'package:rookie_yaml/src/parser/delegates/yaml_node_delegates.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
