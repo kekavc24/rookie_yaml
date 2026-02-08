@@ -43,7 +43,7 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
         indentLevel: indentLevel,
         indent: inlineFixedIndent,
         start: property.span.start,
-        afterMapping: resolver.afterCollection,
+        afterMapping: resolver.afterObject<Obj>(),
       ),
       state: state,
     );

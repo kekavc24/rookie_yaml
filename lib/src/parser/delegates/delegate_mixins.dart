@@ -64,9 +64,10 @@ mixin _BoxedCallOnce<T> {
   /// Calls a resolving function once for delegates that sandbox other
   /// delegates.
   @pragma('vm:prefer-inline')
-  T _callOnce(T object, {required T Function(T object) ifNotCalled}) {
+  T _callOnce(T object, {required void Function(T object) ifNotCalled}) {
     if (_called) return object;
     _called = true;
-    return ifNotCalled(object);
+    ifNotCalled(object);
+    return object;
   }
 }

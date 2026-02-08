@@ -119,7 +119,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
           indentLevel: indentLevel,
           indent: minIndent,
           start: start,
-          afterSequence: asCustomList.afterCollection,
+          afterSequence: asCustomList.afterObject<Obj>(),
         );
       }
 

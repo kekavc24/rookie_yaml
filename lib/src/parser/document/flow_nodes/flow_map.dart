@@ -35,7 +35,7 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
           indentLevel: indentLevel,
           indent: minIndent,
           start: start,
-          afterMapping: asCustomMap.afterCollection,
+          afterMapping: asCustomMap.afterObject<Obj>(),
         );
       }
 

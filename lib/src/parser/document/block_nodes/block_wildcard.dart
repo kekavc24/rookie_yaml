@@ -167,7 +167,7 @@ BlockNode<Obj> parseBlockScalar<Obj>(
     event,
     iterator: state.iterator,
     onDefault: defaultScalar?.onCustomScalar,
-    afterScalar: defaultScalar?.afterScalar,
+    afterScalar: defaultScalar?.afterObject<Obj>(),
     scalarFunction: state.scalarFunction,
     onParseComment: state.comments.add,
     isImplicit: isImplicit,

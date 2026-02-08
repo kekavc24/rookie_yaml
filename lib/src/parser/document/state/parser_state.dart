@@ -24,14 +24,15 @@ typedef ParserLogger = void Function(bool isInfo, String message);
 typedef OnTagResolved = ({
   ResolvedTag tag,
   NodeKind kind,
-  CustomResolver? customResolver,
+  CustomResolver<Object, Object?>? customResolver,
 });
 
 /// A tag resolver callback
 typedef TagResolver =
     OnTagResolved Function(RuneOffset start, RuneOffset end, TagShorthand tag);
 
-typedef _OnCustomResolver = CustomResolver? Function(TagShorthand localTag);
+typedef _OnCustomResolver =
+    CustomResolver<Object, Object?>? Function(TagShorthand localTag);
 
 typedef _OnScalarResolver<R> =
     ResolverCreator<R>? Function(TagShorthand localTag);
@@ -327,14 +328,15 @@ final class ParserState<R> {
     }
 
     NodeKind? kind;
-    CustomResolver? customResolver;
+    CustomResolver<Object, Object?>? customResolver;
     ResolvedTag nodeTag = NodeTag(prefix, suffix: suffix, isGeneric: false);
 
     // A local tag cannot be treated as both a custom resolver and a scalar
     // resolver. Give preference to a custom resolver. This conveniently
     // allows non-specific tags to be captured for custom resolution before
     // they are dropped.
-    if (_onCustomResolver(localTag) case CustomResolver resolver) {
+    if (_onCustomResolver(localTag)
+        case CustomResolver<Object, Object?> resolver) {
       kind = resolver.kind;
       customResolver = resolver;
     } else if (_onScalarResolver(localTag)
@@ -378,7 +380,7 @@ final class ParserState<R> {
       indentLevel: indentLevel,
       indent: indent,
       start: start,
-      afterMapping: customMap.afterCollection,
+      afterMapping: customMap.afterObject<R>(),
     ),
     _ => GenericMap(
       collectionStyle: mapStyle,
@@ -403,7 +405,7 @@ final class ParserState<R> {
       indentLevel: indentLevel,
       indent: indent,
       start: start,
-      afterSequence: customList.afterCollection,
+      afterSequence: customList.afterObject<R>(),
     ),
     _ => GenericSequence.byKind(
       style: style,

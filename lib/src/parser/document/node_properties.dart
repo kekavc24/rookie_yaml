@@ -42,7 +42,7 @@ sealed class ParsedProperty {
     required String? anchor,
     required ResolvedTag? tag,
     required NodeKind kind,
-    required CustomResolver? customResolver,
+    required CustomResolver<Object, Object?>? customResolver,
   }) {
     if (tag != null || anchor != null) {
       return NodeProperty(
@@ -122,7 +122,7 @@ final class NodeProperty extends ParsedProperty {
   final ResolvedTag? tag;
 
   /// A custom resolver for a node.
-  final CustomResolver? customResolver;
+  final CustomResolver<Object, Object?>? customResolver;
 
   @override
   bool get parsedAny => anchor != null || tag != null;
@@ -188,7 +188,7 @@ ParsedProperty _corePropertyParser(
 
   String? nodeAnchor;
   ResolvedTag? nodeTag;
-  CustomResolver? nodeResolver;
+  CustomResolver<Object, Object?>? nodeResolver;
 
   String? nodeAlias;
   int? indentOnExit;

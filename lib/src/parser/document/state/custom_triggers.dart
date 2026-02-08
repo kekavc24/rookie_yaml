@@ -5,7 +5,7 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 typedef _Resolvers = Map<TagShorthand, ResolverCreator<Object?>>;
 
 /// A map with [CustomResolver]s associated with a local tag.
-typedef AdvancedResolvers = Map<TagShorthand, CustomResolver<Object?>>;
+typedef AdvancedResolvers = Map<TagShorthand, CustomResolver<Object, Object?>>;
 
 /// A class with callbacks to some of the inner workings of the parser.
 ///
@@ -53,7 +53,7 @@ class CustomTriggers {
   /// since a [CustomResolver] forces the parser to expect a specific node kind
   /// and may throw if such a node kind cannot be parsed using the current
   /// YAML source string state.
-  CustomResolver? onCustomResolver(TagShorthand localTag) =>
+  CustomResolver<Object, Object?>? onCustomResolver(TagShorthand localTag) =>
       _advancedResolvers?[localTag];
 
   /// Obtains a scalar resolver that maps a scalar's content to a custom type.

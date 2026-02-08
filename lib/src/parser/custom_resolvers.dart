@@ -68,7 +68,7 @@ typedef OnCustomScalar<T> = OnObject<T, BytesToScalar<T>>;
 ///
 /// Called only once.
 typedef OnResolvedObject<S, T> =
-    T Function(S style, T object, String? anchor, RuneSpan nodeSpan);
+    void Function(S style, T object, String? anchor, RuneSpan nodeSpan);
 
 /// Called when a custom object from a [MappingToObject] or [SequenceToObject]
 /// has been parsed completely.
@@ -94,31 +94,36 @@ typedef AfterScalar<T> = OnResolvedObject<ScalarStyle, T>;
 ///
 /// {@category resolvers_intro}
 /// {@category custom_resolvers_intro}
-sealed class CustomResolver<T> {
-  CustomResolver();
+sealed class CustomResolver<S, T> {
+  CustomResolver(this._onResolvedObject);
+
+  /// Called when the object is fully resolved at the parser level.
+  final OnResolvedObject<S, T> _onResolvedObject;
 
   /// [NodeKind] represent by this resolver.
   CustomKind get kind;
+
+  /// Callback for the parser once the object [R] is resolved.
+  OnResolvedObject<Object, R> afterObject<R>() =>
+      (style, object, anchor, nodeSpan) =>
+          _onResolvedObject(style as S, object as T, anchor, nodeSpan);
 }
 
 /// A resolver that creates a delegate that accepts a key-value pair.
 ///
 /// {@category mapping_to_obj}
-final class ObjectFromMap<K, V, T> extends CustomResolver<T> {
+final class ObjectFromMap<K, V, T> extends CustomResolver<NodeStyle, T> {
   /// Creates a resolver that lazily instantiates an [ObjectDelegate] which
   /// behaves like a map and accepts a key-value pair. Resolves to an object of
   /// type [T].
   ObjectFromMap({
     required this.onCustomMap,
     AfterCollection<T>? onParsed,
-  }) : afterCollection = onParsed ?? ((_, type, _, _) => type);
+  }) : super(onParsed ?? ((_, type, _, _) {}));
 
   /// A callback used to instatiate a delegate when a matching [TagShorthand] is
   /// encountered.
   final OnCustomMap<K, V, T> onCustomMap;
-
-  /// Called when the map is done.
-  final AfterCollection<T> afterCollection;
 
   @override
   CustomKind get kind => CustomKind.map;
@@ -127,21 +132,18 @@ final class ObjectFromMap<K, V, T> extends CustomResolver<T> {
 /// A resolver that creates a delegate that accepts elements.
 ///
 /// {@category sequence_to_obj}
-final class ObjectFromIterable<E, T> extends CustomResolver<T> {
+final class ObjectFromIterable<E, T> extends CustomResolver<NodeStyle, T> {
   /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like an iterable and accepts elements. Resolves to an object of
   /// type [T].
   ObjectFromIterable({
     required this.onCustomIterable,
     AfterCollection<T>? onParsed,
-  }) : afterCollection = onParsed ?? ((_, type, _, _) => type);
+  }) : super(onParsed ?? ((_, type, _, _) {}));
 
   /// A callback used to instatiate a delegate when a matching [TagShorthand] is
   /// encountered.
   final OnCustomList<E, T> onCustomIterable;
-
-  /// Called when the list is done.
-  final AfterCollection<T> afterCollection;
 
   @override
   CustomKind get kind => CustomKind.iterable;
@@ -161,27 +163,23 @@ final class ObjectFromIterable<E, T> extends CustomResolver<T> {
 /// the parsed string if this seems too mechanical.
 ///
 /// {@category bytes_to_scalar}
-final class ObjectFromScalarBytes<T> extends CustomResolver<T> {
+final class ObjectFromScalarBytes<T> extends CustomResolver<ScalarStyle, T> {
   /// Creates a resolver that lazily instantiates a [ObjectDelegate] which
   /// behaves like a scalar and accepts bytes/ utf code units and resolves to an
   /// object of type [T].
+  ///
+  /// The parser will call [onParsed] only \***ONCE**\* when the scalar is done.
+  /// Unlike the `onComplete` method provided by the [BytesToScalar] interface,
+  /// this function will always be called once the scalar is complete even when
+  /// no content is available.
   ObjectFromScalarBytes({
     required this.onCustomScalar,
     AfterScalar<T>? onParsed,
-  }) : afterScalar = onParsed ?? ((_, type, _, _) => type);
+  }) : super(onParsed ?? ((_, type, _, _) {}));
 
   /// A callback used to instatiate a delegate when a matching [TagShorthand] is
   /// encountered.
   final OnCustomScalar<T> onCustomScalar;
-
-  /// Called when the scalar is done.
-  ///
-  /// Unlike the `onComplete` method provided by the [BytesToScalar] interface,
-  /// this function will always be called once the scalar is complete even when
-  /// no content is available.
-  ///
-  /// See docs for `onComplete` for more information.
-  final AfterScalar<T> afterScalar;
 
   @override
   CustomKind get kind => CustomKind.scalar;

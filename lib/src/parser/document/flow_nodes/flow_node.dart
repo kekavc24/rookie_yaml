@@ -30,7 +30,7 @@ ScalarLikeDelegate<R> parseFlowScalar<R>(
   event,
   iterator: iterator,
   onDefault: onDefault?.onCustomScalar,
-  afterScalar: onDefault?.afterScalar,
+  afterScalar: onDefault?.afterObject<R>(),
   scalarFunction: scalarFunction,
   onParseComment: onParseComment,
   isImplicit: isInline,

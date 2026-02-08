@@ -42,7 +42,7 @@ SequenceLikeDelegate<Obj, Obj> _delegateHelper<Obj>(
       indentLevel: indentLevel,
       indent: indent,
       start: start,
-      afterSequence: resolver.afterCollection,
+      afterSequence: resolver.afterObject<Obj>(),
     );
   }
 
