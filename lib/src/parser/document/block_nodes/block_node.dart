@@ -346,21 +346,23 @@ BlockNode<Obj> parseBlockNode<Obj>(
 
       default:
         {
-          return _safeBlockState(
-            state,
-            parsed: _blockNodeOfKind(
-              property.kind,
-              state: state,
-              event: event,
-              property: property as NodeProperty,
-              blockParentIndent: blockParentIndent,
-              indentLevel: indentLevel,
-              laxBlockIndent: adjustedLaxIndent,
-              fixedInlineIndent: adjustedInlineIndent,
-              forceInlined: forceInlined,
-              composeImplicitMap: definitelyComposeMap,
-            ),
-          );
+          if ((property as NodeProperty).kind.isKnown) {
+            return _safeBlockState(
+              state,
+              parsed: _blockNodeOfKind(
+                property.kind,
+                state: state,
+                event: event,
+                property: property,
+                blockParentIndent: blockParentIndent,
+                indentLevel: indentLevel,
+                laxBlockIndent: adjustedLaxIndent,
+                fixedInlineIndent: adjustedInlineIndent,
+                forceInlined: forceInlined,
+                composeImplicitMap: definitelyComposeMap,
+              ),
+            );
+          }
         }
     }
   }
