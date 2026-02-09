@@ -28,7 +28,18 @@ void main() {
       check(
         dumpObject(
           loadYamlNode(YamlSource.string(source)),
-          dumper: ObjectDumper.of(iterableStyle: NodeStyle.flow),
+          dumper: ObjectDumper.of(
+            iterableStyle: NodeStyle.flow,
+            mapper: (object) {
+              if (object is Sequence) {
+                return dumpableType(object.children)
+                  ..tag = object.tag
+                  ..anchor = object.anchor;
+              }
+
+              return object;
+            },
+          ),
           includeYamlDirective: true,
         ),
       ).equals('''
@@ -61,6 +72,30 @@ void main() {
       final dumper = ObjectDumper.of(
         mapStyle: NodeStyle.flow,
         forceMapsInline: true,
+        mapper: (object) => switch (object) {
+          Sequence() =>
+            dumpableType(object.children)
+              ..tag = object.tag
+              ..anchor = object.anchor,
+
+          Mapping() =>
+            dumpableType(
+                Map.fromEntries(
+                  object.children.map(
+                    (e) => MapEntry(e, e.childOfKey),
+                  ),
+                ),
+              )
+              ..tag = object.tag
+              ..anchor = object.anchor,
+
+          Scalar() =>
+            dumpableType(object.node)
+              ..anchor = object.anchor
+              ..tag = object.tag,
+
+          _ => object,
+        },
       );
 
       check(

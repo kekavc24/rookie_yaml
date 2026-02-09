@@ -8,10 +8,10 @@ import 'package:rookie_yaml/src/parser/parser_utils.dart';
 T? loadResolvedDartObject<T>(
   String yaml, {
   List<ScalarResolver<Object?>>? resolvers,
-  Map<TagShorthand, CustomResolver>? nodeResolvers,
-  OnCustomList<Object>? customList,
-  OnCustomMap<Object>? customMap,
-  OnCustomScalar<Object>? customScalar,
+  Map<TagShorthand, CustomResolver<Object, Object?>>? nodeResolvers,
+  OnCustomList<Object?, Object?>? customList,
+  OnCustomMap<Object?, Object?, Object?>? customMap,
+  OnCustomScalar<Object?>? customScalar,
   void Function(int index)? onDoctStart,
   void Function(Object? key)? onKeySeen,
   void Function(bool, String)? logger,
@@ -35,24 +35,30 @@ final class TestTrigger extends CustomTriggers {
     super.advancedResolvers,
     void Function(int index)? onDoctStart,
     void Function(Object? key)? onKeySeen,
-    OnCustomList<Object>? customList,
-    OnCustomMap<Object>? customMap,
-    OnCustomScalar<Object>? customScalar,
+    OnCustomList<Object?, Object?>? customList,
+    OnCustomMap<Object?, Object?, Object?>? customMap,
+    OnCustomScalar<Object?>? customScalar,
   }) : _onDocStart = onDoctStart ?? ((_) {}),
        _onKeySeen = onKeySeen ?? ((_) {}),
-       _defaultList = customList,
-       _defaultMap = customMap,
-       _defaultScalar = customScalar;
+       _defaultList = customList != null
+           ? ObjectFromIterable(onCustomIterable: customList)
+           : null,
+       _defaultMap = customMap != null
+           ? ObjectFromMap(onCustomMap: customMap)
+           : null,
+       _defaultScalar = customScalar != null
+           ? ObjectFromScalarBytes(onCustomScalar: customScalar)
+           : null;
 
   final void Function(int index) _onDocStart;
 
   final void Function(Object? key) _onKeySeen;
 
-  final OnCustomList<Object>? _defaultList;
+  final ObjectFromIterable<Object?, Object?>? _defaultList;
 
-  final OnCustomMap<Object>? _defaultMap;
+  final ObjectFromMap<Object?, Object?, Object?>? _defaultMap;
 
-  final OnCustomScalar<Object>? _defaultScalar;
+  final ObjectFromScalarBytes<Object?>? _defaultScalar;
 
   @override
   void onDocumentStart(int index) => _onDocStart(index);
@@ -61,14 +67,16 @@ final class TestTrigger extends CustomTriggers {
   void onParsedKey(Object? key) => _onKeySeen(key);
 
   @override
-  OnCustomMap<M>? onDefaultMapping<M>() => _defaultMap as OnCustomMap<M>?;
+  ObjectFromMap<K, V, M>? onDefaultMapping<K, V, M>() =>
+      _defaultMap as ObjectFromMap<K, V, M>?;
 
   @override
-  OnCustomList<L>? onDefaultSequence<L>() => _defaultList as OnCustomList<L>?;
+  ObjectFromIterable<E, L>? onDefaultSequence<E, L>() =>
+      _defaultList as ObjectFromIterable<E, L>?;
 
   @override
-  OnCustomScalar<S>? onDefaultScalar<S>() =>
-      _defaultScalar as OnCustomScalar<S>?;
+  ObjectFromScalarBytes<S>? onDefaultScalar<S>() =>
+      _defaultScalar as ObjectFromScalarBytes<S>?;
 }
 
 final class SimpleUtfBuffer extends BytesToScalar<List<int>> {
@@ -84,7 +92,7 @@ final class SimpleUtfBuffer extends BytesToScalar<List<int>> {
   List<int> parsed() => buffer;
 }
 
-final class MySetFromMap extends MappingToObject<Set<String>> {
+final class MySetFromMap extends MappingToObject<String, String?, Set<String>> {
   final _mySet = <String>{};
 
   @override
@@ -97,7 +105,7 @@ final class MySetFromMap extends MappingToObject<Set<String>> {
   Set<String> parsed() => _mySet;
 }
 
-final class MySortedList extends SequenceToObject<List<int>> {
+final class MySortedList extends SequenceToObject<int, List<int>> {
   final list = <int>[];
 
   @override

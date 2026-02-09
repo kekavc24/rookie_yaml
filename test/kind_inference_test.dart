@@ -19,16 +19,18 @@ void main() {
 
     final sequence = bootstrapDocParser(
       string,
-    ).parseNodeSingle()!.castTo<Sequence>();
+    ).parseNodeSingle()!.cast<Sequence>();
 
-    check(sequence[0]).isA<Scalar>()
+    check(sequence.children[0]).isA<Scalar>()
       ..hasInferred('Value', '24')
       ..hasTag(yamlGlobalTag, suffix: stringTag);
 
-    check(sequence[1]).isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+    check(
+      sequence.children[1],
+    ).isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
 
     check(
-      sequence[2],
+      sequence.children[2],
     ).isA<Sequence>().hasTag(yamlGlobalTag, suffix: sequenceTag);
   });
 
@@ -47,15 +49,16 @@ void main() {
    $integer
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).isA<Sequence>().every(
-        (d) => d.isA<Scalar>().which(
-          (d) => d
-            ..hasTag(yamlGlobalTag, suffix: integerTag)
-            ..hasParsedInteger(integer),
-        ),
-      );
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (d) => d
+                ..hasTag(yamlGlobalTag, suffix: integerTag)
+                ..hasParsedInteger(integer),
+            ),
+          );
     });
 
     test('Infers base 8 int in different scalars', () {
@@ -72,15 +75,16 @@ void main() {
    $integer
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).isA<Sequence>().every(
-        (d) => d.isA<Scalar>().which(
-          (d) => d
-            ..hasTag(yamlGlobalTag, suffix: integerTag)
-            ..hasParsedInteger(24),
-        ),
-      );
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (s) => s
+                ..hasTag(yamlGlobalTag, suffix: integerTag)
+                ..hasParsedInteger(24),
+            ),
+          );
     });
 
     test('Infers base 16 int in different scalars', () {
@@ -97,15 +101,16 @@ void main() {
    $integer
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).isA<Sequence>().every(
-        (d) => d.isA<Scalar>().which(
-          (d) => d
-            ..hasTag(yamlGlobalTag, suffix: integerTag)
-            ..hasParsedInteger(24),
-        ),
-      );
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (s) => s
+                ..hasTag(yamlGlobalTag, suffix: integerTag)
+                ..hasParsedInteger(24),
+            ),
+          );
     });
 
     test('Infers floats/doubles in different scalars', () {
@@ -122,15 +127,16 @@ void main() {
    $float
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).isA<Sequence>().every(
-        (d) => d.isA<Scalar>().which(
-          (d) => d
-            ..hasTag(yamlGlobalTag, suffix: floatTag)
-            ..inferredFloat(float),
-        ),
-      );
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (s) => s
+                ..hasTag(yamlGlobalTag, suffix: floatTag)
+                ..inferredFloat(float),
+            ),
+          );
     });
 
     test('Infers booleans in different scalars', () {
@@ -148,29 +154,31 @@ void main() {
    $inferred
 ''';
 
-        check(
-          bootstrapDocParser(yaml).parseNodeSingle(),
-        ).isA<Sequence>().every(
-          (d) => d.isA<Scalar>().which(
-            (d) => d
-              ..hasTag(yamlGlobalTag, suffix: booleanTag)
-              ..inferredBool(inferred),
-          ),
-        );
+        check(bootstrapDocParser(yaml).parseNodeSingle())
+            .isA<Sequence>()
+            .has((s) => s.children, 'SourceNodes')
+            .every(
+              (d) => d.isA<Scalar>().which(
+                (d) => d
+                  ..hasTag(yamlGlobalTag, suffix: booleanTag)
+                  ..inferredBool(inferred),
+              ),
+            );
       }
     });
 
     test('Infers booleans in different scalars', () {
       void checker(String yaml) {
-        check(
-          bootstrapDocParser(yaml).parseNodeSingle(),
-        ).isA<Sequence>().every(
-          (d) => d.isA<Scalar>().which(
-            (d) => d
-              ..hasTag(yamlGlobalTag, suffix: nullTag)
-              ..inferredNull(),
-          ),
-        );
+        check(bootstrapDocParser(yaml).parseNodeSingle())
+            .isA<Sequence>()
+            .has((s) => s.children, 'SourceNodes')
+            .every(
+              (d) => d.isA<Scalar>().which(
+                (d) => d
+                  ..hasTag(yamlGlobalTag, suffix: nullTag)
+                  ..inferredNull(),
+              ),
+            );
       }
 
       final nullables = [null, 'Null', 'NULL', '~'];
@@ -215,15 +223,16 @@ void main() {
    $expected
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).isA<Sequence>().every(
-        (d) => d.isA<Scalar>().which(
-          (d) => d
-            ..hasTag(yamlGlobalTag, suffix: stringTag)
-            ..hasInferred('Normal content', expected),
-        ),
-      );
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (d) => d
+                ..hasTag(yamlGlobalTag, suffix: stringTag)
+                ..hasInferred('Normal content', expected),
+            ),
+          );
     });
 
     test('Ignores inference if content has linebreak', () {
@@ -242,15 +251,16 @@ void main() {
    $content\n\n
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).isA<Sequence>().every(
-        (d) => d.isA<Scalar>().which(
-          (d) => d
-            ..hasTag(yamlGlobalTag, suffix: stringTag)
-            ..hasInferred('Normal content', expected),
-        ),
-      );
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (d) => d
+                ..hasTag(yamlGlobalTag, suffix: stringTag)
+                ..hasInferred('Normal content', expected),
+            ),
+          );
     });
 
     test('Ignores inference if a string tag is specified', () {

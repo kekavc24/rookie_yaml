@@ -22,7 +22,7 @@ Directives vanillaDirectives(String yaml) => parseDirectives(
   warningLogger: (_) {},
 );
 
-T _inferredValue<T>(Scalar<T> scalar) => scalar.value;
+T _inferredValue<T>(Scalar<T> scalar) => scalar.node;
 
 extension PreScalarHelper on Subject<PreScalar?> {
   void hasScalarStyle(ScalarStyle style) => isNotNull()

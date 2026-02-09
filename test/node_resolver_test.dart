@@ -6,11 +6,11 @@ import 'helpers/exception_helpers.dart';
 import 'helpers/test_resolvers.dart';
 
 void main() {
-  final listResolver = ObjectFromIterable<List<int>>(
+  final listResolver = ObjectFromIterable<int, List<int>>(
     onCustomIterable: () => MySortedList(),
   );
 
-  final mapResolver = ObjectFromMap<Set<String>>(
+  final mapResolver = ObjectFromMap<String, String?, Set<String>>(
     onCustomMap: () => MySetFromMap(),
   );
 
@@ -269,6 +269,42 @@ $stringTag
       ).throwsParserException(
         'Expected a scalar that can be parsed as a custom node',
       );
+    });
+  });
+
+  group('YamlSourceNode (child linking)', () {
+    // TODO: Add more convoluted tests
+    test('Simple mapping', () {
+      const map = {'key': 'value', 'another': 'value'};
+
+      check(loadYamlNode(YamlSource.string(map.toString())))
+          .isA<Mapping>()
+          .has(
+            (m) => m.children.fold(
+              [],
+              (l, n) => l
+                ..add(n.node)
+                ..add(n.childOfKey?.node),
+            ),
+            'Map entries',
+          )
+          .which(
+            (entries) => entries.containsEqualInOrder([
+              'key',
+              'value',
+              'another',
+              'value',
+            ]),
+          );
+    });
+
+    test('Simple sequence', () {
+      const list = ['hello', 'yaml', 'node'];
+
+      check(loadYamlNode(YamlSource.string(list.toString())))
+          .isA<Sequence>()
+          .has((m) => m.children.map((e) => e.node), 'List entries')
+          .containsEqualInOrder(list);
     });
   });
 }

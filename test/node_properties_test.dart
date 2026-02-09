@@ -55,13 +55,13 @@ $entryTag key0: $entryTag value
           bootstrapDocParser(yaml).parseNodeSingle(),
         ).isA<Mapping>()
         ..hasTag(mapTag)
-        ..has((m) => m.entries, 'Flow Map Entries').every(
+        ..has((m) => m.children, 'Flow Map Entries').every(
           (e) => e
+            ..hasTag(entryTag)
             ..has(
-              (e) => e.key,
-              'Flow Map Key',
-            ).isA<YamlSourceNode>().hasTag(entryTag)
-            ..has((e) => e.value, 'Flow Map Value').hasTag(entryTag),
+              (e) => e.childOfKey,
+              'Flow Map Value',
+            ).isNotNull().hasTag(entryTag),
         );
     });
 
@@ -90,18 +90,20 @@ $seqEntryTag plain
       // First 5 elements have tags.
       check(parsed).isA<Sequence>()
         ..hasTag(seqTag)
-        ..has(
-          (e) => e.take(4),
-          'First 5 entries',
-        ).every((e) => e.hasTag(seqEntryTag))
         ..which(
-          // The last element's tag is given to the key
-          (s) => s.last.isA<Mapping>()
+          (s) => s
+              .has((e) => e.children.take(4), 'First 5 entries')
+              .every((e) => e.hasTag(seqEntryTag)),
+        )
+        ..which(
+          (s) => s.has((s) => s.children.last, 'Last entry').isA<Mapping>()
             ..hasTag(yamlGlobalTag, suffix: mappingTag)
-            ..has(
-              (e) => e.keys.firstOrNull,
-              'Single key',
-            ).isNotNull().isA<YamlSourceNode>().hasTag(seqEntryTag),
+            ..which(
+              (mapping) => mapping
+                  .has((e) => e.children.firstOrNull, 'Single key')
+                  .isNotNull()
+                  .hasTag(seqEntryTag),
+            ),
         );
     });
 
@@ -121,22 +123,16 @@ $kvTag key0: $kvTag value
           bootstrapDocParser(yaml).parseNodeSingle(),
         ).isA<Mapping>()
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
-        ..has((m) => m.entries, 'Block Map Entries').every(
-          (e) => e
-            ..has(
-              (e) => e.key,
-              'Block Map Key',
-            ).isA<YamlSourceNode>().hasTag(kvTag)
-            ..has((e) => e.value, 'Block Map Value').hasTag(kvTag),
+        ..has((m) => m.children, 'Block Map Entries').every(
+          (keyNode) => keyNode
+            ..hasTag(kvTag)
+            ..has((key) => key.childOfKey, 'Block Map Value').hasTag(kvTag),
         );
     });
 
     test('Parses tags in block sequence', () {
-      final blockSeqTag = TagShorthand.fromTagUri(
-        TagHandle.primary(),
-        'block-seq',
-      );
-      final seqTag = TagShorthand.fromTagUri(TagHandle.primary(), 'seq');
+      final blockSeqTag = TagShorthand.primary('block-seq');
+      final seqTag = TagShorthand.primary('seq');
 
       final yaml =
           '''
@@ -164,18 +160,14 @@ $seqTag
     not: allowed-properties
 ''';
 
-      final parsed = bootstrapDocParser(
-        yaml,
-      ).parseNodeSingle();
-
-      check(parsed).isA<Sequence>()
+      check(bootstrapDocParser(yaml).parseNodeSingle()).isA<Sequence>()
         ..hasTag(seqTag)
         ..has(
-          (e) => e.take(7),
+          (s) => s.children.take(7),
           'First 7 entries',
         ).every((e) => e.hasTag(blockSeqTag))
         ..has(
-          (s) => s.skip(7),
+          (s) => s.children.skip(7),
           'Trailing elements',
         ).every((e) => e.hasTag(yamlGlobalTag, suffix: mappingTag));
     });

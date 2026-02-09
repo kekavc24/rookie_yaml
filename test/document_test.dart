@@ -133,10 +133,10 @@ folded
         ..length.equals(3)
         ..every((d) => d.isDocEndExplicit().isTrue())
         ..has((d) => d.take(2).map((e) => e.root), 'Leading elements').every(
-          (e) => e.isA<Scalar>().has((s) => s.value, 'Value').isNull(),
+          (e) => e.isA<Scalar>().has((s) => s.node, 'Value').isNull(),
         )
         ..has((d) => d.last.root, 'Trailing element').isA<Scalar>().which(
-          (s) => s.has((s) => s.value, 'Value').isA<String>().isEmpty(),
+          (s) => s.has((s) => s.node, 'Value').isA<String>().isEmpty(),
         );
     });
 
@@ -292,7 +292,7 @@ $star
           bootstrapDocParser('! { ! [], ! scalar }').parseNodeSingle(),
         ).isNotNull().isA<Mapping>()
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
-        ..has((map) => map.keys, 'Keys').which(
+        ..has((map) => map.children, 'Keys').which(
           (keys) => keys
             ..has((k) => k.firstOrNull, 'First element').which(
               (e) => e.isA<Sequence>().hasTag(
