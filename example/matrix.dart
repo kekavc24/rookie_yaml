@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
@@ -10,19 +9,13 @@ import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 /// A matrix.
 extension type Matrix._(List<Uint8List> matrix) {}
 
-/// Buffers the lower level matrices from the parsed YAML
-final class YamlMatrix extends SequenceToObject<Matrix> with TagInfo {
+/// Buffers the lower level matrices from the parsed YAML.
+final class YamlMatrix extends SequenceToObject<Uint8List, Matrix>
+    with TagInfo {
   final _matrix = <Uint8List>[];
 
   @override
-  void accept(Object? input) {
-    // Enforce type safety at the parser level if you just want this!
-    if (input is! Uint8List) {
-      throw ArgumentError.value(input, 'input', 'Invalid matrix input');
-    }
-
-    _matrix.add(input);
-  }
+  void accept(Uint8List input) => _matrix.add(input);
 
   @override
   Matrix parsed() {
@@ -32,7 +25,7 @@ final class YamlMatrix extends SequenceToObject<Matrix> with TagInfo {
 }
 
 /// Buffers the bytes in each list.
-final class MatrixInput extends SequenceToObject<Uint8List> with TagInfo {
+final class MatrixInput extends SequenceToObject<int, Uint8List> with TagInfo {
   MatrixInput() {
     _persisted = null;
   }
@@ -44,7 +37,7 @@ final class MatrixInput extends SequenceToObject<Uint8List> with TagInfo {
   static Uint8List? _persisted;
 
   @override
-  void accept(Object? input) => _input.addByte(input as int);
+  void accept(int input) => _input.addByte(input);
 
   @override
   Uint8List parsed() {
@@ -85,28 +78,4 @@ void main(List<String> args) {
   );
 
   print(matrix);
-
-  // Will throw for other list types if not Uint8List
-  check(
-    () => loadDartObject<Matrix>(
-      YamlSource.string(
-        '''
-%TAG !matrix! !dart/matrix
----
-!matrix!View
-- [21, 1, 19, 20]
-''',
-      ),
-      triggers: CustomTriggers(
-        advancedResolvers: {
-          matrixTag: ObjectFromIterable(
-            onCustomIterable: () => YamlMatrix(),
-          ),
-          inputTag: ObjectFromIterable(
-            onCustomIterable: () => MatrixInput(),
-          ),
-        },
-      ),
-    ),
-  ).throws<ArgumentError>();
 }

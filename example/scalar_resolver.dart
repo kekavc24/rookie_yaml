@@ -27,10 +27,10 @@ void main() {
   print(parsed); // 36893488147419103231
 
   // As a YamlSourceNode which preserves its state.
-  final node = loadYamlNode<Scalar>(yaml, resolvers: [resolver])!;
+  final scalar = loadYamlNode<Scalar>(yaml, resolvers: [resolver])!;
 
-  print(node.value); // 36893488147419103231
-  print(node); // 0x1ffffffffffffffff
+  print(scalar.node); // 36893488147419103231
+  print(scalar); // 0x1ffffffffffffffff
 
   //
   //

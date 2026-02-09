@@ -4,12 +4,12 @@ import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
-final class YamlSet<T> extends MappingToObject<Set<T>> {
+final class YamlSet<T> extends MappingToObject<T, T?, Set<T>> {
   final _set = <T>{};
 
   @override
-  bool accept(Object? key, Object? _) {
-    _set.add(key as T);
+  bool accept(T key, T? value) {
+    _set.add(key);
     return true;
   }
 
