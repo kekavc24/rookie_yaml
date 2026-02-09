@@ -66,8 +66,11 @@ final class _BoxedSequence<E, T> extends SequenceLikeDelegate<E, T>
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
-    super.updateNodeProperties = property;
     _delegate._property = property;
+
+    if (property is NodeProperty) {
+      _anchor = property.anchor;
+    }
   }
 
   @override

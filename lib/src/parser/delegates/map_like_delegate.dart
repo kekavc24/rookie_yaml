@@ -70,8 +70,11 @@ final class _BoxedMap<K, V, T> extends MapLikeDelegate<K, V, T>
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
-    super.updateNodeProperties = property;
     _delegate._property = property;
+
+    if (property is NodeProperty) {
+      _anchor = property.anchor;
+    }
   }
 
   @override

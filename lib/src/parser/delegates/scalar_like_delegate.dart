@@ -101,8 +101,11 @@ final class BoxedScalar<T> extends ScalarLikeDelegate<T>
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
-    super.updateNodeProperties = property;
     delegate._property = property;
+
+    if (property is NodeProperty) {
+      _anchor = property.anchor;
+    }
   }
 
   @override
