@@ -30,7 +30,7 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="col">Feature</th>
       <th scope="col" style="white-space: nowrap">YAML Features</th>
-      <th scope="col"></th>
+      <th scope="col">Implemented</th>
     </tr>
   </thead>
 
@@ -38,49 +38,49 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     <tr>
       <th scope="row" rowspan="4">Input</th>
       <td>Strings</td>
-      <td>✅</td>
+      <td align="center">✅</td>
     </tr>
-    <tr><td>Async Input Stream</td><td>❌</td><tr>
-    <tr><td>Sync UTF input</td><td>✅</td><tr>
+    <tr><td>Async Input Stream</td><td align="center">❌</td><tr>
+    <tr><td>Sync UTF input</td><td align="center">✅</td><tr>
     <!--  -->
     <tr>
       <th scope="row" rowspan="4">Directives</th>
       <td>YAML Directive</td>
-      <td>✅</td>
+      <td align="center">✅</td>
     </tr>
-    <tr><td>Global Tags</td><td>✅</td><tr>
-    <tr><td>Reserved Directives</td><td>☑️</td><tr>
+    <tr><td>Global Tags</td><td align="center">✅</td><tr>
+    <tr><td>Reserved Directives</td><td align="center">☑️</td><tr>
     <!--  -->
     <tr>
       <th scope="row" rowspan="4">Tag Handles</th>
       <td>Primary</td>
-      <td>✅</td>
+      <td align="center">✅</td>
     </tr>
-    <tr><td>Secondary</td><td>✅</td><tr>
-    <tr><td>Named</td><td>✅</td><tr>
+    <tr><td>Secondary</td><td align="center">✅</td><tr>
+    <tr><td>Named</td><td align="center">✅</td><tr>
     <!--  -->
     <tr>
       <th scope="row" rowspan="4">Tags</th>
       <td>Local tags</td>
-      <td>✅</td>
+      <td align="center">✅</td>
     </tr>
-    <tr><td>Verbatim tags</td><td>✅</td><tr>
-    <tr><td>Custom tags</td><td>✅</td><tr>
+    <tr><td>Verbatim tags</td><td align="center">✅</td><tr>
+    <tr><td>Custom tags</td><td align="center">✅</td><tr>
     <!--  -->
     <tr>
       <th scope="row" rowspan="2">Tag Resolution</th>
       <td>YAML Schema</td>
-      <td>✅</td>
+      <td align="center">✅</td>
     </tr>
-    <tr><td>External Resolvers</td><td>✅</td><tr>
+    <tr><td>External Resolvers</td><td align="center">✅</td><tr>
     <!--  -->
     <tr>
       <th scope="row" rowspan="4">Other node properties</th>
       <td>Anchors</td>
-      <td>✅</td>
+      <td align="center">✅</td>
     </tr>
-    <tr><td>Aliases</td><td>✅</td><tr>
-    <tr><td>Recursive aliases</td><td>❌</td><tr>
+    <tr><td>Aliases</td><td align="center">✅</td><tr>
+    <tr><td>Recursive aliases</td><td align="center">❌</td><tr>
     <!--  -->
     <tr>
       <th scope="row">Nodes</th>

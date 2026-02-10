@@ -62,9 +62,9 @@ print(
 
 ## Loading a Sequence/Mapping as a built-in Dart List/Map
 
-List and Map are returned as `List<dynamic>` and `Map<dynamic, dynamic>`. This is intentional. Later versions may remove this restriction. You may need to explicitly cast it yourself to match the types you want. Providing `List<T>` or `Map<K, V>` will always throw.
+List and Map are returned as `List<Object?>` and `Map<Object?, Object?>`. This is intentional. Later versions may remove this restriction. You may need to explicitly cast it yourself to match the types you want. Providing `List<T>` or `Map<K, V>` will always throw.
 
-The parser, however, guarantees that if a node only exists as type `R` in both Dart and YAML, calling `cast<R>` on the `List<dynamic>` returned by the parser will not throw a runtime error. This also applies to a `Map<K, V>` returned as `Map<dynamic, dynamic>`.
+The parser, however, guarantees that if a node only exists as type `R` in both Dart and YAML, calling `cast<R>` on the `List<Object?>` returned by the parser will not throw a runtime error. This also applies to a `Map<K, V>` returned as `Map<Object?, Object?>`.
 
 This ensures the parser just works out of the box and doesn't trip itself from any unexpected type constraints.
 

@@ -1,4 +1,4 @@
-The parser pushes a map's key and value at the same time after parsing them into a `MappingToObject` delegate via its `accept` method. While the delegate could theoretically accept a key-value pair `K, V` matching the pair you want, it has been forced to accept an `Object?`. This allows the parser to be as generic as possible and forces you to guarantee your own runtime safety. The stack traces are very friendly.
+The parser pushes a map's key and value at the same time after parsing them into a `MappingToObject<K, V, T>` delegate via its `accept` method.
 
 ## YamlSet example
 
@@ -9,13 +9,12 @@ Most (if not all) programming languages use a hashtable under-the-hood to implem
 - The delegate
 
 ```dart
-final class YamlSet<T> extends MappingToObject<Set<T>> {
+final class YamlSet<T> extends MappingToObject<T, T?, Set<T>> {
   final _set = <T>{};
 
   @override
-  bool accept(Object? key, Object? _) {
-    // We don't care about its value.
-    _set.add(key as T);
+  bool accept(T key, T? value) {
+    _set.add(key);
     return true;
   }
 

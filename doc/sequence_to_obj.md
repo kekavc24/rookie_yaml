@@ -1,4 +1,4 @@
-The parser pushes sequence/list entries after parsing them into a `SequenceToObject` delegate via its `accept` method. While the delegate could theoretically accept a custom type `T` matching the type you want, it has been forced to accept an `Object?`. This allows the parser to be as generic as possible and forces you to guarantee your own runtime safety. The stack traces are very friendly.
+The parser pushes sequence/list entries after parsing them into a `SequenceToObject<E, T>` delegate via its `accept` method.
 
 ## Matrix example
 
@@ -16,10 +16,8 @@ Since integers are built-in Dart types, we don't need to have a tag for them.
 
 ```dart
 /// Buffers the bytes in each list.
-final class MatrixInput extends SequenceToObject<Uint8List> with TagInfo {
+final class MatrixInput extends SequenceToObject<int, Uint8List> with TagInfo {
   MatrixInput() {
-    // Everytime this delegate is called, the entry is complete. This object is
-    // never called for aliases.
     _persisted = null;
   }
 
@@ -30,7 +28,7 @@ final class MatrixInput extends SequenceToObject<Uint8List> with TagInfo {
   static Uint8List? _persisted;
 
   @override
-  void accept(Object? input) => _input.addByte(input as int); // Trust parser!
+  void accept(int input) => _input.addByte(input);
 
   @override
   Uint8List parsed() {
@@ -50,18 +48,12 @@ Our actual matrix. Let's say we don't trust the parser at this level.
 extension type Matrix._(List<Uint8List> matrix) {}
 
 /// Buffers the lower level matrices from the parsed YAML
-final class YamlMatrix extends SequenceToObject<Matrix> with TagInfo {
+final class YamlMatrix extends SequenceToObject<Uint8List, Matrix>
+    with TagInfo {
   final _matrix = <Uint8List>[];
 
   @override
-  void accept(Object? input) {
-    // We don't trust the parser here :)
-    if (input is! Uint8List) {
-      throw ArgumentError.value(input, 'input', 'Invalid matrix input');
-    }
-
-    _matrix.add(input);
-  }
+  void accept(Uint8List input) => _matrix.add(input);
 
   @override
   Matrix parsed() {

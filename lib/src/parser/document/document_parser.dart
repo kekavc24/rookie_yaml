@@ -46,7 +46,26 @@ void _throwIfBlockUnsafe(
 }
 
 /// A [YamlDocument] parser.
+///
+/// [Doc] represents the type for all documents to be parsed and [R] represents
+/// a type for all nodes that will be parsed.
 final class DocumentParser<Doc, R> {
+  /// Creates a forward-parsing document parser that emits a document of type
+  /// [Doc] which has nodes of type [R] or a subtype of [R]. Calling
+  /// `this.parseNext()` parses a single [Doc] from the [iterator].
+  ///
+  /// The document [builder] constructs a [Doc] from the information collected
+  /// after parsing a full YAML document. The [collectionFunction] is used to
+  /// construct a YAML list/map whereas the [scalarFunction] is reserved for
+  /// scalars. Any aliases are constructed with the [aliasFunction].
+  /// [onMapDuplicate] will always be called when a duplicate key is
+  /// encountered and contains the key's start and end offset.
+  ///
+  /// [triggers] can be used to provide specialized callbacks to some parser
+  /// actions that may be used to track the parser's state or provide resolvers
+  /// for these actions.
+  ///
+  /// A custom logging function may be provided via the [logger].
   DocumentParser(
     SourceIterator iterator, {
     required AliasFunction<R> aliasFunction,
@@ -67,20 +86,21 @@ final class DocumentParser<Doc, R> {
        ),
        _onDocReset = triggers?.onDocumentStart ?? ((_) {});
 
+  /// Constructs the document after the node has been parsed completely.
   final DocumentBuilder<Doc, R> builder;
 
+  /// The internal parser's state.
   final ParserState<R> _state;
 
   /// Called when a new document's parsing begins.
   final _OnDocStart _onDocReset;
 
-  /// Parses the next [YamlDocument] if present in the YAML string.
+  /// Parses the next [Doc] if present in the YAML string.
   ///
   /// `NOTE:` This advances the parsing forward and holds no reference to a
-  /// previously parsed [YamlDocument].
+  /// previously parsed [Doc].
   (bool didParse, Doc? parsed) parseNext() {
     _state.reset();
-
     final ParserState(:iterator, :comments, :logger) = _state;
 
     if (iterator.isEOF) return (false, null);
