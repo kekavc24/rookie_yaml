@@ -14,8 +14,8 @@ A (rookie) `Dart` [YAML][yaml] 1.2+ parser.
 
 Earlier YAML versions are parsed with YAML 1.2+ grammar rules. The parser will warn you if an explicit YAML version directive which is not supported is present.
 
-- ✅ - Supported
-- 🔁 - Supported but read `Notes` column for more context.
+- ✅ - Supported. See `Notes` for any additional information.
+- ☑️ - Supported. Expand `Notes` for more context.
 - ❌ - Not supported. May be implemented if package users express interest/need.
 
 ### YAML parser
@@ -23,123 +23,110 @@ Earlier YAML versions are parsed with YAML 1.2+ grammar rules. The parser will w
 The package implements the full YAML 1.2+ spec. See the table below for more information and any teething issues the parser has.
 
 > [!TIP]
-> For enthusiasts, the underlying `DocumentParser` is now exported by this package (but with guard-rails). You can build a fine-grained parser on top of the low-level internal parser functions it uses. See the [external resolvers](https://pub.dev/documentation/rookie_yaml/latest/topics/custom_resolvers_intro-topic.html) section and consider extending the `CustomTriggers` class.
+> The underlying `DocumentParser` is now exported by this package (but with guard-rails). You can build a fine-grained parser on top of the low-level internal parser functions it uses. See the [external resolvers](https://pub.dev/documentation/rookie_yaml/latest/topics/custom_resolvers_intro-topic.html) section and consider extending the `CustomTriggers` class.
 
 <table>
   <thead>
     <tr>
       <th scope="col">Feature</th>
-      <th scope="col" style="white-space: nowrap">Secondary Features</th>
-      <th scope="col">Notes</th>
+      <th scope="col" style="white-space: nowrap">YAML Features</th>
+      <th scope="col"></th>
     </tr>
   </thead>
 
   <tbody>
     <tr>
-      <th scope="row">Input</th>
-      <td>
-        <ul style="list-style: none; text-align: left; padding-left: 0">
-          <li>✅ Strings</li>
-          <li>❌ Async Input Stream</li>
-          <li>✅ Sync UTF input</li>
-        </ul>
-      </td>
-      <td>
-        <ul>
-          <li>Uniform API provided via the <code>YamlSource</code> extension type.</li>
-          <li>A raw UTF-8, UTF-16 and UTF-32 input stream can be parsed without allocating a string.</li>
-        </ul>
-      </td>
+      <th scope="row" rowspan="4">Input</th>
+      <td>Strings</td>
+      <td>✅</td>
     </tr>
+    <tr><td>Async Input Stream</td><td>❌</td><tr>
+    <tr><td>Sync UTF input</td><td>✅</td><tr>
     <!--  -->
     <tr>
-      <th scope="row">Directives</th>
-      <td>
-        <ul style="list-style: none; text-align: left; padding-left: 0">
-          <li>✅ YAML Directive</li>
-          <li>✅ Global Tags</li>
-          <li>🔁 Reserved Directives</li>
-        </ul>
-      </td>
-      <td>
-        <ul>
-          <li>API for directives-as-code available.</li>
-          <li>Reserved directives can be parsed but cannot be constructed.</li>
-        </ul>
-      </td>
+      <th scope="row" rowspan="4">Directives</th>
+      <td>YAML Directive</td>
+      <td>✅</td>
     </tr>
+    <tr><td>Global Tags</td><td>✅</td><tr>
+    <tr><td>Reserved Directives</td><td>☑️</td><tr>
     <!--  -->
     <tr>
-      <th scope="row">Tag Handles</th>
-      <td>
-        <ul style="list-style: none; text-align: left; padding-left: 0">
-          <li>✅ Primary</li>
-          <li>✅ Secondary</li>
-          <li>✅ Named</li>
-        </ul>
-      </td>
-      <td>API for tag-handles-as-code available</td>
+      <th scope="row" rowspan="4">Tag Handles</th>
+      <td>Primary</td>
+      <td>✅</td>
     </tr>
+    <tr><td>Secondary</td><td>✅</td><tr>
+    <tr><td>Named</td><td>✅</td><tr>
     <!--  -->
     <tr>
-      <th scope="row">Tags</th>
-      <td>
-        <ul style="list-style: none; text-align: left; padding-left: 0">
-          <li>✅ Local tags</li>
-          <li>✅ Verbatim tags</li>
-          <li>✅ Custom tags</li>
-        </ul>
-      </td>
-      <td>
-        <ul>
-          <li>Local-to-global tag handle resolution is required for all tag types (even custom tags).</li>
-          <li>API for tags-as-code available.</li>
-        </ul>
-      </td>
+      <th scope="row" rowspan="4">Tags</th>
+      <td>Local tags</td>
+      <td>✅</td>
     </tr>
+    <tr><td>Verbatim tags</td><td>✅</td><tr>
+    <tr><td>Custom tags</td><td>✅</td><tr>
     <!--  -->
     <tr>
-      <th scope="row">Tag Resolution</th>
-      <td>
-        <ul style="list-style: none; text-align: left; padding-left: 0">
-          <li>✅ YAML Schema</li>
-          <li>✅ External Resolvers</li>
-        </ul>
-      </td>
-      <td>
-        <ul>
-          <li>Built-in Dart types supported in YAML are inferred out-of-the-box even without tags.</li>
-          <li>External resolvers are restricted to tags. See/extend <code>CustomTriggers</code> for all other usecases.</li>
-        </ul>
-      </td>
+      <th scope="row" rowspan="2">Tag Resolution</th>
+      <td>YAML Schema</td>
+      <td>✅</td>
     </tr>
+    <tr><td>External Resolvers</td><td>✅</td><tr>
     <!--  -->
     <tr>
-      <th scope="row">Other node properties</th>
-      <td>
-        <ul style="list-style: none; text-align: left; padding-left: 0">
-          <li>✅ Anchors</li>
-          <li>✅ Aliases</li>
-          <li>❌ Recursive aliases</li>
-        </ul>
-      </td>
-      <td>
-        You can configure whether list and map aliases should be dereferenced (deep copied) when using the loader for built-in Dart types. Dereferencing isn't the default behaviour.
-      </td>
+      <th scope="row" rowspan="4">Other node properties</th>
+      <td>Anchors</td>
+      <td>✅</td>
     </tr>
+    <tr><td>Aliases</td><td>✅</td><tr>
+    <tr><td>Recursive aliases</td><td>❌</td><tr>
     <!--  -->
     <tr>
       <th scope="row">Nodes</th>
-      <td align="center">🔁</td>
-      <td>
-        <ul>
-          <li>Any valid YAML 1.2 and below syntax can be parsed using YAML 1.2 grammar rules.</li>
-          <li>Implicit keys for maps are not restricted to at most 1024 unicode characters (for now).</li>
-        </ul>
-      </td>
+      <td>YAML 1.2.* and below grammar</td>
+      <td align="center">☑️</td>
     </tr>
   </tbody>
 </table>
+
+<details>
+<summary>Notes</summary>
+
+#### Input
+
+1. Uniform API provided via the `YamlSource` extension type.
+2. A raw UTF-8, UTF-16 and UTF-32 input stream can be parsed without allocating a string.
+
+#### Directives
+
+1. API for directives-as-code available.
+2. Reserved directives can be parsed but cannot be constructed.
+
+#### Tag Handles
+
+- API for tag-handles-as-code available
+
+#### Tags
+
+1. Local-to-global tag handle resolution is required for all tag types (even custom tags).
+2. API for tags-as-code available.
+
+#### Tag Resolution
+
+1. Built-in Dart types supported in YAML are inferred out-of-the-box even without tags.
+2. External resolvers are restricted to tags. See/extend `CustomTriggers` for all other usecases.
+
+#### Other Node Properties
+
+- You can configure whether list and map aliases should be dereferenced (deep copied) when using the loader for built-in Dart types. Dereferencing isn't the default behaviour.
+
+#### Nodes
+
+- Any valid YAML 1.2 and below syntax can be parsed using YAML 1.2 grammar rules.
+- Implicit keys for maps are not restricted to at most 1024 unicode characters (for now).
+
+</details>
 
 ### YAML Dumper
 
@@ -163,5 +150,5 @@ Start [here](https://pub.dev/documentation/rookie_yaml/latest/topics/dump_scalar
 [dart_pub_version]: https://img.shields.io/pub/v/rookie_yaml.svg
 [dart_pub_downloads]: https://img.shields.io/pub/dm/rookie_yaml.svg
 [guide]: https://pub.dev/documentation/rookie_yaml/latest/topics/intro-topic.html
-[contribute]: CONTRIBUTING.md
-[test_suite]: ./test/yaml_test_suite/README.md
+[contribute]: https://github.com/kekavc24/rookie_yaml/blob/main/CONTRIBUTING.md
+[test_suite]: https://github.com/kekavc24/rookie_yaml/blob/main/test/yaml_test_suite/README.md
