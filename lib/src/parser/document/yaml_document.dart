@@ -97,4 +97,7 @@ final class YamlDocument {
   /// An ordered view of the [YamlComment]s within the document as they were
   /// extracted
   List<YamlComment> get comments => UnmodifiableListView(_comments);
+
+  @override
+  String toString() => root.node.toString();
 }

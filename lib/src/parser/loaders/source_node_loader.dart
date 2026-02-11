@@ -1,7 +1,8 @@
 part of 'loader.dart';
 
-final class _SourceNodeTriggers extends CustomTriggers {
-  _SourceNodeTriggers({super.resolvers});
+/// Triggers for loading [YamlSourceNode]s.
+final class SourceNodeTriggers extends CustomTriggers {
+  SourceNodeTriggers({super.resolvers});
 
   @override
   ObjectFromMap<K, V, M> onDefaultMapping<K, V, M>() {
@@ -49,7 +50,7 @@ List<YamlDocument> _loadYamlDocuments(
       anchor: anchor,
     ),
     logger: logger ?? _defaultLogger,
-    triggers: _SourceNodeTriggers(resolvers: resolvers),
+    triggers: SourceNodeTriggers(resolvers: resolvers),
     onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
       iterator,
       start: keyStart,
