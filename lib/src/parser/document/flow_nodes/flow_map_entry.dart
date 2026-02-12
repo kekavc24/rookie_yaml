@@ -86,6 +86,7 @@ R _parseExplicitFlow<R, Obj>(
     isImplicit: false,
     forceInline: forceInline,
     collectionDelimiter: mappingEnd,
+    structuralOffset: keyStart,
   );
 
   key.updateEndOffset = iterator.currentLineInfo.current;
@@ -107,6 +108,7 @@ R _parseExplicitFlow<R, Obj>(
       isImplicit: false,
       forceInline: forceInline,
       collectionDelimiter: mappingEnd,
+      structuralOffset: key.endOffset,
     );
   }
 
@@ -190,6 +192,7 @@ FlowMapEntry<Obj> parseImplicitEntry<Obj>(
       isImplicit: false,
       forceInline: forceInline,
       collectionDelimiter: mappingEnd,
+      structuralOffset: parsedKey.endOffset,
     ),
   );
 }

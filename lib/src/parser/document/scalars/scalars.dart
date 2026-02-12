@@ -16,11 +16,12 @@ NodeDelegate<Obj> nullBlockNode<Obj>(
   required int indentLevel,
   required int indent,
   required RuneOffset start,
+  RuneOffset? end,
 }) => emptyBlockNode(
   state,
   property: ParsedProperty.empty(
     start,
-    start,
+    end ?? start,
     null,
     spanMultipleLines: false,
   ),

@@ -218,6 +218,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
   required bool forceInlined,
   required bool composeImplicitMap,
   bool canComposeMapIfMultiline = false,
+  RuneOffset? structuralOffset,
 }) {
   final ParserState(:iterator, :comments) = state;
 
@@ -226,6 +227,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
     minIndent: laxBlockIndent,
     resolver: state.resolveTag,
     onParseComment: comments.add,
+    structuralOffset: structuralOffset,
   );
 
   // Exit immediately if we see an indent less than than the min required

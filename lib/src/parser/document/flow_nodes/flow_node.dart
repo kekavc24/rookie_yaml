@@ -70,6 +70,7 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
   required bool forceInline,
   required int collectionDelimiter,
   bool lastKeyWasJsonLike = false,
+  RuneOffset? structuralOffset,
 }) {
   final ParserState(:iterator) = state;
 
@@ -79,6 +80,7 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
     resolver: state.resolveTag,
     onParseComment: state.comments.add,
     lastKeyWasJsonLike: lastKeyWasJsonLike,
+    structuralOffset: structuralOffset,
   );
 
   if (!event.isFlowContext) {

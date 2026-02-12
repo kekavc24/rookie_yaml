@@ -41,21 +41,23 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
   // that we are now pointing to the next key that may be implicit or explicit
   if (isNextLevel && indentOrSeparation < expectedLaxIndent) {
     final ignoreValue = indentOrSeparation < indent;
-    final explicit = nullBlockNode(
-      state,
-      indentLevel: indentLevel,
-      indent: indent + 1,
-      start: iterator.isEOF
-          ? iterator.currentLineInfo.current
-          : iterator.currentLineInfo.start,
-    );
 
     // Optionally check if we must exit or can recover and parse a block
     // sequence.
     if (iterator.isEOF ||
         ignoreValue ||
         inferBlockEvent(iterator) != BlockCollectionEvent.startBlockListEntry) {
-      onSequenceOrBlockNode(explicit);
+      onSequenceOrBlockNode(
+        nullBlockNode(
+          state,
+          indentLevel: indentLevel,
+          indent: indent + 1,
+          start: explicitCharOffset,
+          end: iterator.isEOF
+              ? iterator.currentLineInfo.current
+              : iterator.currentLineInfo.start,
+        ),
+      );
       return (
         ignoreValueIfKey: ignoreValue,
         blockInfo: (
@@ -70,7 +72,8 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
       keyIndent: indent,
       keyIndentLevel: indentLevel,
       property: null,
-      onSequence: onSequenceOrBlockNode,
+      onSequence: (seq) =>
+          onSequenceOrBlockNode(seq..start = explicitCharOffset),
       onNextImplicitEntry: maybeOnEntry,
     );
 
@@ -95,6 +98,7 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
       fixedInlineIndent: inlineFixedIndent,
       forceInlined: false,
       composeImplicitMap: true,
+      structuralOffset: explicitCharOffset,
     ),
     keyIndent: indent,
     keyIndentLevel: indentLevel,

@@ -125,7 +125,7 @@ BlockInfo parseImplicitValue<Obj>(
       keyIndent: keyIndent,
       keyIndentLevel: keyIndentLevel,
       property: null,
-      onSequence: onValue,
+      onSequence: (seq) => onValue(seq..start = indicatorOffset),
       onNextImplicitEntry: onEntryValue,
     ).blockInfo;
   } else if (eventCallback()
@@ -166,6 +166,7 @@ BlockInfo parseImplicitValue<Obj>(
       forceInlined: false,
       composeImplicitMap: hasIndent,
       canComposeMapIfMultiline: true,
+      structuralOffset: indicatorOffset,
     ),
     keyIndent: keyIndent,
     keyIndentLevel: keyIndentLevel,
