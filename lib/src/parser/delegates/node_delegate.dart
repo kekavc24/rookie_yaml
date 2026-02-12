@@ -80,7 +80,7 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
       );
     }
 
-    start = property.span.start;
+    start = property.structuralOffset ?? property.span.start;
     _hasLineBreak = _hasLineBreak || property.isMultiline;
     _property = property;
   }

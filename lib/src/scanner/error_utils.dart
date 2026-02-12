@@ -27,8 +27,8 @@ final class YamlParseException implements Exception {
     final (:lineIndex, :columnIndex, :utfOffset) = offsetOnError;
     return 'ParserException'
         '[Line ${lineIndex + 1}, Column $columnIndex, Offset $utfOffset]: '
-        '$message\n\n'
-        '$highlight';
+        '$message'
+        '${highlight.isEmpty ? '' : '\n\n$highlight'}';
   }
 }
 

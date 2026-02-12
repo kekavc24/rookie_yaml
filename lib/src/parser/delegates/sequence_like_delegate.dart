@@ -1,5 +1,11 @@
 part of 'object_delegate.dart';
 
+void throwIfNotListTag(TagShorthand suffix) => throwOnTagMismatch(
+  suffix,
+  (t) => isYamlScalarTag(suffix) || suffix == mappingTag,
+  'mapping',
+);
+
 /// A delegate that behaves like a sequence/iterable.
 mixin _IterableDelegate<E> {
   /// Adds an [input] to a sequence like delegate.
@@ -66,7 +72,10 @@ final class _BoxedSequence<E, T> extends SequenceLikeDelegate<E, T>
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
+    if (property == null) return;
     _delegate._property = property;
+
+    super.updateNodeProperties = property;
 
     if (property is NodeProperty) {
       _anchor = property.anchor;
@@ -160,12 +169,7 @@ final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
 
   @override
   NodeTag _checkResolvedTag(NodeTag tag) {
-    final NodeTag(:suffix) = tag;
-
-    if (isYamlScalarTag(suffix) || suffix == mappingTag) {
-      throw FormatException('A sequence cannot be resolved as "$suffix" kind');
-    }
-
+    throwIfNotListTag(tag.suffix);
     return overrideNonSpecific(tag, sequenceTag);
   }
 

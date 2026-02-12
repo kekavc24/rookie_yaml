@@ -18,6 +18,7 @@ sealed class ParsedProperty {
     this.indentOnExit, {
     required bool spanMultipleLines,
     required this.kind,
+    this.structuralOffset,
   }) : assert(
          end.utfOffset >= start.utfOffset,
          'Invalid start and end offset to a [ParsedProperty]',
@@ -35,6 +36,7 @@ sealed class ParsedProperty {
   /// Creates a wrapper that indicates the node's properties parsing call
   /// was just empty lines.
   factory ParsedProperty.of(
+    RuneOffset? structuralOffset,
     RuneOffset start,
     RuneOffset end, {
     required bool spanMultipleLines,
@@ -62,8 +64,13 @@ sealed class ParsedProperty {
       end,
       indentOnExit,
       spanMultipleLines: spanMultipleLines,
+      structuralOffset: structuralOffset,
     );
   }
+
+  /// Actual offset of the node this property belongs to when it's preceded by a
+  /// block sequence or explicit key/value indicator.
+  final RuneOffset? structuralOffset;
 
   /// Start [RuneOffset] (inclusive) and an end [RuneOffset] (exclusive).
   final RuneSpan span;
@@ -94,6 +101,7 @@ final class _Empty extends ParsedProperty {
     super.end,
     super.indentOnExit, {
     required super.spanMultipleLines,
+    super.structuralOffset,
   }) : super(kind: NodeKind.unknown());
 
   @override
@@ -113,6 +121,7 @@ final class NodeProperty extends ParsedProperty {
     required this.tag,
     required super.kind,
     required this.customResolver,
+    super.structuralOffset,
   });
 
   /// Node's anchor.
@@ -136,6 +145,7 @@ final class Alias extends ParsedProperty {
     super.indentOnExit, {
     required super.spanMultipleLines,
     required this.alias,
+    super.structuralOffset,
   }) : super(kind: NodeKind.unknown());
 
   /// Node being aliased
@@ -181,6 +191,7 @@ ParsedProperty _corePropertyParser(
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
   required bool isBlockContext,
+  required RuneOffset? structuralOffset,
 }) {
   final startOffset = iterator.currentLineInfo.current;
 
@@ -251,6 +262,7 @@ ParsedProperty _corePropertyParser(
             final (:start, :current) = iterator.currentLineInfo;
 
             return ParsedProperty.of(
+              structuralOffset,
               start,
               hasNoIndent ? current : start,
               spanMultipleLines: isMultiline(),
@@ -324,6 +336,7 @@ ParsedProperty _corePropertyParser(
       // Exit immediately since we reached char that isn't a node property
       default:
         return ParsedProperty.of(
+          structuralOffset,
           startOffset,
           indentOnExit != null && indentOnExit! < minIndent
               ? iterator.currentLineInfo.start
@@ -343,6 +356,7 @@ ParsedProperty _corePropertyParser(
   skipAndTrackLF();
 
   return ParsedProperty.of(
+    structuralOffset,
     startOffset,
     indentOnExit != null && indentOnExit! < minIndent
         ? iterator.currentLineInfo.start
@@ -362,6 +376,7 @@ ConcreteProperty parseBlockProperties(
   required int minIndent,
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
+  required RuneOffset? structuralOffset,
 }) {
   final property = _corePropertyParser(
     iterator,
@@ -369,6 +384,7 @@ ConcreteProperty parseBlockProperties(
     resolver: resolver,
     onParseComment: onParseComment,
     isBlockContext: true,
+    structuralOffset: structuralOffset,
   );
 
   return (property: property, event: inferBlockEvent(iterator));
@@ -382,6 +398,7 @@ ConcreteProperty parseFlowProperties(
   required TagResolver resolver,
   required void Function(YamlComment comment) onParseComment,
   required bool lastKeyWasJsonLike,
+  required RuneOffset? structuralOffset,
 }) {
   void throwIfLessIndent(int? currentIndent) {
     if (currentIndent != null && currentIndent < minIndent) {
@@ -427,6 +444,7 @@ ConcreteProperty parseFlowProperties(
     resolver: resolver,
     onParseComment: onParseComment,
     isBlockContext: false,
+    structuralOffset: structuralOffset,
   );
 
   // Flow nodes are lax with indent. Never allow less than min indent.

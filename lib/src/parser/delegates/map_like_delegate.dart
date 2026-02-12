@@ -1,5 +1,11 @@
 part of 'object_delegate.dart';
 
+void throwIfNotMapTag(TagShorthand suffix) => throwOnTagMismatch(
+  suffix,
+  (t) => isYamlScalarTag(suffix) || suffix == sequenceTag,
+  'mapping',
+);
+
 /// A delegate that behaves like a map.
 mixin _MapDelegate<K, V> {
   /// Adds a [key]-[value] pair.
@@ -70,7 +76,10 @@ final class _BoxedMap<K, V, T> extends MapLikeDelegate<K, V, T>
 
   @override
   set updateNodeProperties(ParsedProperty? property) {
+    if (property == null) return;
     _delegate._property = property;
+
+    super.updateNodeProperties = property;
 
     if (property is NodeProperty) {
       _anchor = property.anchor;
@@ -114,12 +123,7 @@ final class GenericMap<I> extends MapLikeDelegate<I, I, I>
 
   @override
   NodeTag<dynamic> _checkResolvedTag(NodeTag tag) {
-    final NodeTag(:suffix) = tag;
-
-    if (isYamlScalarTag(suffix) || suffix == sequenceTag) {
-      throw FormatException('A mapping cannot be resolved as "$suffix" kind');
-    }
-
+    throwIfNotMapTag(tag.suffix);
     return overrideNonSpecific(tag, mappingTag);
   }
 

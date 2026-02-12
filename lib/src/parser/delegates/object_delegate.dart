@@ -14,7 +14,7 @@ part 'map_like_delegate.dart';
 part 'node_delegate.dart';
 part 'scalar_like_delegate.dart';
 part 'sequence_like_delegate.dart';
-part 'delegate_mixins.dart';
+part 'delegate_helpers.dart';
 
 /// Creates a default [NodeTag] with the [yamlGlobalTag] as its prefix. [tag]
 /// must be a secondary tag.

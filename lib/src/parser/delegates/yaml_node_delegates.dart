@@ -105,6 +105,9 @@ final class YamlSourceMap
 
   @override
   void _resolveTag(ResolvedTag tag) {
+    throwIfNotMapTag(
+      tag is ContentResolver ? tag.resolvedTag.suffix : tag.suffix!,
+    );
     _collection.tag = tag;
   }
 }
@@ -134,6 +137,9 @@ final class YamlSourceList
 
   @override
   void _resolveTag(ResolvedTag tag) {
+    throwIfNotListTag(
+      tag is ContentResolver ? tag.resolvedTag.suffix : tag.suffix!,
+    );
     _collection.tag = tag;
   }
 }

@@ -71,3 +71,12 @@ mixin _BoxedCallOnce<T> {
     return object;
   }
 }
+
+void throwOnTagMismatch(
+  TagShorthand suffix,
+  bool Function(TagShorthand localTag) nonMatch,
+  String nodeIdentifier,
+) {
+  if (!nonMatch(suffix)) return;
+  throw FormatException('$suffix is not a valid $nodeIdentifier tag');
+}

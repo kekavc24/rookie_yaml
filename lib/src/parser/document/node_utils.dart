@@ -299,7 +299,7 @@ bool exitBlockCollection<Obj, T extends NodeDelegate<Obj>>(
 
   if (iterator.isEOF || exitIndent == null) {
     updateEnd(lineInfo.current);
-    return true;
+    return iterator.isEOF;
   } else if (marker.stopIfParsingDoc) {
     updateEnd(lineInfo.start);
     return true;
@@ -314,5 +314,5 @@ bool exitBlockCollection<Obj, T extends NodeDelegate<Obj>>(
   }
 
   updateEnd(lineInfo.start);
-  return exitIndent < nodeIndent;
+  return exitIndent != nodeIndent;
 }
