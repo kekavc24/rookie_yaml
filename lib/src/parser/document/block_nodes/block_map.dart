@@ -7,7 +7,6 @@ import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Adds a [key]-[value] pair to a [map].
@@ -142,23 +141,17 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
     onEntryValue: (key, value) => _addMapEntry(onMapDuplicate, map, key, value),
   );
 
-  final valueExitIndent = blockInfo.exitIndent;
-
   // Exit if we can't parse more entries.
-  if (iterator.isEOF ||
-      blockInfo.docMarker.stopIfParsingDoc ||
-      valueExitIndent == null ||
-      valueExitIndent < fixedMapIndent) {
+  if (exitBlockCollection(
+    map,
+    iterator: iterator,
+    nodeIndent: fixedMapIndent,
+    marker: blockInfo.docMarker,
+    exitIndent: blockInfo.exitIndent,
+  )) {
     return (
       blockInfo: blockInfo,
       node: state.trackAnchor(map, mapProperty) as NodeDelegate<Obj>,
-    );
-  } else if (valueExitIndent > fixedMapIndent) {
-    throwWithRangedOffset(
-      iterator,
-      message: "Dangling indent does not belong to the current block map",
-      start: map.endOffset ?? iterator.currentLineInfo.current,
-      end: iterator.currentLineInfo.current,
     );
   }
 
@@ -198,18 +191,15 @@ BlockNode<Obj> parseBlockMap<Obj>(
       ),
     };
 
-    final (:docMarker, :exitIndent) = blockInfo;
-
-    if (iterator.isEOF ||
-        docMarker.stopIfParsingDoc ||
-        exitIndent == null ||
-        exitIndent < mapIndent) {
+    // Exit if we can't parse more entries.
+    if (exitBlockCollection(
+      map,
+      iterator: iterator,
+      nodeIndent: mapIndent,
+      marker: blockInfo.docMarker,
+      exitIndent: blockInfo.exitIndent,
+    )) {
       return (blockInfo: blockInfo, node: map as NodeDelegate<Obj>);
-    } else if (exitIndent > mapIndent) {
-      throwForCurrentLine(
-        iterator,
-        message: 'Dangling block node found when parsing block map',
-      );
     }
   }
 

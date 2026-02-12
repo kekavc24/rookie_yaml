@@ -235,7 +235,8 @@ implicit:
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).throwsParserException(
-        'Dangling indent does not belong to the current block map',
+        'Invalid block node indentation in block collection.'
+        ' Expected 0 space(s)',
       );
     });
   });
@@ -375,7 +376,10 @@ implicit:
 
       check(
         () => bootstrapDocParser(yaml).nodeAsSimpleString(),
-      ).throwsParserException('Invalid block list entry found');
+      ).throwsParserException(
+        'Invalid block node indentation in block collection.'
+        ' Expected 0 space(s)',
+      );
     });
 
     test('Throws if a flow node is less indented than block parent', () {

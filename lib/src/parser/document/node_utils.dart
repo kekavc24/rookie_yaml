@@ -283,3 +283,36 @@ D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
         blockParentIndent + (contentOffset - yamlNodeStartOffset),
   );
 }
+
+/// Whether the parser can stop parsing a block [collection]. The end offset of
+/// the collection is also updated.
+bool exitBlockCollection<Obj, T extends NodeDelegate<Obj>>(
+  T collection, {
+  required SourceIterator iterator,
+  required int nodeIndent,
+  required DocumentMarker marker,
+  required int? exitIndent,
+}) {
+  final lineInfo = iterator.currentLineInfo;
+
+  void updateEnd(RuneOffset end) => collection.updateEndOffset = end;
+
+  if (iterator.isEOF || exitIndent == null) {
+    updateEnd(lineInfo.current);
+    return true;
+  } else if (marker.stopIfParsingDoc) {
+    updateEnd(lineInfo.start);
+    return true;
+  } else if (exitIndent > nodeIndent) {
+    throwWithSingleOffset(
+      iterator,
+      message:
+          'Invalid block node indentation in block collection. '
+          'Expected $nodeIndent space(s)',
+      offset: iterator.currentLineInfo.current,
+    );
+  }
+
+  updateEnd(lineInfo.start);
+  return exitIndent < nodeIndent;
+}

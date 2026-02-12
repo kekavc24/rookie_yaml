@@ -150,23 +150,16 @@ _SequenceState _sequenceNodeOrMarker(
         ..updateEndOffset = node.endOffset
         ..hasLineBreak = node.encounteredLineBreak;
 
-      final (:docMarker, :exitIndent) = blockInfo;
-
-      if (iterator.isEOF ||
-          docMarker.stopIfParsingDoc ||
-          (exitIndent != null && exitIndent < sequenceIndent)) {
+      if (exitBlockCollection(
+        sequence,
+        iterator: iterator,
+        nodeIndent: sequenceIndent,
+        marker: blockInfo.docMarker,
+        exitIndent: blockInfo.exitIndent,
+      )) {
         return (
           greedyOnPlain: null,
-          sequence: (
-            blockInfo: blockInfo,
-            node: sequence as NodeDelegate<Obj>,
-          ),
-        );
-      } else if (exitIndent != null && exitIndent > sequenceIndent) {
-        throwWithSingleOffset(
-          iterator,
-          message: 'Invalid block list entry found',
-          offset: iterator.currentLineInfo.current,
+          sequence: (blockInfo: blockInfo, node: sequence as NodeDelegate<Obj>),
         );
       }
     }
