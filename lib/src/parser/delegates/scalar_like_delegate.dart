@@ -201,10 +201,7 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
   }
 
   @override
-  void onComplete() {
-    _delegate.onComplete();
-    hasLineBreak = _delegate.bufferedLineBreak;
-  }
+  void onComplete() => _delegate.onComplete();
 
   @override
   CharWriter get onWriteRequest => _delegate.onWriteRequest;

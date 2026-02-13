@@ -145,9 +145,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
       forceInline: forceInline,
     );
 
-    sequence
-      ..accept(entry.parsed())
-      ..hasLineBreak = entry.encounteredLineBreak;
+    sequence.accept(entry.parsed());
 
     if (!continueToNextEntry(
       iterator,

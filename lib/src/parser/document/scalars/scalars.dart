@@ -55,8 +55,7 @@ NodeDelegate<Obj> emptyBlockNode<Obj>(
     ),
   };
 
-  return state.trackAnchor(node..updateEndOffset = end, property)
-    ..hasLineBreak = property.isMultiline;
+  return state.trackAnchor(node..updateEndOffset = end, property);
 }
 
 /// Parses a [Scalar].

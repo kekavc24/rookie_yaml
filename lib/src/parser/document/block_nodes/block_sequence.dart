@@ -148,8 +148,7 @@ _SequenceState _sequenceNodeOrMarker(
 
       sequence
         ..accept(node.parsed())
-        ..updateEndOffset = node.endOffset
-        ..hasLineBreak = node.encounteredLineBreak;
+        ..updateEndOffset = node.endOffset;
 
       if (exitBlockCollection(
         sequence,

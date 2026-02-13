@@ -128,7 +128,6 @@ R parseCustomScalar<R, Obj>(
 
     delegate
       ..indent = scalarIndent
-      ..hasLineBreak = hasLineBreak
       ..updateEndOffset = end;
 
     onComplete();

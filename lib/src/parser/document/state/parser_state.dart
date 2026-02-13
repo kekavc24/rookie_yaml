@@ -177,7 +177,7 @@ final class ParserState<R> {
         indentLevel: indentLevel,
         indent: indent,
         start: start,
-      )..hasLineBreak = property.isMultiline;
+      );
     }
 
     throwWithRangedOffset(

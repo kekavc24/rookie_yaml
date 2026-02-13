@@ -24,10 +24,7 @@ void _addMapEntry<Obj>(
     );
   }
 
-  map
-    ..hasLineBreak =
-        key.encounteredLineBreak || (value?.encounteredLineBreak ?? false)
-    ..updateEndOffset = value?.endOffset ?? key.endOffset!;
+  map.updateEndOffset = value?.endOffset ?? key.endOffset!;
 }
 
 /// Attempts to compose and parse a block map using the [keyOrNode] as the

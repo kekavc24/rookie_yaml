@@ -80,9 +80,6 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
       );
     }
 
-    map.hasLineBreak =
-        key.encounteredLineBreak || (value?.encounteredLineBreak ?? false);
-
     if (!continueToNextEntry(
       iterator,
       minIndent: minIndent,

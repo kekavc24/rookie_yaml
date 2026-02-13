@@ -30,9 +30,7 @@ NodeDelegate<Obj> parseExplicitAsFlowMap<Obj>(
         start: indicatorOffset,
       )
       ..accept(key.parsed(), value?.parsed())
-      ..updateEndOffset = value?.endOffset ?? key.endOffset
-      ..hasLineBreak =
-          key.encounteredLineBreak || (value?.encounteredLineBreak ?? false);
+      ..updateEndOffset = value?.endOffset ?? key.endOffset;
   },
 );
 

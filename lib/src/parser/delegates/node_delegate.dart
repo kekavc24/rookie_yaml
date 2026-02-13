@@ -34,11 +34,9 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
   /// Alias
   String? _alias;
 
-  /// Tracks if a line break was encountered
-  bool _hasLineBreak = false;
-
   /// Whether a line break was encountered while parsing.
-  bool get encounteredLineBreak => _hasLineBreak;
+  bool get encounteredLineBreak =>
+      _end != null && start.lineIndex != _end!.lineIndex;
 
   /// Whether any properties are present
   @override
@@ -81,13 +79,8 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
     }
 
     start = property.structuralOffset ?? property.span.start;
-    _hasLineBreak = _hasLineBreak || property.isMultiline;
     _property = property;
   }
-
-  /// Updates whether the node span multiple lines within the source string.
-  set hasLineBreak(bool foundLineBreak) =>
-      _hasLineBreak = _hasLineBreak || foundLineBreak;
 
   /// A resolved node.
   T? _resolved;
