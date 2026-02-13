@@ -80,6 +80,5 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
     }
   }
 
-  state.trackAnchor(nodeInfo.node, property);
   return nodeInfo;
 }

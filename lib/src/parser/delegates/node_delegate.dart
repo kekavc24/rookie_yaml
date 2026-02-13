@@ -72,7 +72,7 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
   /// Updates a node's properties. Throws an [ArgumentError] if this delegate
   /// has a tag, alias or anchor.
   set updateNodeProperties(ParsedProperty? property) {
-    if (property == null || !property.parsedAny) return;
+    if (property == null) return;
 
     if (hasProperty) {
       throw ArgumentError(
