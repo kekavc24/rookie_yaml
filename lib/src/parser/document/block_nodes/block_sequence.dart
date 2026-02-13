@@ -114,7 +114,7 @@ _SequenceState _sequenceNodeOrMarker(
         ..accept(empty.parsed())
         ..updateEndOffset = empty.endOffset;
 
-      if (indentOrSeparation < sequenceIndent) {
+      if (iterator.isEOF || indentOrSeparation < sequenceIndent) {
         return (
           greedyOnPlain: null,
           sequence: (

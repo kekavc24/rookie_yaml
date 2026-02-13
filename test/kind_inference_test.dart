@@ -167,7 +167,7 @@ void main() {
       }
     });
 
-    test('Infers booleans in different scalars', () {
+    test('Infers nulls in different scalars', () {
       void checker(String yaml) {
         check(bootstrapDocParser(yaml).parseNodeSingle())
             .isA<Sequence>()
@@ -200,11 +200,8 @@ void main() {
 
       checker(
         '''
-- "" # Double quoted
-- '' # Single quoted
 -    # Plain
-- |-         # Literal
-- >-         # Folded
+     # Scalar
 ''',
       );
     });
@@ -231,6 +228,26 @@ void main() {
               (d) => d
                 ..hasTag(yamlGlobalTag, suffix: stringTag)
                 ..hasInferred('Normal content', expected),
+            ),
+          );
+    });
+
+    test('Defaults to string when empty (special)', () {
+      final yaml = '''
+- "" # Empty double quoted string
+- '' # Empty Single quoted
+- >- # Empty folded string
+- |- # Empty literal string
+''';
+
+      check(bootstrapDocParser(yaml).parseNodeSingle())
+          .isA<Sequence>()
+          .has((s) => s.children, 'SourceNodes')
+          .every(
+            (d) => d.isA<Scalar>().which(
+              (d) => d
+                ..hasTag(yamlGlobalTag, suffix: stringTag)
+                ..hasInferred('Normal content', ""),
             ),
           );
     });

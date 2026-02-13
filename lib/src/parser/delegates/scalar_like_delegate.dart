@@ -233,10 +233,7 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
         );
       }
     } else if (_tag is! VerbatimTag &&
-        (isNullDelegate ||
-            scalarStyle == ScalarStyle.plain &&
-                scalar is NullView &&
-                scalar.isVirtual)) {
+        (isNullDelegate || (scalar is NullView && scalar.isVirtual))) {
       scalar = _resolveNullDelegate(scalar);
     }
 
@@ -252,7 +249,9 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
 
   /// Lazily resolves `this` to `null` if possible.
   ScalarValue<Object?> _resolveNullDelegate(ScalarValue<Object?> object) {
-    if (_tag case NodeTag(:final suffix) when suffix.toString() != '!!null') {
+    if ((_tag != null && (_tag as NodeTag).suffix.toString() != '!!null') ||
+        scalarStyle.isStringWhenEmpty) {
+      _tag ??= _defaultTo(stringTag);
       return object is NullView ? DartValue('') : object;
     }
 

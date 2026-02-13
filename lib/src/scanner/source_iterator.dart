@@ -15,6 +15,25 @@ part 'error_utils.dart';
 /// a sequence of utf16 characters rather than utf8.
 typedef RuneOffset = ({int lineIndex, int columnIndex, int utfOffset});
 
+/// Number of lines from [start] to [end]. This assumes the [end] is exclusive
+/// and its line is ignored.
+///
+/// ```dart
+/// final node = loadYamlNode(
+///     YamlSource.string(
+///       '''
+/// - hello
+/// - next''',
+///     ),
+///   );
+///
+/// final hello = node!.children.first.nodeSpan;
+///
+/// print(hello.end); // (columnIndex: 0, lineIndex: 1, utfOffset: 8)
+/// print(getLineCount(hello.start, hello.end)); // 1
+int getLineCount(RuneOffset start, RuneOffset end) =>
+    max(0, end.lineIndex - start.lineIndex);
+
 /// Returns start [RuneOffset] position of a line.
 RuneOffset _getLineStart({int lineIndex = 0, int currentOffset = 0}) =>
     (lineIndex: lineIndex, columnIndex: 0, utfOffset: currentOffset);

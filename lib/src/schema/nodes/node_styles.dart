@@ -82,6 +82,16 @@ enum ScalarStyle {
 
   /// A basic [NodeStyle] the [ScalarStyle] belongs to.
   final NodeStyle nodeStyle;
+
+  /// Whether the style uses single/double quotes around a scalar.
+  bool get isQuoted => switch (this) {
+    singleQuoted || doubleQuoted => true,
+    _ => false,
+  };
+
+  /// Whether the style is usually considered a string by YAML when the scalar
+  /// is empty.
+  bool get isStringWhenEmpty => this != plain;
 }
 
 /// Controls how final line breaks and trailing empty lines are interpreted.
