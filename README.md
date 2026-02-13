@@ -124,6 +124,7 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
 #### Nodes
 
 - Any valid YAML 1.2 and below syntax can be parsed using YAML 1.2 grammar rules.
+- An empty YAML document/string is treated as a plain scalar `null` and not an empty string.
 - Implicit keys for maps are not restricted to at most 1024 unicode characters (for now).
 
 </details>
