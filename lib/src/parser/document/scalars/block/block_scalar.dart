@@ -266,7 +266,12 @@ ParsedScalarInfo blockScalarParser(
     chomping,
     buffer: blockBuffer,
     wroteToBuffer: wroteToBuffer,
-    lineBreaks: lineBreaks,
+
+    // Treat the only line break as a trailing one if no content was ever
+    // present. This would make the empty line(s) a trailing one!
+    lineBreaks: didRun && !wroteToBuffer && lineBreaks.isEmpty
+        ? (lineBreaks..add(lineFeed))
+        : lineBreaks,
   );
 
   return (
