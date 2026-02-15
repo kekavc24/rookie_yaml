@@ -8,6 +8,7 @@ import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/scanner/encoding/utf_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 part 'source_node_loader.dart';

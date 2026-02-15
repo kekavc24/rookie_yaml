@@ -20,7 +20,7 @@ BlockNode<Obj> customBlockNode<Obj>(
         state.iterator,
         message: 'Expected a custom map',
         start: property.span.start,
-        end: object.node.endOffset!,
+        end: object.node.nodeSpan.nodeEnd,
       );
     }
 

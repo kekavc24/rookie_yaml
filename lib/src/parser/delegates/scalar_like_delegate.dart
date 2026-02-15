@@ -118,7 +118,7 @@ final class BoxedScalar<T> extends ScalarLikeDelegate<T>
       scalarStyle,
       type,
       _anchor,
-      nodeSpan(),
+      nodeSpan,
     ),
   );
 }
@@ -229,7 +229,7 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
           scalarStyle,
           _tag,
           _anchor,
-          nodeSpan(),
+          nodeSpan,
         );
       }
     } else if (_tag is! VerbatimTag &&
@@ -243,7 +243,7 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
       scalarStyle,
       (_tag != null || _tag is VerbatimTag) ? _tag : _defaultTo(schemaTag),
       _anchor,
-      nodeSpan(),
+      nodeSpan,
     );
   }
 

@@ -8,7 +8,7 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Information after a special block sequence has been parsed.
@@ -152,6 +152,7 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
   required ParsedProperty? property,
   required void Function(NodeDelegate<Obj> sequence) onSequence,
   required OnBlockMapEntry<Obj> onNextImplicitEntry,
+  RuneOffset? structuralStart,
 }) {
   final ParserState(:iterator) = state;
 
@@ -159,7 +160,11 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
     _delegateHelper<Obj>(
       property,
       state: state,
-      start: property?.span.start ?? iterator.currentLineInfo.current,
+      start:
+          structuralStart ??
+          property?.structuralOffset ??
+          property?.span.start ??
+          iterator.currentLineInfo.current,
       indent: keyIndent,
       indentLevel: keyIndentLevel,
     )..updateNodeProperties = property,
@@ -194,10 +199,8 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
       state,
       keyIndentLevel: keyIndentLevel,
       keyIndent: keyIndent,
-      onValue: (implicitValue) => onNextImplicitEntry(
-        implicitKey,
-        implicitValue,
-      ),
+      onValue: (implicitValue) =>
+          onNextImplicitEntry(implicitKey, implicitValue),
       onEntryValue: onNextImplicitEntry,
     ),
   );

@@ -1,7 +1,8 @@
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 
-const _pattern = '# ';
+const _pattern = '#';
 
 /// A comment parsed in a document
 ///
@@ -12,17 +13,19 @@ final class YamlComment implements Comparable<YamlComment> {
   /// Comment with leading `#` stripped off
   final String comment;
 
-  /// Start offset for the comment (inclusive).
-  final RuneSpan commentSpan;
+  /// Comment's span information
+  final NodeSpan commentSpan;
 
   /// Sorting based on position in document
   @override
-  int compareTo(YamlComment other) =>
-      other.commentSpan.end.utfOffset < commentSpan.start.utfOffset
-      ? -1
-      : other.commentSpan.start.utfOffset > commentSpan.end.utfOffset
-      ? 1
-      : 0;
+  int compareTo(YamlComment other) {
+    final otherSpan = other.commentSpan;
+    return otherSpan.nodeEnd.offset < commentSpan.nodeStart.offset
+        ? 1
+        : otherSpan.nodeStart.offset > commentSpan.nodeEnd.offset
+        ? -1
+        : 0;
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -42,7 +45,7 @@ final class YamlComment implements Comparable<YamlComment> {
 }) {
   final buffer = StringBuffer(prepend ?? '');
 
-  final start = iterator.currentLineInfo.current;
+  final span = YamlSourceSpan(iterator.currentLineInfo.current);
 
   // A comment forces us to read the entire line till the end.
   final chunkInfo = iterateAndChunk(
@@ -54,14 +57,14 @@ final class YamlComment implements Comparable<YamlComment> {
   var comment = buffer.toString().trim();
 
   if (comment.startsWith(_pattern)) {
-    comment = comment.replaceFirst(_pattern, '');
+    comment = comment.replaceFirst(_pattern, '').trimLeft();
   }
 
   return (
     onExit: chunkInfo,
     comment: YamlComment(
       comment,
-      commentSpan: (start: start, end: iterator.currentLineInfo.current),
+      commentSpan: span..nodeEnd = iterator.currentLineInfo.current,
     ),
   );
 }

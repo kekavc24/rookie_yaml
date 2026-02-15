@@ -166,7 +166,6 @@ final class ParserState<R> {
     Alias property, {
     required int indentLevel,
     required int indent,
-    required RuneOffset start,
   }) {
     final Alias(:alias, :span) = property;
 
@@ -176,7 +175,7 @@ final class ParserState<R> {
         refResolver: aliasFunction,
         indentLevel: indentLevel,
         indent: indent,
-        start: start,
+        start: span.end,
       );
     }
 
@@ -372,24 +371,33 @@ final class ParserState<R> {
     required NodeStyle mapStyle,
     required int indentLevel,
     required int indent,
-    required RuneOffset start,
-  }) => switch (_defaultMap()) {
-    ObjectFromMap<R, R, R> customMap => MapLikeDelegate.boxed(
-      customMap.onCustomMap(),
-      collectionStyle: mapStyle,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: start,
-      afterMapping: customMap.afterObject<R>(),
-    ),
-    _ => GenericMap(
-      collectionStyle: mapStyle,
-      indentLevel: indentLevel,
-      indent: indent,
-      start: start,
-      mapResolver: collectionBuilder,
-    ),
-  };
+    NodeSpan? keySpan,
+    RuneOffset? start,
+  }) {
+    final mapStart =
+        start ??
+        keySpan!.structuralOffset ??
+        keySpan!.propertySpan?.start ??
+        keySpan!.nodeStart;
+
+    return switch (_defaultMap()) {
+      ObjectFromMap<R, R, R> customMap => MapLikeDelegate.boxed(
+        customMap.onCustomMap(),
+        collectionStyle: mapStyle,
+        indentLevel: indentLevel,
+        indent: indent,
+        start: mapStart,
+        afterMapping: customMap.afterObject<R>(),
+      ),
+      _ => GenericMap(
+        collectionStyle: mapStyle,
+        indentLevel: indentLevel,
+        indent: indent,
+        start: mapStart,
+        mapResolver: collectionBuilder,
+      ),
+    };
+  }
 
   /// Creates a generic sequence delegate.
   SequenceLikeDelegate<R, R> defaultSequenceDelegate({

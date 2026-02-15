@@ -1,7 +1,7 @@
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Callback for creating a [ContentResolver] tag.
@@ -68,7 +68,7 @@ typedef OnCustomScalar<T> = OnObject<T, BytesToScalar<T>>;
 ///
 /// Called only once.
 typedef OnResolvedObject<S, T> =
-    void Function(S style, T object, String? anchor, RuneSpan nodeSpan);
+    void Function(S style, T object, String? anchor, NodeSpan span);
 
 /// Called when a custom object from a [MappingToObject] or [SequenceToObject]
 /// has been parsed completely.

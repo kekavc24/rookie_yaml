@@ -72,8 +72,8 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
       keyIndent: indent,
       keyIndentLevel: indentLevel,
       property: null,
-      onSequence: (seq) =>
-          onSequenceOrBlockNode(seq..start = explicitCharOffset),
+      structuralStart: explicitCharOffset,
+      onSequence: onSequenceOrBlockNode,
       onNextImplicitEntry: maybeOnEntry,
     );
 
@@ -83,8 +83,8 @@ import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
   final (laxIndent: _, :inlineFixedIndent) = indentOfBlockChild(
     indentOrSeparation,
     blockParentIndent: indent,
-    yamlNodeStartOffset: explicitCharOffset.utfOffset,
-    contentOffset: iterator.currentLineInfo.current.utfOffset,
+    yamlNodeStartOffset: explicitCharOffset.offset,
+    contentOffset: iterator.currentLineInfo.current.offset,
   );
 
   final (:parsedNextImplicitKey, :blockInfo) = composeSpecialBlockSequence(
@@ -151,7 +151,7 @@ BlockInfo parseExplicitBlockEntry<Obj>(
       throwWithRangedOffset(
         scanner,
         message: 'Dangling node found when parsing explicit entry',
-        start: key!.endOffset!,
+        start: key!.nodeSpan.nodeEnd,
         end: state.iterator.currentLineInfo.current,
       );
     } else if (keyInfo.exitIndent! < entryIndent) {

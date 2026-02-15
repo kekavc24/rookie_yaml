@@ -128,7 +128,7 @@ R parseCustomScalar<R, Obj>(
 
     delegate
       ..indent = scalarIndent
-      ..updateEndOffset = end;
+      ..nodeSpan.nodeEnd = end;
 
     onComplete();
 
@@ -219,7 +219,7 @@ R parseCustomScalar<R, Obj>(
             iterator,
             message:
                 'Dirty parser state. Failed to parse a custom plain scalar',
-            start: delegate.start,
+            start: delegate.nodeSpan.nodeStart,
             end: iterator.currentLineInfo.current,
           );
         }

@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/scanner/source_iterator.dart' show RuneSpan;
+import 'package:rookie_yaml/src/scanner/span.dart';
 
 part 'collections.dart';
 part 'node_styles.dart';
@@ -56,8 +56,8 @@ sealed class YamlSourceNode extends CompactYamlNode with YamlTreeNode {
   /// Built-in or custom Dart type represented by this object.
   Object? get node;
 
-  /// Start offset (inclusive) and end offset (exclusive) in the source parsed.
-  RuneSpan get nodeSpan;
+  /// Span within a YAML source.
+  NodeSpan get span;
 
   /// Whether the object is an alias.
   bool get isAlias;
@@ -115,7 +115,7 @@ bool yamlSourceNodeDeepEqual(YamlSourceNode thiz, YamlSourceNode that) =>
 /// {@category yaml_nodes}
 /// {@category anchor_alias}
 final class AliasNode extends YamlSourceNode {
-  AliasNode(this.alias, this.node, this.nodeSpan)
+  AliasNode(this.alias, this.node, this.span)
     : assert(alias.isNotEmpty, 'An alias name cannot be empty');
 
   /// Anchor name to [node].
@@ -126,7 +126,7 @@ final class AliasNode extends YamlSourceNode {
   final YamlSourceNode node;
 
   @override
-  final RuneSpan nodeSpan;
+  final NodeSpan span;
 
   @override
   bool get isAlias => true;

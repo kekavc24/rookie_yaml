@@ -14,6 +14,7 @@ import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Throws if an explicit key or block sequence are forced to be inline or their
@@ -179,12 +180,11 @@ BlockNode<Obj> _safeBlockState<Obj>(
       !blockInfo.docMarker.stopIfParsingDoc &&
       (blockInfo.exitIndent == seamlessIndentMarker ||
           iterator.current == comment)) {
+    final indent = skipToParsableChar(iterator, onParseComment: comments.add);
+
     return (
-      blockInfo: (
-        docMarker: blockInfo.docMarker,
-        exitIndent: skipToParsableChar(iterator, onParseComment: comments.add),
-      ),
-      node: node,
+      blockInfo: (docMarker: blockInfo.docMarker, exitIndent: indent),
+      node: nodeParseEnd(node, iterator),
     );
   }
 
@@ -239,7 +239,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
         property: property,
         indentLevel: indentLevel,
         indent: laxBlockIndent,
-        end: iterator.currentLineInfo.start,
+        start: iterator.currentLineInfo.start,
       ),
     );
   } else if (iterator.isEOF) {
@@ -250,7 +250,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
         property: property,
         indentLevel: indentLevel,
         indent: laxBlockIndent,
-        end: iterator.currentLineInfo.current,
+        start: iterator.currentLineInfo.current,
       ),
     );
   } else if (forceInlined && property.isMultiline) {
@@ -334,7 +334,7 @@ BlockNode<Obj> parseBlockNode<Obj>(
                 property: alias,
                 indentLevel: indentLevel,
                 indent: laxBlockIndent,
-                end: alias.span.end,
+                start: alias.span.end,
               ),
               keyOrMapProperty: null,
               indentOnExit: alias.indentOnExit,
@@ -558,7 +558,7 @@ BlockNode<Obj> _ambigousBlockNode<Obj>(
             mapStyle: NodeStyle.block,
             indentLevel: indentLevel,
             indent: fixedInlineIndent,
-            start: parserState.iterator.currentLineInfo.current,
+            start: property.span.start,
           ),
           state: parserState,
         );

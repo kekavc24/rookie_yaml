@@ -7,6 +7,7 @@ import 'package:rookie_yaml/src/parser/document/nodes_by_kind/custom_node.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
@@ -19,43 +20,37 @@ NodeDelegate<Obj> nullBlockNode<Obj>(
   RuneOffset? end,
 }) => emptyBlockNode(
   state,
-  property: ParsedProperty.empty(
-    start,
-    end ?? start,
-    null,
-    spanMultipleLines: false,
-  ),
+  property: null,
   indentLevel: indentLevel,
   indent: indent,
-  end: start,
+  start: start,
+  end: end,
 );
 
 /// Creates a `null` delegate only if [property] is not an [Alias].
 NodeDelegate<Obj> emptyBlockNode<Obj>(
   ParserState<Obj> state, {
-  required ParsedProperty property,
+  required ParsedProperty? property,
   required int indentLevel,
   required int indent,
-  required RuneOffset end,
+  required RuneOffset start,
+  RuneOffset? end,
 }) {
-  final offset = property.span.start;
-
   final node = switch (property) {
     Alias _ => state.referenceAlias(
       property,
       indentLevel: indentLevel,
       indent: indent,
-      start: offset,
     ),
     _ => nullScalarDelegate(
       indentLevel: indentLevel,
       indent: indent,
-      startOffset: offset,
+      startOffset: start,
       resolver: state.scalarFunction,
     ),
   };
 
-  return state.trackAnchor(node..updateEndOffset = end, property);
+  return state.trackAnchor(node..nodeSpan.nodeEnd = end ?? start, property);
 }
 
 /// Parses a [Scalar].

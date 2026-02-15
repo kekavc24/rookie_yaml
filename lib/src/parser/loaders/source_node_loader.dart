@@ -11,7 +11,7 @@ final class SourceNodeTriggers extends CustomTriggers {
           onParsed: (style, object, anchor, nodeSpan) => (object as Mapping)
             ..nodeStyle = style
             ..anchor = anchor
-            ..nodeSpan = nodeSpan,
+            ..span = nodeSpan,
         )
         as ObjectFromMap<K, V, M>;
   }
@@ -23,7 +23,7 @@ final class SourceNodeTriggers extends CustomTriggers {
           onParsed: (style, object, anchor, nodeSpan) => (object as Sequence)
             ..nodeStyle = style
             ..anchor = anchor
-            ..nodeSpan = nodeSpan,
+            ..span = nodeSpan,
         )
         as ObjectFromIterable<E, S>;
   }
@@ -45,7 +45,7 @@ List<YamlDocument> _loadYamlDocuments(
     scalarFunction: (inferred, style, tag, anchor, span) => Scalar(
       inferred,
       scalarStyle: style,
-      nodeSpan: span,
+      span: span,
       tag: tag,
       anchor: anchor,
     ),

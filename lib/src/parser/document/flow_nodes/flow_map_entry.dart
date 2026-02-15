@@ -5,6 +5,7 @@ import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// A flow map entry.
@@ -22,15 +23,17 @@ NodeDelegate<Obj> parseExplicitAsFlowMap<Obj>(
   indentLevel: indentLevel,
   minIndent: minIndent,
   forceInline: forceInline,
-  onExplicitKey: (indicatorOffset, key, value) {
-    return state.defaultMapDelegate(
+  onExplicitKey: (_, key, value) {
+    return delegateWithOptimalEnd(
+      state.defaultMapDelegate(
         mapStyle: NodeStyle.flow,
         indentLevel: indentLevel,
         indent: minIndent,
-        start: indicatorOffset,
-      )
-      ..accept(key.parsed(), value?.parsed())
-      ..updateEndOffset = value?.endOffset ?? key.endOffset;
+        keySpan: key.nodeSpan,
+      )..accept(key.parsed(), value?.parsed()),
+      key.nodeSpan,
+      value?.nodeSpan,
+    );
   },
 );
 
@@ -87,7 +90,23 @@ R _parseExplicitFlow<R, Obj>(
     structuralOffset: keyStart,
   );
 
-  key.updateEndOffset = iterator.currentLineInfo.current;
+  // Value must be parsed in a safe state
+  if (!nextSafeLineInFlow(
+    iterator,
+    minIndent: minIndent,
+    forceInline: forceInline,
+    onParseComment: comments.add,
+  )) {
+    throwWithSingleOffset(
+      iterator,
+      message:
+          'Expected a next flow entry indicator "," or a map value indicator'
+          ' ":" or a terminating delimiter "}"',
+      offset: iterator.currentLineInfo.current,
+    );
+  }
+
+  key.nodeSpan.parsingEnd = iterator.currentLineInfo.current;
   state.onParseMapKey(key.parsed());
 
   NodeDelegate<Obj>? value;
@@ -106,7 +125,7 @@ R _parseExplicitFlow<R, Obj>(
       isImplicit: false,
       forceInline: forceInline,
       collectionDelimiter: mappingEnd,
-      structuralOffset: key.endOffset,
+      structuralOffset: key.nodeSpan.parsingEnd,
     );
   }
 
@@ -158,7 +177,7 @@ FlowMapEntry<Obj> parseImplicitEntry<Obj>(
   }
 
   // Move end offset ahead for key
-  parsedKey.updateEndOffset = iterator.currentLineInfo.current;
+  parsedKey.nodeSpan.nodeEnd = iterator.currentLineInfo.current;
   state.onParseMapKey(parsedKey.parsed());
 
   if (iterator.current case flowEntryEnd || mappingEnd) {
@@ -190,7 +209,7 @@ FlowMapEntry<Obj> parseImplicitEntry<Obj>(
       isImplicit: false,
       forceInline: forceInline,
       collectionDelimiter: mappingEnd,
-      structuralOffset: parsedKey.endOffset,
+      structuralOffset: parsedKey.nodeSpan.nodeEnd,
     ),
   );
 }

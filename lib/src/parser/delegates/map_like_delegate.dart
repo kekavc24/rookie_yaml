@@ -93,7 +93,7 @@ final class _BoxedMap<K, V, T> extends MapLikeDelegate<K, V, T>
       collectionStyle,
       type,
       _anchor,
-      nodeSpan(),
+      nodeSpan,
     ),
   );
 
@@ -142,6 +142,6 @@ final class GenericMap<I> extends MapLikeDelegate<I, I, I>
     collectionStyle,
     _tag ?? _defaultTo(mappingTag),
     _anchor,
-    (start: start, end: _ensureEndIsSet()),
+    nodeSpan,
   );
 }

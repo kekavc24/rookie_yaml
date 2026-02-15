@@ -11,6 +11,7 @@ import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a valid block node matching the [event].
@@ -33,7 +34,7 @@ BlockNode<Obj> parseBlockWildCard<Obj>(
       indent: laxIndent,
       startOffset: state.iterator.currentLineInfo.current,
       resolver: state.scalarFunction,
-    )..updateEndOffset = state.iterator.currentLineInfo.current,
+    )..nodeSpan.nodeEnd = state.iterator.currentLineInfo.current,
     keyOrMapProperty: property,
     indentOnExit: property.indentOnExit,
     documentMarker: DocumentMarker.none,

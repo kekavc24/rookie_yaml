@@ -7,8 +7,8 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
   NodeDelegate({
     required this.indentLevel,
     required this.indent,
-    required this.start,
-  });
+    required RuneOffset start,
+  }) : nodeSpan = YamlSourceSpan(start);
 
   /// Level in the `YAML` tree. Must be equal or less than [indent].
   int indentLevel;
@@ -16,14 +16,8 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
   /// Indent of the current node being parsed.
   int indent;
 
-  /// Start offset.
-  RuneOffset start;
-
-  /// Exclusive end offset.
-  RuneOffset? _end;
-
-  /// Node's end offset. Always `null` until a node has been parsed completely.
-  RuneOffset? get endOffset => _end;
+  /// Span for the node represented by this delegate.
+  final YamlSourceSpan nodeSpan;
 
   /// Resolved tag
   ResolvedTag? _tag;
@@ -35,37 +29,19 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
   String? _alias;
 
   /// Whether a line break was encountered while parsing.
-  bool get encounteredLineBreak =>
-      _end != null && start.lineIndex != _end!.lineIndex;
+  bool encounteredLineBreak() {
+    final start =
+        nodeSpan.structuralOffset ??
+        nodeSpan.propertySpan?.start ??
+        nodeSpan.nodeStart;
+
+    return start.lineIndex != nodeSpan.nodeEnd.lineIndex;
+  }
 
   /// Whether any properties are present
   @override
   bool get hasProperty =>
       super.hasProperty || _tag != null || _anchor != null || _alias != null;
-
-  /// Updates the end offset of a node. The [end] must be equal to or greater
-  /// than the [start].
-  set updateEndOffset(RuneOffset? end) {
-    if (end == null) return;
-
-    final startOffset = start.utfOffset;
-    final currentOffset = end.utfOffset;
-
-    if (currentOffset < startOffset) {
-      throw StateError(
-        [
-          'Invalid end offset for delegate [$runtimeType] with:',
-          'Start offset: $startOffset',
-          'Current end offset: ${_end?.utfOffset}',
-          'End offset provided: $currentOffset',
-        ].join('\n\t'),
-      );
-    }
-
-    if (_end == null || _end!.utfOffset < currentOffset) {
-      _end = end;
-    }
-  }
 
   /// Updates a node's properties. Throws an [ArgumentError] if this delegate
   /// has a tag, alias or anchor.
@@ -78,7 +54,9 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
       );
     }
 
-    start = property.structuralOffset ?? property.span.start;
+    nodeSpan
+      ..structuralOffset = property.structuralOffset
+      ..propertySpan = property.span;
     _property = property;
   }
 
@@ -90,21 +68,6 @@ sealed class NodeDelegate<T> extends ObjectDelegate<T> {
 
   @override
   T parsed();
-
-  /// Throws if the end offset was never set. Otherwise, returns the non-null
-  /// [endOffset].
-  RuneOffset _ensureEndIsSet() {
-    if (_end == null) {
-      throw StateError(
-        '[$runtimeType] with start offset $start has no valid end offset',
-      );
-    }
-
-    return _end!;
-  }
-
-  /// Span for this node.
-  RuneSpan nodeSpan() => (start: start, end: _ensureEndIsSet());
 }
 
 /// Represents a delegate that resolves to an [AliasNode]
@@ -121,7 +84,7 @@ final class AliasDelegate<Ref> extends NodeDelegate<Ref>
   /// Object referenced as an alias
   final Ref _reference;
 
-  /// A dynamic resolver function assigned at runtime by the [DocumentParser].
+  /// A dynamic resolver function assigned at runtime by the parser.
   final AliasFunction<Ref> refResolver;
 
   @override
@@ -129,8 +92,5 @@ final class AliasDelegate<Ref> extends NodeDelegate<Ref>
       throw FormatException('An alias cannot have a "${tag.suffix}" kind');
 
   @override
-  Ref _resolveNode() => refResolver(_alias ?? '', _reference, (
-    start: start,
-    end: _ensureEndIsSet(),
-  ));
+  Ref _resolveNode() => refResolver(_alias ?? '', _reference, nodeSpan);
 }

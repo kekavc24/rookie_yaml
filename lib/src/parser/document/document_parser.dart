@@ -272,7 +272,7 @@ final class DocumentParser<Doc, R> {
 
       final sourceInfo = iterator.currentLineInfo;
 
-      root.updateEndOffset = docMarker.stopIfParsingDoc
+      root.nodeSpan.parsingEnd = docMarker.stopIfParsingDoc
           ? sourceInfo.start
           : sourceInfo.current;
     }

@@ -2,6 +2,7 @@ import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
@@ -111,10 +112,14 @@ bool nextSafeLineInFlow(
 /// Whether the next flow sequence entry or flow map entry can be parsed.
 bool continueToNextEntry(
   SourceIterator iterator, {
+  required YamlSourceSpan lastEntrySpan,
   required int minIndent,
   required bool forceInline,
   required void Function(YamlComment comment) onParseComment,
 }) {
+  void updateEntry() =>
+      lastEntrySpan.parsingEnd = iterator.currentLineInfo.current;
+
   nextSafeLineInFlow(
     iterator,
     minIndent: minIndent,
@@ -123,16 +128,19 @@ bool continueToNextEntry(
   );
 
   if (iterator.current != flowEntryEnd) {
+    updateEntry();
     return false;
   }
 
   iterator.nextChar();
-  return nextSafeLineInFlow(
+  final goToNext = nextSafeLineInFlow(
     iterator,
     minIndent: minIndent,
     forceInline: forceInline,
     onParseComment: onParseComment,
   );
+  updateEntry();
+  return goToNext;
 }
 
 /// Whether a flow key was "json-like", that is, a single/double plain scalar
@@ -211,7 +219,7 @@ D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
     );
   }
 
-  flowCollection.updateEndOffset = offset;
+  flowCollection.nodeSpan.nodeEnd = offset;
   iterator.nextChar();
   return flowCollection;
 }
@@ -295,7 +303,7 @@ bool exitBlockCollection<Obj, T extends NodeDelegate<Obj>>(
 }) {
   final lineInfo = iterator.currentLineInfo;
 
-  void updateEnd(RuneOffset end) => collection.updateEndOffset = end;
+  void updateEnd(RuneOffset end) => collection.nodeSpan.parsingEnd = end;
 
   if (iterator.isEOF || exitIndent == null) {
     updateEnd(lineInfo.current);
@@ -315,4 +323,33 @@ bool exitBlockCollection<Obj, T extends NodeDelegate<Obj>>(
 
   updateEnd(lineInfo.start);
   return exitIndent != nodeIndent;
+}
+
+/// Terminates a block [node] that is a collection.
+T blockEnd<Obj, T extends NodeDelegate<Obj>>(T node) {
+  final span = node.nodeSpan;
+  span.nodeEnd = span.parsingEnd ?? span.nodeStart;
+  return node;
+}
+
+/// Updates the end offset of a block [node] that is a collection using the
+/// [span] provided.
+///
+/// If the [node] is a block map, a value may override the key [span] with a
+/// custom [spanOverride] that extends the span of the map further.
+T delegateWithOptimalEnd<Obj, T extends NodeDelegate<Obj>>(
+  T node,
+  NodeSpan span, [
+  NodeSpan? spanOverride,
+]) => node..nodeSpan.parsingEnd = spanOverride?.end() ?? span.end();
+
+/// Sets the end offset of a [node] whose end offset may have changed after
+/// various parser actions.
+T nodeParseEnd<Obj, T extends NodeDelegate<Obj>>(
+  T node,
+  SourceIterator iterator,
+) {
+  final lineInfo = iterator.currentLineInfo;
+  return node
+    ..nodeSpan.parsingEnd = iterator.isEOF ? lineInfo.current : lineInfo.start;
 }

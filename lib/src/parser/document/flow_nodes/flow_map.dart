@@ -5,6 +5,7 @@ import 'package:rookie_yaml/src/parser/document/flow_nodes/flow_map_entry.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a flow map.
@@ -19,6 +20,14 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
   ObjectFromMap<Obj, Obj, Obj>? asCustomMap,
 }) {
   final ParserState(:iterator, :comments, :onMapDuplicate) = state;
+
+  bool goToNext(YamlSourceSpan entrySpan) => continueToNextEntry(
+    iterator,
+    lastEntrySpan: entrySpan,
+    minIndent: minIndent,
+    forceInline: forceInline,
+    onParseComment: comments.add,
+  );
 
   final map = initFlowCollection(
     iterator,
@@ -74,20 +83,13 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
 
     if (!map.accept(key.parsed(), value?.parsed())) {
       onMapDuplicate(
-        key.start,
-        value?.start ?? iterator.currentLineInfo.current,
+        key.nodeSpan.nodeStart,
+        value?.nodeSpan.nodeStart ?? iterator.currentLineInfo.current,
         'A flow map cannot contain duplicate entries by the same key',
       );
     }
 
-    if (!continueToNextEntry(
-      iterator,
-      minIndent: minIndent,
-      forceInline: forceInline,
-      onParseComment: comments.add,
-    )) {
-      break;
-    }
+    if (!goToNext(value?.nodeSpan ?? key.nodeSpan)) break;
   } while (!iterator.isEOF);
 
   return terminateFlowCollection(iterator, map, mappingEnd);

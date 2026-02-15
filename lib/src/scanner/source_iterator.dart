@@ -4,16 +4,9 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:rookie_yaml/src/dumping/string_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 
 part 'error_utils.dart';
-
-/// Custom offset information.
-///
-/// `lineIndex` - represents the zero-based line index in the source string.<br>
-/// `columnIndex` - represents the zero-based column index within a line.<br>
-/// `utfIndex` - represents the zero-based index in the source string read as
-/// a sequence of utf16 characters rather than utf8.
-typedef RuneOffset = ({int lineIndex, int columnIndex, int utfOffset});
 
 /// Number of lines from [start] to [end]. This assumes the [end] is exclusive
 /// and its line is ignored.
@@ -36,10 +29,7 @@ int getLineCount(RuneOffset start, RuneOffset end) =>
 
 /// Returns start [RuneOffset] position of a line.
 RuneOffset _getLineStart({int lineIndex = 0, int currentOffset = 0}) =>
-    (lineIndex: lineIndex, columnIndex: 0, utfOffset: currentOffset);
-
-/// Represents a span of chunk within a source string
-typedef RuneSpan = ({RuneOffset start, RuneOffset end});
+    (lineIndex: lineIndex, columnIndex: 0, offset: currentOffset);
 
 /// Represents the active line's span information. This is intentionally
 /// different from [RuneSpan] because we prefer to iterate the source string
@@ -143,7 +133,7 @@ abstract base class SourceIterator {
   }
 }
 
-/// A [SourceIterator] that iterates the utf16 unicode points of a source
+/// A [SourceIterator] that iterates the utf16/utf32 unicode points of a source
 /// string/file.
 final class UnicodeIterator extends SourceIterator {
   UnicodeIterator._(this._iterator) {
@@ -182,8 +172,8 @@ final class UnicodeIterator extends SourceIterator {
   /// [SourceLine]s lazily buffered while iterating.
   final _lines = <SourceLine>[];
 
-  /// UTF-16 unicode characters buffered for single [Line]. Always handed off
-  /// without an additional copy operation.
+  /// UTF-16 unicode characters buffered for single [SourceLine]. Always handed
+  /// off without an additional copy operation.
   var _bufferedRunes = <int>[];
 
   /// Whether the [_iterator] has a character when `_iterator.current` is
@@ -290,7 +280,7 @@ final class UnicodeIterator extends SourceIterator {
       columnIndex: _hasMoreLines
           ? _columnIndex
           : max(0, _lines.last.chars.length - 1),
-      utfOffset: _graphemeIndex,
+      offset: _graphemeIndex,
     ),
   );
 
@@ -322,7 +312,7 @@ final class UnicodeIterator extends SourceIterator {
   void _markLineAsComplete() {
     _lines.add(
       SourceLine(
-        _lineStartOffset.utfOffset,
+        _lineStartOffset.offset,
         _graphemeIndex,
         chars: UnmodifiableListView(_bufferedRunes),
       ),

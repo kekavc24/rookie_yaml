@@ -28,7 +28,6 @@ BlockInfo parseImplicitBlockEntry<Obj>(
   );
 
   final iterator = state.iterator;
-  state.onParseMapKey(key.parsed());
 
   // We parsed the directive end "---" or document end "..." chars. We have no
   // key. We reached the end of the doc and parsed the key as that char
@@ -51,6 +50,9 @@ BlockInfo parseImplicitBlockEntry<Obj>(
     iterator.nextChar();
   }
 
+  key.nodeSpan.nodeEnd = iterator.currentLineInfo.current;
+  state.onParseMapKey(key.parsed());
+
   // Value's node info acts as this entire entry's info
   return parseImplicitValue(
     state,
@@ -65,8 +67,8 @@ BlockInfo parseImplicitBlockEntry<Obj>(
 ///
 /// This standalone function allows other functions that may parse block nodes
 /// to parse the first entry without necessarily explicitly calling
-/// [parseImplicitBlockEntry] which allows a block map to be loosely composed
-/// without relying on [parseBlockMap].
+/// [parseImplicitBlockEntry]. This allows a block map to be loosely composed
+/// without relying on `parseBlockMap`.
 BlockInfo parseImplicitValue<Obj>(
   ParserState<Obj> state, {
   required int keyIndentLevel,
@@ -83,7 +85,7 @@ BlockInfo parseImplicitValue<Obj>(
   if (eventCallback() != BlockCollectionEvent.startEntryValue) {
     throwWithSingleOffset(
       iterator,
-      message: 'Expected to find ":" before the value',
+      message: 'Expected to find ":" after the key and before its value',
       offset: indicatorOffset,
     );
   }
@@ -113,7 +115,7 @@ BlockInfo parseImplicitValue<Obj>(
             startOffset: indicatorOffset,
             resolver: state.scalarFunction,
           )
-          ..updateEndOffset = iterator.isEOF
+          ..nodeSpan.nodeEnd = iterator.isEOF
               ? iterator.currentLineInfo.current
               : iterator.currentLineInfo.start,
       );
@@ -124,8 +126,9 @@ BlockInfo parseImplicitValue<Obj>(
       state,
       keyIndent: keyIndent,
       keyIndentLevel: keyIndentLevel,
+      structuralStart: indicatorOffset,
       property: null,
-      onSequence: (seq) => onValue(seq..start = indicatorOffset),
+      onSequence: onValue,
       onNextImplicitEntry: onEntryValue,
     ).blockInfo;
   } else if (eventCallback()

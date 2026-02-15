@@ -12,6 +12,7 @@ import 'package:rookie_yaml/src/parser/document/scalars/scalars.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// Parses a flow scalar based on the current scalar [event].
@@ -106,15 +107,11 @@ NodeDelegate<Obj> parseFlowNode<Obj>(
     switch (property) {
       case Alias alias:
         {
-          final (:start, :end) = alias.span;
           return state.referenceAlias(
-              alias,
-              indentLevel: currentIndentLevel,
-              indent: minIndent,
-              start: start,
-            )
-            ..updateEndOffset = end
-            ..updateNodeProperties = alias;
+            alias,
+            indentLevel: currentIndentLevel,
+            indent: minIndent,
+          )..updateNodeProperties = alias;
         }
 
       default:
@@ -213,7 +210,7 @@ NodeDelegate<Obj> _flowNodeOfKind<Obj>(
           indent: minIndent,
           startOffset: start,
           resolver: parserState.scalarFunction,
-        )..updateEndOffset = end,
+        )..nodeSpan.nodeEnd = end,
       };
     },
     defaultFallback: () => _ambigousFlowNode(
@@ -303,7 +300,7 @@ NodeDelegate<Obj> _ambigousFlowNode<Obj>(
           indent: minIndent,
           startOffset: property.span.start,
           resolver: parserState.scalarFunction,
-        )..updateEndOffset = parserState.iterator.currentLineInfo.current;
+        )..nodeSpan.nodeEnd = parserState.iterator.currentLineInfo.current;
       }
   }
 }

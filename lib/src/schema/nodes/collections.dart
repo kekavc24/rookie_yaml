@@ -30,7 +30,7 @@ final class Mapping extends UnmodifiableMapView<Object?, Object?>
   late final String? anchor;
 
   @override
-  late final RuneSpan nodeSpan;
+  late final NodeSpan span;
 
   @override
   bool get isTransversable => true;
@@ -88,7 +88,7 @@ final class Sequence extends UnmodifiableListView<Object?>
   late final String? anchor;
 
   @override
-  late final RuneSpan nodeSpan;
+  late final NodeSpan span;
 
   @override
   bool get isTransversable => true;

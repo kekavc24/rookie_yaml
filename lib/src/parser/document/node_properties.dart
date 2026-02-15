@@ -6,6 +6,7 @@ import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// A node's parsed property.
@@ -20,7 +21,7 @@ sealed class ParsedProperty {
     required this.kind,
     this.structuralOffset,
   }) : assert(
-         end.utfOffset >= start.utfOffset,
+         end.offset >= start.offset,
          'Invalid start and end offset to a [ParsedProperty]',
        ),
        span = (start: start, end: end),

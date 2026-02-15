@@ -110,10 +110,7 @@ _SequenceState _sequenceNodeOrMarker(
             : iterator.currentLineInfo.start,
       );
 
-      sequence
-        ..accept(empty.parsed())
-        ..updateEndOffset = empty.endOffset;
-
+      delegateWithOptimalEnd(sequence..accept(empty.parsed()), empty.nodeSpan);
       if (iterator.isEOF || indentOrSeparation < sequenceIndent) {
         return (
           greedyOnPlain: null,
@@ -122,7 +119,7 @@ _SequenceState _sequenceNodeOrMarker(
               docMarker: DocumentMarker.none,
               exitIndent: indentOrSeparation,
             ),
-            node: sequence as NodeDelegate<Obj>,
+            node: blockEnd(sequence),
           ),
         );
       }
@@ -130,8 +127,8 @@ _SequenceState _sequenceNodeOrMarker(
       final (:laxIndent, :inlineFixedIndent) = indentOfBlockChild(
         indentOrSeparation,
         blockParentIndent: sequenceIndent,
-        yamlNodeStartOffset: indicatorOffset.utfOffset,
-        contentOffset: iterator.currentLineInfo.current.utfOffset,
+        yamlNodeStartOffset: indicatorOffset.offset,
+        contentOffset: iterator.currentLineInfo.current.offset,
       );
 
       final (:blockInfo, :node) = parseBlockNode(
@@ -146,12 +143,8 @@ _SequenceState _sequenceNodeOrMarker(
         structuralOffset: indicatorOffset,
       );
 
-      sequence
-        ..accept(node.parsed())
-        ..updateEndOffset = node.endOffset;
-
       if (exitBlockCollection(
-        sequence,
+        delegateWithOptimalEnd(sequence..accept(node.parsed()), node.nodeSpan),
         iterator: iterator,
         nodeIndent: sequenceIndent,
         marker: blockInfo.docMarker,
@@ -159,7 +152,7 @@ _SequenceState _sequenceNodeOrMarker(
       )) {
         return (
           greedyOnPlain: null,
-          sequence: (blockInfo: blockInfo, node: sequence as NodeDelegate<Obj>),
+          sequence: (blockInfo: blockInfo, node: blockEnd(sequence)),
         );
       }
     }
@@ -179,7 +172,7 @@ _SequenceState _sequenceNodeOrMarker(
             docMarker: DocumentMarker.none,
             exitIndent: sequenceIndent,
           ),
-          node: sequence as NodeDelegate<Obj>,
+          node: blockEnd(sequence),
         ),
       );
     } else if (marker != null) {
@@ -188,7 +181,7 @@ _SequenceState _sequenceNodeOrMarker(
         greedyOnPlain: null,
         sequence: (
           blockInfo: (docMarker: marker, exitIndent: null),
-          node: sequence as NodeDelegate<Obj>,
+          node: blockEnd(sequence),
         ),
       );
     }
@@ -196,11 +189,6 @@ _SequenceState _sequenceNodeOrMarker(
 
   return (
     greedyOnPlain: null,
-    sequence: (
-      blockInfo: emptyScanner,
-      node:
-          (sequence..updateEndOffset = iterator.currentLineInfo.current)
-              as NodeDelegate<Obj>,
-    ),
+    sequence: (blockInfo: emptyScanner, node: blockEnd(sequence)),
   );
 }

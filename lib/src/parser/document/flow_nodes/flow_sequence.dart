@@ -7,6 +7,7 @@ import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Parses a flow sequence entry using the current parser [state].
@@ -43,6 +44,7 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
 
   // Track if we switched lines
   final lineIndex = iterator.currentLineInfo.current.lineIndex;
+  final elementSpan = keyOrElement.nodeSpan;
 
   // Normally a list is a wildcard. We must assume that we parsed
   // an implicit key unless we never see ":". Encountering a
@@ -54,16 +56,18 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
         onParseComment: comments.add,
       ) ||
       (iterator.currentLineInfo.current.lineIndex != lineIndex) ||
-      keyOrElement.encounteredLineBreak ||
+      keyOrElement.encounteredLineBreak() ||
       inferNextEvent(
             iterator,
             isBlockContext: false,
             lastKeyWasJsonLike: keyIsJsonLike(keyOrElement),
           ) !=
           FlowCollectionEvent.startEntryValue) {
+    elementSpan.parsingEnd = iterator.currentLineInfo.current;
     return keyOrElement;
   }
 
+  elementSpan.parsingEnd = iterator.currentLineInfo.current;
   iterator.nextChar();
   state.onParseMapKey(keyOrElement.parsed());
 
@@ -77,17 +81,15 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
     collectionDelimiter: flowSequenceEnd,
   );
 
-  final map =
-      state.defaultMapDelegate(
-          mapStyle: NodeStyle.flow,
-          indentLevel: indentLevel,
-          indent: minIndent,
-          start: keyOrElement.start,
-        )
-        ..accept(keyOrElement.parsed(), value.parsed())
-        ..updateEndOffset = value.endOffset;
-
-  return map as NodeDelegate<Obj>;
+  return delegateWithOptimalEnd(
+    state.defaultMapDelegate(
+      mapStyle: NodeStyle.flow,
+      indentLevel: indentLevel,
+      indent: minIndent,
+      keySpan: elementSpan,
+    )..accept(keyOrElement.parsed(), value.parsed()),
+    value.nodeSpan,
+  );
 }
 
 /// Parses a flow sequence.
@@ -103,6 +105,14 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
   ObjectFromIterable<Obj, Obj>? asCustomList,
 }) {
   final ParserState(:iterator, :comments, :onMapDuplicate) = state;
+
+  bool goToNext(YamlSourceSpan entrySpan) => continueToNextEntry(
+    iterator,
+    lastEntrySpan: entrySpan,
+    minIndent: minIndent,
+    forceInline: forceInline,
+    onParseComment: comments.add,
+  );
 
   final sequence = initFlowCollection(
     iterator,
@@ -146,15 +156,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
     );
 
     sequence.accept(entry.parsed());
-
-    if (!continueToNextEntry(
-      iterator,
-      minIndent: minIndent,
-      forceInline: forceInline,
-      onParseComment: comments.add,
-    )) {
-      break;
-    }
+    if (!goToNext(entry.nodeSpan)) break;
   } while (!iterator.isEOF);
 
   return terminateFlowCollection(iterator, sequence, flowSequenceEnd);

@@ -11,7 +11,7 @@ final class Scalar<T> extends YamlSourceNode {
   Scalar(
     this._type, {
     required this.scalarStyle,
-    required this.nodeSpan,
+    required this.span,
     required this.anchor,
     required this.tag,
   });
@@ -24,7 +24,7 @@ final class Scalar<T> extends YamlSourceNode {
   final ScalarStyle scalarStyle;
 
   @override
-  final RuneSpan nodeSpan;
+  final NodeSpan span;
 
   @override
   final String? anchor;

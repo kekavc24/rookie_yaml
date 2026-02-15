@@ -92,7 +92,7 @@ final class _BoxedSequence<E, T> extends SequenceLikeDelegate<E, T>
       collectionStyle,
       type,
       _anchor,
-      nodeSpan(),
+      nodeSpan,
     ),
   );
 }
@@ -179,6 +179,6 @@ final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
     collectionStyle,
     _tag ?? _defaultTo(_iterable is Set ? setTag : sequenceTag),
     _anchor,
-    (start: start, end: _ensureEndIsSet()),
+    nodeSpan,
   );
 }

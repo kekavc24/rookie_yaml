@@ -7,6 +7,7 @@ import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/nodes_by_kind/node_kind.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 
@@ -37,7 +38,7 @@ typedef YamlObjectBuilder<S, I, O> =
       S objectStyle,
       ResolvedTag? tag,
       String? anchor,
-      RuneSpan nodeSpan,
+      NodeSpan nodeSpan,
     );
 
 /// A constructor for collection-like builders.
@@ -50,7 +51,7 @@ typedef ScalarFunction<T> =
 
 /// A builder function for an [Alias] or any referenced Dart-built in type.
 typedef AliasFunction<Ref> =
-    Ref Function(String alias, Ref reference, RuneSpan nodeSpan);
+    Ref Function(String alias, Ref reference, NodeSpan nodeSpan);
 
 /// A class that represent a generic node parsed from a YAML source string.
 sealed class ObjectDelegate<T> {

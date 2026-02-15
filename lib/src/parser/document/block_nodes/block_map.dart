@@ -18,13 +18,13 @@ void _addMapEntry<Obj>(
 ) {
   if (!map.accept(key.parsed(), value?.parsed())) {
     handler(
-      key.start,
-      value?.endOffset ?? key.endOffset!,
+      key.nodeSpan.nodeStart,
+      value?.nodeSpan.nodeEnd ?? key.nodeSpan.nodeEnd,
       'A block map cannot contain duplicate entries by the same key',
     );
   }
 
-  map.updateEndOffset = value?.endOffset ?? key.endOffset!;
+  delegateWithOptimalEnd(map, key.nodeSpan, value?.nodeSpan);
 }
 
 /// Attempts to compose and parse a block map using the [keyOrNode] as the
@@ -56,16 +56,14 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
       documentMarker.stopIfParsingDoc ||
       iterator.isEOF ||
       keyIsBlock ||
-      keyOrNode.encounteredLineBreak) {
-    state.trackAnchor(keyOrNode, keyOrMapProperty);
+      keyOrNode.encounteredLineBreak()) {
+    state.trackAnchor(nodeParseEnd(keyOrNode, iterator), keyOrMapProperty);
 
     return (
       blockInfo: (docMarker: documentMarker, exitIndent: indentOnExit),
       node: keyOrNode,
     );
-  }
-
-  if (iterator.current != mappingValue) {
+  } else if (iterator.current != mappingValue) {
     final indentOrSeparation = skipToParsableChar(
       iterator,
       onParseComment: comments.add,
@@ -75,7 +73,7 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
     if (iterator.isEOF ||
         indentOrSeparation != null ||
         inferBlockEvent(iterator) != BlockCollectionEvent.startEntryValue) {
-      state.trackAnchor(keyOrNode, keyOrMapProperty);
+      state.trackAnchor(nodeParseEnd(keyOrNode, iterator), keyOrMapProperty);
       return (
         blockInfo: (exitIndent: indentOrSeparation, docMarker: documentMarker),
         node: keyOrNode,
@@ -89,10 +87,7 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
 
   return composeAndParseBlockMap(
     state,
-    key: state.trackAnchor(
-      keyOrNode..updateEndOffset = iterator.currentLineInfo.current,
-      keyProp,
-    ),
+    key: state.trackAnchor(keyOrNode, keyProp),
     mapProperty: mapProp,
     fixedMapIndent: composedMapIndent,
   );
@@ -111,7 +106,6 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
   required int fixedMapIndent,
 }) {
   final iterator = state.iterator;
-  final NodeDelegate(:indent, :start) = key;
 
   final (onMapDuplicate, map) = (
     state.onMapDuplicate,
@@ -119,7 +113,7 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
       mapStyle: NodeStyle.block,
       indentLevel: key.indentLevel,
       indent: fixedMapIndent,
-      start: start,
+      keySpan: key.nodeSpan,
     ),
   );
 
@@ -148,7 +142,7 @@ BlockNode<Obj> composeAndParseBlockMap<Obj>(
   )) {
     return (
       blockInfo: blockInfo,
-      node: state.trackAnchor(map, mapProperty) as NodeDelegate<Obj>,
+      node: state.trackAnchor(blockEnd(map), mapProperty),
     );
   }
 
@@ -196,9 +190,9 @@ BlockNode<Obj> parseBlockMap<Obj>(
       marker: blockInfo.docMarker,
       exitIndent: blockInfo.exitIndent,
     )) {
-      return (blockInfo: blockInfo, node: map as NodeDelegate<Obj>);
+      return (blockInfo: blockInfo, node: blockEnd(map));
     }
   }
 
-  return (blockInfo: emptyScanner, node: map as NodeDelegate<Obj>);
+  return (blockInfo: emptyScanner, node: blockEnd(map));
 }
