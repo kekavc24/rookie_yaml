@@ -537,8 +537,7 @@ key: value
 
     test('Invalid map: Block variant', () {
       check(() => bootstrapDocParser('!!map value')).throwsParserException(
-        'Expected an (implied) block map with property '
-        '"!<tag:yaml.org,2002:map>"',
+        'Expected to find ":" after the key and before its value',
       );
     });
   });

@@ -543,7 +543,9 @@ key:
 - value
 ---not sequence
 '''),
-      ).throwsParserException('Expected to find ":" before the value');
+      ).throwsParserException(
+        'Expected to find ":" after the key and before its value',
+      );
     });
   });
 }

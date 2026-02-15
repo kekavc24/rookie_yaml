@@ -7,6 +7,7 @@ import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_schema.dart';
@@ -159,9 +160,6 @@ final class ParserState<R> {
 
   /// Returns an [AliasDelegate] if [alias] has a corresponding anchor.
   /// Otherwise, throws.
-  ///
-  /// Consider using [nullOrAlias] or [aliasKeyOrNull] depending on the
-  /// context which are lenient.
   AliasDelegate<R> referenceAlias(
     Alias property, {
     required int indentLevel,
@@ -185,48 +183,6 @@ final class ParserState<R> {
       start: span.start,
       end: span.end,
     );
-  }
-
-  /// Creates a [NodeDelegate] if the node's [property] is not empty:
-  ///   1. [AliasDelegate] for an alias.
-  ///   2. [EfficientScalarDelegate] wrapping `null` for tag/anchor.
-  T? nullOrAlias<T extends NodeDelegate<R>>(
-    ParsedProperty property, {
-    required int indentLevel,
-    required int indent,
-    required RuneOffset start,
-    required RuneOffset end,
-  }) {
-    NodeDelegate<R>? node;
-
-    switch (property) {
-      case Alias alias:
-        {
-          node = referenceAlias(
-            alias,
-            indentLevel: indentLevel,
-            indent: indent,
-            start: start,
-          )..updateNodeProperties = alias;
-        }
-
-      case NodeProperty present:
-        {
-          node = nullScalarDelegate(
-            indentLevel: indentLevel,
-            indent: indent,
-            startOffset: start,
-            resolver: scalarFunction,
-          );
-
-          trackAnchor(node, present);
-        }
-
-      default:
-        break;
-    }
-
-    return node as T?;
   }
 
   /// Resets the parser's internal state variables before a new [YamlDocument]

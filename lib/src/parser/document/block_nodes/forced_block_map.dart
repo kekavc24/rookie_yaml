@@ -2,6 +2,7 @@ import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_map.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_properties.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
@@ -48,24 +49,56 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
       state: state,
     );
   } else {
-    // Parse as a wildcard but expect it to degenerate to a block map since we
-    // cannot determine this at the current stack level.
-    nodeInfo = parseBlockNode(
-      state,
-      indentLevel: indentLevel,
+    switch (event) {
+      case FlowCollectionEvent():
+        {
+          nodeInfo = parseFlowNodeInBlock(
+            state,
+            event: event,
+            indentLevel: indentLevel,
+            indent: laxIndent,
+            isInline: isInline,
+            composeImplicitMap: composeImplicitMap,
+            composedMapIndent: inlineFixedIndent,
+            flowProperty: property,
+          );
+        }
+      case NodePropertyEvent():
+        {
+          nodeInfo = parseBlockNode(
+            state,
+            indentLevel: indentLevel,
 
-      // Won't matter. The lax and inline indent are predetermined already.
-      inferredFromParent: null,
+            // Won't matter. The lax and inline indent are predetermined.
+            inferredFromParent: null,
 
-      // It must degenerate to a block map! A block scalar cannot or should
-      // not be here (unless via an explicit key) since we expect a block map
-      // after this call.
-      blockParentIndent: null,
-      laxBlockIndent: laxIndent,
-      fixedInlineIndent: inlineFixedIndent,
-      forceInlined: isInline,
-      composeImplicitMap: composeImplicitMap,
-    );
+            // It must degenerate to a block map! A block scalar cannot or
+            // should not be here (unless via an explicit key) since we expect
+            // a block map after this call.
+            blockParentIndent: null,
+            laxBlockIndent: laxIndent,
+            fixedInlineIndent: inlineFixedIndent,
+            forceInlined: isInline,
+            composeImplicitMap: composeImplicitMap,
+          );
+
+          state.trackAnchor(nodeInfo.node, property);
+        }
+      default:
+        {
+          nodeInfo = parseBlockMap(
+            state.defaultMapDelegate(
+              mapStyle: NodeStyle.block,
+              indentLevel: indentLevel,
+              indent: inlineFixedIndent,
+              start: property.structuralOffset ?? property.span.start,
+            ),
+            state: state,
+          );
+
+          state.trackAnchor(nodeInfo.node, property);
+        }
+    }
 
     if (nodeInfo.node is! MapLikeDelegate) {
       throwWithRangedOffset(
@@ -75,7 +108,7 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
             '"${property.tag ?? property.anchor}"',
 
         start: property.span.start,
-        end: nodeInfo.node.endOffset!,
+        end: nodeInfo.node.nodeSpan.nodeEnd,
       );
     }
   }

@@ -388,13 +388,14 @@ implicit:     !even-in-implicit
 
     test('Variant [3]: Throws if impossible', () {
       check(
-        () => bootstrapDocParser('''
+            () => bootstrapDocParser('''
 &throw
 &not key
 '''),
-      ).throwsParserException(
-        'Expected an (implied) block map with property "throw"',
-      );
+          )
+          .throws<ArgumentError>()
+          .has((e) => e.message, 'Message')
+          .equals('Duplicate node properties provided to a node');
     });
   });
 
