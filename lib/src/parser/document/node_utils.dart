@@ -117,9 +117,6 @@ bool continueToNextEntry(
   required bool forceInline,
   required void Function(YamlComment comment) onParseComment,
 }) {
-  void updateEntry() =>
-      lastEntrySpan.parsingEnd = iterator.currentLineInfo.current;
-
   nextSafeLineInFlow(
     iterator,
     minIndent: minIndent,
@@ -127,8 +124,9 @@ bool continueToNextEntry(
     onParseComment: onParseComment,
   );
 
+  lastEntrySpan.parsingEnd = iterator.currentLineInfo.current;
+
   if (iterator.current != flowEntryEnd) {
-    updateEntry();
     return false;
   }
 
@@ -139,7 +137,6 @@ bool continueToNextEntry(
     forceInline: forceInline,
     onParseComment: onParseComment,
   );
-  updateEntry();
   return goToNext;
 }
 
@@ -199,7 +196,7 @@ T initFlowCollection<R, T extends NodeDelegate<R>>(
   return init(current);
 }
 
-/// Checks if the current char in the [scanner] matches the closing [delimiter]
+/// Checks if the current char in the [iterator] matches the closing [delimiter]
 /// of the flow collection. If valid, the [flowCollection]'s end offset is
 /// updated and the [delimiter] is skipped.
 D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
@@ -207,20 +204,18 @@ D terminateFlowCollection<Obj, D extends NodeDelegate<Obj>>(
   D flowCollection,
   int delimiter,
 ) {
-  final offset = iterator.currentLineInfo.current;
-
   if (iterator.current != delimiter) {
     throwWithSingleOffset(
       iterator,
       message:
           'Invalid flow collection state. Expected '
           '"${delimiter.asString()}"',
-      offset: offset,
+      offset: iterator.currentLineInfo.current,
     );
   }
 
-  flowCollection.nodeSpan.nodeEnd = offset;
   iterator.nextChar();
+  flowCollection.nodeSpan.nodeEnd = iterator.currentLineInfo.current;
   return flowCollection;
 }
 

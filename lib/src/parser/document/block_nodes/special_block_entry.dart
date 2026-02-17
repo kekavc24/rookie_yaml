@@ -160,11 +160,7 @@ SpecialBlockSequenceInfo parseSpecialBlockSequence<Obj>(
     _delegateHelper<Obj>(
       property,
       state: state,
-      start:
-          structuralStart ??
-          property?.structuralOffset ??
-          property?.span.start ??
-          iterator.currentLineInfo.current,
+      start: structuralStart ?? iterator.currentLineInfo.current,
       indent: keyIndent,
       indentLevel: keyIndentLevel,
     )..updateNodeProperties = property,

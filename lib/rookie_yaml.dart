@@ -33,7 +33,7 @@ export 'src/parser/loaders/loader.dart';
 export 'src/parser/parser_utils.dart'
     show CharWriter, ParsedDirectives, DocumentInfo, RootNode;
 export 'src/scanner/source_iterator.dart';
-export 'src/scanner/span.dart' show NodeSpan;
+export 'src/scanner/span.dart' hide YamlSourceSpan;
 export 'src/schema/nodes/yaml_node.dart' hide CompactYamlNode;
 export 'src/schema/yaml_comment.dart' hide parseComment;
 export 'src/schema/yaml_schema.dart';

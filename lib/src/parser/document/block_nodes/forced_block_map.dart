@@ -91,7 +91,7 @@ BlockNode<Obj> composeBlockMapStrict<Obj>(
               mapStyle: NodeStyle.block,
               indentLevel: indentLevel,
               indent: inlineFixedIndent,
-              start: property.structuralOffset ?? property.span.start,
+              start: state.iterator.currentLineInfo.current,
             ),
             state: state,
           );

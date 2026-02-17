@@ -32,6 +32,7 @@ sealed class ParsedProperty {
     RuneOffset end,
     int? indentOnExit, {
     required bool spanMultipleLines,
+    required RuneOffset? structuralOffset,
   }) = _Empty;
 
   /// Creates a wrapper that indicates the node's properties parsing call
@@ -57,6 +58,7 @@ sealed class ParsedProperty {
         tag: tag,
         kind: kind,
         customResolver: customResolver,
+        structuralOffset: structuralOffset,
       );
     }
 
@@ -102,7 +104,7 @@ final class _Empty extends ParsedProperty {
     super.end,
     super.indentOnExit, {
     required super.spanMultipleLines,
-    super.structuralOffset,
+    required super.structuralOffset,
   }) : super(kind: NodeKind.unknown());
 
   @override
@@ -435,6 +437,7 @@ ConcreteProperty parseFlowProperties(
         offset,
         null,
         spanMultipleLines: false,
+        structuralOffset: structuralOffset,
       ),
     );
   }
