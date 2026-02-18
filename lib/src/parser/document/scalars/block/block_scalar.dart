@@ -165,20 +165,18 @@ ParsedScalarInfo blockScalarParser(
 
               if (isEmptyLine) {
                 previousMaxIndent = max(previousMaxIndent ?? 0, inferredIndent);
+              } else if (previousMaxIndent != null &&
+                  previousMaxIndent > inferredIndent) {
+                throwWithApproximateRange(
+                  iterator,
+                  message:
+                      'A previous empty line was more indented with '
+                      '$previousMaxIndent space(s). Indent must be at least'
+                      ' equal to or greater than this indent.',
+                  current: iterator.currentLineInfo.current,
+                  charCountBefore: inferredIndent,
+                );
               } else {
-                if (previousMaxIndent != null &&
-                    previousMaxIndent > inferredIndent) {
-                  throwWithApproximateRange(
-                    iterator,
-                    message:
-                        'A previous empty line was more indented with '
-                        '$previousMaxIndent space(s). Indent must be at least'
-                        ' equal to or greater than this indent.',
-                    current: iterator.currentLineInfo.current,
-                    charCountBefore: inferredIndent,
-                  );
-                }
-
                 trueIndent = inferredIndent;
               }
 

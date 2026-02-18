@@ -1,7 +1,7 @@
 part of 'loader.dart';
 
 /// Recursively copies all elements of a [Map] or [List]
-Object? _deepCopyReference(Object? object) {
+Object? deepCopyReference(Object? object) {
   switch (object) {
     case Map():
       {
@@ -35,7 +35,7 @@ void _dereferenceMap(
   Map<Object?, Object?> original,
 ) {
   for (final MapEntry(:key, :value) in original.entries) {
-    copy[_deepCopyReference(key)] = _deepCopyReference(value);
+    copy[deepCopyReference(key)] = deepCopyReference(value);
   }
 }
 
@@ -45,7 +45,7 @@ void _dereferenceIterable(
   void Function(Object? object) push,
 ) {
   for (final object in original) {
-    push(_deepCopyReference(object));
+    push(deepCopyReference(object));
   }
 }
 
@@ -54,7 +54,7 @@ void _dereferenceIterable(
 /// may want aliases dereferenced since the parser does a zero-copy operation
 /// and just passes the reference around.
 Object? _dereferenceAliases(Object? object, {required bool dereferenceAlias}) =>
-    dereferenceAlias ? _deepCopyReference(object) : object;
+    dereferenceAlias ? deepCopyReference(object) : object;
 
 /// Loads every document as a `Dart` object.
 List<Object?> _loadAsDartObject(
