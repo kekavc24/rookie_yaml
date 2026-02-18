@@ -195,7 +195,7 @@ ParsedScalarInfo? plainParser(
 
           if (indentDidChange) {
             final (:start, :current) = iterator.currentLineInfo;
-            end = iterator.isEOF ? start : current;
+            end = iterator.isEOF ? current : start;
             indentOnExit = foldIndent;
             break chunker;
           }
