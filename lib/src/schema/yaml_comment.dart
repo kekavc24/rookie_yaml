@@ -64,7 +64,9 @@ final class YamlComment implements Comparable<YamlComment> {
     onExit: chunkInfo,
     comment: YamlComment(
       comment,
-      commentSpan: span..nodeEnd = iterator.currentLineInfo.current,
+      commentSpan: span
+        ..nodeEnd = iterator.currentLineInfo.current
+        ..structuralOffset = span.nodeStart,
     ),
   );
 }

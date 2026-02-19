@@ -92,7 +92,7 @@ final class YamlSourceMap
     }
 
     _actualMap[keyValue] = value?.node;
-    key.childOfKey = value;
+    key.childOfKey = value?..parent = key;
     _insertAndLinkChildren(key);
     return true;
   }
