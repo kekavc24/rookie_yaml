@@ -1,10 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
-import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 /// A matrix.
 extension type Matrix._(List<Uint8List> matrix) {}

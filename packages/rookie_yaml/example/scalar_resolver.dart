@@ -1,9 +1,4 @@
-import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 typedef Interval = ({int min, int max});
 

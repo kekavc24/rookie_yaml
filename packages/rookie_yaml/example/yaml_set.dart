@@ -1,8 +1,4 @@
-import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
-import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 final class YamlSet<T> extends MappingToObject<T, T?, Set<T>> {
   final _set = <T>{};

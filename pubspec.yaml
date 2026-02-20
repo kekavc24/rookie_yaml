@@ -1,36 +1,8 @@
-name: rookie_yaml
-description: A highly configurable parser and dumper for YAML (and optionally json).
-version: 0.5.1
-repository: https://github.com/kekavc24/rookie_yaml
-topics:
-  - yaml
-  - json
-
-platforms:
-  android:
-  ios:
-  linux:
-  macos:
-  windows:
-  web:
+name: yummy_yaml
+description: A collection of dart packages that help you to easily interact with YAML and its features.
 
 environment:
   sdk: ^3.9.0
 
-dependencies:
-  collection: ^1.19.1
-  logging: ^1.3.0
-  meta: ^1.17.0
-
-dev_dependencies:
-  args: ^2.7.0
-  checks: ^0.3.0
-  coverage: ^1.15.0
-  lints: ^6.0.0
-  path: ^1.9.1
-  test: ^1.24.0
-
-  # YAML test suite abstraction
-  yaml_test_suite_runner:
-    git: https://github.com/kekavc24/yaml_test_suite_runner.git
-    version: 0.0.3
+workspace:
+  - packages/rookie_yaml

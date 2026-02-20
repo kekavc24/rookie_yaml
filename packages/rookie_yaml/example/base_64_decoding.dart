@@ -1,11 +1,6 @@
 import 'dart:convert';
 
-import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
-import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
-import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 final class SimpleBase64 extends BytesToScalar<String> {
   final _buffer = StringBuffer();
