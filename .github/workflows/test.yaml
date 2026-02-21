@@ -1,11 +1,6 @@
-name: Analysis & Coverage
+name: Analysis, Test & Coverage
 
 on:
-  workflow_run:
-    workflows: [label_pr]
-    types: [completed]
-    branches: [main]
-
   workflow_dispatch:
 
   pull_request_target:
@@ -13,8 +8,19 @@ on:
     types: [opened, synchronize]
 
 jobs:
+  labeler:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v6
+        with:
+          sync-labels: true
+
   testing:
-    if: ${{ github.repository_owner == 'kekavc24' && github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.repository_owner == 'kekavc24'}}
+    needs: labeler
     runs-on: ubuntu-latest
 
     steps:
