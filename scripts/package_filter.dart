@@ -24,7 +24,7 @@ extension on ArgResults {
   ({String pr, String directory, List<String> labels}) unpack() => (
     pr: this['pr'],
     directory: this['working-directory'],
-    labels: this['labels']?.toString().split(', ') ?? [],
+    labels: this['labels']?.toString().split(',') ?? [],
   );
 }
 
