@@ -22,10 +22,10 @@ final _testRunnerArgParser = ArgParser()
   ..addOption('labels', help: 'Labels added to a PR', mandatory: true);
 
 extension on ArgResults {
-  ({String pr, String directory, List labels}) unpack() => (
+  ({String pr, String directory, List<String> labels}) unpack() => (
     pr: this['pr'],
     directory: this['working-directory'],
-    labels: json.decode(this['labels']) as List,
+    labels: this['labels']?.toString().split(', ') ?? [],
   );
 }
 
@@ -33,7 +33,6 @@ void main(List<String> args) {
   final (:pr, :directory, :labels) = _testRunnerArgParser.parse(args).unpack();
 
   final packages = labels
-      .map((l) => l.toString())
       .where((l) => l.startsWith(_packagePrefix))
       .map((e) => e.replaceFirst(_packagePrefix, ''));
 
