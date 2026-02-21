@@ -1,0 +1,21 @@
+# Documentation
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: '**/*.md'
+
+# Tests
+tests:
+  - changed-files:
+    - any-glob-to-any-file: '**/test/*'
+
+# Workflows
+workflows:
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/workflows/*
+      - .github/actions/*
+      - scripts/*
+
+'package:rookie_yaml':
+  - changed-files:
+    - any-glob-to-any-file: packages/rookie_yaml/*

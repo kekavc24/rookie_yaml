@@ -4,7 +4,7 @@
 # Dart-specific.
 pubspec.lock
 */**/doc/api/
-*/**/coverage/
+coverage/
 
 #IDEs
 .vscode/

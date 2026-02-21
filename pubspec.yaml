@@ -1,4 +1,4 @@
-name: yummy_yaml
+name: yaml_dart
 description: A collection of dart packages that help you to easily interact with YAML and its features.
 
 environment:
@@ -6,3 +6,12 @@ environment:
 
 workspace:
   - packages/rookie_yaml
+
+dependencies:
+  collection: ^1.19.1
+
+dev_dependencies:
+  args: ^2.7.0
+  coverage: ^1.15.0
+  lints: ^6.0.0
+  path: ^1.9.1

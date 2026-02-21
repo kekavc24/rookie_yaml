@@ -17,7 +17,9 @@ We are open to contributions from any human irrespective of your skill level, ag
 2. Fork this repo. Create a branch. Fix issue, commit using the [commit behaviour guide](#commit-behaviour) and create a PR.
 
 > [!TIP]
-> If you do not know where to start on fixing a bug or implementing a feature you found, just ping me @kekavc24
+> Please include tests.
+>
+> If you do not know where to start on fixing a bug or implementing a feature, just ping me @kekavc24
 
 ## Commit Behaviour
 
