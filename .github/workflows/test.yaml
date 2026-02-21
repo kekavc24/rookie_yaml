@@ -55,8 +55,7 @@ jobs:
 
           filtered=$(dart package_filter.dart \
             --pr "${{ github.event.pull_request.number }}" \
-            --working-directory "${{ github.workspace }}" \
-            --labels "${{ join(github.event.pull_request.labels.*.name, ',') }}")
+            --working-directory "${{ github.workspace }}")
 
           echo "$filtered"
           echo "package=$filtered" >> "$GITHUB_OUTPUT"

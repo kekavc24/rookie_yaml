@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -17,21 +18,33 @@ final _testRunnerArgParser = ArgParser()
     'working-directory',
     help: 'Root directory with repository',
     mandatory: true,
-  )
-  ..addOption('labels', help: 'Labels added to a PR', mandatory: true);
+  );
 
 extension on ArgResults {
-  ({String pr, String directory, List<String> labels}) unpack() => (
-    pr: this['pr'],
-    directory: this['working-directory'],
-    labels: this['labels']?.toString().split(',') ?? [],
+  ({String pr, String directory}) unpack() =>
+      (pr: this['pr'], directory: this['working-directory']);
+}
+
+/// Fetches the labels of a [pr].
+List<String> _fetchLabels(String pr, String directory) {
+  return runCommand(
+    'gh',
+    args: ['pr', 'view', pr, '--repo', rootRepository, '--json', 'labels'],
+    directory: directory,
+    mapper: (stdout) {
+      return (json.decode(stdout)['labels'] as List)
+          .whereType<Map>()
+          .map((m) => m['name']?.toString())
+          .whereType<String>()
+          .toList();
+    },
   );
 }
 
 void main(List<String> args) {
-  final (:pr, :directory, :labels) = _testRunnerArgParser.parse(args).unpack();
+  final (:pr, :directory) = _testRunnerArgParser.parse(args).unpack();
 
-  final packages = labels
+  final packages = _fetchLabels(pr, directory)
       .where((l) => l.startsWith(_packagePrefix))
       .map((e) => e.replaceFirst(_packagePrefix, ''));
 
@@ -46,7 +59,7 @@ Hello,
 It seems you modified multiple packages in one PR:
 ${packages.map((e) => '  - `package:$e`').join('\n')}
 
-Please read our contribution guidelines in the `CONTRIBUTING.md` file and create separate PRs for each package based on this guideline.
+Please read our contribution guidelines in the `CONTRIBUTING.md` file and create separate PRs for each package based on those guidelines.
 ''');
 
     exit(1);
