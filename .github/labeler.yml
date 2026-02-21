@@ -3,11 +3,6 @@ documentation:
   - changed-files:
     - any-glob-to-any-file: '**/*.md'
 
-# Tests
-tests:
-  - changed-files:
-    - any-glob-to-any-file: '**/test/*'
-
 # Workflows
 workflows:
   - changed-files:
