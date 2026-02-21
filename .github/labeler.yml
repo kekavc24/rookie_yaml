@@ -7,10 +7,9 @@ documentation:
 workflows:
   - changed-files:
     - any-glob-to-any-file:
-      - .github/workflows/*
-      - .github/actions/*
-      - scripts/*
+      - '.github/**'
+      - 'scripts/**'
 
 'package:rookie_yaml':
   - changed-files:
-    - any-glob-to-any-file: packages/rookie_yaml/*
+    - any-glob-to-any-file: 'packages/rookie_yaml/**'
