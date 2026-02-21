@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 
@@ -70,11 +68,7 @@ void main(List<String> args) {
   );
 
   final (:currentPassRate, :diff) = _passRateDiff(directory, summary);
-  final tempFile = path.joinAll([directory, 'body']);
-
-  // Avoid some "gh" quirks. Write the file and let "gh" read it whichever way
-  // it sees fit.
-  File(tempFile).writeAsStringSync('''
+  addBotComment(pr, directory, '''
 $diff
 ---
 * Head SHA commit: $headCommit
@@ -84,20 +78,4 @@ $diff
 $summary
 ```
 ''');
-
-  runCommand(
-    'gh',
-    args: [
-      'pr',
-      'comment',
-      pr,
-      '--edit-last',
-      '--create-if-none',
-      '-R',
-      rootRepository,
-      '-F',
-      tempFile,
-    ],
-    directory: directory,
-  );
 }

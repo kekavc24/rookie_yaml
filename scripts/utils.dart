@@ -7,7 +7,7 @@ const rootRepository = 'kekavc24/rookie_yaml';
 const testSuiteLabel = '![test_suite]';
 const testSuiteUrlPrefix = 'https://img.shields.io/badge/YAML_Test_Suite';
 
-extension on int {
+extension Cmd on int {
   bool get isSuccess => this == 0;
 }
 
@@ -59,4 +59,19 @@ double getCurrentPassRate(String rootDirectory) {
   }
 
   return _defaultPassRate;
+}
+
+/// Adds a [comment] to a [pr].
+void addBotComment(String pr, String directory, String comment) {
+  final temp = path.joinAll([directory, 'body']);
+
+  // Avoid some "gh" quirks. Write the file and let "gh" read it whichever way
+  // it sees fit.
+  File(temp).writeAsStringSync(comment);
+
+  runCommand(
+    'gh',
+    args: ['pr', 'comment', pr, '-R', rootRepository, '-F', temp],
+    directory: directory,
+  );
 }
