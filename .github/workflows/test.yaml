@@ -14,7 +14,7 @@ on:
 
 jobs:
   testing:
-    if: ${{ github.repository_owner == 'kekavc24' }}
+    if: ${{ github.repository_owner == 'kekavc24' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
