@@ -4,6 +4,7 @@ on:
   workflow_run:
     workflows: [label_pr]
     types: [completed]
+    branches: [main]
 
   workflow_dispatch:
 
