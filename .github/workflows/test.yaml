@@ -51,6 +51,7 @@ jobs:
             --working-directory "${{ github.workspace }}" \
             --labels "${{ join(github.event.pull_request.labels.*.name, ',') }}")
 
+          echo "$filtered"
           echo "package=$filtered" >> "$GITHUB_OUTPUT"
 
       - name: 🧪 Run tests with coverage 📑
