@@ -65,13 +65,9 @@ double getCurrentPassRate(String rootDirectory) {
 void addBotComment(String pr, String directory, String comment) {
   final temp = path.joinAll([directory, 'body']);
 
-  print('Dir: $temp');
-
   // Avoid some "gh" quirks. Write the file and let "gh" read it whichever way
   // it sees fit.
-  File(temp).writeAsString(comment);
-
-  print('Comment: $comment');
+  File(temp).writeAsStringSync(comment);
 
   runCommand(
     'gh',
