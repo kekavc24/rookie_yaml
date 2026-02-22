@@ -21,19 +21,24 @@ The parser determines these YAML types automatically as required by the spec. Al
 
 ## YamlSourceNode
 
-Alternatively, the parser can also emit a `YamlSourceNode` that:
-
-1. Is immutable.
-1. Has span information about the node in the source string or byte source.
-2. Persists its resolved/default tag assigned to it by the parser.
-3. Preserves its own anchor/alias information. Usually, every `AliasNode` holds a reference and anchor name to the actual node it referenced as an anchor. The same node also has the same anchor name. You need not worry about any node mismatch.
-4. Preserves the integer radix for a `Scalar` resolved as `int`.
-
 It has 3 distinct subtypes that cannot be subclassed:
 
 - `Mapping` - corresponds to a Dart `Map`
 - `Sequence` - corresponds to a Dart `List`
 - `Scalar` - represents any type that is not a map or list.
+
+> [!TIP]
+> A `YamlSourceNode` just wraps a built-in Dart type. Calling its getter `node` provides the underlying built-in Dart type. For collections (`Mapping` and `Sequence`), every element will be a built-in Dart type. This is an `O(1)` operation with no recursive getter calls.
+>
+> If you need each element to be a `YamlSourceNode`, you must iterate the `children` getter instead.
+
+Alternatively, the parser can also emit a `YamlSourceNode`. :
+
+1. Represents a subtree of the entire YAML tree.
+1. Has span information about the node in the source string or byte source.
+2. Persists its resolved/default tag assigned to it by the parser.
+3. Preserves its own anchor/alias information. Usually, every `AliasNode` holds a reference and anchor name to the actual node it referenced as an anchor. The same node also has the same anchor name. You need not worry about any node mismatch.
+4. Preserves the natural formatting of a scalar.
 
 > [!TIP]
 > Always select a loader for your YAML string based on the level of detail your require.
