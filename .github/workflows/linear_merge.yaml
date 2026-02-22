@@ -70,6 +70,7 @@ jobs:
           cd scripts
           pwd
           dart linear_merge.dart \
-            -w ${{ github.workspace }} \
-            -p ${{ github.event.pull_request.number }} \
-            -s ${{ needs.merge_preflight.outputs.validated_commit }}
+            --working-directory ${{ github.workspace }} \
+            --pr ${{ github.event.pull_request.number }} \
+            --head-SHA ${{ needs.merge_preflight.outputs.validated_commit }} \
+            --is-package-rookie-yaml ${{ contains(github.event.pull_request.labels.*.name, 'package:rookie_yaml') }}

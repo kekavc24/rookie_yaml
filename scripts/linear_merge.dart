@@ -20,7 +20,7 @@ final _argParser = ArgParser()
     help: 'Repo directory',
   )
   ..addOption(
-    'pr-num',
+    'pr',
     abbr: 'p',
     mandatory: true,
     help: 'Github PR json event',
@@ -30,6 +30,11 @@ final _argParser = ArgParser()
     abbr: 's',
     mandatory: true,
     help: 'Commit ID at the tip of the PR branch',
+  )
+  ..addOption(
+    'is-package-rookie-yaml',
+    mandatory: true,
+    help: 'Whether rookie_yaml was updated',
   );
 
 extension on ArgResults {
@@ -38,11 +43,13 @@ extension on ArgResults {
   ///   - PR number of PR that triggered the merging worflow
   ///   - SHA signature of the commit at the tip of the PR branch. This ensures
   ///     we merge branches in the state they were approved.
-  ({String directory, int prNumber, String headSHA}) unpack() => (
+  ({String directory, int prNumber, String headSHA, bool isRookieYaml})
+  unpack() => (
     //token: this['token'],
     directory: this['working-directory'],
-    prNumber: int.parse(this['pr-num']),
+    prNumber: int.parse(this['pr']),
     headSHA: this['head-SHA'].toString().trim(),
+    isRookieYaml: bool.tryParse(this['is-package-rookie-yaml']) ?? false,
   );
 }
 
@@ -109,8 +116,42 @@ void _updatePassRate(String directory, String passRate) {
   file.writeAsStringSync(updated);
 }
 
+/// Regenerate pass rate for YAML test suite.
+void _maybeRegenerateTestSuite(String rootDir) {
+  final rookieYamlDir = path.joinAll([rootDir, 'packages', 'rookie_yaml']);
+
+  // Regenerate latest test suite pass rate before push
+  final passRate = runCommand(
+    'dart',
+    args: ['runner.dart'],
+    directory: path.joinAll([rookieYamlDir, 'test', 'yaml_test_suite']),
+    mapper: (s) => s.trim(),
+  );
+
+  print('Pass rate: $passRate');
+
+  // Update README
+  _updatePassRate(rookieYamlDir, passRate);
+
+  if (runCommand(
+    'git',
+    args: ['status', '--porcelain'],
+    directory: rootDir,
+    mapper: (s) => s.trim().isNotEmpty,
+  )) {
+    runCommand('git', args: ['add', 'README.md'], directory: rootDir);
+    runCommand(
+      'git',
+      args: ['commit', '-m', 'Test Suite Update: $passRate%'],
+      directory: rootDir,
+    );
+  }
+}
+
 void main(List<String> args) {
-  final (:directory, :prNumber, :headSHA) = _argParser.parse(args).unpack();
+  final (:directory, :prNumber, :headSHA, :isRookieYaml) = _argParser
+      .parse(args)
+      .unpack();
 
   assert(
     directory.isNotEmpty && headSHA.isNotEmpty,
@@ -200,28 +241,8 @@ Current tip SHA: $commitID
     args: ['pr', 'review', '--approve', '$prNumber', '--repo', rootRepository],
   );
 
-  // Regenerate latest test suite pass rate before push
-  final passRate = scopedProcRunner<String>(
-    'dart',
-    args: ['runner.dart'],
-    dirOverride: path.joinAll([directory, 'test', 'yaml_test_suite']),
-  );
-
-  print('Pass rate: $passRate');
-
-  // Update README
-  _updatePassRate(directory, passRate);
-
-  // Check if we can actually commit it
-  if (scopedProcRunner<String>(
-    'git',
-    args: ['status', '--porcelain'],
-  ).isNotEmpty) {
-    scopedProcRunner('git', args: ['add', 'README.md']);
-    scopedProcRunner(
-      'git',
-      args: ['commit', '-m', 'Test Suite Update: $passRate%'],
-    );
+  if (isRookieYaml) {
+    _maybeRegenerateTestSuite(directory);
   }
 
   scopedProcRunner(
