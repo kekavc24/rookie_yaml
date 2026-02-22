@@ -60,20 +60,20 @@ jobs:
           echo "$filtered"
           echo "package=$filtered" >> "$GITHUB_OUTPUT"
 
-      # - name: 🧪 Run tests with coverage 📑
-      #   if: ${{ steps.package.outputs.package != 'Naught' }}
-      #   working-directory: ${{ steps.package.outputs.package }}
-      #   run: |
-      #     dart pub get
-      #     dart run coverage:test_with_coverage
+      - name: 🧪 Run tests with coverage 📑
+        if: ${{ steps.package.outputs.package != 'Naught' }}
+        working-directory: ${{ steps.package.outputs.package }}
+        run: |
+          dart pub get
+          dart run coverage:test_with_coverage
 
-      # - name: 🛫 Track coverage
-      #   if: ${{ steps.package.outputs.package != 'Naught' }}
-      #   uses: coverallsapp/github-action@v2.3.6
-      #   with:
-      #     github-token: ${{ github.token }}
-      #     file: "${{ steps.package.outputs.package }}/coverage/lcov.info"
-      #     format: lcov
+      - name: 🛫 Track coverage
+        if: ${{ steps.package.outputs.package != 'Naught' }}
+        uses: coverallsapp/github-action@v2.3.6
+        with:
+          github-token: ${{ github.token }}
+          file: "${{ steps.package.outputs.package }}/coverage/lcov.info"
+          format: lcov
 
       - name: 🏃🏽 Run test suite, 💬 Add PR comment
         if: ${{ contains(steps.package.outputs.package, 'packages/rookie_yaml') }}
