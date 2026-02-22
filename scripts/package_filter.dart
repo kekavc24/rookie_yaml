@@ -44,12 +44,14 @@ List<String> _fetchLabels(String pr, String directory) {
 void main(List<String> args) {
   final (:pr, :directory) = _testRunnerArgParser.parse(args).unpack();
 
-  final packages = _fetchLabels(pr, directory)
+  final labels = _fetchLabels(pr, directory).toSet();
+
+  final packages = labels
       .where((l) => l.startsWith(_packagePrefix))
       .map((e) => e.replaceFirst(_packagePrefix, ''));
 
   // Successful run either way.
-  if (packages.isEmpty) {
+  if (packages.isEmpty || labels.contains('skip-package-check')) {
     print('Naught');
     exit(0);
   } else if (packages.length > 1) {

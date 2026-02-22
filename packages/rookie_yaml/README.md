@@ -2,7 +2,6 @@
 
 ![pub_version][dart_pub_version]
 ![pub_downloads][dart_pub_downloads]
-![Coverage Status][coverage]
 ![test_suite](https://img.shields.io/badge/YAML_Test_Suite-89.05%25-green)
 
 > [!NOTE]
@@ -147,9 +146,8 @@ Start [here](https://pub.dev/documentation/rookie_yaml/latest/topics/dump_scalar
 - Run [test suite guide][test_suite] and look for bugs to fix.
 
 [yaml]: https://yaml.org/spec/1.2.2/
-[coverage]: https://coveralls.io/repos/github/kekavc24/rookie_yaml/badge.svg?branch=main
 [dart_pub_version]: https://img.shields.io/pub/v/rookie_yaml.svg
 [dart_pub_downloads]: https://img.shields.io/pub/dm/rookie_yaml.svg
 [guide]: https://pub.dev/documentation/rookie_yaml/latest/topics/intro-topic.html
-[contribute]: https://github.com/kekavc24/rookie_yaml/blob/main/CONTRIBUTING.md
-[test_suite]: https://github.com/kekavc24/rookie_yaml/blob/main/test/yaml_test_suite/README.md
+[contribute]: https://github.com/kekavc24/yaml_dart/blob/main/CONTRIBUTING.md
+[test_suite]: https://github.com/kekavc24/yaml_dart/blob/main/packages/rookie_yaml/test/yaml_test_suite/README.md

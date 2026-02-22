@@ -15,11 +15,6 @@ workflows:
       - '.github/**'
       - 'scripts/**'
 
-# Release
-release:
-  - change-files:
-    - all-globs-to-all-files: ['**/CHANGELOG.md', '**/pubspec.yaml']
-
 'package:rookie_yaml':
   - changed-files:
     - any-glob-to-any-file: 'packages/rookie_yaml/**'

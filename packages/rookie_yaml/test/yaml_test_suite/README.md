@@ -4,7 +4,7 @@ The runner is simple and runs like any program but also explicitly catches the `
 
 ```sh
 # Clone/fork repo
-git clone https://github.com/kekavc24/rookie_yaml.git
+git clone https://github.com/kekavc24/yaml_dart.git
 
 # Open folder. Run:
 dart pub get

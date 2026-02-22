@@ -47,7 +47,8 @@ enum YamlDocType {
       : YamlDocType.bare;
 }
 
-/// Indicates how each [YamlNode] is presented in the serialized yaml string.
+/// Indicates how each [CompactYamlNode] is presented in the serialized yaml
+/// string.
 ///
 /// {@category yaml_nodes}
 enum NodeStyle {
