@@ -46,7 +46,7 @@ abstract class CompactYamlNode {
 /// irrespective of its location.
 ///
 /// This node also acts as a compatibility layer between the parsed
-/// [CompactYamlNode] and a `Dart` type. The object [T] is always a Dart type
+/// [CompactYamlNode] and a `Dart` type. The object is always a Dart type
 /// or a type inferred from a `ScalarResolver` when it comes to scalars.
 ///   - [Scalar] of `4` has no difference when compared to `4`
 ///   - [Sequence] or [Map] of values will be equal to the same [List] or
