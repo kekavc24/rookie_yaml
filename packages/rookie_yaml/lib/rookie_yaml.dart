@@ -19,7 +19,6 @@ export 'src/parser/directives/directives.dart'
         parseTagHandle,
         parseTagShorthand,
         parseVerbatimTag,
-        resolvedTagInfo,
         verbatimStart;
 export 'src/parser/document/node_properties.dart'
     show ParsedProperty, NodeProperty, isGenericNode;

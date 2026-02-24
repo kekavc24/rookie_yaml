@@ -18,3 +18,7 @@ workflows:
 'package:rookie_yaml':
   - changed-files:
     - any-glob-to-any-file: 'packages/rookie_yaml/**'
+
+'package:editable_yaml':
+  - changed-files:
+    - any-glob-to-any-file: 'packages/editable_yaml/**'
