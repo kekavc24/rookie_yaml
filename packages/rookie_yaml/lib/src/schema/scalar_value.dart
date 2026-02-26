@@ -1,63 +1,3 @@
-part of 'yaml_node.dart';
-
-/// Any value that is not a [Sequence] or [Mapping].
-///
-/// For equality, a scalar uses the inferred value [T] for maximum
-/// compatibility with `Dart` objects that can be scalars.
-///
-/// {@category intro}
-/// {@category yaml_nodes}
-final class Scalar<T> extends YamlSourceNode {
-  Scalar(
-    this._type, {
-    required this.scalarStyle,
-    required this.span,
-    required this.anchor,
-    required this.tag,
-  });
-
-  /// Type inferred from the scalar's content
-  final ScalarValue<T> _type;
-
-  /// Style used to serialize the scalar. Can be degenerated to a `block` or
-  /// `flow` too.
-  final ScalarStyle scalarStyle;
-
-  @override
-  final NodeSpan span;
-
-  @override
-  final String? anchor;
-
-  @override
-  final ResolvedTag? tag;
-
-  /// A native value represented by the parsed scalar.
-  @override
-  T get node => _type.value;
-
-  @override
-  NodeStyle get nodeStyle => scalarStyle.nodeStyle;
-
-  @override
-  bool get isTransversable => false;
-
-  @override
-  bool get isAlias => false;
-
-  @override
-  List<YamlSourceNode> get children => const [];
-
-  @override
-  bool operator ==(Object other) => node == other;
-
-  @override
-  int get hashCode => node.hashCode;
-
-  @override
-  String toString() => _type.toString();
-}
-
 /// A wrapper class that safely wraps types inferred from content parsed
 /// within a scalar.
 sealed class ScalarValue<T> {
@@ -68,6 +8,12 @@ sealed class ScalarValue<T> {
 
   @override
   String toString() => value.toString();
+
+  @override
+  bool operator ==(Object other) => value == other;
+
+  @override
+  int get hashCode => value.hashCode;
 }
 
 /// Any `Dart` type abstraction.

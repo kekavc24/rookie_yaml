@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+
 
 /// Represents the kind of node to be parsed.
 ///
@@ -60,18 +60,17 @@ enum CustomKind implements NodeKind {
 ///
 /// {@category custom_resolvers_intro}
 enum YamlCollectionKind implements NodeKind {
-  /// [Set] or [Sequence] with unique elements. This could also represent a
+  /// [Set] or [List] with unique elements. This could also represent a
   /// [YamlCollectionKind.orderedMap] or [YamlCollectionKind.mapping].
   set,
 
-  /// Normal [Sequence] or [List].
+  /// [List].
   sequence,
 
-  /// [YamlCollectionKind.mapping] or a [Sequence]/[List] of
-  /// [YamlCollectionKind.mapping].
+  /// [YamlCollectionKind.mapping] or a [List] of [YamlCollectionKind.mapping].
   orderedMap,
 
-  /// [Mapping] or [Map].
+  /// [Map].
   mapping;
 
   @override

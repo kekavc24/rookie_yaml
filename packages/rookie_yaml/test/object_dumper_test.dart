@@ -4,124 +4,12 @@ import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
 import 'package:rookie_yaml/src/dumping/object_dumper.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 import 'package:test/test.dart';
 
 void main() {
   tearDown(() {
     forceReset();
-  });
-
-  group('Dumps YamlSourceNode', () {
-    test('Dumps a YamlSourceNode back to a reproducible state', () {
-      const source = '''
-%TAG !reproducible! !reproducible
----
-!reproducible!sequence [
-  !!str &anchor value,
-  *anchor,
-  !tag [ *anchor, 24 ],
-]
-''';
-
-      check(
-        dumpObject(
-          loadYamlNode(YamlSource.string(source)),
-          dumper: ObjectDumper.of(
-            iterableStyle: NodeStyle.flow,
-            mapper: (object) {
-              if (object is Sequence) {
-                return dumpableType(object.children)
-                  ..tag = object.tag
-                  ..anchor = object.anchor;
-              }
-
-              return object;
-            },
-          ),
-          includeYamlDirective: true,
-        ),
-      ).equals('''
-%YAML 1.2
-%TAG !reproducible! !reproducible
----
-!reproducible!sequence [
- &anchor !!str value,
- *anchor,
- !tag [
-  *anchor,
-  !!int 24
- ]
-]''');
-    });
-
-    test('Dumps YamlSourceNode parsed within document', () {
-      const source = '''
-%RESERVED has no meaning
----
-- &value value
-- *value
-...
-
-%TAG !! !unused
----
-!tag &map { key: value}
-''';
-
-      final dumper = ObjectDumper.of(
-        mapStyle: NodeStyle.flow,
-        forceMapsInline: true,
-        mapper: (object) => switch (object) {
-          Sequence() =>
-            dumpableType(object.children)
-              ..tag = object.tag
-              ..anchor = object.anchor,
-
-          Mapping() =>
-            dumpableType(
-                Map.fromEntries(
-                  object.children.map(
-                    (e) => MapEntry(e, e.childOfKey),
-                  ),
-                ),
-              )
-              ..tag = object.tag
-              ..anchor = object.anchor,
-
-          Scalar() =>
-            dumpableType(object.node)
-              ..anchor = object.anchor
-              ..tag = object.tag,
-
-          _ => object,
-        },
-      );
-
-      check(
-        loadAllDocuments(YamlSource.string(source))
-            .map(
-              (doc) => dumpObject(
-                doc.root,
-                dumper: dumper,
-                includeDocumendEnd: doc.hasExplicitEnd,
-                directives: doc.tagDirectives.cast<Directive>().followedBy(
-                  doc.otherDirectives,
-                ),
-              ),
-            )
-            .join('\n'),
-      ).equals('''
-%RESERVED has no meaning
----
-!!seq
-- &value !!str value
-- *value
-...
-%TAG !! !unused
----
-&map !tag {!!str key: !!str value}''');
-    });
   });
 
   group('General', () {

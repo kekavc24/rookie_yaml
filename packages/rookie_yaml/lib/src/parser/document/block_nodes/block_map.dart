@@ -7,7 +7,7 @@ import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// Adds a [key]-[value] pair to a [map].
 void _addMapEntry<Obj>(

@@ -2,7 +2,7 @@ import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart'
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 typedef FoldFlowInfo = ({
   bool indentDidChange,

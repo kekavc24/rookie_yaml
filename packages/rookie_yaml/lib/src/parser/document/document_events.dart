@@ -1,7 +1,6 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// A event that controls the `DocumentParser`'s next parse action
 abstract interface class ParserEvent {

@@ -2,8 +2,6 @@ import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/scanner/span.dart';
 
-const _pattern = '#';
-
 /// A comment parsed in a document
 ///
 /// {@category yaml_docs}
@@ -39,12 +37,8 @@ final class YamlComment implements Comparable<YamlComment> {
 }
 
 /// Parses a `YAML` comment
-({OnChunk onExit, YamlComment comment}) parseComment(
-  SourceIterator iterator, {
-  String? prepend,
-}) {
-  final buffer = StringBuffer(prepend ?? '');
-
+({OnChunk onExit, YamlComment comment}) parseComment(SourceIterator iterator) {
+  final buffer = StringBuffer();
   final span = YamlSourceSpan(iterator.currentLineInfo.current);
 
   // A comment forces us to read the entire line till the end.
@@ -54,16 +48,14 @@ final class YamlComment implements Comparable<YamlComment> {
     exitIf: (_, current) => current.isLineBreak(),
   );
 
-  var comment = buffer.toString().trim();
-
-  if (comment.startsWith(_pattern)) {
-    comment = comment.replaceFirst(_pattern, '').trimLeft();
-  }
+  final comment = buffer.toString().trim();
 
   return (
     onExit: chunkInfo,
     comment: YamlComment(
-      comment,
+      comment.startsWith('#')
+          ? comment.replaceFirst('#', '').trimLeft()
+          : comment,
       commentSpan: span
         ..nodeEnd = iterator.currentLineInfo.current
         ..structuralOffset = span.nodeStart,

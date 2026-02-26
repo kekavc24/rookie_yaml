@@ -1,4 +1,3 @@
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 const _empty = '';
 const _slash = r'\';

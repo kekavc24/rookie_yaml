@@ -4,7 +4,10 @@ import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/scalar_value.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
+
+import 'object_helper.dart';
 
 final flowDelimiters = Iterable.withIterator(
   () => [
@@ -21,8 +24,6 @@ Directives vanillaDirectives(String yaml) => parseDirectives(
   onParseComment: (_) {},
   warningLogger: (_) {},
 );
-
-T _inferredValue<T>(Scalar<T> scalar) => scalar.node;
 
 extension PreScalarHelper on Subject<PreScalar?> {
   void hasScalarStyle(ScalarStyle style) => isNotNull()
@@ -51,9 +52,14 @@ extension PreScalarHelper on Subject<PreScalar?> {
     ..has((p) => p.scalarInfo.indentOnExit, 'Indent on Exit').equals(indent);
 }
 
-extension ScalarHelper on Subject<Scalar> {
+extension ScalarHelper on Subject<TestNode> {
+  Subject<Object?> hasScalarValue<T>(String name) => has(
+    (e) => e.object,
+    'Scalar Value',
+  ).isA<ScalarValue<Object?>>().has((e) => e.value, name);
+
   void hasInferred<T>(String name, T expected) =>
-      isNotNull().has(_inferredValue, name).isA<T>().equals(expected);
+      hasScalarValue(name).isA<T>().equals(expected);
 
   void hasParsedInteger(int number) => hasInferred('Parsed Integer', number);
 
@@ -61,10 +67,10 @@ extension ScalarHelper on Subject<Scalar> {
 
   void inferredFloat(double value) => hasInferred('Float', value);
 
-  void inferredNull() => has(_inferredValue, 'Null').isNull();
+  void inferredNull() => hasScalarValue('Null').isNull();
 }
 
-extension ParsedNodeHelper on Subject<YamlSourceNode?> {
+extension ParsedNodeHelper on Subject<TestNode> {
   Subject<ResolvedTag?> withTag() =>
       isNotNull().has((n) => n.tag, 'Resolved tag');
 
@@ -78,9 +84,11 @@ extension ParsedNodeHelper on Subject<YamlSourceNode?> {
   void asSimpleString(String node) => isNotNull()
       .has((n) => n.toString(), 'Node as simple string')
       .equals(node);
+
+  Subject<T> hasObject<T>(String name) => has((e) => e.object, name).isA<T>();
 }
 
-extension ParsedDocHelper on Subject<YamlDocument> {
+extension ParsedDocHelper on Subject<YamlDocument<Object?>> {
   void hasVersionDirective(YamlDirective directive) =>
       has((d) => d.versionDirective, 'Yaml directive').equals(directive);
 
@@ -98,8 +106,13 @@ extension ParsedDocHelper on Subject<YamlDocument> {
   Subject<bool> isDocStartExplicit() =>
       has((d) => d.hasExplicitStart, 'Has directive end markers');
 
-  Subject<YamlSourceNode> hasNode() => has((d) => d.root, 'Root node');
+  Subject<TestNode> hasNode() =>
+      has((d) => d.root, 'Root node').isA<TestNode>();
 
   void isDocOfType(YamlDocType docType) =>
       has((d) => d.docType, 'Document Type').equals(docType);
+}
+
+extension Docs on Iterable<YamlDocument> {
+  Iterable<String> flat() => map((e) => e.toString());
 }

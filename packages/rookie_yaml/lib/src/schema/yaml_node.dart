@@ -1,4 +1,5 @@
-part of 'yaml_node.dart';
+import 'package:collection/collection.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
 
 /// Represents the type of YAML document based on the use of directives,
 /// directives end marker (`---`) and document end marker (`...`)
@@ -170,4 +171,34 @@ enum DocumentMarker {
     '...' => DocumentMarker.documentEnd,
     _ => DocumentMarker.none,
   };
+}
+
+/// A custom [Equality] object for deep equality.
+///
+/// {@category yaml_nodes}
+const yamlCollectionEquality = DeepCollectionEquality();
+
+/// A YAML node with a set of node properties and its own predefined
+/// [NodeStyle].
+///
+/// This node is not necessarily limited to YAML's compact notation unless such
+/// a notation is required when the object is being dumped.
+///
+/// {@category intro}
+/// {@category yaml_nodes}
+/// {@category dump_type}
+abstract class CompactYamlNode {
+  const CompactYamlNode();
+
+  /// Style used to serialize the node within the `YAML` source string.
+  NodeStyle get nodeStyle;
+
+  /// [Tag] directive describing how the node is represented natively.
+  ResolvedTag? get tag => null;
+
+  /// Anchor name that allow other nodes to reference this node.
+  String? get anchor => null;
+
+  /// Alias name that references other nodes.
+  String? get alias => null;
 }

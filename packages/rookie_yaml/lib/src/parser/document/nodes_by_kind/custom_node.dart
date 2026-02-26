@@ -17,8 +17,9 @@ import 'package:rookie_yaml/src/parser/document/scalars/flow/single_quoted.dart'
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 part 'custom_block_node.dart';
 part 'custom_flow_node.dart';

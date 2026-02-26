@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/dumping/formatter.dart';
 import 'package:rookie_yaml/src/dumping/map_dumper.dart';
 import 'package:rookie_yaml/src/dumping/scalar_dumper.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 part 'iterable_entry_formatter.dart';
 

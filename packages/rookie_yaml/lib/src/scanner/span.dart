@@ -106,7 +106,7 @@ final class YamlSourceSpan extends NodeSpan {
   @override
   RuneOffset nodeEnd;
 
-  /// Exclusive end as determined by a parsing function with more context than
+  /// Exclusive end determined by a parsing function with more context than
   /// that which emitted [nodeEnd].
   RuneOffset? parsingEnd;
 

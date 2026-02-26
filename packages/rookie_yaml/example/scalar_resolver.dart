@@ -21,11 +21,11 @@ void main() {
 
   print(parsed); // 36893488147419103231
 
-  // As a YamlSourceNode which preserves its state.
-  final scalar = loadYamlNode<Scalar>(yaml, resolvers: [resolver])!;
+  // // As a YamlSourceNode which preserves its state.
+  // final scalar = loadYamlNode<Scalar>(yaml, resolvers: [resolver])!;
 
-  print(scalar.node); // 36893488147419103231
-  print(scalar); // 0x1ffffffffffffffff
+  // print(scalar.node); // 36893488147419103231
+  // print(scalar); // 0x1ffffffffffffffff
 
   //
   //
@@ -51,7 +51,7 @@ void main() {
   print(range); // (min: 1, max: 3)
 
   // As a YamlSourceNode which preserves its state.
-  print(loadYamlNode(yaml, resolvers: [specResolver])); // 1 - 3
+  // print(loadYamlNode(yaml, resolvers: [specResolver])); // 1 - 3
 
   //
   //

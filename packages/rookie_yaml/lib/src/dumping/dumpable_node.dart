@@ -1,5 +1,5 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// An object that can be dumped.
 ///
@@ -57,7 +57,7 @@ extension type Alias._(DumpableAsAlias alias) {
 final class ConcreteNode<T> extends DumpableNode<T> {
   ConcreteNode._(this.dumpable) {
     switch (dumpable) {
-      case YamlSourceNode src:
+      case CompactYamlNode src:
         {
           nodeStyle = src.nodeStyle;
           anchor = src.anchor;
@@ -103,7 +103,7 @@ ConcreteNode<T> dumpableType<T>(T object) {
     throw ArgumentError('An alias cannot have properties');
   }
 
-  return ConcreteNode._((object is AliasNode ? object.node : object) as T);
+  return ConcreteNode._(object);
 }
 
 /// Creates a dumpable node view of the [object].
@@ -118,9 +118,6 @@ DumpableNode<Object?> dumpableObject(
   bool unpackAnchor = false,
 }) => switch (object) {
   DumpableNode<Object?> dumpable => dumpable,
-  AliasNode node =>
-    (unpackAnchor ? ConcreteNode._(node.node) : DumpableAsAlias._(node.alias))
-        as DumpableNode<Object?>,
   _ => ConcreteNode._(object),
 };
 

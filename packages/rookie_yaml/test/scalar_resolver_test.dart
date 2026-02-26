@@ -1,12 +1,9 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
-import 'helpers/model_helpers.dart';
 import 'helpers/test_resolvers.dart';
 
 void main() {
@@ -28,10 +25,8 @@ void main() {
       final yaml = '$asciiTag "$codeUnits"';
 
       check(
-          bootstrapDocParser(yaml, resolvers: [resolver]).parseNodeSingle(),
-        ).isA<Scalar>()
-        ..hasInferred('Dart ascii string', string)
-        ..hasTag(asciiTag);
+        bootstrapDocParser(yaml, resolvers: [resolver]).parseNodeSingle(),
+      ).equals(string);
     });
 
     test('Uses default parser resolution if tag is missing', () {
@@ -44,10 +39,8 @@ void main() {
       );
 
       check(
-          bootstrapDocParser(string, resolvers: [resolver]).parseNodeSingle(),
-        ).isA<Scalar>()
-        ..hasInferred('Dart ascii string', string)
-        ..hasTag(yamlGlobalTag, suffix: stringTag);
+        bootstrapDocParser(string, resolvers: [resolver]).parseNodeSingle(),
+      ).equals(string);
     });
   });
 

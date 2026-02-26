@@ -4,7 +4,7 @@ import 'package:rookie_yaml/src/dumping/string_utils.dart';
 import 'package:rookie_yaml/src/dumping/unfolding.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// A scalar dumped.
 typedef DumpedScalar = ({

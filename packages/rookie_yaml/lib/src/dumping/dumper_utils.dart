@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/dumping/dumpable_node.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 extension StringUtils on String {
   /// Applies the [indent].

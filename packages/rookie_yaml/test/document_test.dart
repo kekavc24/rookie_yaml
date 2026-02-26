@@ -3,20 +3,20 @@ import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
+import 'package:rookie_yaml/src/schema/schema.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
-import 'helpers/document_helper.dart';
 import 'helpers/exception_helpers.dart';
 import 'helpers/model_helpers.dart';
+import 'helpers/object_helper.dart';
 
 void main() {
   group('YamlDocument', () {
     test('Parses bare documents', () {
-      final docs = bootstrapDocParser(docStringAs(YamlDocType.bare)).toList();
+      final docs = loadDoc(docStringAs(YamlDocType.bare));
 
       check(docs).every(
         (d) => d
@@ -27,13 +27,11 @@ void main() {
           ..isDocEndExplicit().isTrue(),
       );
 
-      check(docs.nodesAsSimpleString()).unorderedEquals(parsed);
+      check(docs.flat()).unorderedEquals(parsed);
     });
 
     test('Parses explicit document', () {
-      final docs = bootstrapDocParser(
-        docStringAs(YamlDocType.explicit),
-      ).toList();
+      final docs = loadDoc(docStringAs(YamlDocType.explicit)).toList();
 
       check(docs).every(
         (d) => d
@@ -44,7 +42,7 @@ void main() {
           ..isDocEndExplicit().isTrue(),
       );
 
-      check(docs.nodesAsSimpleString()).unorderedEquals(parsed);
+      check(docs.flat()).unorderedEquals(parsed);
     });
 
     test('Parses directive doc', () {
@@ -75,9 +73,7 @@ $node
 ...
 ''';
 
-      final doc = bootstrapDocParser(yaml).firstOrNull;
-
-      check(doc).isNotNull()
+      check(loadDoc(yaml).firstOrNull).isNotNull()
         ..hasVersionDirective(yamlDirective)
         ..hasGlobalTags({globalWithUri, globalWithLocal})
         ..isDocOfType(YamlDocType.directiveDoc)
@@ -112,7 +108,7 @@ folded
 --- {key: value}
 ''';
 
-      check(bootstrapDocParser(yaml)).every(
+      check(loadDoc(yaml)).every(
         (d) => d
           ..isDocStartExplicit().isTrue()
           ..isDocEndExplicit().isFalse()
@@ -129,15 +125,17 @@ folded
 ...
 ''';
 
-      check(bootstrapDocParser(yaml))
+      check(loadDoc(yaml))
         ..length.equals(3)
         ..every((d) => d.isDocEndExplicit().isTrue())
-        ..has((d) => d.take(2).map((e) => e.root), 'Leading elements').every(
-          (e) => e.isA<Scalar>().has((s) => s.node, 'Value').isNull(),
-        )
-        ..has((d) => d.last.root, 'Trailing element').isA<Scalar>().which(
-          (s) => s.has((s) => s.node, 'Value').isA<String>().isEmpty(),
-        );
+        ..has(
+          (d) => d.take(2).map((e) => e.root),
+          'Leading elements',
+        ).every((e) => e.inferredNull())
+        ..has(
+          (d) => d.last.root,
+          'Trailing element',
+        ).hasScalarValue('Value').isA<String>().isEmpty();
     });
 
     test('Defaults to plain scalar if not directive end marker', () {
@@ -151,16 +149,14 @@ folded
 
   group('Tags', () {
     test('Assigns shorthand as is if not resolved', () {
-      final tag = TagShorthand.fromTagUri(TagHandle.primary(), 'not-resolved');
+      final tag = TagShorthand.primary('not-resolved');
 
       final yaml =
           '''
 $tag yaml
 ''';
 
-      check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).hasTag(tag);
+      check(loadDoc(yaml).firstOrNull).isNotNull().hasNode().hasTag(tag);
     });
 
     test('Resolves shorthands with primary tag handles', () {
@@ -182,8 +178,8 @@ $suffix node
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).hasTag(globalTag, suffix: suffix);
+        loadDoc(yaml).firstOrNull,
+      ).isNotNull().hasNode().hasTag(globalTag, suffix: suffix);
     });
 
     test(
@@ -192,8 +188,8 @@ $suffix node
         final yaml = '$stringTag node';
 
         check(
-          bootstrapDocParser(yaml).parseNodeSingle(),
-        ).hasTag(yamlGlobalTag, suffix: stringTag);
+          loadDoc(yaml).firstOrNull,
+        ).isNotNull().hasNode().hasTag(yamlGlobalTag, suffix: stringTag);
       },
     );
 
@@ -214,8 +210,8 @@ $stringTag node
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).hasTag(globalTag, suffix: stringTag);
+        loadDoc(yaml).firstOrNull,
+      ).isNotNull().hasNode().hasTag(globalTag, suffix: stringTag);
     });
 
     test('Resolves named shorthands to custom declaration', () {
@@ -236,8 +232,8 @@ $suffix
 ''';
 
       check(
-        bootstrapDocParser(yaml).parseNodeSingle(),
-      ).hasTag(globalTag, suffix: suffix);
+        loadDoc(yaml).firstOrNull,
+      ).isNotNull().hasNode().hasTag(globalTag, suffix: suffix);
     });
 
     test(
@@ -273,35 +269,32 @@ $star
 $star
 ''';
 
-        final docs = bootstrapDocParser(
-          yaml,
-        ).parsedNodes().toList();
-
+        final docs = loadDoc(yaml);
         check(docs).length.equals(3);
 
-        check(docs[0]).hasTag(firstGlobal, suffix: star);
-        check(docs[1]).hasTag(secondGlobal, suffix: star);
+        check(docs[0]).hasNode().hasTag(firstGlobal, suffix: star);
+        check(docs[1]).hasNode().hasTag(secondGlobal, suffix: star);
 
         // Not resolved to any global tag
-        check(docs[2]).hasTag(star);
+        check(docs[2]).hasNode().hasTag(star);
       },
     );
 
     test('Resolves non-specific tags based on kind', () {
       check(
-          bootstrapDocParser('! { ! [], ! scalar }').parseNodeSingle(),
-        ).isNotNull().isA<Mapping>()
+          loadDoc('! { ! [], ! scalar }').firstOrNull,
+        ).isNotNull().hasNode()
         ..hasTag(yamlGlobalTag, suffix: mappingTag)
-        ..has((map) => map.children, 'Keys').which(
-          (keys) => keys
+        ..hasObject<Map<TestNode, TestNode?>>('Map').which(
+          (map) => map.keys
             ..has((k) => k.firstOrNull, 'First element').which(
-              (e) => e.isA<Sequence>().hasTag(
+              (e) => e.isA<TestNode>().hasTag(
                 yamlGlobalTag,
                 suffix: sequenceTag,
               ),
             )
             ..has((k) => k.lastOrNull, 'Last element').which(
-              (e) => e.isA<Scalar>().hasTag(yamlGlobalTag, suffix: stringTag),
+              (e) => e.isA<TestNode>().hasTag(yamlGlobalTag, suffix: stringTag),
             ),
         );
     });

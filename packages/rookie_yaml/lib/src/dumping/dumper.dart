@@ -5,8 +5,8 @@ import 'package:rookie_yaml/src/dumping/list_dumper.dart';
 import 'package:rookie_yaml/src/dumping/map_dumper.dart';
 import 'package:rookie_yaml/src/dumping/scalar_dumper.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+import 'package:rookie_yaml/src/schema/schema.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// Callback for properties captured after a [YamlDumper] has fully dumped an
 /// object.

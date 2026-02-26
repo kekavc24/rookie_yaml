@@ -1,4 +1,17 @@
-part of 'yaml_document.dart';
+
+
+import 'dart:math';
+
+import 'package:rookie_yaml/rookie_yaml.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
+import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
+import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
+import 'package:rookie_yaml/src/parser/document/document_events.dart';
+import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
+import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 
 /// Callback for creating a document with the current parser's information.
 typedef DocumentBuilder<Doc, R> =

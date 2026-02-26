@@ -1,5 +1,4 @@
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 /// Default `YAML` uri prefix
 const _yamlPrefix = 'tag:yaml.org,2002:';

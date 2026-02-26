@@ -2,16 +2,13 @@ import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
-import 'package:rookie_yaml/src/parser/delegates/yaml_node_delegates.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/parser/document/document_parser.dart';
 import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
-import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
 import 'package:rookie_yaml/src/scanner/encoding/utf_utils.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/scanner/span.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
-part 'source_node_loader.dart';
 part 'dart_objects.dart';
 
 /// A generic input class for the [DocumentParser].
@@ -20,6 +17,16 @@ part 'dart_objects.dart';
 /// {@category yaml_nodes}
 /// {@category yaml_docs}
 extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
+  /// Creates a simple input from a [source].
+  ///
+  /// Prefer using this constructor if you want your input to be parsed "as-is"
+  /// with no additional mutations. For a string, call the `simpleString`
+  /// constructor.
+  YamlSource.simple(Iterable<int> source) : this._(source);
+
+  /// Creates a simple input from a [yaml] string.
+  YamlSource.simpleString(String yaml) : this.simple(yaml.runes);
+
   /// Creates an input from an UTF-8 byte source. No dangling surrogate pairs
   /// are allowed and the BOM character has no side effects.
   YamlSource.strictUtf8(Uint8List bytes) : this._(decodeUtf8Strict(bytes));
@@ -78,12 +85,12 @@ final _logger = Logger('rookie_yaml')
 
 /// Logs [message] based on its status. [message] is always logged with
 /// [Level.INFO] if [isInfo] is true. Otherwise, logs as warning.
-void _defaultLogger(bool isInfo, String message) =>
+void defaultLogger(bool isInfo, String message) =>
     isInfo ? _logger.info(message) : _logger.warning(message);
 
 /// Throws a [YamlParseException] if [throwOnMapDuplicate] is true. Otherwise,
 /// logs the message at [Level.info].
-void _defaultOnMapDuplicate(
+void onParsedDuplicateKey(
   SourceIterator iterator, {
   required RuneOffset start,
   required RuneOffset end,
@@ -103,7 +110,7 @@ void _defaultOnMapDuplicate(
 }
 
 /// Loads all yaml documents using the provided [parser].
-List<Doc> _loadYaml<Doc, R>(DocumentParser<Doc, R> parser) {
+List<Doc> loadYamlDocuments<Doc, R>(DocumentParser<Doc, R> parser) {
   hierarchicalLoggingEnabled = true;
   final objects = <Doc>[];
 

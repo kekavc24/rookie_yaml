@@ -1,5 +1,4 @@
 import 'package:rookie_yaml/src/dumping/dumper_utils.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
 
 typedef CollectionEnd = ({bool? explicit, String ending});
 

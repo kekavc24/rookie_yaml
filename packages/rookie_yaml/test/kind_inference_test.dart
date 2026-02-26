@@ -1,12 +1,12 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/schema/nodes/yaml_node.dart';
-import 'package:rookie_yaml/src/schema/yaml_schema.dart';
+import 'package:rookie_yaml/src/schema/schema.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
 import 'helpers/exception_helpers.dart';
 import 'helpers/model_helpers.dart';
+import 'helpers/object_helper.dart';
 import 'helpers/test_resolvers.dart';
 
 void main() {
@@ -17,21 +17,15 @@ void main() {
 - ! []
 ''';
 
-    final sequence = bootstrapDocParser(
-      string,
-    ).parseNodeSingle()!.cast<Sequence>();
-
-    check(sequence.children[0]).isA<Scalar>()
-      ..hasInferred('Value', '24')
-      ..hasTag(yamlGlobalTag, suffix: stringTag);
-
-    check(
-      sequence.children[1],
-    ).isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
-
-    check(
-      sequence.children[2],
-    ).isA<Sequence>().hasTag(yamlGlobalTag, suffix: sequenceTag);
+    check(loadDoc(string).first)
+        .hasNode()
+        .hasObject<List<TestNode>>('List')
+        .has((l) => l.map((e) => e.tag), 'Elements with tags')
+        .containsEqualInOrder([
+          NodeTag(yamlGlobalTag, suffix: stringTag),
+          NodeTag(yamlGlobalTag, suffix: mappingTag),
+          NodeTag(yamlGlobalTag, suffix: sequenceTag),
+        ]);
   });
 
   group('Scalar kinds', () {
@@ -49,15 +43,13 @@ void main() {
    $integer
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (d) => d
-                ..hasTag(yamlGlobalTag, suffix: integerTag)
-                ..hasParsedInteger(integer),
-            ),
+            (d) => d
+              ..hasTag(yamlGlobalTag, suffix: integerTag)
+              ..hasParsedInteger(integer),
           );
     });
 
@@ -75,15 +67,13 @@ void main() {
    $integer
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (s) => s
-                ..hasTag(yamlGlobalTag, suffix: integerTag)
-                ..hasParsedInteger(24),
-            ),
+            (s) => s
+              ..hasTag(yamlGlobalTag, suffix: integerTag)
+              ..hasParsedInteger(24),
           );
     });
 
@@ -101,15 +91,13 @@ void main() {
    $integer
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (s) => s
-                ..hasTag(yamlGlobalTag, suffix: integerTag)
-                ..hasParsedInteger(24),
-            ),
+            (d) => d
+              ..hasTag(yamlGlobalTag, suffix: integerTag)
+              ..hasParsedInteger(24),
           );
     });
 
@@ -127,15 +115,13 @@ void main() {
    $float
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (s) => s
-                ..hasTag(yamlGlobalTag, suffix: floatTag)
-                ..inferredFloat(float),
-            ),
+            (d) => d
+              ..hasTag(yamlGlobalTag, suffix: floatTag)
+              ..inferredFloat(float),
           );
     });
 
@@ -154,30 +140,26 @@ void main() {
    $inferred
 ''';
 
-        check(bootstrapDocParser(yaml).parseNodeSingle())
-            .isA<Sequence>()
-            .has((s) => s.children, 'SourceNodes')
+        check(loadDoc(yaml).first)
+            .hasNode()
+            .hasObject<List<TestNode>>('List')
             .every(
-              (d) => d.isA<Scalar>().which(
-                (d) => d
-                  ..hasTag(yamlGlobalTag, suffix: booleanTag)
-                  ..inferredBool(inferred),
-              ),
+              (d) => d
+                ..hasTag(yamlGlobalTag, suffix: booleanTag)
+                ..inferredBool(inferred),
             );
       }
     });
 
     test('Infers nulls in different scalars', () {
       void checker(String yaml) {
-        check(bootstrapDocParser(yaml).parseNodeSingle())
-            .isA<Sequence>()
-            .has((s) => s.children, 'SourceNodes')
+        check(loadDoc(yaml).first)
+            .hasNode()
+            .hasObject<List<TestNode>>('List')
             .every(
-              (d) => d.isA<Scalar>().which(
-                (d) => d
-                  ..hasTag(yamlGlobalTag, suffix: nullTag)
-                  ..inferredNull(),
-              ),
+              (d) => d
+                ..hasTag(yamlGlobalTag, suffix: nullTag)
+                ..inferredNull(),
             );
       }
 
@@ -220,15 +202,13 @@ void main() {
    $expected
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (d) => d
-                ..hasTag(yamlGlobalTag, suffix: stringTag)
-                ..hasInferred('Normal content', expected),
-            ),
+            (d) => d
+              ..hasTag(yamlGlobalTag, suffix: stringTag)
+              ..hasInferred('Normal content', expected),
           );
     });
 
@@ -240,15 +220,13 @@ void main() {
 - |- # Empty literal string
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (d) => d
-                ..hasTag(yamlGlobalTag, suffix: stringTag)
-                ..hasInferred('Normal content', ""),
-            ),
+            (d) => d
+              ..hasTag(yamlGlobalTag, suffix: stringTag)
+              ..hasInferred('Normal content', ""),
           );
     });
 
@@ -268,15 +246,13 @@ void main() {
    $content\n\n
 ''';
 
-      check(bootstrapDocParser(yaml).parseNodeSingle())
-          .isA<Sequence>()
-          .has((s) => s.children, 'SourceNodes')
+      check(loadDoc(yaml).first)
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .every(
-            (d) => d.isA<Scalar>().which(
-              (d) => d
-                ..hasTag(yamlGlobalTag, suffix: stringTag)
-                ..hasInferred('Normal content', expected),
-            ),
+            (d) => d
+              ..hasTag(yamlGlobalTag, suffix: stringTag)
+              ..hasInferred('Normal content', expected),
           );
     });
 
@@ -306,14 +282,12 @@ void main() {
 
     test('Infers type but verbatim tags are not overriden', () {
       final tag = VerbatimTag.fromTagShorthand(
-        TagShorthand.fromTagUri(TagHandle.primary(), 'verbatim'),
+        TagShorthand.primary('verbatim'),
       );
 
       final yaml = '$tag 24';
 
-      check(
-          bootstrapDocParser(yaml).parseNodeSingle(),
-        ).isNotNull().isA<Scalar>()
+      check(loadDoc(yaml).first).hasNode()
         ..withTag().equals(tag)
         ..hasInferred('Partial content', '24');
     });
@@ -403,59 +377,32 @@ void main() {
   group('Sequences', () {
     test('Variant [1]', () {
       check(
-        bootstrapDocParser('''
-!!seq
-- sequence
-''').parseNodeSingle(),
-      ).isNotNull().isA<Sequence>().hasTag(
-        yamlGlobalTag,
-        suffix: sequenceTag,
-      );
+        loadDoc('!!seq\n- sequence').first,
+      ).hasNode().hasTag(yamlGlobalTag, suffix: sequenceTag);
 
       check(
-        bootstrapDocParser('''
-!!seq [flow]
-''').parseNodeSingle(),
-      ).isNotNull().isA<Sequence>().hasTag(
-        yamlGlobalTag,
-        suffix: sequenceTag,
-      );
+        loadDoc('!!seq [flow]').first,
+      ).hasNode().hasTag(yamlGlobalTag, suffix: sequenceTag);
     });
 
     test('Variant [2]', () {
       check(
-          bootstrapDocParser('''
+          loadDoc('''
 - !!seq
   - block
-''').parseNodeSingle(),
-        ).isNotNull().isA<Sequence>()
-        ..hasTag(
-          yamlGlobalTag,
-          suffix: sequenceTag,
-        )
-        ..which(
-          (s) => s.first.isA<Sequence>()
-            ..hasTag(
-              yamlGlobalTag,
-              suffix: sequenceTag,
-            ),
+''').first,
+        ).hasNode()
+        ..hasTag(yamlGlobalTag, suffix: sequenceTag)
+        ..hasObject<List<TestNode>>('List').which(
+          (s) => s.first.hasTag(yamlGlobalTag, suffix: sequenceTag),
         );
     });
 
     test('Variant [3]', () {
-      check(
-          bootstrapDocParser('[ !!seq [flow] ]').parseNodeSingle(),
-        ).isNotNull().isA<Sequence>()
-        ..hasTag(
-          yamlGlobalTag,
-          suffix: sequenceTag,
-        )
-        ..which(
-          (s) => s.first.isA<Sequence>()
-            ..hasTag(
-              yamlGlobalTag,
-              suffix: sequenceTag,
-            ),
+      check(loadDoc('[ !!seq [flow] ]').first).hasNode()
+        ..hasTag(yamlGlobalTag, suffix: sequenceTag)
+        ..hasObject<List<TestNode>>('List').which(
+          (s) => s.first.hasTag(yamlGlobalTag, suffix: sequenceTag),
         );
     });
   });
@@ -463,50 +410,46 @@ void main() {
   group('Mappings', () {
     test('Variant [1]', () {
       check(
-        bootstrapDocParser('''
-!!map
-key: value
-''').parseNodeSingle(),
-      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+        loadDoc('!!map\nkey: value').first,
+      ).hasNode().hasTag(yamlGlobalTag, suffix: mappingTag);
     });
 
     test('Variant [2]', () {
       check(
-        bootstrapDocParser('''
+        loadDoc('''
 !!map
 : value
-''').parseNodeSingle(),
-      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+''').first,
+      ).hasNode().hasTag(yamlGlobalTag, suffix: mappingTag);
     });
 
     test('Variant [3]', () {
       check(
-        bootstrapDocParser('''
+        loadDoc('''
 !!map
 ? key
-''').parseNodeSingle(),
-      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+''').first,
+      ).hasNode().hasTag(yamlGlobalTag, suffix: mappingTag);
     });
 
     test('Variant [4]', () {
       check(
-            bootstrapDocParser('''
+            loadDoc('''
 - &anchor value
 - !!map
   *anchor : value
-''').parseNodeSingle(),
+''').first,
           )
-          .isNotNull()
-          .isA<Sequence>()
+          .hasNode()
+          .hasObject<List<TestNode>>('List')
           .has((s) => s[1], 'Block of alias key')
-          .isA<Mapping>()
           .hasTag(yamlGlobalTag, suffix: mappingTag);
     });
 
     test('Variant [5]', () {
       check(
-        bootstrapDocParser('!!map {flow: map}').parseNodeSingle(),
-      ).isNotNull().isA<Mapping>().hasTag(yamlGlobalTag, suffix: mappingTag);
+        loadDoc('!!map {flow: map}').first,
+      ).hasNode().hasTag(yamlGlobalTag, suffix: mappingTag);
     });
   });
 

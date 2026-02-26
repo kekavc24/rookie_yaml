@@ -63,7 +63,7 @@ List<Object?> _loadAsDartObject(
   required bool throwOnMapDuplicate,
   required CustomTriggers? triggers,
   required void Function(bool isInfo, String message)? logger,
-}) => _loadYaml<Object?, Object?>(
+}) => loadYamlDocuments<Object?, Object?>(
   DocumentParser(
     iterator,
     aliasFunction: (_, reference, _) =>
@@ -71,8 +71,8 @@ List<Object?> _loadAsDartObject(
     collectionFunction: (buffer, _, _, _, _) => buffer,
     scalarFunction: (inferred, _, _, _, _) => inferred.value,
     triggers: triggers,
-    logger: logger ?? _defaultLogger,
-    onMapDuplicate: (keyStart, keyEnd, message) => _defaultOnMapDuplicate(
+    logger: logger ?? defaultLogger,
+    onMapDuplicate: (keyStart, keyEnd, message) => onParsedDuplicateKey(
       iterator,
       start: keyStart,
       end: keyEnd,
