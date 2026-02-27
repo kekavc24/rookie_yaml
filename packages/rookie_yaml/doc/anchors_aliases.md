@@ -6,7 +6,7 @@ A node cannot have both an `anchor` and `alias`. `YAML` demands them to be mutua
 
 ## Flow Nodes
 
-Anchors and aliases for flow nodes are straightforward due to their heavy use of explicit indicators.
+Anchors and aliases for flow nodes since such nodes have explicit indicators.
 
 ```dart
 const yaml = '''
@@ -47,7 +47,7 @@ final expectedMap = {
   ]: {'key': 'value'}
 };
 
-final node = loadYamlNode<Mapping>(source: YamlSource.string(yaml));
+final node = loadObject(YamlSource.string(yaml));
 
 /// Aliases are unpacked as the node they reference
 print(node.toString() == expectedMap.toString()); // True
@@ -62,23 +62,27 @@ print(yamlCollectionEquality.equals(node, expectedMap));
 Block map nodes are somewhat unique in this aspect. You need to declare the entire node on a new line for properties to be assigned to the node if it degenerates to a map.
 
 ```dart
-// This goes to the entire map
-const yaml = '''
-&map-anchor !!map
-key: value
+  // This goes to the entire map
+  const yaml = '''
+- &map-anchor !!map
+  key: value
+- *map-anchor
 
 --- # Next document!
 
-&key-anchor !!str key: value
+&key-anchor !!str key: *key-anchor
 ''';
 
-final docs = loadAllDocuments(source: YamlSource.string(yaml));
+final docs = loadAllObjects(YamlSource.string(yaml));
 
-// Anchor in first document goes to the root map
-print(docs[0].root.anchor != null); // True
+// Objects are the same in the first document.
+print((docs[0] as List).toSet().length == 1); // True
 
-// Anchor in second document goes to the first key
-print(docs[1].root.anchor != null); // False
+// Second document
+final secondDoc = (docs[1] as Map).entries.first;
+
+// Anchor in second document goes to the first key.
+print(secondDoc.key == secondDoc.value); // True
 ```
 
 ## Block Explicit Keys & Block Sequences
@@ -92,7 +96,6 @@ const yaml = '''
 &map-anchor !!map
 ? key
 : value
-
 ...
 
 # This is also okay
@@ -102,10 +105,8 @@ const yaml = '''
 - next
 ''';
 
-final docs = loadAllDocuments(source: YamlSource.string(yaml));
-
-// True
-print(docs.every((d) => d.root.anchorOrAlias != null));
+// [{key: value}, [entry, next]]
+print(loadAllObjects(YamlSource.string(yaml)));
 ```
 
 ## Examples of invalid anchors for a block node
@@ -115,7 +116,7 @@ print(docs.every((d) => d.root.anchorOrAlias != null));
 ```dart
 // Throws
 print(
-  loadYamlNode<Mapping>(
+  loadObject<Map>(
     source: YamlSource.string('''
 # Invalid use in block map
 
@@ -133,7 +134,7 @@ key: value
 
 // Throws
 print(
-  loadYamlNode<Mapping>(
+  loadObject<Map>(
     source: YamlSource.string('''
 # First key. Properties are inline. Error
 
@@ -152,7 +153,7 @@ print(
 
 // Throws
 print(
-  loadYamlNode<Sequence>(
+  loadObject<List>(
     source: YamlSource.string('''
 # Invalid use in list map
 
@@ -168,7 +169,7 @@ print(
 
 // Throws
 print(
-  loadYamlNode<Sequence>(
+  loadObject<List>(
     source: YamlSource.string('''
 # First entry. Properties are inline. Error
 

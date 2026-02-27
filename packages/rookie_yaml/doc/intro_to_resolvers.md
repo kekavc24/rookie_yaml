@@ -1,7 +1,7 @@
 > [!NOTE]
 > This API is experimental but solid and heavily relies on intent and expressiveness for predictable results. Improvements will be made in later versions.
 
-Nodes are resolved using the default YAML and failsafe JSON schema. The parser uses a scanner-less strategy and relies on delegates instead to pack node information before constructing a `YamlSourceNode` in the [representation stage][yaml_models] or a built-in `Dart` type in the [native data structures stage][yaml_models] where a node's style and tag information is stripped.
+Nodes are resolved using the default YAML and failsafe JSON schema. The parser uses a scanner-less strategy and relies on delegates instead to pack node information before a built-in `Dart` type in the [native data structures stage][yaml_models] where a node's style and tag information is stripped.
 
 ## Resolvers
 
@@ -10,10 +10,6 @@ The parser accepts custom resolvers that act as plugins for constructing custom 
 1. `ScalarResolver` - lazily resolve scalars only after its string content has been buffered. Cannot be used for maps and sequences (lists).
 2. `CustomResolver` - lazily construct custom delegates that interact with the actual parser. You can use them to return strongly typed objects (even for Dart maps and lists).
 
-> [!IMPORTANT]
-> `CustomResolver`s are restricted to built-in Dart type loaders. A `YamlSourceNode` is a generic yaml node.
-
-It should be noted a `CustomResolver` has no access to the node's style or indent information. You only get access to your tag's information which includes the `GlobalTag` it is resolved to as shown in the spec's [representation stage][yaml_models]. Span information may also be present.
 
 ## Triggers
 

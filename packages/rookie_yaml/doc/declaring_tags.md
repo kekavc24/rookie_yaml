@@ -10,6 +10,8 @@ print(TagHandle.named('example')); // !example!
 
 ## Tag Shorthands
 
+The tag handle is automatically associated with the constructor.
+
 ```dart
 print(TagShorthand.primary('primary')); // !primary
 print(TagShorthand.secondary('int')); // !!int

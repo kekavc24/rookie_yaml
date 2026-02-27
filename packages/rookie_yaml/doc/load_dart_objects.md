@@ -14,26 +14,26 @@ You can load a single Dart object from a YAML source string/bytes by calling `lo
 ```dart
 // Type inferred automatically. A YAML spec philosophy!
 print(
-  loadDartObject<int>(
-    source: YamlSource.string('24'),
+  loadObject<int>(
+    YamlSource.string('24'),
   ),
 );
 
 print(
-  loadDartObject<bool>(
-    source: YamlSource.string('true'),
+  loadObject<bool>(
+    YamlSource.string('true'),
   ),
 );
 
 print(
-  loadDartObject<double>(
-    source: YamlSource.string('24.0'),
+  loadObject<double>(
+    YamlSource.string('24.0'),
   ),
 );
 
 print(
-  loadDartObject<String>(
-    source: YamlSource.string('''
+  loadObject<String>(
+    YamlSource.string('''
 >+
 24
 '''),
@@ -45,17 +45,20 @@ Any directives, tags, anchors and aliases are stripped.
 
 ```dart
 // true
-print(loadDartObject<bool>(source: YamlSource.string('''
+print(loadObject<bool>(
+  YamlSource.string('''
 %YAML 1.2
 %SOME directive
 ---
 !!bool "true"
-''')));
+'''),
+  ),
+);
 
 // Prints "Am I a ship?"
 print(
-  loadDartObject<String>(
-    source: YamlSource.string('&anchor Am I a ship?'),
+  loadObject<String>(
+    YamlSource.string('&anchor Am I a ship?'),
   ),
 );
 ```
@@ -71,36 +74,36 @@ This ensures the parser just works out of the box and doesn't trip itself from a
 ```dart
 // Dart throws. Casting happens after the list is already List<Object?> which Dart won't allow.
 print(
-  loadDartObject<List<int>>(
-    source: YamlSource.string('[24, 25]'),
+  loadObject<List<int>>(
+    YamlSource.string('[24, 25]'),
   ),
 );
 
 // Okay. [24, 25]
 print(
-  loadDartObject<List>(
-    source: YamlSource.string('[24, 25]'),
+  loadObject<List>(
+    YamlSource.string('[24, 25]'),
   ),
 );
 
 // Enforce the cast later instead during iteration! Okay. [24, 25]
 print(
-  loadDartObject<List>(
-    source: YamlSource.string('[24, 25]'),
+  loadObject<List>(
+    YamlSource.string('[24, 25]'),
   )?.cast<int>(),
 );
 
 // Okay. {key: value}
 print(
-  loadDartObject<Map>(
-    source: YamlSource.string('{ key: value }'),
+  loadObject<Map>(
+    YamlSource.string('{ key: value }'),
   ),
 );
 
 // Okay. {24: int, 25: cast}
 print(
-  loadDartObject<Map>(
-    source: YamlSource.string('''
+  loadObject<Map>(
+    YamlSource.string('''
 24: int
 25: cast
 '''),
@@ -113,8 +116,8 @@ Stripped anchors and aliases are evident in lists/maps. Each node is direct refe
 ```dart
 // Prints: {value: [flow, value], flow: [flow, value]}
 print(
-  loadDartObject<Map>(
-    source: YamlSource.string('''
+  loadObject<Map>(
+    YamlSource.string('''
 &scalar value: &flow-list [ &flow flow, *scalar ]
 *flow : *flow-list
 '''),
@@ -126,8 +129,8 @@ print(
 > You can configure the parser to dereference `List` and `Map` aliases, by default. The `List` or `Map` alias will be copied each time the parser needs it.
 >
 > ```dart
->   final list = loadDartObject<List>(
->     source: YamlSource.string('''
+>   final list = loadObject<List>(
+>     YamlSource.string('''
 > - &list [ flow, &map { key: value } ]
 > - *list
 > - *map
@@ -139,8 +142,8 @@ print(
 > ```
 >
 > ```dart
->   final list = loadDartObject<List>(
->     source: YamlSource.string('''
+>   final list = loadObject<List>(
+>     YamlSource.string('''
 > - &list [ flow, &map { key: value } ]
 > - *list
 > - *map
@@ -159,8 +162,8 @@ You can also load multiple documents by calling `loadAsDartObjects`. It explicit
 ```dart
 // Prints: [first, second, third]
 print(
-  loadDartObjects(
-    source: YamlSource.string('''
+  loadAllObjects(
+    YamlSource.string('''
 # This document has no directives but uses doc end chars "..."
 
 "first"

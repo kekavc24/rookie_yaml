@@ -1,20 +1,19 @@
-YAML today is used to declare configs and schemas. Most people think of tags as a way to create types but tags can also be used to extend the capability of a predictable, configurable and/or rarely-changing YAML schema/config file. As you go through the `CustomResolver` section and examples, please keep this at the back of your mind.
+YAML today is used to declare configs and schemas. Most people think of tags as a way to create types but tags can also be used to extend the capability of a predictable, configurable and/or rarely-changing YAML schema/config file.
 
 ## `CustomResolver`s
 
-As earlier stated, the parser uses delegates to pack node information that is meaningful in the current parsing context. Custom resolvers are meant to extend this context and nudge the parser to construct objects that much a specific type. Internally, every delegate has information about the current node's state such as:
+As earlier stated, the parser uses delegates to pack node information that is meaningful in the current parsing context. Custom resolvers are meant to extend this context and nudge the parser to construct objects that much a specific type.
 
-1. Starting and ending offset. The end offset is provided when the node cannot be parsed further in the current context.
-2. Node properties (`ParsedProperty`) that:
-  - Contains its span information within the YAML source provided.
-  - The inferred kind if any schema tags were present, that is, map, sequence or scalar.
-3. Other contextual parser properties.
+A `CustomResolver` allows a custom delegate to be used by the parser to parse objects based on the current node kind. The delegate doesn't control the parser but a tag can hint what the parser should do. With this resolver:
 
-A `CustomResolver` allows a custom delegate to be used by the parser to parse objects based on the current node kind. The delegate doesn't control the parser but a tag can hint what the parser should do. There are 3 types of delegates matching each generic node kind you can extend:
+  1. Step into the `Representation` stage when implementing the delegate itself.
+  2. Replay a decomposed view of the `Representation` and `Serialization` stage via a callback once the the object in `Step 1` has been constructed.
+
+There are 3 types of delegates matching each generic node kind you can extend:
 
 | Delegate            | Description                                                                             | `CustomResolver` provider-of-callee   |
 |---------------------|-----------------------------------------------------------------------------------------|:-------------------------------------:|
-| `BytesToScalar`     | Has access to the underlying code points of a scalar. The parser writes directly to it. | `ObjectFromScalarBytes`                       |
+| `BytesToScalar`     | Has access to the underlying code points of a scalar. The parser writes to it.          | `ObjectFromScalarBytes`               |
 | `SequenceToObject`  | Accepts entries as a sequence/list would.                                               | `ObjectFromIterable`                  |
 | `MappingToObject`   | Accepts a key-value pair as a map/mapping would.                                        | `ObjectFromMap`                       |
 
@@ -30,5 +29,3 @@ If your YAML schema/config file doesn't rely on tags. You can build a custom sch
 
 > [!TIP]
 > A cheeky implementation could make the parser return a byte view of your yaml file with any indentation/styles/tags stripped. :)
->
-> (Effectively turning this parser into a glorified end-to-end "byte lexer" for your yaml files)

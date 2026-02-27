@@ -36,6 +36,9 @@ print(
 
 By default, the `toYamlSafe` callback is also stripped for built-in Dart types. A `Scalar`, however, preserves it.
 
+> [!NOTE]
+> You need to use `package:editable_yaml` for this functionality.
+
 ```dart
 // 0x1ffffffffffffffff
 print(
