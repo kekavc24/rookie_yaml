@@ -1,13 +1,13 @@
+import 'package:rookie_yaml/src/loaders/loader.dart';
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 
 List<Object?> bootstrapDocParser(
   String yaml, {
   List<ScalarResolver<Object?>>? resolvers,
   void Function(bool isInfo, String message)? logger,
   void Function(String message)? onMapDuplicate,
-}) => loadAsDartObjects(
+}) => loadAllObjects(
   YamlSource.string(yaml),
   triggers: CustomTriggers(resolvers: resolvers),
   throwOnMapDuplicate: onMapDuplicate == null,

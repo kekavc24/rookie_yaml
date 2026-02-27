@@ -24,7 +24,7 @@ block:
     - sequence
 ''';
 
-  final docs = loadAsDartObjects(YamlSource.string(yaml)); // Parse documents
-  
+  final docs = loadAllObjects(YamlSource.string(yaml)); // Parse documents
+
   print(docs);
 }

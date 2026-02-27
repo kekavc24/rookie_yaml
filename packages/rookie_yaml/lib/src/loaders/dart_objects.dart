@@ -50,7 +50,7 @@ void _dereferenceIterable(
 }
 
 /// Dereferences a [List] or [Map] if [dereferenceAlias] is `true`. Callers of
-/// built-in Dart type loaders such [loadDartObject] or [loadAsDartObjects]
+/// built-in Dart type loaders such [loadObject] or [loadAllObjects]
 /// may want aliases dereferenced since the parser does a zero-copy operation
 /// and just passes the reference around.
 Object? _dereferenceAliases(Object? object, {required bool dereferenceAlias}) =>
@@ -103,7 +103,7 @@ List<Object?> _loadAsDartObject(
 /// not be overwritten.
 ///
 /// {@category dart_objects}
-List<Object?> loadAsDartObjects(
+List<Object?> loadAllObjects(
   YamlSource source, {
   bool dereferenceAliases = false,
   bool throwOnMapDuplicate = true,
@@ -138,14 +138,14 @@ List<Object?> loadAsDartObjects(
 /// not be overwritten.
 ///
 /// {@category dart_objects}
-T? loadDartObject<T>(
+T? loadObject<T>(
   YamlSource source, {
   bool dereferenceAliases = false,
   bool throwOnMapDuplicate = true,
   CustomTriggers? triggers,
   void Function(bool isInfo, String message)? logger,
 }) =>
-    loadAsDartObjects(
+    loadAllObjects(
           source,
           dereferenceAliases: dereferenceAliases,
           throwOnMapDuplicate: throwOnMapDuplicate,

@@ -1,7 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:rookie_yaml/src/dumping/dumper.dart';
 import 'package:rookie_yaml/src/dumping/object_dumper.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
+import 'package:rookie_yaml/src/loaders/loader.dart';
 import 'package:rookie_yaml/src/schema/yaml_node.dart';
 import 'package:test/test.dart';
 
@@ -264,7 +264,7 @@ void main() {
 ''');
 
       check(
-        loadDartObject(YamlSource.string(dumped)),
+        loadObject(YamlSource.string(dumped)),
       ).isA<Iterable>().deepEquals(iterable);
     });
   });

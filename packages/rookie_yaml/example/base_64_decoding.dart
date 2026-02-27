@@ -50,7 +50,7 @@ void main(List<String> args) {
   final base64Tag = TagShorthand.primary('dart/base64');
 
   // Using [SimpleBase64] that parses when [parsed] is called.
-  final base64StrToString = loadDartObject<String>(
+  final base64StrToString = loadObject<String>(
     YamlSource.string('$base64Tag $base64'),
     triggers: CustomTriggers(
       advancedResolvers: {
@@ -62,7 +62,7 @@ void main(List<String> args) {
   );
 
   // Using [Base64FromBytes] with sinks
-  final bytesToString = loadDartObject<String>(
+  final bytesToString = loadObject<String>(
     YamlSource.string('$base64Tag $base64'),
     triggers: CustomTriggers(
       advancedResolvers: {

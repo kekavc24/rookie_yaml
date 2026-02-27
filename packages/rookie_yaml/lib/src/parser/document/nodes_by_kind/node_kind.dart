@@ -1,6 +1,5 @@
 import 'package:rookie_yaml/src/parser/delegates/one_pass_scalars/efficient_scalar_delegate.dart';
 
-
 /// Represents the kind of node to be parsed.
 ///
 /// {@category custom_resolvers_intro}

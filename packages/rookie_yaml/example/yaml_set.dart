@@ -15,7 +15,7 @@ final class YamlSet<T> extends MappingToObject<T, T?, Set<T>> {
 
 void main() {
   // Set<String> for flow maps
-  final setFromFLow = loadDartObject<Set<String>>(
+  final setFromFLow = loadObject<Set<String>>(
     YamlSource.string('$setTag { hello, hello, world, world }'),
     triggers: CustomTriggers(
       advancedResolvers: {
@@ -29,7 +29,7 @@ void main() {
   print(setFromFLow); // {hello, world}
 
   // Set<int> for block maps
-  final setFromBlock = loadDartObject<Set<int>>(
+  final setFromBlock = loadObject<Set<int>>(
     YamlSource.string('''
 $setTag
 ? 10

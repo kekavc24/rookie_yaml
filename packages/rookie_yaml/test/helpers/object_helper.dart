@@ -1,7 +1,7 @@
+import 'package:rookie_yaml/src/loaders/loader.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/document_parser.dart';
 import 'package:rookie_yaml/src/parser/document/yaml_document.dart';
-import 'package:rookie_yaml/src/parser/loaders/loader.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/schema/yaml_node.dart';
 

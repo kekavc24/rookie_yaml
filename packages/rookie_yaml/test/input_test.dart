@@ -33,7 +33,7 @@ targets:
   };
 
   void checkInput(YamlSource input) =>
-      check(loadDartObject(input)).isA<Map>().deepEquals(map);
+      check(loadObject(input)).isA<Map>().deepEquals(map);
 
   group('Passes', () {
     test('Same input, same output (no BOM)', () {
@@ -60,7 +60,7 @@ targets:
       const withBOM = '\uFFFE Hello world';
 
       check(
-        loadDartObject(YamlSource.strictUtf16(withBOM.codeUnits)),
+        loadObject(YamlSource.strictUtf16(withBOM.codeUnits)),
       ).not((o) => o.equals(withBOM));
     });
   });
@@ -70,7 +70,7 @@ targets:
       required String error,
       required YamlSource source,
     }) => check(
-      () => loadDartObject(source),
+      () => loadObject(source),
     ).throws<StateError>().has((e) => e.message, 'Message').contains(error);
 
     group('UTF-8', () {

@@ -118,7 +118,7 @@ key2:
     test('Throws if duplicate keys are found', () {
       void checkDuplicate(String yaml) {
         check(
-          () => loadDartObject(YamlSource.string(yaml)),
+          () => loadObject(YamlSource.string(yaml)),
         ).throwsParserException(
           'A block map cannot contain duplicate entries by the same key',
         );

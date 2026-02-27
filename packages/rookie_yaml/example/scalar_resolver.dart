@@ -14,7 +14,7 @@ void main() {
   var yaml = YamlSource.string('!!int 0x1ffffffffffffffff');
 
   // As Built-int Dart type
-  final parsed = loadDartObject<BigInt>(
+  final parsed = loadObject<BigInt>(
     yaml,
     triggers: CustomTriggers(resolvers: [resolver]),
   );
@@ -43,7 +43,7 @@ void main() {
 
   yaml = YamlSource.string('!!int 1 - 3');
 
-  final range = loadDartObject<Interval>(
+  final range = loadObject<Interval>(
     yaml,
     triggers: CustomTriggers(resolvers: [specResolver]),
   );
@@ -66,7 +66,7 @@ void main() {
     toYamlSafe: (date) => date.toString(), // Just for show
   );
 
-  final date = loadDartObject<DateTime>(
+  final date = loadObject<DateTime>(
     YamlSource.string('$dateTag 19631212 12:12'),
     triggers: CustomTriggers(resolvers: [dateResolver]),
   );

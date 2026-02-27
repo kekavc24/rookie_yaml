@@ -59,7 +59,7 @@ void main(List<String> args) {
   final matrixTag = TagShorthand.named('matrix', 'View');
   final inputTag = TagShorthand.named('matrix', 'Input');
 
-  final matrix = loadDartObject<Matrix>(
+  final matrix = loadObject<Matrix>(
     YamlSource.string(yaml),
     triggers: CustomTriggers(
       advancedResolvers: {
