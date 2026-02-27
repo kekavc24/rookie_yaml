@@ -74,6 +74,7 @@ jobs:
           github-token: ${{ github.token }}
           file: "${{ steps.package.outputs.package }}/coverage/lcov.info"
           format: lcov
+          fail-on-error: false
 
       - name: 🏃🏽 Run test suite, 💬 Add PR comment
         if: ${{ contains(steps.package.outputs.package, 'packages/rookie_yaml') }}

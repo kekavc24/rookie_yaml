@@ -136,7 +136,7 @@ Start [here](https://pub.dev/documentation/rookie_yaml/latest/topics/dump_scalar
 
 ## Documentation & Examples (Still in progress 🏗️)
 
-- The `docs` folder in the repository. Use the [table of contents](https://github.com/kekavc24/rookie_yaml/blob/main/doc/_contents.md) as a guide.
+- The `docs` folder in the repository. Use the [table of contents](https://github.com/kekavc24/yaml_dart/blob/main/packages/rookie_yaml/doc/_contents.md) as a guide.
 - Visit [pub guide][guide] which provides an automatic guided order for the docs above.
 - The `example` folder.
 
