@@ -15,9 +15,9 @@ inputs:
     required: true
 
 outputs:
-  package_name:
+  package-name:
     description: Package name with changes in PR
-    value: ${{ steps.check.package }}
+    value: ${{ steps.check.outputs.package }}
 
 runs:
   using: composite

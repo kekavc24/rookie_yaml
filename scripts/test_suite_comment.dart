@@ -60,14 +60,16 @@ const _keyInSummary = 'Average Pass Accuracy (%):';
 void main(List<String> args) {
   final (:pr, :headCommit, :directory) = _commentArgParser.parse(args).unpack();
 
+  final rookieDir = path.joinAll([directory, 'packages', 'rookie_yaml']);
+
   // Run test suite and get the summary
   final summary = runCommand<String>(
     'dart',
     args: ['runner.dart', '--mode', 'summary'],
-    directory: path.joinAll([directory, 'test', 'yaml_test_suite']),
+    directory: path.joinAll([rookieDir, 'test', 'yaml_test_suite']),
   );
 
-  final (:currentPassRate, :diff) = _passRateDiff(directory, summary);
+  final (:currentPassRate, :diff) = _passRateDiff(rookieDir, summary);
   addBotComment(pr, directory, '''
 $diff
 ---
