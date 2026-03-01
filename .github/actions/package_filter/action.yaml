@@ -19,10 +19,6 @@ outputs:
     description: Package name with changes in PR
     value: ${{ steps.check.package }}
 
-  package_directory:
-    description: Directory where the package is located.
-    value: ${{ steps.directory.location }}
-
 runs:
   using: composite
 
@@ -43,16 +39,3 @@ runs:
 
         echo "$filtered"
         echo "package=$filtered" >> "$GITHUB_OUTPUT"
-
-    - name: Package Directory
-      id: directory
-      shell: bash
-      run: |
-        package_dir=""
-
-        if [ "${{ steps.check.package }}" != "Naught" ]; then
-          package_dir="${{ inputs.working-directory }}/packages/${{ steps.check.package }}"
-        fi
-
-        echo "$package_dir"
-        echo "location=$package_dir" >> "$GITHUB_OUTPUT"

@@ -49,3 +49,13 @@ jobs:
           bot-token: ${{ secrets.BOT_KEY }}
           working-directory: ${{ github.workspace }}
           pr: ${{ github.event.pull_request.number }}
+
+      - name: Run Tests
+        uses: ./.github/actions/test_runner
+        with:
+          bot-token: ${{ secrets.BOT_KEY }}
+          pr: ${{ github.event.pull_request.number }}
+          pr-SHA: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
+          package-name: ${{ steps.filter.outputs.package_name }}
+          package_directory: "${{ github.workspace }}/packages/${{ steps.filter.outputs.package_name }}"
