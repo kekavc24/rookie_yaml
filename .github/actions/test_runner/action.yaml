@@ -1,0 +1,63 @@
+name: Test Runner
+description: Runs any tests required for the repo.
+
+inputs:
+  bot-token:
+    description: Bot token
+    required: true
+
+  github-token:
+    description: GitHub token
+    required: true
+
+  package-name:
+    description: Package name with changes in PR.
+    required: true
+
+  package-directory:
+    description: Directory where the package is located.
+    required: true
+
+  pr:
+    description: PR for this check.
+    required: true
+
+  pr-SHA:
+    description: SHA signature for commit
+    required: true
+
+runs:
+  using: composite
+
+  steps:
+    - name: Run tests with coverage
+      if: ${{ inputs.package-name != 'Naught' }}
+      shell: bash
+      working-directory: ${{ inputs.package-directory }}
+      run: |
+        dart pub get
+        dart run coverage:test_with_coverage
+
+    - name: Track Coverage
+      if: ${{ inputs.package-name != 'Naught' }}
+      uses: coverallsapp/github-action@v2.3.6
+      with:
+        github-token: ${{ inputs.github-token }}
+        file: ${{ inputs.package-directory }}/coverage/lcov.info
+        format: lcov
+        flag-name: ${{ inputs.package-name }}
+
+    - name: Run YAML Test Suite
+      if: ${{ inputs.package-name == 'rookie_yaml' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.bot-token }}
+      run: |
+        dart pub get
+        cd scripts
+        pwd
+
+        dart test_suite_comment.dart \
+          --pr ${{ inputs.pr }} \
+          --tip-SHA ${{ inputs.pr-SHA }} \
+          --working-directory ${{ inputs.package-directory }}

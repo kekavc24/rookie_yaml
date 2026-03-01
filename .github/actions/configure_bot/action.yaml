@@ -1,0 +1,11 @@
+name: Configure Bot
+description: Configures our bot's git identity.
+
+runs:
+  using: composite
+
+  steps:
+    - shell: bash
+      run: |
+        git config --global user.email "143215479+Kavisi-bot@users.noreply.github.com"
+        git config --global user.name "Kavisi-bot"

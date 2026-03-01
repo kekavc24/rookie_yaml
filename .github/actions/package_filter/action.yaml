@@ -1,0 +1,58 @@
+name: Package Check
+description: Checks which packages have been modified.
+
+inputs:
+  bot-token:
+    description: Bot token
+    required: true
+
+  working-directory:
+    description: Root directory for repo.
+    required: true
+
+  pr:
+    description: PR for this check.
+    required: true
+
+outputs:
+  package_name:
+    description: Package name with changes in PR
+    value: ${{ steps.check.package }}
+
+  package_directory:
+    description: Directory where the package is located.
+    value: ${{ steps.directory.location }}
+
+runs:
+  using: composite
+
+  steps:
+    - name: Package Check
+      id: check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GH_TOKEN: ${{ inputs.bot-token }}
+      run: |
+        cd scripts
+        pwd
+
+        filtered=$(dart package_filter.dart \
+          --pr "${{ inputs.pr }}" \
+          --working-directory "${{ inputs.working-directory }}")
+
+        echo "$filtered"
+        echo "package=$filtered" >> "$GITHUB_OUTPUT"
+
+    - name: Package Directory
+      id: directory
+      shell: bash
+      run: |
+        package_dir=""
+
+        if [ "${{ steps.check.package }}" != "Naught" ]; then
+          package_dir="${{ inputs.working-directory }}/packages/${{ steps.check.package }}"
+        fi
+
+        echo "$package_dir"
+        echo "location=$package_dir" >> "$GITHUB_OUTPUT"

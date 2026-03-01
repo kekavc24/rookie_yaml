@@ -25,6 +25,8 @@ jobs:
       - name: 🐎 Hello Git
         uses: actions/checkout@v5
 
+      - name: Hello Bot
+        uses: ./.github/actions/configure_bot
       - name: 🎯 Setup Dart
         uses: dart-lang/setup-dart@v1
         with:
@@ -40,50 +42,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: dart analyze --fatal-infos
 
-      - name: 📤 Package Filter
-        id: package
-        working-directory: ${{ github.workspace }}
-        env:
-          GH_TOKEN: ${{ secrets.BOT_KEY }}
-        run: |
-          git config --global user.email "143215479+Kavisi-bot@users.noreply.github.com"
-          git config --global user.name "Kavisi-bot"
-          cd scripts
-          pwd
-
-          filtered=$(dart package_filter.dart \
-            --pr "${{ github.event.pull_request.number }}" \
-            --working-directory "${{ github.workspace }}")
-
-          echo "$filtered"
-          echo "package=$filtered" >> "$GITHUB_OUTPUT"
-
-      - name: 🧪 Run tests with coverage 📑
-        if: ${{ steps.package.outputs.package != 'Naught' }}
-        working-directory: ${{ steps.package.outputs.package }}
-        run: |
-          dart pub get
-          dart run coverage:test_with_coverage
-
-      - name: 🛫 Track coverage
-        if: ${{ steps.package.outputs.package != 'Naught' }}
-        uses: coverallsapp/github-action@v2.3.6
+      - name: Package Filter
+        id: filter
+        uses: ./.github/actions/package_filter
         with:
-          github-token: ${{ github.token }}
-          file: "${{ steps.package.outputs.package }}/coverage/lcov.info"
-          format: lcov
-          fail-on-error: false
-
-      - name: 🏃🏽 Run test suite, 💬 Add PR comment
-        if: ${{ contains(steps.package.outputs.package, 'packages/rookie_yaml') }}
-        id: runner
-        env:
-          GH_TOKEN: ${{ secrets.BOT_KEY }}
-        run: |
-          dart pub get
-          cd scripts
-          pwd
-          dart test_suite_comment.dart \
-            --pr ${{ github.event.pull_request.number }} \
-            --tip-SHA ${{ github.event.pull_request.head.sha }} \
-            --working-directory ${{ steps.package.outputs.package }}
+          bot-token: ${{ secrets.BOT_KEY }}
+          working-directory: ${{ github.workspace }}
+          pr: ${{ github.event.pull_request.number }}

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:path/path.dart' as path;
 
 import 'utils.dart';
 
@@ -67,6 +66,6 @@ Please read our contribution guidelines in the `CONTRIBUTING.md` file and create
     exit(1);
   }
 
-  // Print directory
-  print(path.joinAll([directory, 'packages', packages.first]));
+  // Print package
+  print(packages.first);
 }
