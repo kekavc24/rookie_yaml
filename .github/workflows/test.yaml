@@ -54,7 +54,6 @@ jobs:
         if: ${{ steps.filter.outputs.package-name != 'Naught' }}
         uses: ./.github/actions/test_runner
         with:
-          bot-token: ${{ secrets.BOT_KEY }}
           pr: ${{ github.event.pull_request.number }}
           pr-SHA: ${{ github.event.pull_request.head.sha }}
           github-token: ${{ github.token }}

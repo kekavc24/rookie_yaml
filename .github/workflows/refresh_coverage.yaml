@@ -1,0 +1,33 @@
+name: Refresh Coverage
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  refresh:
+    if: ${{ github.event.pull_request.merged == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🐎 Hello Git
+        uses: actions/checkout@v5
+
+      - name: Package Filter
+        id: filter
+        uses: ./.github/actions/package_filter
+        with:
+          bot-token: ${{ secrets.BOT_KEY }}
+          working-directory: ${{ github.workspace }}
+          pr: ${{ github.event.pull_request.number }}
+
+      - name: Run Tests
+        if: ${{ steps.filter.outputs.package-name != 'Naught' }}
+        uses: ./.github/actions/test_runner
+        with:
+          pr: ${{ github.event.pull_request.number }}
+          pr-SHA: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
+          package-name: ${{ steps.filter.outputs.package-name }}
+          package-directory: "${{ github.workspace }}/packages/${{ steps.filter.outputs.package-name }}"

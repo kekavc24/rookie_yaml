@@ -2,10 +2,6 @@ name: Test Runner
 description: Runs any tests required for the repo.
 
 inputs:
-  bot-token:
-    description: Bot token
-    required: true
-
   github-token:
     description: GitHub token
     required: true
