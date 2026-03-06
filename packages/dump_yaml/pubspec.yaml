@@ -1,0 +1,16 @@
+name: dump_yaml
+description: A configurable library for dumping Dart types back to YAML with minimal effort.
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.1
+
+resolution: workspace
+
+# Add regular dependencies here.
+dependencies:
+  rookie_yaml: ^0.6.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
