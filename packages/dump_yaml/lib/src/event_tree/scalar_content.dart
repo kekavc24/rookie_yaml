@@ -59,7 +59,7 @@ Iterable<String> _toYamlScalar(
   required bool parentIsBlock,
   required void Function(bool useParentIndent) isBlock,
 }) sync* {
-  if (object.isEmpty && (usePlainNull || scalarStyle == ScalarStyle.plain)) {
+  if (object.isEmpty && usePlainNull) {
     yield 'null';
     return;
   }

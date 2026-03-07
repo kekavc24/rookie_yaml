@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:dump_yaml/src/event_tree/configs.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/scalar_content.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
@@ -42,7 +43,8 @@ mixin _Decomposer {
   /// Unpacks a resolved [nodeTag] and returns the verbatim/local tag associated
   /// with the node.
   ///
-  /// If [includeGeneric] is `true`, generic
+  /// If [includeGeneric] is `true`, generic YAML schema tags assigned by the
+  /// parser will be included.
   String? _localTag(
     ResolvedTag? nodeTag, {
     required void Function(TagShorthand tag) validate,
@@ -119,9 +121,19 @@ A global tag with the current tag handle already exists.
       _ => null,
     }?.toString();
   }
+
+  String? _kindToTag(NodeConfig config, TagShorthand tag) =>
+      config.includeSchemaTag ? tag.toString() : null;
 }
 
-final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
+/// A builder that recreates a YAML representation tree for a dumper to dump.
+final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
+  TreeBuilder([TreeConfig? treeConfig])
+    : _config = (treeConfig ?? TreeConfig.block()).config;
+
+  /// Node Styling information.
+  NodeConfig _config;
+
   /// Global stack for pushing any built nodes.
   final _nodes = ListQueue<EventTreeNode<Object>>();
 
@@ -131,12 +143,15 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Global stack with the current collection's [NodeStyle].
   final _collectionStyles = ListQueue<NodeStyle>();
 
+  /// Global stack with the current collection's inline enforcement rules.
+  final _inlineRules = ListQueue<bool>();
+
   /// Path to the current node.
-  final _currentPath = ListQueue<String>();
+  final _typePath = ListQueue<String>(); // TODO: Think about it
 
   /// Throws a [StateError] with the [message] and includes the [_currentPath].
   Never _stateErrorWithPath(String message) =>
-      _stateError('$message\n\tPath: ${_currentPath.join('/')}');
+      _stateError('$message\n\tPath: ${_typePath.join('->')}');
 
   /// Throws a [StateError] with the [message].
   Never _stateError(String message) => throw StateError(message);
@@ -145,17 +160,17 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void _addNode(EventTreeNode<Object> node) => _nodes.add(node);
 
   /// Nearest collection's [NodeStyle].
-  NodeStyle? _nearestCollection() => _collectionStyles.lastOrNull;
+  NodeStyle _nearestCollection() => _collectionStyles.last;
 
-  /// Style for a built-in Dart list or map. // TODO: Add config
-  NodeStyle _genericStyle() => _nearestCollection() ?? NodeStyle.block;
+  /// Style for a built-in Dart list or map.
+  NodeStyle _genericStyle() => _nearestCollection();
 
   /// Whether the current [style] is compatible with the [parent]'s style.
   ///
   /// If [parent] is `null`, this method looks for the last collection's
   /// [NodeStyle] it encountered.
   bool _buildWithStyle(NodeStyle style, [NodeStyle? parent]) =>
-      !((parent ?? _nearestCollection())?.isIncompatible(style) ?? false);
+      !((parent ?? _nearestCollection()).isIncompatible(style));
 
   @override
   void visitObject(Object? object) => switch (object) {
@@ -184,7 +199,8 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildIterable(
       iterable,
       style: _genericStyle(),
-      localTag: sequenceTag.toString(), // TODO: Add includeGeneric config
+      localTag: _kindToTag(_config, sequenceTag),
+      forceInline: _inlineRules.last,
     );
   }
 
@@ -196,10 +212,14 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildIterable(
       iterable.toFormat(iterable.node),
       style: nodeStyle,
-      forceInline: forceInline,
+      forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
-      localTag: _localTag(tag, validate: throwIfNotListTag),
+      localTag: _localTag(
+        tag,
+        validate: throwIfNotListTag,
+        includeGeneric: _config.includeSchemaTag,
+      ),
     );
   }
 
@@ -209,7 +229,8 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildMap(
       map.entries,
       style: _genericStyle(),
-      localTag: mappingTag.toString(), // TODO: Add includeGeneric config
+      localTag: _kindToTag(_config, mappingTag),
+      forceInline: _inlineRules.last,
     );
   }
 
@@ -221,10 +242,14 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildMap(
       mapping.toFormat(mapping.node),
       style: nodeStyle,
-      forceInline: forceInline,
+      forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
-      localTag: _localTag(tag, validate: throwIfNotMapTag),
+      localTag: _localTag(
+        tag,
+        validate: throwIfNotMapTag,
+        includeGeneric: _config.includeSchemaTag,
+      ),
     );
   }
 
@@ -232,8 +257,9 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void visitScalar(Object? scalar) {
     _buildScalar(
       scalar?.toString() ?? '',
-      scalarStyle: classicScalarStyle, // TODO: Add config
+      scalarStyle: classicScalarStyle,
       localTag: _genericIfMissing(scalar),
+      forceInline: _inlineRules.last,
     );
   }
 
@@ -245,10 +271,14 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildScalar(
       scalar.toFormat(scalar.node),
       scalarStyle: scalarStyle,
-      forceInline: forceInline,
+      forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
-      localTag: _localTag(tag, validate: throwIfNotScalarTag),
+      localTag: _localTag(
+        tag,
+        validate: throwIfNotScalarTag,
+        includeGeneric: _config.includeSchemaTag,
+      ),
     );
   }
 
@@ -261,17 +291,26 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   ///
   /// The builder expects the [object] to be a built-in Dart type or a
   /// [DumpableView] of any Dart object.
-  void buildFor(Object? object) {
+  void buildFor(Object? object, {TreeConfig? overwrite}) {
+    _config = overwrite?.config ?? _config;
     _nodes.clear();
-    if (object is DumpableView) return visitView(object);
+    _collectionStyles
+      ..clear()
+      ..add(_config.rootNodeStyle);
+
+    _inlineRules
+      ..clear()
+      ..add(_config.forceInline);
+
     visitObject(object);
   }
 
+  /// Builds a [scalar].
   void _buildScalar(
     String scalar, {
     required ScalarStyle scalarStyle,
-    bool forceInline = false, // TODO: Add to config
-    bool emptyAsNull = false, // TODO: Move to formatter
+    required bool forceInline,
+    bool emptyAsNull = false,
     List<String>? comments,
     String? anchor,
     String? localTag,
@@ -284,11 +323,11 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     final (:isMultiline, :lines, :useParentIndent) = splitScalar(
       scalar,
       style: dumpingStyle,
-      emptyAsNull: emptyAsNull, // TODO: Move to formatter
+      emptyAsNull: emptyAsNull,
       forceInline: forceInline,
 
       // It's okay if this is the top level node. By YAML standards, it is.
-      parentIsBlock: collectionStyle?.isBlock ?? true,
+      parentIsBlock: collectionStyle.isBlock,
     );
 
     _addNode(
@@ -304,10 +343,11 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     );
   }
 
+  /// Builds an [iterable] of objects.
   void _buildIterable(
     YamlIterableEntry iterable, {
     required NodeStyle style,
-    bool forceInline = false, // TODO: Add to config
+    required bool forceInline,
     List<String>? comments,
     String? anchor,
     String? localTag,
@@ -327,10 +367,11 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     localTag: localTag,
   );
 
+  /// Builds a map using its [iterable] of entries.
   void _buildMap(
     YamlMappingEntry iterable, {
     required NodeStyle style,
-    bool forceInline = false, // TODO: Add to config
+    bool forceInline = false,
     List<String>? comments,
     String? anchor,
     String? localTag,
@@ -354,6 +395,8 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     localTag: localTag,
   );
 
+  /// Builds a collection using its entries in the current [iterable]. [iterate]
+  /// and [compose] is called on every element.
   void _buildCollection<E, T>(
     Iterable<E> iterable, {
     required NodeStyle style,
@@ -365,11 +408,14 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     required String? anchor,
     required String? localTag,
   }) {
+    var buildStyle = forceInline ? NodeStyle.flow : style;
     final parent = _nearestCollection();
-    final buildStyle = _buildWithStyle(style, parent) ? style : parent!;
-    _collectionStyles.addLast(buildStyle);
+    buildStyle = _buildWithStyle(style, parent) ? style : parent;
 
-    var spanMultipleLines = buildStyle.isBlock || !forceInline;
+    _collectionStyles.addLast(buildStyle);
+    _inlineRules.add(forceInline);
+
+    var spanMultipleLines = buildStyle.isBlock;
 
     void update(bool isMultiline) {
       if (forceInline) return;
@@ -398,5 +444,6 @@ final class EventTreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     );
 
     _collectionStyles.removeLast();
+    _inlineRules.removeLast();
   }
 }
