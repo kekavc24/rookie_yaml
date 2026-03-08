@@ -168,7 +168,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   final _inlineRules = ListQueue<bool>();
 
   /// Path to the current node.
-  final _typePath = ListQueue<String>(); // TODO: Think about it
+  final _typePath = ListQueue<String>();
 
   /// Throws a [StateError] with the [message] and includes the [_currentPath].
   Never _stateErrorWithPath(String message) =>
@@ -305,6 +305,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildScalar(
       scalar.toFormat(scalar.node),
       scalarStyle: scalarStyle,
+      emptyAsNull: scalar.emptyAsNull,
       forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
@@ -359,7 +360,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     final (:isMultiline, :lines, :useParentIndent) = splitScalar(
       scalar,
       style: dumpingStyle,
-      emptyAsNull: emptyAsNull,
+      emptyAsNull: emptyAsNull || _config.emptyAsNull,
       forceInline: forceInline,
 
       // It's okay if this is the top level node. By YAML standards, it is.
