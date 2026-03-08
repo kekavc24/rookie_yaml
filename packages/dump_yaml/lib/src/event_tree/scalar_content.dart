@@ -15,8 +15,8 @@ import 'package:rookie_yaml/rookie_yaml.dart'
         mappingValue,
         blockSequenceEntry;
 
-/// Splits the [scalar] into separate lines and ensures that a [scalar] conforms
-/// to the [style] as required by the YAML spec. This is done in one-pass.
+/// Splits the [scalar] into separate lines and ensures that it conforms to the
+/// [style] as required by the YAML spec. This is done in one-pass.
 ///
 /// If the [scalar] cannot be dumped in the [style] specified, it defaults to
 /// [ScalarStyle.doubleQuoted] in the same iteration sequence. This function

@@ -126,13 +126,34 @@ A global tag with the current tag handle already exists.
       config.includeSchemaTag ? tag.toString() : null;
 }
 
+typedef PathLogger = void Function(String path);
+
+void _noOp(String _) {}
+
 /// A builder that recreates a YAML representation tree for a dumper to dump.
 final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
-  TreeBuilder([TreeConfig? treeConfig])
-    : _config = (treeConfig ?? TreeConfig.block()).config;
+  /// Creates a [TreeBuilder] with the provided [treeConfig].
+  ///
+  /// If [logger] is provided, the tree pushes the paths visited to this
+  /// callback. Collections are annotated as their `runtimeType`. For scalars,
+  /// the [logger] is called after the node has been visited.
+  ///
+  /// ```yaml
+  /// # Path with iterable
+  /// [Iterable]/0/value
+  /// ---
+  /// # Path with map
+  /// [Map]/key/value
+  /// ```
+  TreeBuilder([TreeConfig? treeConfig, PathLogger logger = _noOp])
+    : _config = (treeConfig ?? TreeConfig.block()).config,
+      _pathLogger = logger;
 
   /// Node Styling information.
   NodeConfig _config;
+
+  /// Callback used to track the current path of the tree.
+  PathLogger _pathLogger;
 
   /// Global stack for pushing any built nodes.
   final _nodes = ListQueue<EventTreeNode<Object>>();
@@ -158,6 +179,19 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
   /// Adds the [node] to the LIFO queue.
   void _addNode(EventTreeNode<Object> node) => _nodes.add(node);
+
+  /// Adds the current [path] being iterated by the tree.
+  void _pushPath(String path) {
+    _typePath.addLast(path);
+    _pathLogger(path);
+  }
+
+  /// Pops the [count] of paths provided.
+  void _popPaths([int count = 1]) {
+    for (var i = 0; i < count; i++) {
+      _typePath.removeLast();
+    }
+  }
 
   /// Nearest collection's [NodeStyle].
   NodeStyle _nearestCollection() => _collectionStyles.last;
@@ -291,8 +325,10 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   ///
   /// The builder expects the [object] to be a built-in Dart type or a
   /// [DumpableView] of any Dart object.
-  void buildFor(Object? object, {TreeConfig? overwrite}) {
+  void buildFor(Object? object, {TreeConfig? overwrite, PathLogger? logger}) {
     _config = overwrite?.config ?? _config;
+    _pathLogger = logger ?? _pathLogger;
+
     _nodes.clear();
     _collectionStyles
       ..clear()
@@ -341,6 +377,8 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         localTag: localTag,
       ),
     );
+
+    _typePath.addLast(scalar);
   }
 
   /// Builds an [iterable] of objects.
@@ -355,16 +393,21 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     iterable,
     style: style,
     nodeType: NodeType.list,
-    iterate: visitObject,
+    iterate: (index, element) {
+      _pushPath(index.toString());
+      visitObject(element);
+    },
     compose: () {
       // One in, one out
       final element = _nodes.removeLast();
+      _popPaths(2);
       return (element.isMultiline, element);
     },
     forceInline: forceInline,
     comments: comments,
     anchor: anchor,
     localTag: localTag,
+    type: 'Iterable',
   );
 
   /// Builds a map using its [iterable] of entries.
@@ -379,7 +422,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     iterable,
     style: style,
     nodeType: NodeType.map,
-    iterate: (element) {
+    iterate: (_, element) {
       visitObject(element.key);
       visitObject(element.value);
     },
@@ -387,12 +430,14 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       // Two in, two out
       final value = _nodes.removeLast();
       final key = _nodes.removeLast();
+      _popPaths(2);
       return (key.isMultiline || value.isMultiline, (key, value));
     },
     forceInline: forceInline,
     comments: comments,
     anchor: anchor,
     localTag: localTag,
+    type: 'Map',
   );
 
   /// Builds a collection using its entries in the current [iterable]. [iterate]
@@ -401,12 +446,13 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     Iterable<E> iterable, {
     required NodeStyle style,
     required NodeType nodeType,
-    required void Function(E element) iterate,
+    required void Function(int index, E element) iterate,
     required (bool isMultiline, T value) Function() compose,
     required bool forceInline,
     required List<String>? comments,
     required String? anchor,
     required String? localTag,
+    required String type,
   }) {
     var buildStyle = forceInline ? NodeStyle.flow : style;
     final parent = _nearestCollection();
@@ -414,6 +460,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     _collectionStyles.addLast(buildStyle);
     _inlineRules.add(forceInline);
+    _typePath.add('[$type]');
 
     var spanMultipleLines = buildStyle.isBlock;
 
@@ -424,8 +471,8 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     final queue = ListQueue<T>();
 
-    for (final element in iterable) {
-      iterate(element);
+    for (final (index, element) in iterable.indexed) {
+      iterate(index, element);
       final (isMultiline, node) = compose();
       update(isMultiline);
       queue.addLast(node);
