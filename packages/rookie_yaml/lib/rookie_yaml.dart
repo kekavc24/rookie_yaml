@@ -13,6 +13,7 @@ export 'src/parser/delegates/object_delegate.dart'
         YamlCollectionBuilder,
         ScalarFunction,
         overrideNonSpecific,
+        throwIfNotScalarTag,
         throwIfNotListTag,
         throwIfNotMapTag;
 export 'src/parser/directives/directives.dart'
@@ -35,6 +36,7 @@ export 'src/parser/document/state/parser_state.dart' show MapDuplicateHandler;
 export 'src/parser/document/yaml_document.dart';
 export 'src/parser/parser_utils.dart'
     show CharWriter, ParsedDirectives, DocumentInfo, RootNode;
+export 'src/scanner/encoding/character_encoding.dart';
 export 'src/scanner/source_iterator.dart';
 export 'src/scanner/span.dart' hide YamlSourceSpan;
 export 'src/schema/scalar_value.dart';

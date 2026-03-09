@@ -74,9 +74,9 @@ mixin _BoxedCallOnce<T> {
 
 void throwOnTagMismatch(
   TagShorthand suffix,
-  bool Function(TagShorthand localTag) nonMatch,
+  bool Function() nonMatch,
   String nodeIdentifier,
 ) {
-  if (!nonMatch(suffix)) return;
+  if (!nonMatch()) return;
   throw FormatException('$suffix is not a valid $nodeIdentifier tag');
 }

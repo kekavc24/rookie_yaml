@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:rookie_yaml/rookie_yaml.dart';
-import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
@@ -9,7 +8,6 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
-import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 
 /// Callback for creating a document with the current parser's information.
 typedef DocumentBuilder<Doc, R> =
@@ -112,15 +110,12 @@ final class DocumentParser<Doc, R> {
   /// previously parsed [Doc].
   (bool didParse, Doc? parsed) parseNext() {
     _state.reset();
+    if (_state.isEOF()) return (false, null);
+
     final ParserState(:iterator, :comments, :logger) = _state;
-
-    if (iterator.isEOF) return (false, null);
-
     iterator.allowBOM(true);
-
     _onDocReset(_state.current);
 
-    GreedyPlain? docMarkerGreedy;
     YamlDirective? version;
     var tags = <TagHandle, GlobalTag>{};
     var reserved = <ReservedDirective>[];
@@ -132,80 +127,30 @@ final class DocumentParser<Doc, R> {
     );
 
     iterator.skipBOM();
-    var rootInDirectiveEndLine = false;
+    var isInlineWithMarker = false; // In directive end '---' line
 
-    if (!_state.docStartExplicit && (rootIndent == null || rootIndent == 0)) {
-      final (
-        :yamlDirective,
-        :globalTags,
-        :reservedDirectives,
-        :hasDirectiveEnd,
-      ) = parseDirectives(
-        iterator,
-        onParseComment: comments.add,
-        warningLogger: (message) => logger(false, message),
-      );
-
-      _state.hasDirectives =
-          yamlDirective != null ||
-          globalTags.isNotEmpty ||
-          reservedDirectives.isNotEmpty;
-
-      // When directives are absent, we may see dangling "---". Just to be sure,
-      // confirm this wasn't the case.
-      if (!hasDirectiveEnd &&
-          iterator.current == blockSequenceEntry &&
-          iterator.peekNextChar() == blockSequenceEntry) {
-        var greedy = 0;
-        final startOnMissing = iterator.currentLineInfo.current;
-
-        final marker = checkForDocumentMarkers(
-          iterator,
-          onMissing: null,
-          writer: (_) => ++greedy,
-        );
-
-        marker == DocumentMarker.directiveEnd
-            ? _state.docStartExplicit = true
-            : docMarkerGreedy = (
-                start: startOnMissing,
-                greedChars: '-' * greedy,
-              );
-      } else {
-        _state.docStartExplicit = hasDirectiveEnd;
-      }
-
-      if (_state.docStartExplicit) {
-        // Fast forward to the first ns-char (line break excluded)
-        if (iterator.current.isWhiteSpace()) {
-          skipWhitespace(iterator, skipTabs: true);
-          iterator.nextChar();
-        }
-
+    final plain = _processDocDirectives(
+      iterator,
+      rootIndent: rootIndent,
+      logger: logger,
+      onComment: comments.add,
+      onDirectives: (yamlVersion, globalTags, unknown) {
+        version = yamlVersion;
+        tags = globalTags;
+        reserved = unknown;
+      },
+      ifDocInDocStart: (rootInDirectiveLine) {
         rootIndent = null;
-        rootInDirectiveEndLine =
-            iterator.current != comment && !iterator.current.isLineBreak();
-      }
+        isInlineWithMarker = rootInDirectiveLine;
+      },
+    );
 
-      version = yamlDirective;
-      tags = globalTags;
-      reserved = reservedDirectives;
-    }
-
-    // YAML allows the secondary tag to be declared with custom global tag
-    _state.globalTags.addAll(tags);
-
-    // Why block info? YAML clearly has a favourite child and that is the
-    // block(-like) styles. They are indeed a human friendly format. Also, the
-    // doc end chars "..." and "---" exist in this format.
-    NodeDelegate<R>? root;
-    BlockInfo? rootInfo;
+    // Why block info? The doc end chars "..." and "---" exist in this format.
+    BlockNode<R> rootBlockNode;
 
     // If we attempted to check for doc markers and found none
-    if (docMarkerGreedy != null) {
-      final (:start, :greedChars) = docMarkerGreedy;
-
-      final (:blockInfo, :node) = parseBlockScalar(
+    if (plain != null) {
+      rootBlockNode = parseBlockScalar(
         _state,
         event: ScalarEvent.startFlowPlain,
         blockParentIndent: null,
@@ -214,28 +159,25 @@ final class DocumentParser<Doc, R> {
         isImplicit: false,
         composeImplicitMap: true,
         composedMapIndent: 0,
-        greedyOnPlain: greedChars,
-        start: start,
+        greedyOnPlain: plain.greedChars,
+        start: plain.start,
         scalarProperty: null,
       );
-
-      root = node;
-      rootInfo = blockInfo;
     } else {
       rootIndent ??= skipToParsableChar(
         iterator,
         onParseComment: comments.add,
-        leadingAsIndent: !rootInDirectiveEndLine,
+        leadingAsIndent: !isInlineWithMarker,
       );
 
       _throwIfBlockUnsafe(
         iterator,
         indent: rootIndent ?? 0,
         hasDirectives: _state.hasDirectives,
-        inlineWithDirectiveMarker: rootInDirectiveEndLine,
+        inlineWithDirectiveMarker: isInlineWithMarker,
       );
 
-      final (:blockInfo, :node) = parseBlockNode(
+      rootBlockNode = parseBlockNode(
         _state,
         blockParentIndent: null, // No parent
         inferredFromParent: rootIndent,
@@ -243,52 +185,19 @@ final class DocumentParser<Doc, R> {
         laxBlockIndent: 0,
         fixedInlineIndent: 0,
         forceInlined: false,
-        composeImplicitMap: !rootInDirectiveEndLine,
+        composeImplicitMap: !isInlineWithMarker,
         canComposeMapIfMultiline: true,
       );
-
-      root = node;
-      rootInfo = blockInfo;
     }
 
-    var docMarker = rootInfo.docMarker;
+    final (:blockInfo, :node) = rootBlockNode;
 
-    if (!iterator.isEOF && !rootInfo.docMarker.stopIfParsingDoc) {
-      // We must see document end chars and don't care how they are laid within
-      // the document. At this point the document is or should be complete
-      skipToParsableChar(iterator, onParseComment: comments.add);
-
-      // We can safely look for doc end chars
-      if (!iterator.isEOF) {
-        var charBehind = 0;
-        docMarker = checkForDocumentMarkers(
-          iterator,
-          onMissing: (b) => charBehind = b.length,
-          throwIfDocEndInvalid: true,
-        );
-
-        if (!docMarker.stopIfParsingDoc) {
-          throwWithApproximateRange(
-            iterator,
-            message:
-                'Invalid node state. Expected to find document end "..."'
-                ' or directive end chars "---" ',
-            current: iterator.currentLineInfo.current,
-            charCountBefore: iterator.hasNext
-                ? max(charBehind - 1, 0)
-                : charBehind,
-          );
-        }
-      }
-
-      final sourceInfo = iterator.currentLineInfo;
-
-      root.nodeSpan.parsingEnd = docMarker.stopIfParsingDoc
-          ? sourceInfo.start
-          : sourceInfo.current;
-    }
-
-    _state.updateDocEndChars(docMarker);
+    _terminateDoc(
+      iterator,
+      docEnd: blockInfo.docMarker,
+      onComment: comments.add,
+      onDocEnd: (end) => node.nodeSpan.parsingEnd = end,
+    );
 
     return (
       true,
@@ -303,8 +212,130 @@ final class DocumentParser<Doc, R> {
           hasExplicitStart: _state.docStartExplicit,
           hasExplicitEnd: _state.docEndExplicit,
         ),
-        (root: root.parsed(), comments: comments, anchors: _state.anchorNodes),
+        (root: node.parsed(), comments: comments, anchors: _state.anchorNodes),
       ),
     );
+  }
+}
+
+typedef _PushDirectives =
+    void Function(
+      YamlDirective? yamlVersion,
+      Map<TagHandle, GlobalTag> globalTags,
+      List<ReservedDirective> unknown,
+    );
+
+extension on DocumentParser {
+  /// Processes the document [Directives] if any are present.
+  GreedyPlain? _processDocDirectives(
+    SourceIterator iterator, {
+    required int? rootIndent,
+    required ParserLogger logger,
+    required void Function(YamlComment comment) onComment,
+    required _PushDirectives onDirectives,
+    required void Function(bool rootInDirectiveLine) ifDocInDocStart,
+  }) {
+    if (_state.docStartExplicit || (rootIndent != null && rootIndent > 0)) {
+      return null;
+    }
+
+    final (
+      :yamlDirective,
+      :globalTags,
+      :reservedDirectives,
+      :hasDirectiveEnd,
+    ) = parseDirectives(
+      iterator,
+      onParseComment: onComment,
+      warningLogger: (message) => logger(false, message),
+    );
+
+    onDirectives(yamlDirective, globalTags, reservedDirectives);
+
+    _state.hasDirectives =
+        yamlDirective != null ||
+        globalTags.isNotEmpty ||
+        reservedDirectives.isNotEmpty;
+
+    _state.globalTags.addAll(globalTags);
+
+    // When directives are absent, we may see dangling "---". Just to be sure,
+    // confirm this wasn't the case.
+    if (!hasDirectiveEnd) {
+      if (iterator.current != blockSequenceEntry ||
+          iterator.peekNextChar() != blockSequenceEntry) {
+        return null;
+      }
+
+      final startOnMissing = iterator.currentLineInfo.current;
+      var greedy = 0;
+
+      final marker = checkForDocumentMarkers(
+        iterator,
+        onMissing: null,
+        writer: (_) => ++greedy,
+      );
+
+      if (marker != DocumentMarker.directiveEnd) {
+        return greedy > 0
+            ? (greedChars: '-' * greedy, start: startOnMissing)
+            : null;
+      }
+    }
+
+    // Fast forward to the first ns-char (line break excluded)
+    if (iterator.current.isWhiteSpace()) {
+      skipWhitespace(iterator, skipTabs: true);
+      iterator.nextChar();
+    }
+
+    final char = iterator.current;
+    ifDocInDocStart(char != comment && !char.isLineBreak());
+    _state.docStartExplicit = true;
+    return null;
+  }
+
+  /// Terminates the current document.
+  void _terminateDoc(
+    SourceIterator iterator, {
+    required DocumentMarker docEnd,
+    required void Function(YamlComment comment) onComment,
+    required void Function(RuneOffset end) onDocEnd,
+  }) {
+    if (iterator.isEOF || docEnd.stopIfParsingDoc) {
+      _state.updateDocEndChars(docEnd);
+      return;
+    }
+
+    // We must see document end chars and don't care how they are laid within
+    // the document. At this point the document is or should be complete
+    skipToParsableChar(iterator, onParseComment: onComment);
+
+    if (iterator.isEOF) {
+      onDocEnd(iterator.currentLineInfo.current);
+      _state.lastDocEndChars = '';
+      return;
+    }
+
+    var charBehind = 0;
+    final marker = checkForDocumentMarkers(
+      iterator,
+      onMissing: (b) => charBehind = b.length,
+      throwIfDocEndInvalid: true,
+    );
+
+    if (!marker.stopIfParsingDoc) {
+      throwWithApproximateRange(
+        iterator,
+        message:
+            'Invalid node state. Expected to find document end "..."'
+            ' or directive end chars "---" ',
+        current: iterator.currentLineInfo.current,
+        charCountBefore: iterator.hasNext ? max(charBehind - 1, 0) : charBehind,
+      );
+    }
+
+    onDocEnd(iterator.currentLineInfo.start);
+    _state.updateDocEndChars(marker);
   }
 }

@@ -2,7 +2,7 @@ part of 'object_delegate.dart';
 
 void throwIfNotMapTag(TagShorthand suffix) => throwOnTagMismatch(
   suffix,
-  (t) => isYamlScalarTag(suffix) || suffix == sequenceTag,
+  () => isYamlScalarTag(suffix) || suffix == sequenceTag,
   'mapping',
 );
 

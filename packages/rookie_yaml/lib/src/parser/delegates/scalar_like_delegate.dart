@@ -1,5 +1,11 @@
 part of 'object_delegate.dart';
 
+void throwIfNotScalarTag(TagShorthand suffix) => throwOnTagMismatch(
+  suffix,
+  () => isYamlMapTag(suffix) || isYamlSequenceTag(suffix),
+  'scalar',
+);
+
 /// A delegate that accepts the bytes/code units of a scalar from the underlying
 /// [SourceIterator].
 ///
@@ -192,11 +198,7 @@ final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>
   @override
   NodeTag _checkResolvedTag(NodeTag tag) {
     final NodeTag(:suffix) = tag;
-
-    if (isYamlMapTag(suffix) || isYamlSequenceTag(suffix)) {
-      throw FormatException('A scalar cannot be resolved as "$suffix" kind');
-    }
-
+    throwIfNotScalarTag(suffix);
     return overrideNonSpecific(tag, stringTag);
   }
 

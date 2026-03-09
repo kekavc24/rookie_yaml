@@ -2,7 +2,6 @@ import 'package:checks/checks.dart';
 import 'package:collection/collection.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
-import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:test/test.dart';
 
 import 'helpers/bootstrap_parser.dart';
