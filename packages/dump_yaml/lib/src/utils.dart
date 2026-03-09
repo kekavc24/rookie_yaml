@@ -17,6 +17,9 @@ extension Styling on NodeStyle {
 }
 
 extension StringUtils on String {
+  String capFirst() =>
+      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+
   /// Applies the [indent].
   String indented(int indent) => '${' ' * indent}$this';
 

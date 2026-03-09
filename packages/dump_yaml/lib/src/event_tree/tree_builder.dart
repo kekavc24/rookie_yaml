@@ -61,7 +61,7 @@ mixin _Decomposer {
     if (globalTag != null) {
       final globalHandle = globalTag.tagHandle;
 
-      // A global tag is like a anchor URI for a local tag's handle which acts
+      // A global tag is like an anchor URI for a local tag's handle which acts
       // as the alias.
       if (globalHandle != tag?.tagHandle) {
         throw FormatException(
@@ -91,7 +91,6 @@ A global tag with the current tag handle already exists.
     }
 
     if (tag == null) return null;
-
     validate(tag);
 
     // Ensure our named handle has a global tag.
@@ -177,6 +176,15 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Throws a [StateError] with the [message].
   Never _stateError(String message) => throw StateError(message);
 
+  void _reset() {
+    _anchors.clear();
+    _globalTags.clear();
+    _nodes.clear();
+    _collectionStyles.clear();
+    _inlineRules.clear();
+    _typePath.clear();
+  }
+
   /// Adds the [node] to the LIFO queue.
   void _addNode(EventTreeNode<Object> node) => _nodes.add(node);
 
@@ -196,9 +204,6 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Nearest collection's [NodeStyle].
   NodeStyle _nearestCollection() => _collectionStyles.last;
 
-  /// Style for a built-in Dart list or map.
-  NodeStyle _genericStyle() => _nearestCollection();
-
   /// Whether the current [style] is compatible with the [parent]'s style.
   ///
   /// If [parent] is `null`, this method looks for the last collection's
@@ -214,14 +219,11 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
   @override
   void visitAlias(Alias alias) {
-    if (_nodes.isEmpty) {
-      throw StateError('An alias cannot be the root of the document');
-    }
-
     final ref = alias.alias;
 
     if (_anchors.contains(ref)) {
-      return _addNode(ReferenceNode(ref, comments: alias.comments));
+      _addNode(ReferenceNode(ref, comments: alias.comments));
+      return;
     }
 
     _stateErrorWithPath('Unknown alias "$ref"');
@@ -232,7 +234,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     // TODO: Recursive support when?
     _buildIterable(
       iterable,
-      style: _genericStyle(),
+      style: _config.iterableStyle,
       localTag: _kindToTag(_config, sequenceTag),
       forceInline: _inlineRules.last,
     );
@@ -262,7 +264,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     // TODO: Recursive support when?
     _buildMap(
       map.entries,
-      style: _genericStyle(),
+      style: _config.mapStyle,
       localTag: _kindToTag(_config, mappingTag),
       forceInline: _inlineRules.last,
     );
@@ -292,7 +294,10 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _buildScalar(
       scalar?.toString() ?? '',
       scalarStyle: classicScalarStyle,
-      localTag: _genericIfMissing(scalar),
+      localTag: _genericIfMissing(
+        scalar,
+        includeGeneric: _config.includeSchemaTag,
+      ),
       forceInline: _inlineRules.last,
     );
   }
@@ -326,18 +331,13 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   ///
   /// The builder expects the [object] to be a built-in Dart type or a
   /// [DumpableView] of any Dart object.
-  void buildFor(Object? object, {TreeConfig? overwrite, PathLogger? logger}) {
-    _config = overwrite?.config ?? _config;
+  void buildFor(Object? object, {TreeConfig? config, PathLogger? logger}) {
+    _config = config?.config ?? _config;
     _pathLogger = logger ?? _pathLogger;
 
-    _nodes.clear();
-    _collectionStyles
-      ..clear()
-      ..add(_config.rootNodeStyle);
-
-    _inlineRules
-      ..clear()
-      ..add(_config.forceInline);
+    _reset();
+    _collectionStyles.add(_config.rootNodeStyle);
+    _inlineRules.add(_config.forceInline);
 
     visitObject(object);
   }
@@ -408,7 +408,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     comments: comments,
     anchor: anchor,
     localTag: localTag,
-    type: 'Iterable',
+    type: NodeType.list,
   );
 
   /// Builds a map using its [iterable] of entries.
@@ -438,7 +438,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     comments: comments,
     anchor: anchor,
     localTag: localTag,
-    type: 'Map',
+    type: NodeType.map,
   );
 
   /// Builds a collection using its entries in the current [iterable]. [iterate]
@@ -453,7 +453,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     required List<String>? comments,
     required String? anchor,
     required String? localTag,
-    required String type,
+    required NodeType type,
   }) {
     var buildStyle = forceInline ? NodeStyle.flow : style;
     final parent = _nearestCollection();
@@ -461,7 +461,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     _collectionStyles.addLast(buildStyle);
     _inlineRules.add(forceInline);
-    _typePath.add('[$type]');
+    _typePath.add('[${type.toString().capFirst()}]');
 
     var spanMultipleLines = buildStyle.isBlock;
 
