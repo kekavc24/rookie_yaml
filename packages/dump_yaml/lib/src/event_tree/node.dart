@@ -6,6 +6,13 @@ enum NodeType { scalar, map, list, alias }
 
 const _noComments = Iterable<String>.empty();
 
+typedef DocumentNode = ({Iterable<GlobalTag> tags, EventTreeNode<Object> root});
+
+extension Doc on DocumentNode {
+  /// Whether this document has directives.
+  bool get isDirectiveDoc => tags.isNotEmpty;
+}
+
 /// A node representing a small or the entire chunk of a finalized YAML tree
 /// ready to be dumped.
 abstract class EventTreeNode<T> extends CompactYamlNode {
@@ -94,6 +101,8 @@ final class ContentNode extends EventTreeNode<Iterable<String>> {
 
 /// Simple key and value for a map [CollectionNode].
 typedef MappingEntry = (EventTreeNode<Object> key, EventTreeNode<Object> value);
+typedef ListNode = CollectionNode<EventTreeNode<Object>>;
+typedef MapNode = CollectionNode<MappingEntry>;
 
 /// A finalized tree for an [Iterable] or [Map].
 final class CollectionNode<T> extends EventTreeNode<ListQueue<T>> {

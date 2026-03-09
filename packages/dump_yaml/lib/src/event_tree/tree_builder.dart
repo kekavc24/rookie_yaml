@@ -322,6 +322,14 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     );
   }
 
+  /// Document represent by the tree.
+  ///
+  /// This document is "light" and only provides the global tags obtained from
+  /// the object called with [buildFor]. Always throws if [buildFor] was never
+  /// called at least once.
+  DocumentNode builtDocument() =>
+      (tags: UnmodifiableListView(_globalTags.values), root: builtNode());
+
   /// Root node of the tree.
   ///
   /// Always throws if [buildFor] was never called at least once.
