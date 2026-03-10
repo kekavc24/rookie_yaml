@@ -30,6 +30,8 @@ Iterable<String> _coreUnfolding(
   String Function(bool isFirst, bool hasNext, String line)? preflight,
   bool Function(String previous, String current)? isFolded,
 }) sync* {
+  if (lines.isEmpty) return;
+
   final canUnfold = isFolded ?? (_, _) => true;
   final yielder = preflight ?? (_, _, line) => line;
 

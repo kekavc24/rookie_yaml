@@ -59,8 +59,8 @@ Iterable<String> _toYamlScalar(
   required bool parentIsBlock,
   required void Function(bool useParentIndent) isBlock,
 }) sync* {
-  if (object.isEmpty) {
-    yield usePlainNull ? 'null' : object;
+  if (object.isEmpty && usePlainNull) {
+    yield 'null';
     return;
   }
 
