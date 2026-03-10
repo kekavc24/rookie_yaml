@@ -7,7 +7,7 @@ import 'package:dump_yaml/src/views/views.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide Alias;
 import 'package:test/test.dart';
 
-extension _Typed<T> on Subject<EventTreeNode<T>> {
+extension _Typed<T> on Subject<TreeNode<T>> {
   Subject<T> whoseNode() => has<T>((e) => e.node, 'Node');
 
   void hasTag(String? tag) => has((e) => e.localTag, 'Tag').equals(tag);

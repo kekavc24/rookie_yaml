@@ -155,7 +155,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   PathLogger _pathLogger;
 
   /// Global stack for pushing any built nodes.
-  final _nodes = ListQueue<EventTreeNode<Object>>();
+  final _nodes = ListQueue<TreeNode<Object>>();
 
   /// Number of nodes currently in the internal build queue.
   int get stackSize => _nodes.length;
@@ -186,7 +186,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   }
 
   /// Adds the [node] to the LIFO queue.
-  void _addNode(EventTreeNode<Object> node) => _nodes.add(node);
+  void _addNode(TreeNode<Object> node) => _nodes.add(node);
 
   /// Adds the current [path] being iterated by the tree.
   void _pushPath(String path) {
@@ -333,7 +333,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Root node of the tree.
   ///
   /// Always throws if [buildFor] was never called at least once.
-  EventTreeNode<Object> builtNode<T>() => _nodes.first;
+  TreeNode<Object> builtNode<T>() => _nodes.first;
 
   /// Builds an event tree for an [object].
   ///
@@ -492,6 +492,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         queue,
         buildStyle,
         nodeType: nodeType,
+        forcedInline: forceInline,
         isMultiline: spanMultipleLines && queue.isNotEmpty,
         anchor: anchor,
         localTag: localTag,

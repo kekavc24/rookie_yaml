@@ -45,7 +45,7 @@ mixin ViewVisitor {
 }
 
 // mixin EventTreeVisitor {
-//   void visitEventTree(EventTreeNode<Object> treeNode) {
+//   void visitEventTree(TreeNode<Object> treeNode) {
 //     switch (treeNode.nodeType) {}
 //   }
 

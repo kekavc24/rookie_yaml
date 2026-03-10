@@ -6,7 +6,7 @@ enum NodeType { scalar, map, list, alias }
 
 const _noComments = Iterable<String>.empty();
 
-typedef DocumentNode = ({Iterable<GlobalTag> tags, EventTreeNode<Object> root});
+typedef DocumentNode = ({Iterable<GlobalTag> tags, TreeNode<Object> root});
 
 extension Doc on DocumentNode {
   /// Whether this document has directives.
@@ -15,8 +15,8 @@ extension Doc on DocumentNode {
 
 /// A node representing a small or the entire chunk of a finalized YAML tree
 /// ready to be dumped.
-abstract class EventTreeNode<T> extends CompactYamlNode {
-  EventTreeNode(
+abstract class TreeNode<T> extends CompactYamlNode {
+  TreeNode(
     this.nodeStyle, {
     Iterable<String>? comments,
     this.anchor,
@@ -35,7 +35,7 @@ abstract class EventTreeNode<T> extends CompactYamlNode {
   /// A [ResolvedTag] reverted back to its [TagShorthand] form.
   ///
   /// When `this` is built, the underlying resolved [tag] is always (set to)
-  /// `null`. This is because an [EventTreeNode] strips a node back to a
+  /// `null`. This is because an [TreeNode] strips a node back to a
   /// "lexed" state but without the indent information.
   final String? localTag;
 
@@ -54,7 +54,7 @@ abstract class EventTreeNode<T> extends CompactYamlNode {
 }
 
 /// An alias.
-final class ReferenceNode extends EventTreeNode<String> {
+final class ReferenceNode extends TreeNode<String> {
   ReferenceNode(this.alias, {required super.comments}) : super(NodeStyle.flow);
 
   @override
@@ -75,7 +75,7 @@ final class ReferenceNode extends EventTreeNode<String> {
 
 /// A finalized scalar's lines representing the string content of the node to be
 /// dumped.
-final class ContentNode extends EventTreeNode<Iterable<String>> {
+final class ContentNode extends TreeNode<Iterable<String>> {
   ContentNode(
     this.node,
     super.nodeStyle, {
@@ -100,16 +100,17 @@ final class ContentNode extends EventTreeNode<Iterable<String>> {
 }
 
 /// Simple key and value for a map [CollectionNode].
-typedef MappingEntry = (EventTreeNode<Object> key, EventTreeNode<Object> value);
-typedef ListNode = CollectionNode<EventTreeNode<Object>>;
+typedef MappingEntry = (TreeNode<Object> key, TreeNode<Object> value);
+typedef ListNode = CollectionNode<TreeNode<Object>>;
 typedef MapNode = CollectionNode<MappingEntry>;
 
 /// A finalized tree for an [Iterable] or [Map].
-final class CollectionNode<T> extends EventTreeNode<ListQueue<T>> {
+final class CollectionNode<T> extends TreeNode<ListQueue<T>> {
   CollectionNode(
     this.node,
     super.nodeStyle, {
     required this.nodeType,
+    required this.forcedInline,
     required this.isMultiline,
     super.anchor,
     super.localTag,
@@ -118,6 +119,8 @@ final class CollectionNode<T> extends EventTreeNode<ListQueue<T>> {
 
   @override
   final bool isMultiline;
+
+  final bool forcedInline;
 
   @override
   final ListQueue<T> node;
