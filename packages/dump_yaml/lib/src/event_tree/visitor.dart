@@ -1,3 +1,4 @@
+import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:dump_yaml/src/views/views.dart';
 
@@ -44,12 +45,25 @@ mixin ViewVisitor {
   void visitMappingView(YamlMapping mapping);
 }
 
-// mixin EventTreeVisitor {
-//   void visitEventTree(TreeNode<Object> treeNode) {
-//     switch (treeNode.nodeType) {}
-//   }
+/// A visitor for a [TreeNode].
+mixin TreeNodeVisitor {
+  /// Visits a tree [node] and redirects it to the appropriate visitor function.
+  void visitTreeNode(TreeNode<Object> node) => switch (node.nodeType) {
+    .alias => visitAliasNode(node as ReferenceNode),
+    .scalar => visitContentNode(node as ContentNode),
+    .list => visitList(node as ListNode),
+    .map => visitMap(node as MapNode),
+  };
 
-//   void visitAliasNode(ReferenceNode alias);
+  /// Visits a [ReferenceNode].
+  void visitAliasNode(ReferenceNode node);
 
-//   // void visit
-// }
+  /// Visits a decomposed [ContentNode].
+  void visitContentNode(ContentNode node);
+
+  /// Visits a [ListNode].
+  void visitList(ListNode node);
+
+  /// Visits a [MapNode].
+  void visitMap(MapNode node);
+}
