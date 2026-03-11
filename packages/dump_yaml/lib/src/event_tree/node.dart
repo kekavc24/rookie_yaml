@@ -1,6 +1,7 @@
 import 'dart:collection';
 
-import 'package:rookie_yaml/rookie_yaml.dart';
+import 'package:dump_yaml/src/views/dumpable.dart';
+import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
 
 enum NodeType { scalar, map, list, alias }
 
@@ -19,12 +20,17 @@ abstract class TreeNode<T> extends CompactYamlNode {
   TreeNode(
     this.nodeStyle, {
     Iterable<String>? comments,
+    CommentStyle? commentStyle,
     this.anchor,
     this.localTag,
-  }) : comments = comments ?? _noComments;
+  }) : comments = comments ?? _noComments,
+       commentStyle = commentStyle ?? CommentStyle.possessive;
 
   /// Any comments associated with the node.
   final Iterable<String> comments;
+
+  /// Node's comment style
+  final CommentStyle commentStyle;
 
   @override
   final NodeStyle nodeStyle;
@@ -55,7 +61,8 @@ abstract class TreeNode<T> extends CompactYamlNode {
 
 /// An alias.
 final class ReferenceNode extends TreeNode<String> {
-  ReferenceNode(this.alias, {required super.comments}) : super(NodeStyle.flow);
+  ReferenceNode(this.alias, {required super.comments, super.commentStyle})
+    : super(NodeStyle.flow);
 
   @override
   final String alias;
@@ -84,6 +91,7 @@ final class ContentNode extends TreeNode<Iterable<String>> {
     super.comments,
     super.anchor,
     super.localTag,
+    super.commentStyle,
   });
 
   @override
@@ -115,6 +123,7 @@ final class CollectionNode<T> extends TreeNode<ListQueue<T>> {
     super.anchor,
     super.localTag,
     super.comments,
+    super.commentStyle,
   });
 
   @override

@@ -20,6 +20,8 @@ final class YamlIterable extends ConcreteNode<YamlIterableEntry> {
   /// If the [node] is not an [Iterable], the default [toFormat] creates a
   /// [List] for it. For a custom object, provide a [toFormat] callback that
   /// will be called when the iterable is being dumped.
+  ///
+  /// This view inherits the [node]'s hashcode and equality implementation.
   YamlIterable(super.node, {this.toFormat = iterable});
 
   @override
@@ -47,6 +49,8 @@ final class YamlMapping extends ConcreteNode<YamlMappingEntry> {
   /// If the [node] is not an [Map], the default [toFormat] creates a single
   /// entry with a key and no value.  For a custom object, provide a [toFormat]
   /// callback that will be called when the map is being dumped.
+  ///
+  /// This view inherits the [node]'s hashcode and equality implementation.
   YamlMapping(super.node, {this.toFormat = mapping});
 
   @override
@@ -62,6 +66,8 @@ String string(Object? object) => object.toString();
 
 /// Mutable view for any object that can be dumped as a `YAML` scalar.
 final class ScalarView extends ConcreteNode<String> {
+  /// Creates a [ScalarView] wrapping a [node] that is always stringified. The
+  /// view inherits the [node]'s hashcode and equality implementation.
   ScalarView(super.node, {this.toFormat = string});
 
   @override

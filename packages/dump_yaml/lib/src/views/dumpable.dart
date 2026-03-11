@@ -1,4 +1,87 @@
-import 'package:rookie_yaml/rookie_yaml.dart';
+import 'package:dump_yaml/src/utils.dart';
+import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
+
+enum CommentStyle {
+  /// Comments are dumped before the node and on the same indentation level.
+  ///
+  /// ```yaml
+  /// # Block
+  /// "quoted"
+  /// ---
+  /// # Block
+  /// key: value
+  /// # Block
+  /// next: value
+  /// ---
+  /// block:
+  ///   # Comments
+  ///   block
+  /// --- {
+  /// # Block
+  /// key,
+  /// # Block
+  /// }
+  /// ```
+  ///
+  /// A comment style is interleaved into the [NodeStyle] of a node. It has no
+  /// control over how the node is laid.
+  block,
+
+  /// Comments are dumped before start of the node's meaning content after all
+  /// the structural indicators but before its node properties.
+  ///
+  ///```yaml
+  /// - # Possessive
+  ///   "quoted"
+  /// - ? # Possessive
+  ///     key
+  ///   : # Possessive
+  ///     value
+  /// ```
+  ///
+  /// In a flow context (under special circumstances) or for a root node, this
+  /// comment style defaults to [CommentStyle.block].
+  ///
+  /// ```yaml
+  /// # Root is block
+  /// [
+  ///   # Block
+  ///   value
+  /// ]
+  /// ```
+  possessive,
+
+  /// Comments are dumped after the node's content if possible.
+  ///
+  /// ```yaml
+  /// {key: value} # comments
+  /// ---
+  /// [flow] # comments
+  /// ---
+  /// - plain scalar # with
+  ///           # comments
+  /// - "quoted" # can
+  ///               # also
+  ///                  # have
+  ///                     # comments.
+  /// ```
+  ///
+  /// Block scalars and block collections have no indicators that demarcate
+  /// their start and end offsets.
+  ///
+  /// ```yaml
+  /// - >-
+  ///   hello there
+  ///       # This comment is content now.
+  /// ```
+  trailing
+  ;
+
+  /// Obtains a valid [CommentStyle] associated with the [style]. Specifically,
+  /// [NodeStyle.block] cannot have [CommentStyle.trailing].
+  CommentStyle ofQualified(NodeStyle style) =>
+      style.isBlock && this == .trailing ? .possessive : this;
+}
 
 /// An object that can be dumped to YAML.
 sealed class DumpableView implements CompactYamlNode {
@@ -6,7 +89,18 @@ sealed class DumpableView implements CompactYamlNode {
   final comments = <String>[];
 
   /// Whether to force the object inline.
-  bool forceInline = false;
+  ///
+  /// When `true`, any comments will be ignored if nested within a collection
+  /// that was also forced inline.
+  ///
+  /// ```yaml
+  /// # Inlined collection
+  /// ["my node", {'or': 'this'}]
+  /// ```
+  var forceInline = false;
+
+  /// View's comment style.
+  var commentStyle = CommentStyle.possessive;
 }
 
 /// An alias.
@@ -24,6 +118,12 @@ final class Alias extends DumpableView {
 
   @override
   ResolvedTag? get tag => null;
+
+  @override
+  bool operator ==(Object other) => other is Alias && alias == other.alias;
+
+  @override
+  int get hashCode => alias.hashCode;
 }
 
 /// A callback for mapping an [object] to the specified [To] type.
@@ -46,7 +146,13 @@ abstract base class ConcreteNode<To> extends DumpableView {
   String? anchor;
 
   /// Converts an object to type [To].
-  To Function(Object? object) get toFormat;
+  ObjectFromView<To> get toFormat;
+
+  @override
+  bool operator ==(Object other) => node == other;
+
+  @override
+  int get hashCode => node.hashCode;
 }
 
 extension Sandboxed on ConcreteNode {

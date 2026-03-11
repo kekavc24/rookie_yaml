@@ -222,7 +222,13 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     final ref = alias.alias;
 
     if (_anchors.contains(ref)) {
-      _addNode(ReferenceNode(ref, comments: alias.comments));
+      _addNode(
+        ReferenceNode(
+          ref,
+          comments: alias.comments,
+          commentStyle: alias.commentStyle,
+        ),
+      );
       return;
     }
 
@@ -251,6 +257,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
+      commentStyle: iterable.commentStyle,
       localTag: _localTag(
         tag,
         validate: throwIfNotListTag,
@@ -281,6 +288,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
+      commentStyle: mapping.commentStyle,
       localTag: _localTag(
         tag,
         validate: throwIfNotMapTag,
@@ -314,6 +322,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       forceInline: forceInline || _inlineRules.last,
       comments: comments,
       anchor: _pushAnchor(anchor),
+      commentStyle: scalar.commentStyle,
       localTag: _localTag(
         tag,
         validate: throwIfNotScalarTag,
@@ -359,6 +368,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     List<String>? comments,
     String? anchor,
     String? localTag,
+    CommentStyle? commentStyle,
   }) {
     final collectionStyle = _nearestCollection();
     final dumpingStyle = _buildWithStyle(scalarStyle.nodeStyle, collectionStyle)
@@ -384,6 +394,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         comments: comments,
         anchor: anchor,
         localTag: localTag,
+        commentStyle: commentStyle?.ofQualified(collectionStyle),
       ),
     );
 
@@ -398,6 +409,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     List<String>? comments,
     String? anchor,
     String? localTag,
+    CommentStyle? commentStyle,
   }) => _buildCollection(
     iterable,
     style: style,
@@ -414,6 +426,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     },
     forceInline: forceInline,
     comments: comments,
+    commentStyle: commentStyle,
     anchor: anchor,
     localTag: localTag,
     type: NodeType.list,
@@ -427,6 +440,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     List<String>? comments,
     String? anchor,
     String? localTag,
+    CommentStyle? commentStyle,
   }) => _buildCollection(
     iterable,
     style: style,
@@ -444,6 +458,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     },
     forceInline: forceInline,
     comments: comments,
+    commentStyle: commentStyle,
     anchor: anchor,
     localTag: localTag,
     type: NodeType.map,
@@ -461,6 +476,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     required List<String>? comments,
     required String? anchor,
     required String? localTag,
+    required CommentStyle? commentStyle,
     required NodeType type,
   }) {
     var buildStyle = forceInline ? NodeStyle.flow : style;
@@ -497,6 +513,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         anchor: anchor,
         localTag: localTag,
         comments: comments,
+        commentStyle: commentStyle?.ofQualified(buildStyle),
       ),
     );
 

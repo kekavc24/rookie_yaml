@@ -3,71 +3,6 @@ import 'dart:math';
 import 'package:dump_yaml/src/utils.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
 
-enum CommentStyle {
-  /// Comments are dumped before the node and on the same indentation level.
-  ///
-  /// ```yaml
-  /// # Block
-  /// "quoted"
-  /// ---
-  /// # Block
-  /// key: value
-  /// # Block
-  /// next: value
-  /// ---
-  /// block:
-  ///   # Comments
-  ///   block
-  /// --- {
-  /// # Block
-  /// key,
-  /// # Block
-  /// }
-  /// ```
-  ///
-  /// A comment style is interleaved into the [NodeStyle] of a node. It has no
-  /// control over how the node is laid.
-  block,
-
-  /// Comments are dumped before start of the node's meaning content after all
-  /// the structural indicators but before its node properties.
-  ///
-  /// - # Possessive
-  ///   "quoted"
-  /// - ? # Possessive
-  ///     key
-  ///   : # Possessive
-  ///     value
-  /// - {? # possessive
-  ///    inline : inlined}
-  possessive,
-
-  /// Comments are dumped after the node's content if possible.
-  ///
-  /// ```yaml
-  /// {key: value} # comments
-  /// ---
-  /// [flow] # comments
-  /// ---
-  /// - plain scalar # with
-  ///           # comments
-  /// - "quoted" # can
-  ///               # also
-  ///                  # have
-  ///                     # comments.
-  /// ```
-  ///
-  /// Block scalars and block collections have no indicators that demarcate
-  /// their start and end offsets.
-  ///
-  /// ```yaml
-  /// - >-
-  ///   hello there
-  ///       # This comment is content now.
-  /// ```
-  trailing,
-}
-
 /// Style configuration for the document.
 typedef NodeConfig = ({
   ScalarStyle scalarStyle,
@@ -136,9 +71,6 @@ typedef DumperConfig = ({
 
   /// Level of indentation when moving to a node nested within another node.
   int indentationStep,
-
-  /// Style applied to comments.
-  CommentStyle style,
 });
 
 /// Formatting configuration for the node being dumped.
@@ -147,15 +79,11 @@ extension type Formatter._(DumperConfig config) {
   ///
   /// The [indentationStep] must be `>= 1` and the [rootIndent] `>= 0`. The
   /// comment [style] will be applied the entire document.
-  Formatter.config({
-    int rootIndent = 0,
-    int indentationStep = 2,
-    CommentStyle style = CommentStyle.block,
-  }) : this._((
-         rootIndent: max(rootIndent, 0),
-         indentationStep: max(indentationStep, 1),
-         style: style,
-       ));
+  Formatter.config({int rootIndent = 0, int indentationStep = 2})
+    : this._((
+        rootIndent: max(rootIndent, 0),
+        indentationStep: max(indentationStep, 1),
+      ));
 
   /// Creates a [Formatter] which uses [CommentStyle.block] for comments and
   /// an `indentationStep` of `2` spaces.
