@@ -199,10 +199,17 @@ List<String> _splitAsYamlDoubleQuoted(
   }
 
   int? previous;
+  var hasCurrent = true;
+
   var hasNext = false;
+  var index = -1;
+  final strLen = string.length - 1;
+
   void moveCursor(int? current) {
+    ++index;
     previous = current;
-    hasNext = iterator.moveNext();
+    hasCurrent = iterator.moveNext();
+    hasNext = index < strLen;
   }
 
   /// Adds the current line to the buffer only if it is not empty or [splitLine]
@@ -218,7 +225,7 @@ List<String> _splitAsYamlDoubleQuoted(
 
   moveCursor(null);
 
-  while (hasNext) {
+  while (hasCurrent) {
     final current = iterator.current;
     final splitLine = current.isLineBreak();
 
@@ -287,4 +294,6 @@ Iterable<String> asQuoted(Iterable<String> lines, [String quotes = '"']) sync* {
       : (null, null);
 
   asLine(false, trailingContent, leadingView);
+
+  yield* linesToQuote;
 }
