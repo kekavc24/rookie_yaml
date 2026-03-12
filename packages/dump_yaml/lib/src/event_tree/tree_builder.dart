@@ -394,7 +394,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         comments: comments,
         anchor: anchor,
         localTag: localTag,
-        commentStyle: commentStyle?.ofQualified(collectionStyle),
+        commentStyle: commentStyle?.ofQualified(dumpingStyle.nodeStyle),
       ),
     );
 
