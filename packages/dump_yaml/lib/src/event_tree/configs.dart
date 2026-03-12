@@ -71,22 +71,35 @@ typedef DumperConfig = ({
 
   /// Level of indentation when moving to a node nested within another node.
   int indentationStep,
+
+  /// Line ending for the dumper.
+  String lineEnding,
 });
+
+/// Validates if the [lineEnding] is a valid YAML line ending.
+String _yamlLineBreaks(String lineEnding) => switch (lineEnding) {
+  '\r\n' || '\r' || '\n' => lineEnding,
+  _ => '\n',
+};
 
 /// Formatting configuration for the node being dumped.
 extension type Formatter._(DumperConfig config) {
   /// Creates a [Formatter] with the provided configuration.
   ///
   /// The [indentationStep] must be `>= 1` and the [rootIndent] `>= 0`. The
-  /// comment [style] will be applied the entire document.
-  Formatter.config({int rootIndent = 0, int indentationStep = 2})
-    : this._((
-        rootIndent: max(rootIndent, 0),
-        indentationStep: max(indentationStep, 1),
-      ));
+  /// [lineEnding] defaults to `\n` if not `\r\n` or `\r` or `\n`.
+  Formatter.config({
+    required int rootIndent,
+    int indentationStep = 2,
+    String lineEnding = '\n',
+  }) : this._((
+         rootIndent: max(rootIndent, 0),
+         indentationStep: max(indentationStep, 1),
+         lineEnding: _yamlLineBreaks(lineEnding),
+       ));
 
-  /// Creates a [Formatter] which uses [CommentStyle.block] for comments and
-  /// an `indentationStep` of `2` spaces.
+  /// Creates a [Formatter] which uses `indentationStep` of `2` spaces and
+  /// defaults to a linefeed `\n` as its line ending.
   Formatter.classic({int indent = 0}) : this.config(rootIndent: indent);
 }
 

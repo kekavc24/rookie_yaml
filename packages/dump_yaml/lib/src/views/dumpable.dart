@@ -25,7 +25,7 @@ enum CommentStyle {
   ///
   /// A comment style is interleaved into the [NodeStyle] of a node. It has no
   /// control over how the node is laid.
-  block,
+  block(true),
 
   /// Comments are dumped before start of the node's meaning content after all
   /// the structural indicators but before its node properties.
@@ -49,7 +49,7 @@ enum CommentStyle {
   ///   value
   /// ]
   /// ```
-  possessive,
+  possessive(true),
 
   /// Comments are dumped after the node's content if possible.
   ///
@@ -74,13 +74,22 @@ enum CommentStyle {
   ///   hello there
   ///       # This comment is content now.
   /// ```
-  trailing
+  trailing(false)
   ;
 
+  const CommentStyle(this.isPreamble);
+
+  /// Whether the comments are dumped before the node.
+  final bool isPreamble;
+
   /// Obtains a valid [CommentStyle] associated with the [style]. Specifically,
-  /// [NodeStyle.block] cannot have [CommentStyle.trailing].
-  CommentStyle ofQualified(NodeStyle style) =>
-      style.isBlock && this == .trailing ? .possessive : this;
+  /// returns [CommentStyle.possessive] if [NodeStyle.block] has
+  /// [CommentStyle.trailing].
+  CommentStyle ofQualified(NodeStyle style) => style.isFlow
+      ? this
+      : this == .trailing // Block node cannot have trailing comments.
+      ? .possessive
+      : this;
 }
 
 /// An object that can be dumped to YAML.
