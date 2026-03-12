@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:dump_yaml/src/utils.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
 
@@ -136,4 +137,33 @@ final class CollectionNode<T> extends TreeNode<ListQueue<T>> {
 
   @override
   final NodeType nodeType;
+}
+
+extension  on CommentStyle {
+  bool get preferExplicit => switch (this) {
+    .possessive || .trailing => true,
+    _ => false,
+  };
+}
+
+extension KeyUtil on TreeNode<Object> {
+  /// Whether `this` can be an explicit key in a map.
+  bool isExplicitKey() {
+    // Always enforce a very low threshold for an explicit key. Strive for
+    // generalization over an "all-case-covered" strategy.
+    if (this is CollectionNode ||
+        isMultiline ||
+        (commentStyle.preferExplicit && comments.isNotEmpty)) {
+      return true;
+    }
+
+    final scalar = this; // Alias or Content
+
+    // Check if the scalar is truly implicit.
+    return scalar is ContentNode &&
+        ((scalar.node.firstOrNull?.length ?? 0) > 1024);
+  }
+
+  /// Whether `this` is a block collection.
+  bool isBlockCollection() => this is CollectionNode && nodeStyle.isBlock;
 }

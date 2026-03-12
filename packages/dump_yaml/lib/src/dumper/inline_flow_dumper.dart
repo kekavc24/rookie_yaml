@@ -1,7 +1,13 @@
-part of 'dumper.dart';
+import 'dart:collection';
+
+import 'package:dump_yaml/src/dumper/dumper.dart';
+import 'package:dump_yaml/src/event_tree/node.dart';
+import 'package:dump_yaml/src/event_tree/visitor.dart';
+import 'package:dump_yaml/src/utils.dart';
 
 /// Dumps an inlined flow [CollectionNode].
-final class InlinedFlowDumper extends Dumper<TreeNode<Object>> {
+final class InlinedFlowDumper extends Dumper<TreeNode<Object>>
+    with TreeNodeVisitor {
   /// A flag for map keys/values since YAML has a set of rules for map keys.
   /// The arbitary length for such nodes cannot be determined at constant time
   /// until its entire content is buffered.
@@ -138,10 +144,14 @@ final class InlinedFlowDumper extends Dumper<TreeNode<Object>> {
 
   @override
   void dump(TreeNode<Object> node) {
+    reset();
+    visitTreeNode(node);
+  }
+
+  @override
+  void reset() {
     _disjoint = false;
     _buffer.clear();
     _dumped.clear();
-
-    visitTreeNode(node);
   }
 }

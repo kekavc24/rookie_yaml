@@ -109,10 +109,13 @@ final class YamlStringBuffer {
 }
 
 /// A generic YAML Dumper.
-sealed class Dumper<T> with TreeNodeVisitor {
+abstract class Dumper<T> {
   /// Dumps a [node].
   void dump(T node);
 
   /// Dumped string.
   String dumped();
+
+  /// Resets the dumper's internal state
+  void reset();
 }
