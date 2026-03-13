@@ -5,7 +5,7 @@ import 'package:dump_yaml/src/dumper/inline_flow_dumper.dart';
 import 'package:dump_yaml/src/dumper/preamble.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
-import 'package:dump_yaml/src/utils.dart';
+import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide flowEntryEnd, CommentStyle;
 
 /// Dumps a YAML string line-by-line.
@@ -186,7 +186,7 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
       // Wildcard innit :)
       blockEntryStart(
         buffer,
-        commentStyle == .possessive ? .block : commentStyle,
+        commentStyle.isPreamble ? .block : commentStyle,
         valueIndent,
         '',
         comments,

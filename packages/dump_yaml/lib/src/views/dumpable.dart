@@ -1,5 +1,20 @@
-import 'package:dump_yaml/src/utils.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
+
+/// Default YAML style that is widely used.
+const classicScalarStyle = ScalarStyle.plain;
+
+extension Styling on NodeStyle {
+  /// Whether [NodeStyle.block].
+  bool get isBlock => this == NodeStyle.block;
+
+  /// Whether [NodeStyle.flow].
+  bool get isFlow => !isBlock;
+
+  /// Whether `this` style is compatible with the [other] style.
+  ///
+  /// Flow [NodeStyle]s cannot contain embedded [NodeStyle.block] nodes.
+  bool isIncompatible(NodeStyle other) => isFlow && other.isBlock;
+}
 
 enum CommentStyle {
   /// Comments are dumped before the node and on the same indentation level.
@@ -87,7 +102,7 @@ enum CommentStyle {
   /// [CommentStyle.trailing].
   CommentStyle ofQualified(NodeStyle style) => style.isFlow
       ? this
-      : this == .trailing // Block node cannot have trailing comments.
+      : this == .trailing
       ? .possessive
       : this;
 }

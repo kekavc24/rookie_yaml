@@ -1,5 +1,5 @@
 import 'package:checks/checks.dart';
-import 'package:dump_yaml/src/event_tree/configs.dart';
+import 'package:dump_yaml/src/configs.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/tree_builder.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';

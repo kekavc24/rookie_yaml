@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:dump_yaml/src/dumper/dumper.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
-import 'package:dump_yaml/src/utils.dart';
 
 /// Dumps an inlined flow [CollectionNode].
 final class InlinedFlowDumper extends Dumper<TreeNode<Object>>

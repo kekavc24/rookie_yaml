@@ -1,10 +1,9 @@
 import 'dart:collection';
 
-import 'package:dump_yaml/src/event_tree/configs.dart';
+import 'package:dump_yaml/src/configs.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/scalar_content.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
-import 'package:dump_yaml/src/utils.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:dump_yaml/src/views/views.dart';
 import 'package:rookie_yaml/rookie_yaml.dart'
@@ -27,6 +26,11 @@ import 'package:rookie_yaml/rookie_yaml.dart'
         throwIfNotListTag,
         throwIfNotMapTag,
         throwIfNotScalarTag;
+
+extension on String {
+  String capFirst() =>
+      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+}
 
 mixin _Decomposer {
   /// Anchors in the document.
@@ -179,7 +183,6 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void _reset() {
     _anchors.clear();
     _globalTags.clear();
-    _nodes.clear();
     _collectionStyles.clear();
     _inlineRules.clear();
     _typePath.clear();
@@ -329,34 +332,6 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         includeGeneric: _config.includeSchemaTag,
       ),
     );
-  }
-
-  /// Document represent by the tree.
-  ///
-  /// This document is "light" and only provides the global tags obtained from
-  /// the object called with [buildFor]. Always throws if [buildFor] was never
-  /// called at least once.
-  DocumentNode builtDocument() =>
-      (tags: UnmodifiableListView(_globalTags.values), root: builtNode());
-
-  /// Root node of the tree.
-  ///
-  /// Always throws if [buildFor] was never called at least once.
-  TreeNode<Object> builtNode<T>() => _nodes.first;
-
-  /// Builds an event tree for an [object].
-  ///
-  /// The builder expects the [object] to be a built-in Dart type or a
-  /// [DumpableView] of any Dart object.
-  void buildFor(Object? object, {TreeConfig? config, PathLogger? logger}) {
-    _config = config?.config ?? _config;
-    _pathLogger = logger ?? _pathLogger;
-
-    _reset();
-    _collectionStyles.add(_config.rootNodeStyle);
-    _inlineRules.add(_config.forceInline);
-
-    visitObject(object);
   }
 
   /// Builds a [scalar].
@@ -519,5 +494,52 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
     _collectionStyles.removeLast();
     _inlineRules.removeLast();
+  }
+
+  /// Document represent by the tree.
+  ///
+  /// This document is "light" and only provides the global tags obtained from
+  /// the object called with [buildFor]. Always throws if [buildFor] was never
+  /// called at least once.
+  DocumentNode builtDocument() =>
+      (tags: UnmodifiableListView(_globalTags.values), root: builtNode());
+
+  /// Root node of the tree.
+  ///
+  /// Always throws if [buildFor] was never called at least once.
+  TreeNode<Object> builtNode<T>() => _nodes.first;
+
+  /// Builds an event tree for an [object].
+  ///
+  /// The builder expects the [object] to be a built-in Dart type or a
+  /// [DumpableView] of any Dart object.
+  void buildFor(Object? object, {TreeConfig? config, PathLogger? logger}) {
+    _config = config?.config ?? _config;
+    _pathLogger = logger ?? _pathLogger;
+    _nodes.clear();
+
+    _collectionStyles.add(_config.rootNodeStyle);
+    _inlineRules.add(_config.forceInline);
+
+    visitObject(object);
+    _reset();
+  }
+}
+
+extension GTags on TreeBuilder {
+  /// Adds the global [tags] if their handles are absent.
+  void includeGlobalTags(Iterable<GlobalTag> tags) {
+    for (final gTag in tags) {
+      final handle = gTag.tagHandle;
+
+      if (_globalTags.containsKey(handle)) continue;
+      _globalTags[gTag.tagHandle] = gTag;
+    }
+  }
+
+  /// Removes existing global tags and adds these global [tags].
+  void withGlobalTags(Iterable<GlobalTag> tags) {
+    _globalTags.clear();
+    includeGlobalTags(tags);
   }
 }

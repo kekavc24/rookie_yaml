@@ -1,3 +1,20 @@
+extension StringUtils on String {
+  /// Applies the node's properties inline. This is usually all scalars and
+  /// flow collections.
+  String applyInline({String? tag, String? anchor, String? node}) {
+    var dumped = node ?? this;
+
+    void apply(String? prop, [String prefix = '']) {
+      if (prop == null) return;
+      dumped = '$prefix$prop $dumped';
+    }
+
+    apply(tag);
+    apply(anchor, '&');
+    return dumped;
+  }
+}
+
 /// A YAML string buffer for any [Dumper].
 final class YamlStringBuffer {
   /// Creates a [YamlStringBuffer] with the provided [startingIndent]. The
@@ -35,6 +52,9 @@ final class YamlStringBuffer {
     lastWasLineEnding = false;
     distanceFromMargin = 0;
   }
+
+  /// Clears the internal [StringBuffer].
+  void clearBuffer() => _buffer.clear();
 
   /// Moves the imaginary cursor to the next line by writing a [lineEnding].
   void moveToNextLine() {
@@ -116,6 +136,6 @@ abstract class Dumper<T> {
   /// Dumped string.
   String dumped();
 
-  /// Resets the dumper's internal state
+  /// Resets the dumper's internal state.
   void reset();
 }

@@ -1,6 +1,5 @@
 import 'dart:collection';
 
-import 'package:dump_yaml/src/utils.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
 
@@ -139,7 +138,7 @@ final class CollectionNode<T> extends TreeNode<ListQueue<T>> {
   final NodeType nodeType;
 }
 
-extension  on CommentStyle {
+extension on CommentStyle {
   bool get preferExplicit => switch (this) {
     .possessive || .trailing => true,
     _ => false,
