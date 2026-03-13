@@ -1,7 +1,6 @@
 import 'package:dump_yaml/src/dumper/dumper.dart';
 import 'package:dump_yaml/src/dumper/inline_flow_dumper.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
-import 'package:dump_yaml/src/utils.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
 
@@ -13,7 +12,12 @@ typedef EntryStart =
 typedef EntryEnd =
     void Function(bool hasNext, CommentStyle style, Iterable<String> comments);
 
-/// Attempts to write a collection's preamble information and returns `true`
+extension on String? {
+  /// Converts `this` to an anchor.
+  String? asAnchor() => this == null ? null : '&$this';
+}
+
+/// Attempts to write a collection's preamble information and returns `false`
 /// if the preamble attempt was successful.
 bool exitAfterPreamble<T>(
   CollectionNode<T> node,
@@ -30,7 +34,10 @@ bool exitAfterPreamble<T>(
 
 /// Writes the collection [node]'s properties and returns whether to exit.
 bool _writePreamble<T>(YamlStringBuffer buffer, CollectionNode<T> collection) {
-  final props = [?collection.anchor, ?collection.localTag].join(' ');
+  final props = [
+    ?collection.anchor?.asAnchor(),
+    ?collection.localTag,
+  ].join(' ');
 
   if (collection.node.isEmpty) {
     buffer.write(
@@ -97,6 +104,7 @@ void _blockPreamble(YamlStringBuffer buffer, String props) {
   // - next
   //```
   buffer
+    ..write(props)
     ..moveToNextLine()
     ..writeSpaceOrIndent();
 }
@@ -120,7 +128,6 @@ void collectionEnd(
     ..writeSpaceOrIndent()
     ..write(nodeType == NodeType.map ? '}' : ']');
 }
-
 
 /// Writes the [comments] provided to the [buffer].
 void _writeComments(
@@ -183,8 +190,6 @@ void blockEntryStart(
   // Use the entry indent
   if (style.isPreamble) _writeComments(buffer, comments);
 }
-
-
 
 /// Writes the trailing [comments] of a node to the [buffer].
 void _trailingComments(
