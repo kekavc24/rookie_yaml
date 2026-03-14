@@ -144,7 +144,7 @@ Iterable<String> _toYamlScalar(
         var indentationIndicator = 0;
 
         String header(ChompingIndicator chomping, [String indent = '']) =>
-            '$indent${isLiteral ? '|' : '>'}'
+            '${isLiteral ? '|' : '>'}'
             '${indent.isEmpty ? '' : '1'}${chomping.indicator}';
 
         final leading = lines.firstOrNull;
