@@ -173,6 +173,9 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Path to the current node.
   final _typePath = ListQueue<String>();
 
+  /// Whether to reset the global tags before building the tree.
+  var _resetTags = false;
+
   /// Throws a [StateError] with the [message] and includes the [_currentPath].
   Never _stateErrorWithPath(String message) =>
       _stateError('$message\n\tPath: ${_typePath.join('->')}');
@@ -182,7 +185,6 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
   void _reset() {
     _anchors.clear();
-    _globalTags.clear();
     _collectionStyles.clear();
     _inlineRules.clear();
     _typePath.clear();
@@ -304,7 +306,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void visitScalar(Object? scalar) {
     _buildScalar(
       scalar?.toString() ?? '',
-      scalarStyle: classicScalarStyle,
+      scalarStyle: _config.scalarStyle,
       localTag: _genericIfMissing(
         scalar,
         includeGeneric: _config.includeSchemaTag,
@@ -518,23 +520,30 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _pathLogger = logger ?? _pathLogger;
     _nodes.clear();
 
+    if (_resetTags) _globalTags.clear();
+
     _collectionStyles.add(_config.rootNodeStyle);
     _inlineRules.add(_config.forceInline);
 
     visitObject(object);
     _reset();
+    _resetTags = true;
   }
 }
 
 extension GTags on TreeBuilder {
   /// Adds the global [tags] if their handles are absent.
   void includeGlobalTags(Iterable<GlobalTag> tags) {
+    if (_resetTags) _globalTags.clear();
+
     for (final gTag in tags) {
       final handle = gTag.tagHandle;
 
       if (_globalTags.containsKey(handle)) continue;
       _globalTags[gTag.tagHandle] = gTag;
     }
+
+    _resetTags = false;
   }
 
   /// Removes existing global tags and adds these global [tags].
