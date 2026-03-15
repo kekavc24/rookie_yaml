@@ -2,6 +2,7 @@ import 'package:dump_yaml/src/configs.dart';
 import 'package:dump_yaml/src/dumper/block_dumper.dart';
 import 'package:dump_yaml/src/dumper/dumper.dart';
 import 'package:dump_yaml/src/dumper/preamble.dart';
+import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/tree_builder.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 
@@ -9,8 +10,11 @@ extension on Iterable<Directive> {
   /// Extracts the [GlobalTag]s from `this`.
   (List<Directive> nonGlobals, List<GlobalTag> globals) filter() {
     return fold((<Directive>[], <GlobalTag>[]), (previous, directive) {
-      return directive is GlobalTag ? (previous..$2.add(directive)) : previous
-        ..$1.add(directive);
+      directive is GlobalTag
+          ? (previous.$2.add(directive))
+          : previous.$1.add(directive);
+
+      return previous;
     });
   }
 }
@@ -52,7 +56,11 @@ final class YamlDumper extends Dumper<Object?> {
 
     final (:rootIndent, :indentationStep, :lineEnding) = formatting.config;
     dumper = BlockDumper(
-      YamlStringBuffer(rootIndent, indentationStep, lineEnding),
+      YamlStringBuffer(
+        rootIndent,
+        indentationStep,
+        lineEnding,
+      ),
     );
 
     _docInit(docConfig);
@@ -93,12 +101,31 @@ final class YamlDumper extends Dumper<Object?> {
   @override
   String dumped() => dumper.dumped();
 
+  /// Dumps the [root] node.
+  void _dumpObject(
+    YamlStringBuffer buffer, {
+    required TreeNode<Object> root,
+    required int rootIndent,
+  }) {
+    final TreeNode(:commentStyle, :comments) = root;
+
+    // Comments are dumped from a node level with more context. The document, in
+    // this case, has the context.
+    if (commentStyle.isPreamble) {
+      blockEntryStart(buffer, .block, rootIndent, '', comments);
+      dumper.dump(root);
+      return;
+    }
+
+    dumper.dump(root);
+    blockEntryEnd(buffer, .trailing, comments, rootIndent, false);
+  }
+
   /// Dumps the [node] as a valid YAML document based on the current
   /// configuration state.
   @override
   void dump(Object? node) {
     final buffer = dumper.buffer..clearBuffer();
-
     final (otherDirectives, globals) = _directives!.filter();
 
     treeBuilder
@@ -120,27 +147,15 @@ final class YamlDumper extends Dumper<Object?> {
         ..moveToNextLine();
     }
 
-    final before = root.commentStyle.isPreamble;
     final rootIndent = buffer.indent;
-
-    // Comments are dumped from a node level with more context. The document, in
-    // this case, has the context.
-    if (before) {
-      // The root node is always a block node.
-      blockEntryStart(buffer, .block, rootIndent, '', root.comments);
-    }
-
-    dumper.dump(root);
-
-    // Bruh, I know.
-    if (!before) {
-      // The root node is always a block node.
-      blockEntryEnd(buffer, .trailing, root.comments, rootIndent, false);
-    }
+    _dumpObject(buffer, root: root, rootIndent: rootIndent);
 
     if (_addDocEnd) {
       if (!buffer.lastWasLineEnding) buffer.moveToNextLine();
       buffer.write(DocumentMarker.documentEnd.indicator);
     }
+
+    _treeConfig = null; // [TreeBuilder] persists its copy.
+    buffer.indent = rootIndent;
   }
 }

@@ -74,21 +74,21 @@ final class YamlStringBuffer {
   /// Writes the indent or the number of spaces if [count] is specified.
   void writeSpaceOrIndent([int? count]) => write(' ' * (count ?? indent));
 
-  /// Writes the [content] to the underlying buffer.
+  /// Writes the [lines] to the underlying buffer.
   ///
   /// The [preferredIndent] or [indent] is not applied to the first line.
   ///
   /// If [cursorNextLine] is `true`, a [lineEnding] is written only if the
-  /// [content] didn't have a trailing line break.
+  /// [lines] didn't have a trailing line break.
   void writeContent(
-    Iterable<String> content, {
+    Iterable<String> lines, {
     bool cursorNextLine = false,
     int? preferredIndent,
   }) {
     final padding = ' ' * (preferredIndent ?? indent);
-    final joined = content
+    final joined = lines
         .take(1)
-        .followedBy(content.skip(1).map((l) => l.isEmpty ? l : '$padding$l'))
+        .followedBy(lines.skip(1).map((l) => l.isEmpty ? l : '$padding$l'))
         .join(lineEnding);
 
     _buffer.write(joined);
@@ -102,7 +102,7 @@ final class YamlStringBuffer {
     lastWasLineEnding = false;
 
     if (!cursorNextLine) {
-      distanceFromMargin += content.lastOrNull?.length ?? 0;
+      distanceFromMargin += lines.lastOrNull?.length ?? 0;
       return;
     }
 
@@ -134,6 +134,8 @@ abstract class Dumper<T> {
   void dump(T node);
 
   /// Dumped string.
+  ///
+  /// Must be called after [dump] has been called at least once.
   String dumped();
 
   /// Resets the dumper's internal state.
