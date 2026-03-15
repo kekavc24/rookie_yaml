@@ -1,0 +1,196 @@
+import 'package:checks/checks.dart';
+import 'package:dump_yaml/src/configs.dart';
+import 'package:dump_yaml/src/dumper/yaml_dumper.dart';
+import 'package:dump_yaml/src/views/dumpable.dart';
+import 'package:dump_yaml/src/views/views.dart';
+import 'package:rookie_yaml/rookie_yaml.dart' show NodeStyle, ScalarStyle;
+import 'package:test/test.dart';
+
+const _comments = ['trailing', 'comments'];
+
+void main() {
+  late final YamlDumper dumper;
+
+  // Only flow nodes can have trailing comments
+  late final Iterable<DumpableView> flowNodes;
+
+  setUpAll(() {
+    dumper = YamlDumper(Config.defaults());
+    flowNodes = ScalarStyle.values
+        .where((s) => s.nodeStyle.isFlow)
+        .map(
+          (style) => ScalarView(24)
+            ..commentStyle = CommentStyle.trailing
+            ..comments.addAll(_comments)
+            ..scalarStyle = style,
+        )
+        .cast<DumpableView>()
+        .followedBy([
+          YamlIterable([])
+            ..nodeStyle = NodeStyle.flow
+            ..commentStyle = CommentStyle.trailing
+            ..comments.addAll(_comments),
+
+          YamlMapping({})
+            ..nodeStyle = NodeStyle.flow
+            ..commentStyle = CommentStyle.trailing
+            ..comments.addAll(_comments),
+        ]);
+  });
+
+  test('Applies trailing comments correctly in block sequence', () {
+    dumper
+      ..reset(config: Config.defaults())
+      ..dump(flowNodes);
+
+    check(dumper.dumped()).equals('''
+- 24 # trailing
+     # comments
+- '24' # trailing
+       # comments
+- "24" # trailing
+       # comments
+- [] # trailing
+     # comments
+- {} # trailing
+     # comments
+''');
+  });
+
+  test('Applies trailing comments correctly in block map', () {
+    dumper
+      ..reset(config: Config.defaults())
+      ..dump(flowNodes.toList().asMap());
+
+    check(dumper.dumped()).equals('''
+0: 24 # trailing
+      # comments
+1: '24' # trailing
+        # comments
+2: "24" # trailing
+        # comments
+3: [] # trailing
+      # comments
+4: {} # trailing
+      # comments
+''');
+  });
+
+  test('Applies trailing comments correctly in flow list', () {
+    dumper
+      ..reset(config: Config.yaml(styling: TreeConfig.flow(forceInline: false)))
+      ..dump(flowNodes);
+
+    check(dumper.dumped()).equals('''
+[
+  24 # trailing
+     # comments
+  ,
+  '24' # trailing
+       # comments
+  ,
+  "24" # trailing
+       # comments
+  ,
+  [] # trailing
+     # comments
+  ,
+  {} # trailing
+     # comments
+]''');
+  });
+
+  test('Applies trailing comments correctly in flow map', () {
+    dumper
+      ..reset(config: Config.yaml(styling: TreeConfig.flow(forceInline: false)))
+      ..dump(flowNodes.toList().asMap());
+
+    check(dumper.dumped()).equals('''
+{
+  0: 24 # trailing
+        # comments
+  ,
+  1: '24' # trailing
+          # comments
+  ,
+  2: "24" # trailing
+          # comments
+  ,
+  3: [] # trailing
+        # comments
+  ,
+  4: {} # trailing
+        # comments
+}''');
+  });
+
+  test('Dumps keys as explicit if trailing comments are present', () {
+    dumper.reset(config: Config.defaults());
+
+    final map = flowNodes.fold({}, (m, e) => m..[e] = 'value');
+
+    check((dumper..dump(map)).dumped()).equals('''
+? 24 # trailing
+     # comments
+: value
+? '24' # trailing
+       # comments
+: value
+? "24" # trailing
+       # comments
+: value
+? [] # trailing
+     # comments
+: value
+? {} # trailing
+     # comments
+: value
+''');
+
+    check(
+      (dumper..dump(YamlMapping(map)..nodeStyle = NodeStyle.flow)).dumped(),
+    ).equals('''
+{
+  ? 24 # trailing
+       # comments
+  : value,
+  ? '24' # trailing
+         # comments
+  : value,
+  ? "24" # trailing
+         # comments
+  : value,
+  ? [] # trailing
+       # comments
+  : value,
+  ? {} # trailing
+       # comments
+  : value
+}''');
+  });
+
+  test('Ignores comments when a flow collection is inlined', () {
+    dumper
+      ..reset(config: Config.defaults())
+      ..dump([
+        YamlIterable(flowNodes)
+          ..comments.addAll(_comments)
+          ..commentStyle = CommentStyle.trailing
+          ..nodeStyle = NodeStyle.flow
+          ..forceInline = true,
+
+        YamlMapping({0: flowNodes})
+          ..comments.addAll(_comments)
+          ..commentStyle = CommentStyle.trailing
+          ..nodeStyle = NodeStyle.flow
+          ..forceInline = true,
+      ]);
+
+    check(dumper.dumped()).equals('''
+- [24, '24', "24", [], {}] # trailing
+                           # comments
+- {0: [24, '24', "24", [], {}]} # trailing
+                                # comments
+''');
+  });
+}
