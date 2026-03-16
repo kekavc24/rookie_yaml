@@ -109,6 +109,8 @@ final class YamlDumper extends Dumper<Object?> {
   }) {
     final TreeNode(:commentStyle, :comments) = root;
 
+    buffer.writeSpaceOrIndent(); // Leading indent.
+
     // Comments are dumped from a node level with more context. The document, in
     // this case, has the context.
     if (commentStyle.isPreamble) {
