@@ -96,6 +96,7 @@ final class YamlDumper extends Dumper<Object?> {
       ..lineEnding = lineEnding;
 
     dumper.reset();
+    treeBuilder.withGlobalTags(Iterable.empty());
   }
 
   @override
@@ -160,4 +161,10 @@ final class YamlDumper extends Dumper<Object?> {
     _treeConfig = null; // [TreeBuilder] persists its copy.
     buffer.indent = rootIndent;
   }
+}
+
+/// Dumps an [object] to YAML using the [config] provided.
+String dumpAsYaml(Object? object, {Config? config}) {
+  final dumper = YamlDumper(config ?? Config.defaults());
+  return (dumper..dump(object)).dumped();
 }
