@@ -1,6 +1,5 @@
 library;
 
-export 'src/dumping/dumping.dart';
 export 'src/loaders/loader.dart';
 export 'src/parser/custom_resolvers.dart';
 export 'src/parser/delegates/object_delegate.dart'
