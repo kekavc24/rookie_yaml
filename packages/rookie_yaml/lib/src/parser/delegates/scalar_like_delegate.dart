@@ -129,13 +129,13 @@ final class BoxedScalar<T> extends ScalarLikeDelegate<T>
   );
 }
 
-/// A delegate that resolves to a [Scalar].
+/// A delegate that resolves to a `Scalar`.
 ///
 /// As the name suggests, this delegate behaves like a normal
 /// [ScalarLikeDelegate] which can interact with the parser and also doubles
 /// as a low level [BytesToScalar] delegate that accepts a scalar's utf code
 /// points and forwards them to a concrete [ScalarValueDelegate] which returns
-/// its valid representation of the [Scalar]'s value and its context-less schema
+/// its valid representation of the `Scalar`'s value and its context-less schema
 /// tag. However, this delegate may override such a value and schema tag based
 /// on the YAML version implemented by the parser.
 final class EfficientScalarDelegate<T> extends ScalarLikeDelegate<T>

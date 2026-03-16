@@ -115,7 +115,7 @@ _SequenceHelper<T> _listHelper<T>() {
   return (seq, seq.add);
 }
 
-/// A delegate that resolves to a [Sequence].
+/// A delegate that resolves to a `Sequence`.
 final class GenericSequence<I> extends SequenceLikeDelegate<I, I>
     with _ResolvingCache<I> {
   GenericSequence._(

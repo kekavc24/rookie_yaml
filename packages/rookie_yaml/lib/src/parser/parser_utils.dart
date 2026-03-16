@@ -50,7 +50,7 @@ void bufferHelper(Iterable<int> buffered, CharWriter writer) {
 
 /// Scalar info from a low level scalar parse function.
 typedef ParsedScalarInfo = ({
-  /// [Scalar]'s scalarstyle
+  /// `Scalar`'s scalarstyle
   ScalarStyle scalarStyle,
 
   /// Fixed indent used to parse the scalar.
@@ -60,7 +60,7 @@ typedef ParsedScalarInfo = ({
   /// and [ScalarStyle.plain]) may be an approximate indent since indent serves
   /// no purpose in a flow scalar. Ergo, this [scalarIndent] may refer to the
   /// minimum indent used to determine its structure if its parent flow
-  /// collection ([Sequence] or [Mapping]) is nested within a collection
+  /// collection (`Sequence` or `Mapping`) is nested within a collection
   ///
   /// If the scalar is a direct child of a block key or block list then its
   /// indent is fixed based on the parent. However, for [ScalarStyle.folded]

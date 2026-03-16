@@ -39,8 +39,6 @@ const _noDirectives = (
 );
 
 /// A valid `YAML` directive
-///
-/// {@category yaml_docs}
 sealed class Directive {
   /// Name of the directive
   String get name;

@@ -67,23 +67,23 @@ final integerTag = TagShorthand.fromTagUri(defaultYamlHandle, 'int');
 /// {@category schema}
 final floatTag = TagShorthand.fromTagUri(defaultYamlHandle, 'float');
 
-/// Whether a [tag] can be used as both a [Sequence] and [Mapping] tag.
+/// Whether a [tag] can be used as both a `Sequence` and `Mapping` tag.
 bool _canBeSequenceOrMap(TagShorthand tag) =>
     tag == orderedMappingTag || tag == setTag;
 
-/// Whether a [tag] is a valid [Map] or [Mapping] tag.
+/// Whether a [tag] is a valid [Map] or `Mapping` tag.
 ///
 /// {@category schema}
 bool isYamlMapTag(TagShorthand tag) =>
     tag == mappingTag || _canBeSequenceOrMap(tag);
 
-/// Whether a [tag] is a valid [List] or [Set] or [Sequence] tag.
+/// Whether a [tag] is a valid [List] or [Set] or `Sequence` tag.
 ///
 /// {@category schema}
 bool isYamlSequenceTag(TagShorthand tag) =>
     tag == sequenceTag || _canBeSequenceOrMap(tag);
 
-/// Whether a [tag] is a valid [Scalar] tag.
+/// Whether a [tag] is a valid `Scalar` tag.
 ///
 /// {@category schema}
 bool isYamlScalarTag(TagShorthand tag) =>

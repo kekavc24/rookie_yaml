@@ -53,7 +53,7 @@ NodeDelegate<Obj> emptyBlockNode<Obj>(
   return state.trackAnchor(node..nodeSpan.nodeEnd = end ?? start, property);
 }
 
-/// Parses a [Scalar].
+/// Parses a `Scalar`.
 ///
 /// [greedyOnPlain] is only ever passed when the first two plain scalar
 /// characters resemble the directive end markers `---` but the last char

@@ -101,7 +101,7 @@ final class _BoxedMap<K, V, T> extends MapLikeDelegate<K, V, T>
   bool accept(K key, V? value) => _delegate.accept(key, value);
 }
 
-/// A delegate that resolves to a [Mapping] or [Map].
+/// A delegate that resolves to a `Mapping` or [Map].
 final class GenericMap<I> extends MapLikeDelegate<I, I, I>
     with _ResolvingCache<I> {
   GenericMap({

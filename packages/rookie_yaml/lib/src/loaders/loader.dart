@@ -14,8 +14,6 @@ part 'dart_objects.dart';
 /// A generic input class for the [DocumentParser].
 ///
 /// {@category dart_objects}
-/// {@category yaml_nodes}
-/// {@category yaml_docs}
 extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
   /// Creates a simple input from a [source].
   ///
@@ -89,7 +87,7 @@ void defaultLogger(bool isInfo, String message) =>
     isInfo ? _logger.info(message) : _logger.warning(message);
 
 /// Throws a [YamlParseException] if [throwOnMapDuplicate] is true. Otherwise,
-/// logs the message at [Level.info].
+/// logs the message at `Level.info`.
 void onParsedDuplicateKey(
   SourceIterator iterator, {
   required RuneOffset start,

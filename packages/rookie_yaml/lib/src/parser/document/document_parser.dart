@@ -23,7 +23,7 @@ typedef _OnDocStart = void Function(int document);
 
 const rootIndentLevel = seamlessIndentMarker + 1;
 
-/// Throws an exception if the prospective [YamlSourceNode]
+/// Throws an exception if the prospective `YamlSourceNode`
 /// (a child of the root node or the root node itself) in the document being
 /// parsed did not have an explicit directives end marker (`---`) or the
 /// directives end marker (`---`) is present but no directives were parsed.

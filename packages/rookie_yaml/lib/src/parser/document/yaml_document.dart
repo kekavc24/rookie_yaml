@@ -7,9 +7,6 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// A document representing the entire `YAML` string or a single
 /// scalar/collection node within a group of documents in `YAML`.
-///
-/// {@category yaml_docs}
-/// {@category dump_doc}
 final class YamlDocument<T> {
   YamlDocument._(
     this.index,

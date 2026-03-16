@@ -2,9 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 
 /// Represents the type of YAML document based on the use of directives,
-/// directives end marker (`---`) and document end marker (`...`)
-///
-/// {@category yaml_docs}
+/// directives end marker (`---`) and document end marker (`...`).
 enum YamlDocType {
   /// Yaml document without any directives or directives end markers
   ///
@@ -50,8 +48,6 @@ enum YamlDocType {
 
 /// Indicates how each [CompactYamlNode] is presented in the serialized yaml
 /// string.
-///
-/// {@category yaml_nodes}
 enum NodeStyle {
   /// A style that depends on indentation to indicate its structure
   block,
@@ -60,9 +56,7 @@ enum NodeStyle {
   flow,
 }
 
-/// Indicates how each [Scalar] is presented in a serialized yaml string.
-///
-/// {@category yaml_nodes}
+/// Indicates how a scalar is presented in a serialized yaml string.
 enum ScalarStyle {
   /// A `block` style that starts with an explicit `|`.
   literal(NodeStyle.block),
@@ -97,8 +91,6 @@ enum ScalarStyle {
 }
 
 /// Controls how final line breaks and trailing empty lines are interpreted.
-///
-/// {@category yaml_nodes}
 enum ChompingIndicator {
   /// Indicates the final line break and any trailing empty lines should be
   /// excluded from the scalar's content.
@@ -115,11 +107,11 @@ enum ChompingIndicator {
 
   const ChompingIndicator(this.indicator);
 
-  /// [NodeStyle.block] indicator for a [Scalar]
+  /// [NodeStyle.block] indicator for a `Scalar`
   final String indicator;
 }
 
-/// {@category yaml_docs}
+/// A valid document marker.
 enum DocumentMarker {
   /// Indicates the end of any documents and implies the start of a document.
   ///
@@ -174,8 +166,6 @@ enum DocumentMarker {
 }
 
 /// A custom [Equality] object for deep equality.
-///
-/// {@category yaml_nodes}
 const yamlCollectionEquality = DeepCollectionEquality();
 
 /// A YAML node with a set of node properties and its own predefined
@@ -185,8 +175,6 @@ const yamlCollectionEquality = DeepCollectionEquality();
 /// a notation is required when the object is being dumped.
 ///
 /// {@category intro}
-/// {@category yaml_nodes}
-/// {@category dump_type}
 abstract class CompactYamlNode {
   const CompactYamlNode();
 

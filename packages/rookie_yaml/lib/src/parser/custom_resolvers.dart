@@ -7,7 +7,7 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
 /// Callback for creating a [ContentResolver] tag.
 typedef ResolverCreator<R> = ContentResolver<R> Function(NodeTag tag);
 
-/// A resolver for a [Scalar]. The type emitted by this resolver lives within
+/// A resolver for a `Scalar`. The type emitted by this resolver lives within
 /// the scalar itself or acts as the type inferred when directly parsed as a
 /// `Dart` object.
 ///
@@ -31,7 +31,7 @@ final class ScalarResolver<O> {
   /// thus allowing the parser to partially represent it as a string. If
   /// [acceptNullAsValue] is `true`, the null returned will be treated as value.
   ///
-  /// A [toYamlSafe] is required if the scalar is a [YamlSourceNode] and not a
+  /// A [toYamlSafe] is required if the scalar is a `YamlSourceNode` and not a
   /// `Dart` object.
   ScalarResolver.onMatch(
     TagShorthand tag, {

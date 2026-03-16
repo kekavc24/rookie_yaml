@@ -118,7 +118,7 @@ bool foldQuotedFlowScalar(
 /// Folds a flow scalar(`plain`, `double quoted` and `single quoted`) that
 /// spans more than 1 line.
 ///
-/// [resumeOnEscapedLineBreak] should only be provided when parsing a [Scalar]
+/// [resumeOnEscapedLineBreak] should only be provided when parsing a `Scalar`
 /// with [ScalarStyle.doubleQuoted] which allows `\n` to be escaped.
 FoldFlowInfo foldFlowScalar(
   SourceIterator iterator, {

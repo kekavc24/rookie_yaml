@@ -28,7 +28,7 @@ void _addMapEntry<Obj>(
 }
 
 /// Attempts to compose and parse a block map using the [keyOrNode] as the
-/// first implicit key. [keyOrNode] is not restricted to a [Scalar] but may
+/// first implicit key. [keyOrNode] is not restricted to a `Scalar` but may
 /// also represent any flow collection that is implicit.
 ///
 /// If a block map cannot be parsed then the [keyOrNode] is returned. A block

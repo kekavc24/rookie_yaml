@@ -6,12 +6,6 @@ dartdoc:
     dart_objects:
       markdown: doc/load_dart_objects.md
       displayName: Built-in Dart types
-    yaml_docs:
-      markdown: doc/load_document.md
-      displayName: YamlDocument
-    yaml_nodes:
-      markdown: doc/loading_nodes.md
-      displayName: YamlSourceNodes
     anchor_alias:
       markdown: doc/anchors_aliases.md
       displayName: Anchors and Aliases
@@ -27,21 +21,6 @@ dartdoc:
     schema:
       markdown: doc/schema_tags.md
       displayName: Supported Schema Tags
-    dump_scalar:
-      markdown: doc/dump_scalar.md
-      displayName: Dumping Scalars
-    dump_sequence:
-      markdown: doc/dump_sequence.md
-      displayName: Dumping Sequence
-    dump_mapping:
-      markdown: doc/dump_mapping.md
-      displayName: Dumping Mapping
-    dump_type:
-      markdown: doc/dump_type.md
-      displayName: Dumping Types
-    dump_doc:
-      markdown: doc/dump_document.md
-      displayName: Dumping YAML Documents
     resolvers_intro:
       markdown: doc/intro_to_resolvers.md
       displayName: Resolvers
@@ -71,11 +50,6 @@ dartdoc:
     - tag_types
     - declare_tags
     - schema
-    - dump_scalar
-    - dump_sequence
-    - dump_mapping
-    - dump_type
-    - dump_doc
     - resolvers_intro
     - scalar_resolvers
     - custom_resolvers_intro

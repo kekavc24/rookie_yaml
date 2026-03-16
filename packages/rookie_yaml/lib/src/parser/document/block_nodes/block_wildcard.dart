@@ -141,7 +141,7 @@ BlockNode<Obj> parseFlowNodeInBlock<Obj>(
 }
 
 /// Parses a block scalar based on the current scalar [event] and optionally
-/// composes a block if [composeImplicitMap] is `true` and the [Scalar] is a
+/// composes a block if [composeImplicitMap] is `true` and the `Scalar` is a
 /// flow scalar.
 BlockNode<Obj> parseBlockScalar<Obj>(
   ParserState<Obj> state, {

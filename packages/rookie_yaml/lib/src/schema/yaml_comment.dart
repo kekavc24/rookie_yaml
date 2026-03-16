@@ -2,9 +2,7 @@ import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
 import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/scanner/span.dart';
 
-/// A comment parsed in a document
-///
-/// {@category yaml_docs}
+/// A comment parsed in a document.
 final class YamlComment implements Comparable<YamlComment> {
   YamlComment(this.comment, {required this.commentSpan});
 

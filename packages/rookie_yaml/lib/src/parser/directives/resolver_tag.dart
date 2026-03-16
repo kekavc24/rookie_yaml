@@ -1,11 +1,11 @@
 part of 'directives.dart';
 
-/// Resolves a [Scalar]'s parsed content and requires the function to return
+/// Resolves a `Scalar`'s parsed content and requires the function to return
 /// `null` if mapping fails. This allows the parser to provide a (partial) kind.
 /// Avoid throwing within the mapping function.
 ///
-/// `NOTE:` This resolver will be ignored if the tag belongs to a [Mapping]
-/// or [Sequence]
+/// `NOTE:` This resolver will be ignored if the tag belongs to a `Mapping`
+/// or `Sequence`
 ///
 /// {@category tag_types}
 /// {@category scalar_resolvers}
