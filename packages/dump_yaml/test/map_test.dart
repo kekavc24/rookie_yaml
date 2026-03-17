@@ -2,7 +2,8 @@ import 'package:checks/checks.dart';
 import 'package:collection/collection.dart';
 import 'package:dump_yaml/src/configs.dart';
 import 'package:dump_yaml/src/dumper/yaml_dumper.dart';
-import 'package:rookie_yaml/rookie_yaml.dart' show ScalarStyle, YamlSource, loadObject;
+import 'package:rookie_yaml/rookie_yaml.dart'
+    show ScalarStyle, YamlSource, loadObject;
 import 'package:test/test.dart';
 
 const _funkyMap = {

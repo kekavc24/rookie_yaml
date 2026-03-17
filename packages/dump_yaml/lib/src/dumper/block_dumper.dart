@@ -6,7 +6,7 @@ import 'package:dump_yaml/src/dumper/preamble.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
-import 'package:rookie_yaml/rookie_yaml.dart' hide flowEntryEnd, CommentStyle;
+import 'package:rookie_yaml/rookie_yaml.dart' hide flowEntryEnd;
 
 /// Dumps a YAML string line-by-line.
 final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {

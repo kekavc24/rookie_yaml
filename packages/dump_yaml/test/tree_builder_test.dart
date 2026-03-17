@@ -4,7 +4,7 @@ import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/tree_builder.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:dump_yaml/src/views/views.dart';
-import 'package:rookie_yaml/rookie_yaml.dart' hide Alias;
+import 'package:rookie_yaml/rookie_yaml.dart';
 import 'package:test/test.dart';
 
 extension _Typed<T> on Subject<TreeNode<T>> {

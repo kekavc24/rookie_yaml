@@ -1,4 +1,4 @@
-import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 /// Default YAML style that is widely used.
 const classicScalarStyle = ScalarStyle.plain;

@@ -1,5 +1,5 @@
 import 'package:dump_yaml/src/views/dumpable.dart';
-import 'package:rookie_yaml/rookie_yaml.dart' hide ConcreteNode;
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 /// A YAML sequence with entries.
 typedef YamlIterableEntry = Iterable<Object?>;

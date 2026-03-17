@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:dump_yaml/src/views/dumpable.dart';
-import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 /// Config for the document.
 typedef DocConfig = ({

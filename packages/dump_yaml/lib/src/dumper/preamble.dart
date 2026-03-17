@@ -2,7 +2,7 @@ import 'package:dump_yaml/src/dumper/dumper.dart';
 import 'package:dump_yaml/src/dumper/inline_flow_dumper.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/views/dumpable.dart';
-import 'package:rookie_yaml/rookie_yaml.dart' hide CommentStyle;
+import 'package:rookie_yaml/rookie_yaml.dart';
 
 /// Called before a block sequence entry is dumped.
 typedef EntryStart =
