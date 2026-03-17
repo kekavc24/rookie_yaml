@@ -1,0 +1,24 @@
+dartdoc:
+  categories:
+    dump_map:
+      markdown: doc/dump_mapping.md
+      displayName: Dump Map
+    dump_list:
+      markdown: doc/dump_sequence.md
+      displayName: Dump List
+    dump_scalar:
+      markdown: doc/dump_scalar.md
+      displayName: Dump Scalar
+    dumpable_view:
+      markdown: doc/views.md
+      displayName: Dumpable Views
+    rep_tree:
+      markdown: doc/tree.md
+      displayName: Representation Tree
+
+  categoryOrder:
+    - dump_scalar
+    - dump_list
+    - dump_map
+    - dumpable_view
+    - rep_tree
