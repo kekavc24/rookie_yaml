@@ -45,5 +45,9 @@ runs:
         format: lcov
         parallel: true
         flag-name: ${{ inputs.package-name }}
+
+    - name: Complete Coverage
+      uses: coverallsapp/github-action@v2.3.6
+      with:
         parallel-finished: true
         carryforward: ${{ inputs.coverage-runs }}
