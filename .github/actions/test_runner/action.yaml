@@ -6,6 +6,10 @@ inputs:
     description: GitHub token
     required: true
 
+  coverage-runs:
+    description: Previous coverage runs
+    required: true
+
   package-name:
     description: Package name with changes in PR.
     required: true
@@ -40,3 +44,5 @@ runs:
         file: ${{ inputs.package-directory }}/coverage/lcov.info
         format: lcov
         flag-name: ${{ inputs.package-name }}
+        parallel-finished: true
+        carryforward: ${{ inputs.coverage-runs }}

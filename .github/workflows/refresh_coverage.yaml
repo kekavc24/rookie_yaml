@@ -31,3 +31,4 @@ jobs:
           github-token: ${{ github.token }}
           package-name: ${{ steps.filter.outputs.package-name }}
           package-directory: "${{ github.workspace }}/packages/${{ steps.filter.outputs.package-name }}"
+          coverage-runs: ${{ vars.REPOS }}
