@@ -89,7 +89,7 @@ const directive = 0x25;
 /// Reserved by YAML for future use `@`
 const reservedAtSign = 0x40;
 
-/// Reserved by YAML for future use [\`]
+/// Reserved by YAML for future use.
 const reservedGrave = 0x60;
 
 //

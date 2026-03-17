@@ -1,11 +1,7 @@
 ## Table of Contents
 
 - [Introduction](./intro.md)
-- Loading YAML
-  - [Loading YAML as Dart built-in types](./load_dart_objects.md)
-  - Loading YAML as a compact node
-    - [Loading documents](./load_document.md)
-    - [Loading yaml source nodes](./loading_nodes.md)
+- [Loading YAML as Dart built-in types](./load_dart_objects.md)
 - Loading YAML with properties
   - [Anchors & Aliases](./anchors_aliases.md)
   - Tags

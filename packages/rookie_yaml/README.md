@@ -11,6 +11,9 @@ A (rookie) `Dart` [YAML][yaml] 1.2+ parser.
 
 ## What's Included
 
+> [!IMPORTANT]
+> The dumper has been migrated to [`package:dump_yaml`](https://pub.dev/packages/dump_yaml) which is currently in beta. Dumping support will not be available in versions later than `v0.6.0`.
+
 Earlier YAML versions are parsed with YAML 1.2+ grammar rules. The parser will warn you if an explicit YAML version directive which is not supported is present.
 
 - ✅ - Supported. See `Notes` for any additional information.
@@ -22,8 +25,10 @@ Earlier YAML versions are parsed with YAML 1.2+ grammar rules. The parser will w
 The package implements the full YAML 1.2+ spec. See the table below for more information and any teething issues the parser has.
 
 > [!TIP]
-> The underlying `DocumentParser` is now exported by this package (but with guard-rails). You can build a fine-grained parser on top of the low-level internal parser functions it uses. See the [external resolvers](https://pub.dev/documentation/rookie_yaml/latest/topics/custom_resolvers_intro-topic.html) section and consider extending the `CustomTriggers` class.
+> The underlying `DocumentParser` is now exported by this package. You can build a fine-grained parser on top of the low-level internal parser functions it uses. See the [external resolvers](https://pub.dev/documentation/rookie_yaml/latest/topics/custom_resolvers_intro-topic.html) section and consider extending the `CustomTriggers` class.
 
+<details>
+<summary>Feature Support</summary>
 <table>
   <thead>
     <tr>
@@ -32,7 +37,6 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
       <th scope="col">Implemented</th>
     </tr>
   </thead>
-
   <tbody>
     <tr>
       <th scope="row" rowspan="4">Input</th>
@@ -88,6 +92,7 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
     </tr>
   </tbody>
 </table>
+</details>
 
 <details>
 <summary>Notes</summary>
@@ -128,11 +133,6 @@ The package implements the full YAML 1.2+ spec. See the table below for more inf
 
 </details>
 
-### YAML Dumper
-
-The package also exports some APIs that can dump objects back to YAML. The dumped object formatting will always match the current YAML version supported by the parser.
-
-Start [here](https://pub.dev/documentation/rookie_yaml/latest/topics/dump_scalar-topic.html) for more information.
 
 ## Documentation & Examples (Still in progress 🏗️)
 
