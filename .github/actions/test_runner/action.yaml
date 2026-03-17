@@ -43,6 +43,7 @@ runs:
         github-token: ${{ inputs.github-token }}
         file: ${{ inputs.package-directory }}/coverage/lcov.info
         format: lcov
+        parallel: true
         flag-name: ${{ inputs.package-name }}
         parallel-finished: true
         carryforward: ${{ inputs.coverage-runs }}
