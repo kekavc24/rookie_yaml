@@ -134,6 +134,8 @@ typedef PathLogger = void Function(String path);
 void _noOp(String _) {}
 
 /// A builder that recreates a YAML representation tree for a dumper to dump.
+///
+/// {@category rep_tree}
 final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Creates a [TreeBuilder] with the provided [treeConfig].
   ///
@@ -531,6 +533,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   }
 }
 
+/// {@category rep_tree}
 extension GTags on TreeBuilder {
   /// Adds the global [tags] if their handles are absent.
   void includeGlobalTags(Iterable<GlobalTag> tags) {

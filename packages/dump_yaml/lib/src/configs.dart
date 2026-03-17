@@ -22,6 +22,11 @@ typedef NodeConfig = ({
 });
 
 /// Configuration applied to the node tree before it is dumped.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 extension type TreeConfig._(NodeConfig config) {
   /// Creates a [TreeConfig] for a YAML document with a [NodeStyle.block] root
   /// node. YAML schema tags will be excluded unless [includeSchemaTag] is
@@ -90,6 +95,11 @@ String yamlLineBreaks(String lineEnding) => switch (lineEnding) {
 };
 
 /// Formatting configuration for the node being dumped.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 extension type Formatter._(DumperConfig config) {
   /// Creates a [Formatter] with the provided configuration.
   ///
@@ -118,6 +128,11 @@ typedef YamlConfig = ({
 });
 
 /// Dumper configuration.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 extension type Config._(YamlConfig yamlConfig) {
   /// Creates a [Config] for the dumper with the provided [styling] and
   /// [formatting] configuration.

@@ -5,6 +5,12 @@ import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/visitor.dart';
 
 /// Dumps an inlined flow [CollectionNode].
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
+/// {@category rep_tree}
 final class InlinedFlowDumper extends Dumper<TreeNode<Object>>
     with TreeNodeVisitor {
   /// A flag for map keys/values since YAML has a set of rules for map keys.

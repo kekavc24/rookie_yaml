@@ -20,6 +20,11 @@ extension on Iterable<Directive> {
 }
 
 /// A YAML document dumper.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 final class YamlDumper extends Dumper<Object?> {
   /// Creates a [YamlDumper] that uses the specified [config]uration.
   YamlDumper(Config config) {
@@ -164,6 +169,11 @@ final class YamlDumper extends Dumper<Object?> {
 }
 
 /// Dumps an [object] to YAML using the [config] provided.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 String dumpAsYaml(Object? object, {Config? config}) {
   final dumper = YamlDumper(config ?? Config.defaults());
   return (dumper..dump(object)).dumped();

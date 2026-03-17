@@ -2,9 +2,13 @@ import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 
 /// A YAML sequence with entries.
+///
+/// {@category dump_list}
 typedef YamlIterableEntry = Iterable<Object?>;
 
 /// Maps an object to yaml sequence.
+///
+/// {@category dump_list}
 typedef IterableToYaml = ObjectFromView<YamlIterableEntry>;
 
 /// Creates an iterable containing [object] only if [object] is not an
@@ -14,6 +18,9 @@ YamlIterableEntry iterable(Object? object) =>
 
 /// A mutable view for an [Iterable]-like object that can have YAML node
 /// properties.
+///
+/// {@category dumpable_view}
+/// {@category dump_list}
 final class YamlIterable extends ConcreteNode<YamlIterableEntry> {
   /// Creates a [YamlIterable] wrapping a [node].
   ///
@@ -31,10 +38,14 @@ final class YamlIterable extends ConcreteNode<YamlIterableEntry> {
   IterableToYaml toFormat;
 }
 
-/// A list of [MapEntry]s for a YAML map
+/// A list of [MapEntry]s for a YAML map.
+///
+/// {@category dump_map}
 typedef YamlMappingEntry = Iterable<MapEntry<Object?, Object?>>;
 
 /// Maps a map to a yaml mapping.
+///
+/// {@category dump_map}
 typedef MapToYaml = ObjectFromView<YamlMappingEntry>;
 
 /// Obtains the entries of the [object]. If not a map, the [object] is treated
@@ -43,6 +54,9 @@ YamlMappingEntry mapping(Object? object) =>
     object is Map ? object.entries : [MapEntry(object, null)];
 
 /// A mutable view for a [Map]-like object that can have YAML node properties.
+///
+/// {@category dumpable_view}
+/// {@category dump_map}
 final class YamlMapping extends ConcreteNode<YamlMappingEntry> {
   /// Creates a [YamlMapping] wrapping a [node].
   ///
@@ -60,11 +74,17 @@ final class YamlMapping extends ConcreteNode<YamlMappingEntry> {
   MapToYaml toFormat;
 }
 
+/// Maps any object to a scalar.
+///
+/// {@category dump_scalar}
 typedef ScalarToString = ObjectFromView<String>;
 
 String string(Object? object) => object.toString();
 
 /// Mutable view for any object that can be dumped as a `YAML` scalar.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
 final class ScalarView extends ConcreteNode<String> {
   /// Creates a [ScalarView] wrapping a [node] that is always stringified. The
   /// view inherits the [node]'s hashcode and equality implementation.

@@ -7,6 +7,7 @@ enum NodeType { scalar, map, list, alias }
 
 const _noComments = Iterable<String>.empty();
 
+/// A built document.
 typedef DocumentNode = ({Iterable<GlobalTag> tags, TreeNode<Object> root});
 
 extension Doc on DocumentNode {
@@ -16,6 +17,8 @@ extension Doc on DocumentNode {
 
 /// A node representing a small or the entire chunk of a finalized YAML tree
 /// ready to be dumped.
+///
+/// {@category dump_map}
 abstract class TreeNode<T> extends CompactYamlNode {
   TreeNode(
     this.nodeStyle, {

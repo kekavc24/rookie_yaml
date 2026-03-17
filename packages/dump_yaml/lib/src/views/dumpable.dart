@@ -108,6 +108,11 @@ enum CommentStyle {
 }
 
 /// An object that can be dumped to YAML.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 sealed class DumpableView implements CompactYamlNode {
   /// Comments associated with this view.
   final comments = <String>[];
@@ -128,6 +133,11 @@ sealed class DumpableView implements CompactYamlNode {
 }
 
 /// An alias.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 final class Alias extends DumpableView {
   Alias(this.alias);
 
@@ -154,6 +164,11 @@ final class Alias extends DumpableView {
 typedef ObjectFromView<To> = To Function(Object? object);
 
 /// A node that is not an alias.
+///
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 abstract base class ConcreteNode<To> extends DumpableView {
   ConcreteNode(this.node);
 
@@ -179,6 +194,10 @@ abstract base class ConcreteNode<To> extends DumpableView {
   int get hashCode => node.hashCode;
 }
 
+/// {@category dumpable_view}
+/// {@category dump_scalar}
+/// {@category dump_list}
+/// {@category dump_map}
 extension Sandboxed on ConcreteNode {
   /// Updates the object's [ResolvedTag] to a verbatim [tag].
   ConcreteNode withVerbatimTag(VerbatimTag tag) => this..tag = tag;
