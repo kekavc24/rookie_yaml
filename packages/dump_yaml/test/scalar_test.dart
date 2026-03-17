@@ -66,7 +66,7 @@ void main() {
           )
           ..dump(scalar..scalarStyle = style ?? classicScalarStyle);
 
-        check(dumper.dumped()).equals('&24 !24 $expected');
+        check(dumper.dumped()).equals(' &24 !24 $expected');
       }
 
       checkDump('24'); // No style
@@ -103,6 +103,17 @@ void main() {
   });
 
   group('Dumps plain', () {
+    setUpAll(() {
+      dumper.reset(
+        config: Config.yaml(
+          styling: TreeConfig.flow(
+            scalarStyle: ScalarStyle.plain,
+            forceInline: false,
+          ),
+        ),
+      );
+    });
+
     test('Dumps plain scalar', () {
       dumper.dump(24);
       check(dumper.dumped()).equals('24');
