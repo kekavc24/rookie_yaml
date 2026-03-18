@@ -54,17 +54,16 @@ print(dumpAsYaml(['hello', 'there']));
 - A bit sophisticated. A `DumpableView` provides granular control over the `TreeBuilder` but still relies on the same builder for housekeeping. For example, `ScalarStyle.literal` is not allowed in flow styles in YAML.
 
 ```dart
-// With Dart's shorthand syntax. Setter mimics the enum.
 final configurable = [
   ScalarView('hello YAML, from world')
     ..anchor = 'scalar'
-    ..scalarStyle = .literal // Not allowed in YAML flow.
-    ..commentStyle = .trailing
+    ..scalarStyle = ScalarStyle.literal // Not allowed in YAML flow.
+    ..commentStyle = CommentStyle.trailing
     ..comments.addAll(['trailing', 'comments']),
 
   YamlMapping({'key': 24, 'next': Alias('scalar')})
       ..forceInline = true
-      ..commentStyle = .block
+      ..commentStyle = CommentStyle.block
       ..comments.addAll(['block', 'comments'])
 ];
 

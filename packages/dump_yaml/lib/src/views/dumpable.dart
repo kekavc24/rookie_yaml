@@ -89,8 +89,7 @@ enum CommentStyle {
   ///   hello there
   ///       # This comment is content now.
   /// ```
-  trailing(false)
-  ;
+  trailing(false);
 
   const CommentStyle(this.isPreamble);
 
@@ -102,8 +101,8 @@ enum CommentStyle {
   /// [CommentStyle.trailing].
   CommentStyle ofQualified(NodeStyle style) => style.isFlow
       ? this
-      : this == .trailing
-      ? .possessive
+      : this == CommentStyle.trailing
+      ? CommentStyle.possessive
       : this;
 }
 

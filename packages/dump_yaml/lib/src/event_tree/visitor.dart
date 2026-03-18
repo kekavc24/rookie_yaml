@@ -49,10 +49,10 @@ mixin ViewVisitor {
 mixin TreeNodeVisitor {
   /// Visits a tree [node] and redirects it to the appropriate visitor function.
   void visitTreeNode(TreeNode<Object> node) => switch (node.nodeType) {
-    .alias => visitAliasNode(node as ReferenceNode),
-    .scalar => visitContentNode(node as ContentNode),
-    .list => visitList(node as ListNode),
-    .map => visitMap(node as MapNode),
+    NodeType.alias => visitAliasNode(node as ReferenceNode),
+    NodeType.scalar => visitContentNode(node as ContentNode),
+    NodeType.list => visitList(node as ListNode),
+    NodeType.map => visitMap(node as MapNode),
   };
 
   /// Visits a [ReferenceNode].

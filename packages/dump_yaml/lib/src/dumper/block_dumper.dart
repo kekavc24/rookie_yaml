@@ -170,7 +170,7 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
 
     // Implicit keys are always inline. Ergo, such a key can only have block
     // comments. No indicators too.
-    blockEntryStart(buffer, .block, entryIndent, '', key.comments);
+    blockEntryStart(buffer, CommentStyle.block, entryIndent, '', key.comments);
     visitTreeNode(key);
 
     // Aliases allow ":".
@@ -192,7 +192,7 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
       // Wildcard innit :)
       blockEntryStart(
         buffer,
-        commentStyle.isPreamble ? .block : commentStyle,
+        commentStyle.isPreamble ? CommentStyle.block : commentStyle,
         valueIndent,
         '',
         comments,

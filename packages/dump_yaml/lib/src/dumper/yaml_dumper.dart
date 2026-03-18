@@ -4,6 +4,7 @@ import 'package:dump_yaml/src/dumper/dumper.dart';
 import 'package:dump_yaml/src/dumper/preamble.dart';
 import 'package:dump_yaml/src/event_tree/node.dart';
 import 'package:dump_yaml/src/event_tree/tree_builder.dart';
+import 'package:dump_yaml/src/views/dumpable.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 
 extension on Iterable<Directive> {
@@ -120,13 +121,13 @@ final class YamlDumper extends Dumper<Object?> {
     // Comments are dumped from a node level with more context. The document, in
     // this case, has the context.
     if (commentStyle.isPreamble) {
-      blockEntryStart(buffer, .block, rootIndent, '', comments);
+      blockEntryStart(buffer, CommentStyle.block, rootIndent, '', comments);
       dumper.dump(root);
       return;
     }
 
     dumper.dump(root);
-    blockEntryEnd(buffer, .trailing, comments, rootIndent, false);
+    blockEntryEnd(buffer, CommentStyle.trailing, comments, rootIndent, false);
   }
 
   /// Dumps the [node] as a valid YAML document based on the current

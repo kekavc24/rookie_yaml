@@ -143,7 +143,7 @@ final class CollectionNode<T> extends TreeNode<ListQueue<T>> {
 
 extension on CommentStyle {
   bool get preferExplicit => switch (this) {
-    .possessive || .trailing => true,
+    CommentStyle.possessive || CommentStyle.trailing => true,
     _ => false,
   };
 }
