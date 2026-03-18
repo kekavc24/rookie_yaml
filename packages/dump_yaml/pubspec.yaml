@@ -1,11 +1,19 @@
 name: dump_yaml
 description: A configurable library for dumping any Dart object back to YAML.
-version: 0.1.0-beta.1
+version: 0.1.0-beta.2
 repository: https://github.com/kekavc24/yaml_dart/tree/main/packages/dump_yaml
 topics:
   - yaml
   - json
   - formatter
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
+  web:
 
 environment:
   sdk: ^3.9.0
@@ -14,7 +22,7 @@ resolution: workspace
 
 dependencies:
   collection: ^1.19.1
-  rookie_yaml: ^0.6.0
+  rookie_yaml: ^0.7.0-pre.1
 
 dev_dependencies:
   checks: ^0.3.1

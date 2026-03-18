@@ -1,3 +1,8 @@
+## 0.1.0-beta.2
+
+- Bump `package:rookie_yaml` to the latest prerelease.
+- Downgrade Dart SDK to `3.9.0`.
+
 ## 0.1.0-beta.1
 
 Migrates and rewrites the YAML dumper from [`package:rookie_yaml`](https://pub.dev/packages/rookie_yaml).

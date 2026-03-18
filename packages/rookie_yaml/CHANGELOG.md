@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0-pre.1
+
+This release focuses reducing the scope of `package:rookie_yaml` and migrating any non-parser functionality to external packages. It also includes minor QoL improvements. See progress [here](https://github.com/kekavc24/yaml_dart).
+
+`BREAKING`:
+  - Migrate `YamlSourceNode` and related classes to `package:editable_yaml` (unreleased).
+  - Migrates the YAML dumper to [`package:dump_yaml`](https://pub.dev/packages/dump_yaml).
+  - Renames YAML loaders.
+    - `loadDartObject` renamed to `loadObject`.
+    - `loadDartObjects` renamed to `loadAllObjects`.
+
 ## 0.6.0
 
 This release revamps `YamlSourceNode` and adds a richer node span implementation.
