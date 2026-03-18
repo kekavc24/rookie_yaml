@@ -159,11 +159,13 @@ extension KeyUtil on TreeNode<Object> {
       return true;
     }
 
-    final scalar = this; // Alias or Content
+    bool byLength(int length) => length > 1024;
 
     // Check if the scalar is truly implicit.
-    return scalar is ContentNode &&
-        ((scalar.node.firstOrNull?.length ?? 0) > 1024);
+    return switch (node) {
+      Iterable<String> iterable => byLength(iterable.firstOrNull?.length ?? 0),
+      _ => byLength(node.toString().length),
+    };
   }
 
   /// Whether `this` is a block collection.

@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:checks/checks.dart';
 import 'package:collection/collection.dart';
 import 'package:dump_yaml/src/configs.dart';
 import 'package:dump_yaml/src/dumper/yaml_dumper.dart';
+import 'package:dump_yaml/src/views/dumpable.dart';
+import 'package:dump_yaml/src/views/views.dart';
 import 'package:rookie_yaml/rookie_yaml.dart'
     show ScalarStyle, YamlSource, loadObject;
 import 'package:test/test.dart';
@@ -12,6 +16,19 @@ const _funkyMap = {
   ['is', 'dumper']: {true: 24.0},
   '24\n0': 'value',
 };
+
+String _randomImplicitKey([int size = 1025]) {
+  final buffer = StringBuffer();
+
+  var value = size;
+  final rand = Random();
+
+  for (; value > 0; value--) {
+    buffer.writeCharCode(rand.nextInt(25) + 65);
+  }
+
+  return buffer.toString();
+}
 
 void main() {
   late final YamlDumper dumper;
@@ -350,5 +367,44 @@ key: 24
         ),
       ).isTrue();
     });
+  });
+
+  group('Key tests', () {
+    test(
+      'Converts implicit key if length is greater than 1024 unicode characters',
+      () {
+        dumper.reset();
+
+        final explicit = _randomImplicitKey(1025);
+        final implicit = _randomImplicitKey(1024);
+
+        check(
+          (dumper..dump({explicit: 'explicit', implicit: 'implicit'})).dumped(),
+        ).equals(
+          '? $explicit\n'
+          ': explicit\n'
+          '$implicit: implicit\n',
+        );
+      },
+    );
+
+    test(
+      'Converst alias to explicit if length is greater than 1024 unicode '
+      'characters',
+      () {
+        dumper.reset();
+
+        final anchor = _randomImplicitKey(1100);
+        final key = ScalarView('implicit')..anchor = anchor;
+
+        check(
+          (dumper..dump({key: 'hello', Alias(anchor): 'alias'})).dumped(),
+        ).equals(
+          '&$anchor implicit: hello\n'
+          '? *$anchor\n'
+          ': alias\n',
+        );
+      },
+    );
   });
 }
