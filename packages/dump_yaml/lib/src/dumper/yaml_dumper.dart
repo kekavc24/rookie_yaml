@@ -133,11 +133,12 @@ final class YamlDumper extends Dumper<Object?> {
   /// Dumps the [node] as a valid YAML document based on the current
   /// configuration state.
   @override
-  void dump(Object? node) {
+  void dump(Object? node, {ExpandObject? expand}) {
     final buffer = dumper.buffer..clearBuffer();
     final (otherDirectives, globals) = _directives!.filter();
 
     treeBuilder
+      ..mapper = expand
       ..includeGlobalTags(globals)
       ..buildFor(node, config: _treeConfig);
 
@@ -175,7 +176,7 @@ final class YamlDumper extends Dumper<Object?> {
 /// {@category dump_scalar}
 /// {@category dump_list}
 /// {@category dump_map}
-String dumpAsYaml(Object? object, {Config? config}) {
+String dumpAsYaml(Object? object, {Config? config, ExpandObject? expand}) {
   final dumper = YamlDumper(config ?? Config.defaults());
-  return (dumper..dump(object)).dumped();
+  return (dumper..dump(object, expand: expand)).dumped();
 }

@@ -129,9 +129,16 @@ A global tag with the current tag handle already exists.
       config.includeSchemaTag ? tag.toString() : null;
 }
 
+/// Callback for tracking the current path.
 typedef PathLogger = void Function(String path);
 
+/// Callback for lazily mapping an object to another.
+typedef ExpandObject = Object? Function(Object? object);
+
 void _noOp(String _) {}
+
+/// Maps object to itself.
+Object? _identity(Object? object) => object;
 
 /// A builder that recreates a YAML representation tree for a dumper to dump.
 ///
@@ -152,13 +159,20 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// ```
   TreeBuilder([TreeConfig? treeConfig, PathLogger logger = _noOp])
     : _config = (treeConfig ?? TreeConfig.block()).config,
-      _pathLogger = logger;
+      _pathLogger = logger,
+      _mapper = _identity;
 
   /// Node Styling information.
   NodeConfig _config;
 
   /// Callback used to track the current path of the tree.
   PathLogger _pathLogger;
+
+  /// Callback for mapping an object.
+  ExpandObject _mapper;
+
+  /// Updates the lazy mapper.
+  set mapper(ExpandObject? mapper) => _mapper = mapper ?? _mapper;
 
   /// Global stack for pushing any built nodes.
   final _nodes = ListQueue<TreeNode<Object>>();
@@ -219,10 +233,10 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
       !((parent ?? _nearestCollection()).isIncompatible(style));
 
   @override
-  void visitObject(Object? object) => switch (object) {
-    DumpableView() => visitView(object),
-    TreeNode<Object>() => _addNode(object),
-    _ => super.visitObject(object),
+  void visitObject(Object? object) => switch (_mapper(object)) {
+    DumpableView view => visitView(view),
+    TreeNode<Object> node => _addNode(node),
+    Object? mapped => super.visitObject(mapped),
   };
 
   @override

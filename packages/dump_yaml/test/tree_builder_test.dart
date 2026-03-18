@@ -315,5 +315,26 @@ void main() {
         treeBuilder.builtNode(),
       ).isA<ListNode>().whoseNode().any((e) => e.identicalTo(node));
     });
+
+    test('Maps object using the internal mapper', () {
+      Object toString(Object? object) => switch (object) {
+        List() => object,
+        Map() || List() => object.toString(),
+        _ => object.toString().split('').join('-'),
+      };
+
+      final builder = TreeBuilder()
+        ..mapper = toString
+        ..buildFor([
+          {'hello': 'mapper'},
+          '123',
+        ]);
+
+      check(builder.builtNode())
+          .isA<ListNode>()
+          .whoseNode()
+          .has((e) => e.map((f) => f.node.toString()), 'Nodes')
+          .deepEquals(['("{hello: mapper}")', '(1-2-3)']);
+    });
   });
 }
