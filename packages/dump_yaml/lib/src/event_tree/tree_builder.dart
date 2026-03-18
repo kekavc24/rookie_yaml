@@ -221,6 +221,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   @override
   void visitObject(Object? object) => switch (object) {
     DumpableView() => visitView(object),
+    TreeNode<Object>() => _addNode(object),
     _ => super.visitObject(object),
   };
 

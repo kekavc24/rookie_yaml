@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:dump_yaml/src/views/dumpable.dart';
+import 'package:meta/meta.dart';
 import 'package:rookie_yaml/rookie_yaml.dart';
 
 enum NodeType { scalar, map, list, alias }
@@ -19,6 +20,7 @@ extension Doc on DocumentNode {
 /// ready to be dumped.
 ///
 /// {@category dump_map}
+@sealed
 abstract class TreeNode<T> extends CompactYamlNode {
   TreeNode(
     this.nodeStyle, {

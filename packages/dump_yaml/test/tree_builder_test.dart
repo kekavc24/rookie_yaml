@@ -298,4 +298,22 @@ void main() {
       ).throws();
     });
   });
+
+  group('TreeNode', () {
+    test('Ignores a top level tree node', () {
+      final node = (treeBuilder..buildFor('Hello')).builtNode();
+
+      treeBuilder.buildFor(node);
+      check(identical(treeBuilder.builtNode(), node)).isTrue();
+    });
+
+    test('Ignores nested tree node', () {
+      final node = (treeBuilder..buildFor(['Nested'])).builtNode();
+
+      treeBuilder.buildFor(['this', 'is', node]);
+      check(
+        treeBuilder.builtNode(),
+      ).isA<ListNode>().whoseNode().any((e) => e.identicalTo(node));
+    });
+  });
 }
