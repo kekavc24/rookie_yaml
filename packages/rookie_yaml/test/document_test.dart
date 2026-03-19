@@ -145,6 +145,20 @@ folded
         bootstrapDocParser(yaml).nodeAsSimpleString(),
       ).equals(yaml);
     });
+
+    test('Parses an empty document that has a trailing directive end', () {
+      final doc = '''
+Hello
+---''';
+
+      check(loadDoc(doc))
+        ..length.equals(2)
+        ..has((e) => e.last, 'Last Document').which(
+          (yamlDoc) => yamlDoc
+            ..isDocStartExplicit().isTrue()
+            ..hasNode().hasScalarValue('Value').isNull(),
+        );
+    });
   });
 
   group('Tags', () {

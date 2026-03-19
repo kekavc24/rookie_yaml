@@ -8,6 +8,7 @@ import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 
 /// Callback for creating a document with the current parser's information.
 typedef DocumentBuilder<Doc, R> =
@@ -109,12 +110,13 @@ final class DocumentParser<Doc, R> {
   /// `NOTE:` This advances the parsing forward and holds no reference to a
   /// previously parsed [Doc].
   (bool didParse, Doc? parsed) parseNext() {
-    _state.reset();
-    if (_state.isEOF()) return (false, null);
+    if ((_state..reset()).isEOF()) return _emptyDoc();
 
     final ParserState(:iterator, :comments, :logger) = _state;
     iterator.allowBOM(true);
     _onDocReset(_state.current);
+
+    final docStartOffset = _state.docStart();
 
     YamlDirective? version;
     var tags = <TagHandle, GlobalTag>{};
@@ -205,6 +207,7 @@ final class DocumentParser<Doc, R> {
         (version: version, tags: tags.values, unknown: reserved),
         (
           index: _state.current,
+          start: docStartOffset,
           docType: YamlDocType.inferType(
             hasDirectives: _state.hasDirectives,
             isDocStartExplicit: _state.docStartExplicit,
@@ -225,7 +228,7 @@ typedef _PushDirectives =
       List<ReservedDirective> unknown,
     );
 
-extension on DocumentParser {
+extension<Doc, R> on DocumentParser<Doc, R> {
   /// Processes the document [Directives] if any are present.
   GreedyPlain? _processDocDirectives(
     SourceIterator iterator, {
@@ -277,9 +280,7 @@ extension on DocumentParser {
       );
 
       if (marker != DocumentMarker.directiveEnd) {
-        return greedy > 0
-            ? (greedChars: '-' * greedy, start: startOnMissing)
-            : null;
+        return (greedChars: '-' * greedy, start: startOnMissing);
       }
     }
 
@@ -324,18 +325,52 @@ extension on DocumentParser {
       throwIfDocEndInvalid: true,
     );
 
-    if (!marker.stopIfParsingDoc) {
-      throwWithApproximateRange(
-        iterator,
-        message:
-            'Invalid node state. Expected to find document end "..."'
-            ' or directive end chars "---" ',
-        current: iterator.currentLineInfo.current,
-        charCountBefore: iterator.hasNext ? max(charBehind - 1, 0) : charBehind,
-      );
+    if (marker.stopIfParsingDoc) {
+      onDocEnd(iterator.currentLineInfo.start);
+      _state.updateDocEndChars(marker);
+      return;
     }
 
-    onDocEnd(iterator.currentLineInfo.start);
-    _state.updateDocEndChars(marker);
+    throwWithApproximateRange(
+      iterator,
+      message:
+          'Invalid node state. Expected to find document end "..."'
+          ' or directive end chars "---" ',
+      current: iterator.currentLineInfo.current,
+      charCountBefore: iterator.hasNext ? max(charBehind - 1, 0) : charBehind,
+    );
+  }
+
+  /// Infers the state of the empty document.
+  (bool didParse, Doc? emptyDoc) _emptyDoc() {
+    // No document if no directive end chars '---' were present.
+    if (!_state.docStartExplicit) return (false, null);
+
+    _state.updateDocEndChars(DocumentMarker.none);
+
+    return (
+      true,
+      builder(
+        (version: null, tags: Iterable.empty(), unknown: const []),
+        (
+          index: _state.current,
+          start: _state.docStart(),
+          docType: YamlDocType.explicit,
+          hasExplicitStart: true,
+          hasExplicitEnd: false,
+        ),
+        (
+          root: _state.scalarFunction(
+            NullView(''),
+            ScalarStyle.plain,
+            null,
+            null,
+            YamlSourceSpan(_state.iterator.currentLineInfo.current),
+          ),
+          comments: [],
+          anchors: {},
+        ),
+      ),
+    );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/src/scanner/span.dart';
 import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
@@ -10,6 +11,7 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
 final class YamlDocument<T> {
   YamlDocument._(
     this.index,
+    this.startOffset,
     this._yamlDirective,
     this._globalTags,
     this._reservedDirectives,
@@ -27,6 +29,7 @@ final class YamlDocument<T> {
     required RootNode<T> node,
   }) : this._(
          documentInfo.index,
+         documentInfo.start,
          directives.version,
          directives.tags.toSet(),
          directives.unknown,
@@ -39,6 +42,9 @@ final class YamlDocument<T> {
 
   /// Position in the `YAML` string.
   final int index;
+
+  /// Start offset for the document.
+  final RuneOffset startOffset;
 
   /// Parsed version directive
   final YamlDirective? _yamlDirective;

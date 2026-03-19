@@ -27,6 +27,7 @@ typedef ParsedDirectives = ({
 /// and its type.
 typedef DocumentInfo = ({
   int index,
+  RuneOffset start,
   YamlDocType docType,
   bool hasExplicitStart,
   bool hasExplicitEnd,
