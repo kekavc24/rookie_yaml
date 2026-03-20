@@ -24,8 +24,8 @@ Dumping YAML is tricky but incredibly satisfying when gotten right. The `YamlDum
 
 As stated earlier, no YAML features are shoved into your files unless you use them. For this stage, the dumper exposes additional utility classes.
 
-- `TreeBuilder` - used by the dumper to inspect which YAML features are used and normalizes them before dumping the object to YAML.
-- `DumpableView` - a mutable lightweight wrapper class that exposes additional YAML features you may require.
+- `TreeBuilder` - used by the dumper to normalize any YAML features used.
+- `DumpableView` - a mutable lightweight wrapper class that exposes all the YAML features you may require for a node.
 
 > [!TIP]
 > A `DumpableView` can be used to override the style of nested nodes or apply comments. It provides useful setters for such usecases.
@@ -40,7 +40,7 @@ Use this option to configure:
 
 ## Usage
 
-- Simple dumper for clean YAML files.
+### Dumper oneliner
 
 ```dart
 print(dumpAsYaml(['hello', 'there']));
@@ -50,6 +50,57 @@ print(dumpAsYaml(['hello', 'there']));
 - hello
 - there
 ```
+
+### Streaming support
+
+Tweak the dumper to match your requirements. A simple example:
+
+```dart
+final someLazyStream = StreamController<String>();
+
+final dumper = YamlDumper(
+  config: Config.defaults(),
+  buffer: (rootIndent, step, lineEnding) => YamlBuffer.toStream(
+    someLazyStream,
+    indent: rootIndent,
+    step: step,
+    lineEnding: lineEnding,
+  ),
+);
+
+dumper.dump([
+  'I',
+  'love',
+  {'streaming': 'things'},
+  'lazily',
+]);
+
+someLazyStream.close();
+final chunks = await someLazyStream.stream.toList();
+
+/*
+ * Lazy chunks as the dumper walks the YAML representation tree for your
+ * object.
+
+[, -,  , I,
+, , -,  , love,
+, , -,  , streaming, :,  , things,
+, , -,  , lazily,
+]
+
+*/
+print(chunks);
+
+/*
+- I
+- love
+- streaming: things
+- lazily
+*/
+print(chunks.join());
+```
+
+### Support for YAML features
 
 - A bit sophisticated. A `DumpableView` provides granular control over the `TreeBuilder` but still relies on the same builder for housekeeping. For example, `ScalarStyle.literal` is not allowed in flow styles in YAML.
 

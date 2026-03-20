@@ -1,3 +1,18 @@
+# Changelog
+
+## 0.1.0-beta.3
+
+`BREAKING`:
+  - Renames `YamlStringBuffer` to `YamlBuffer`.
+  - Removes the `dumped` method in `YamlDumper` and `BlockDumper`.
+    - For one-off dumper runs, prefer calling `dumpAsYaml`.
+    - For a reusable dumper, provide a:
+      1. `StringBuffer` for chunked writes via the `YamlDumper.string` constructor.
+      2. `StreamSink<String>` to the `buffer` param that instantiates the internal `YamlBuffer`.
+
+`feat`:
+  - Adds support for custom writer targets.
+
 ## 0.1.0-beta.2
 
 - Bump `package:rookie_yaml` to the latest prerelease.
