@@ -21,7 +21,7 @@ extension on String? {
 /// if the preamble attempt was successful.
 bool exitAfterPreamble<T>(
   CollectionNode<T> node,
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   InlinedFlowDumper dumper,
 ) {
   if (!node.forcedInline) return _writePreamble(buffer, node);
@@ -33,7 +33,7 @@ bool exitAfterPreamble<T>(
 }
 
 /// Writes the collection [node]'s properties and returns whether to exit.
-bool _writePreamble<T>(YamlStringBuffer buffer, CollectionNode<T> collection) {
+bool _writePreamble<T>(YamlBuffer buffer, CollectionNode<T> collection) {
   final props = [
     ?collection.anchor?.asAnchor(),
     ?collection.localTag,
@@ -56,7 +56,7 @@ bool _writePreamble<T>(YamlStringBuffer buffer, CollectionNode<T> collection) {
 }
 
 /// Writes the flow collection's properties to the [buffer].
-void _flowPreamble(YamlStringBuffer buffer, String props, NodeType nodeType) {
+void _flowPreamble(YamlBuffer buffer, String props, NodeType nodeType) {
   if (props.isNotEmpty) {
     buffer.write('$props ');
   }
@@ -85,7 +85,7 @@ void _flowPreamble(YamlStringBuffer buffer, String props, NodeType nodeType) {
 }
 
 /// Writes the block collection's properties if present.
-void _blockPreamble(YamlStringBuffer buffer, String props) {
+void _blockPreamble(YamlBuffer buffer, String props) {
   // Block collections have no indicators and its indent is same as the indent
   // of the first node.
   if (props.isEmpty) return;
@@ -111,7 +111,7 @@ void _blockPreamble(YamlStringBuffer buffer, String props) {
 
 /// Terminates a [ListNode] or [MapNode] after it has been dumped.
 void collectionEnd(
-  YamlStringBuffer buffer, {
+  YamlBuffer buffer, {
   required NodeStyle style,
   required NodeType nodeType,
   required int collectionIndent,
@@ -131,7 +131,7 @@ void collectionEnd(
 
 /// Writes the [comments] provided to the [buffer].
 void _writeComments(
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   Iterable<String> comments, [
   int? indent,
   bool writeIndent = true,
@@ -143,7 +143,7 @@ void _writeComments(
 
 /// Writes the [comments] of a flow entry/key to the [buffer].
 void flowEntryStart(
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   CommentStyle style,
   Iterable<String> comments,
 ) {
@@ -156,7 +156,7 @@ void flowEntryStart(
 /// [charIfPossessive] is used to dump the [comments] when the [style] is
 /// [CommentStyle.possessive].
 void blockEntryStart(
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   CommentStyle style,
   int parentIndent,
   String charIfPossessive,
@@ -193,7 +193,7 @@ void blockEntryStart(
 
 /// Writes the trailing [comments] of a node to the [buffer].
 void _trailingComments(
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   CommentStyle style,
   Iterable<String> comments,
 ) {
@@ -205,7 +205,7 @@ void _trailingComments(
 /// Terminates a flow entry from a [ListNode] or the value from a [MappingEntry]
 /// in a [MapNode].
 void flowEntryEnd(
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   CommentStyle style,
   Iterable<String> comments,
   bool hasNext,
@@ -240,7 +240,7 @@ void flowEntryEnd(
 
 /// Terminates a block node/entry.
 void blockEntryEnd(
-  YamlStringBuffer buffer,
+  YamlBuffer buffer,
   CommentStyle style,
   Iterable<String> comments,
   int parentIndent,

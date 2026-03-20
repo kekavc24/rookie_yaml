@@ -10,9 +10,15 @@ const _comments = ['yaml', 'comments'];
 
 void main() {
   late final YamlDumper dumper;
+  late final StringBuffer buffer;
 
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+  });
+
+  tearDown(() {
+    buffer.clear();
   });
 
   group('Sequence', () {
@@ -28,7 +34,7 @@ void main() {
         ),
       );
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 # yaml
 # comments
 - |-
@@ -67,7 +73,7 @@ void main() {
             ),
       );
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 [
   # yaml
   # comments
@@ -96,7 +102,7 @@ void main() {
 
       dumper.dump([block, flow]);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 - # yaml
   # comments
   - |-
@@ -141,7 +147,7 @@ void main() {
 
       dumper.dump({implicit: 'value', explicit: 'value'});
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 # yaml
 # comments
 24: value
@@ -171,7 +177,7 @@ void main() {
                 .asMap(),
           );
 
-        check(dumper.dumped()).equals('''
+        check(buffer.toString()).equals('''
 0:
   # yaml
   # comments
@@ -230,7 +236,7 @@ void main() {
                 .asMap(),
           );
 
-        check(dumper.dumped()).equals('''
+        check(buffer.toString()).equals('''
 {
   0:
     # yaml

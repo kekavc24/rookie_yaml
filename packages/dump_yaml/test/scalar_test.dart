@@ -22,15 +22,21 @@ import 'package:test/test.dart';
 
 void main() {
   late final YamlDumper dumper;
+  late final StringBuffer buffer;
 
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+  });
+
+  tearDown(() {
+    buffer.clear();
   });
 
   group('General', () {
     test('Ignores style replaces empty strings with null', () {
       dumper.dump('');
-      check(dumper.dumped()).equals('null');
+      check(buffer.toString()).equals('null');
     });
 
     test(
@@ -45,7 +51,7 @@ void main() {
           )
           ..dump('');
 
-        check(dumper.dumped()).equals('""');
+        check(buffer.toString()).equals('""');
       },
     );
 
@@ -55,18 +61,18 @@ void main() {
         ..withNodeTag(TagShorthand.primary('24'));
 
       void checkDump(String expected, [ScalarStyle? style]) {
+        buffer.clear();
+
         dumper
           ..reset(
             config: Config.yaml(
-              styling: TreeConfig.block(
-                includeSchemaTag: true,
-              ),
+              styling: TreeConfig.block(includeSchemaTag: true),
               formatting: Formatter.classic(indent: 1),
             ),
           )
           ..dump(scalar..scalarStyle = style ?? classicScalarStyle);
 
-        check(dumper.dumped()).equals(' &24 !24 $expected');
+        check(buffer.toString()).equals(' &24 !24 $expected');
       }
 
       checkDump('24'); // No style
@@ -96,7 +102,8 @@ void main() {
             )
             ..dump(value);
 
-          check(dumper.dumped()).equals(dumped);
+          check(buffer.toString()).equals(dumped);
+          buffer.clear();
         }
       },
     );
@@ -116,12 +123,12 @@ void main() {
 
     test('Dumps plain scalar', () {
       dumper.dump(24);
-      check(dumper.dumped()).equals('24');
+      check(buffer.toString()).equals('24');
     });
 
     test('Unfolds plain scalar', () {
       dumper.dump('my unfolded\n\nstring');
-      check(dumper.dumped()).equals('my unfolded\n\n\nstring');
+      check(buffer.toString()).equals('my unfolded\n\n\nstring');
     });
 
     test(
@@ -143,30 +150,35 @@ void main() {
         );
 
         check(
-          dumper.dumped(),
+          buffer.toString(),
         ).equals(r'Normalized \0\a\b\v\f\N\L\P\e\_ sandwich');
       },
     );
 
     test('Defaults to double quoted if plain starts with # (comment)'
         ' or is comment-like', () {
-      check((dumper..dump('# 24')).dumped()).equals('"# 24"');
+      dumper.dump('# 24');
+      check(buffer.toString()).equals('"# 24"');
 
-      check(
-        (dumper..dump('24 but # comment')).dumped(),
-      ).equals('"24 but # comment"');
+      buffer.clear();
 
-      check(
-        (dumper..dump('24 but\t# comment')).dumped(),
-      ).equals('"24 but\t# comment"');
+      dumper.dump('24 but # comment');
+      check(buffer.toString()).equals('"24 but # comment"');
 
-      check(
-        (dumper..dump('24 but\n# comment')).dumped(),
-      ).equals('"24 but\n\n# comment"');
+      buffer.clear();
 
-      check(
-        (dumper..dump('24 but\r# comment')).dumped(),
-      ).equals('"24 but\n\n# comment"');
+      dumper.dump('24 but\t# comment');
+      check(buffer.toString()).equals('"24 but\t# comment"');
+
+      buffer.clear();
+
+      dumper.dump('24 but\n# comment');
+      check(buffer.toString()).equals('"24 but\n\n# comment"');
+
+      buffer.clear();
+
+      dumper.dump('24 but\r# comment');
+      check(buffer.toString()).equals('"24 but\n\n# comment"');
     });
 
     test(
@@ -174,7 +186,9 @@ void main() {
       ' start',
       () {
         for (final char in ['?', ':', '-']) {
-          check((dumper..dump('$char 24')).dumped()).equals('"$char 24"');
+          dumper.dump('$char 24');
+          check(buffer.toString()).equals('"$char 24"');
+          buffer.clear();
         }
       },
     );
@@ -185,7 +199,9 @@ void main() {
       () {
         dumper.reset(config: Config.yaml(styling: TreeConfig.flow()));
         for (final char in ['{', '}', '[', ']', ',']) {
-          check((dumper..dump('$char 24')).dumped()).equals('"$char 24"');
+          dumper.dump('$char 24');
+          check(buffer.toString()).equals('"$char 24"');
+          buffer.clear();
         }
       },
     );
@@ -204,25 +220,27 @@ void main() {
     });
 
     test('Dumps single quoted scalar', () {
-      check((dumper..dump(24)).dumped()).equals("'24'");
+      dumper.dump(24);
+      check(buffer.toString()).equals("'24'");
     });
 
     test('Unfolds single quoted scalar', () {
-      check(
-        (dumper..dump('my unfolded\n\nstring')).dumped(),
-      ).equals("'my unfolded\n\n\nstring'");
+      dumper.dump('my unfolded\n\nstring');
+      check(buffer.toString()).equals("'my unfolded\n\n\nstring'");
     });
 
     test('Escapes all single quotes', () {
+      dumper.dump("It's my quoted's scalar. Go brrrr''''");
       check(
-        (dumper..dump("It's my quoted's scalar. Go brrrr''''")).dumped(),
+        buffer.toString(),
       ).equals("'It''s my quoted''s scalar. Go brrrr'''''''''");
     });
 
     test(
       'Defaults to double quoted when a non-printable character is used',
       () {
-        check((dumper..dump(bell.asString())).dumped()).equals(r'"\a"');
+        dumper.dump(bell.asString());
+        check(buffer.toString()).equals(r'"\a"');
       },
     );
   });
@@ -240,13 +258,13 @@ void main() {
     );
 
     test('Dumps double quoted scalar', () {
-      check((dumper..dump(24)).dumped()).equals('"24"');
+      dumper.dump(24);
+      check(buffer.toString()).equals('"24"');
     });
 
     test('Unfolds a simple double quoted scalar', () {
-      check(
-        (dumper..dump('my unfolded\n\nstring')).dumped(),
-      ).equals('"my unfolded\n\n\nstring"');
+      dumper.dump('my unfolded\n\nstring');
+      check(buffer.toString()).equals('"my unfolded\n\n\nstring"');
     });
 
     test('Unfolds a complex double quoted scalar', () {
@@ -257,7 +275,7 @@ void main() {
         'weirdly placed',
       );
 
-      check(dumper.dumped()).equals(
+      check(buffer.toString()).equals(
         r'"my folded \'
         '\n\n\n'
         r'string with spaces \'
@@ -287,7 +305,7 @@ void main() {
           r'\/',
         );
 
-        check(dumper.dumped()).equals(r'"\0\a\b\v\f\N\L\P\e\_\"\\\/"');
+        check(buffer.toString()).equals(r'"\0\a\b\v\f\N\L\P\e\_\"\\\/"');
       },
     );
   });
@@ -302,21 +320,20 @@ void main() {
     );
 
     test('Dumps literal scalar', () {
-      check((dumper..dump(24)).dumped()).equals('|-\n24');
+      dumper.dump(24);
+      check(buffer.toString()).equals('|-\n24');
     });
 
     test('Never unfolds literal scalar', () {
-      check(
-        (dumper..dump('my unfoldable\n\nstring')).dumped(),
-      ).equals('|-\nmy unfoldable\n\nstring');
+      dumper.dump('my unfoldable\n\nstring');
+      check(buffer.toString()).equals('|-\nmy unfoldable\n\nstring');
     });
 
     test(
       'Preserves trailing linebreaks from being chomped in literal scalar',
       () {
-        check(
-          (dumper..dump('my literal string\n\n')).dumped(),
-        ).equals('|+\nmy literal string\n\n');
+        dumper.dump('my literal string\n\n');
+        check(buffer.toString()).equals('|+\nmy literal string\n\n');
       },
     );
 
@@ -324,7 +341,8 @@ void main() {
       'Preserves leading whitespace from being consumed as indent in first '
       'non-empty line in literal scalar',
       () {
-        check((dumper..dump(' literal string')).dumped()).equals(
+        dumper.dump(' literal string');
+        check(buffer.toString()).equals(
           '|1-\n'
           '  literal string', // Indented by additional space
         );
@@ -332,7 +350,8 @@ void main() {
     );
 
     test('Defaults to double quoted when non-printable character is used', () {
-      check((dumper..dump(bell.asString())).dumped()).equals(r'"\a"');
+      dumper.dump(bell.asString());
+      check(buffer.toString()).equals(r'"\a"');
     });
   });
 
@@ -346,22 +365,21 @@ void main() {
     );
 
     test('Dumps folded scalar', () {
-      check((dumper..dump(24)).dumped()).equals('>-\n24');
+      dumper.dump(24);
+      check(buffer.toString()).equals('>-\n24');
     });
 
     test('Unfolds block folded scalar', () {
-      check(
-        (dumper..dump('my unfolded\n\nstring')).dumped(),
-      ).equals('>-\nmy unfolded\n\n\nstring');
+      dumper.dump('my unfolded\n\nstring');
+      check(buffer.toString()).equals('>-\nmy unfolded\n\n\nstring');
     });
 
     test(
       'Preserves trailing linebreaks from being chomped in folded scalar'
       ' without unfolding them',
       () {
-        check(
-          (dumper..dump('my block folded string\n\n')).dumped(),
-        ).equals('>+\nmy block folded string\n\n');
+        dumper.dump('my block folded string\n\n');
+        check(buffer.toString()).equals('>+\nmy block folded string\n\n');
       },
     );
 
@@ -369,7 +387,8 @@ void main() {
       'Preserves leading whitespace from being consumed as indent in first '
       'non-empty line in block folded scalar',
       () {
-        check((dumper..dump(' folded string')).dumped()).equals(
+        dumper.dump(' folded string');
+        check(buffer.toString()).equals(
           '>1-\n'
           '  folded string', // Indented by additional space
         );
@@ -383,7 +402,7 @@ void main() {
         'line',
       );
 
-      check(dumper.dumped()).equals(
+      check(buffer.toString()).equals(
         '>-\n'
         'folded string\n'
         ' with indented \n\n'
@@ -392,7 +411,8 @@ void main() {
     });
 
     test('Defaults to double quoted when non-printable character is used', () {
-      check((dumper..dump(bell.asString())).dumped()).equals(r'"\a"');
+      dumper.dump(bell.asString());
+      check(buffer.toString()).equals(r'"\a"');
     });
   });
 }

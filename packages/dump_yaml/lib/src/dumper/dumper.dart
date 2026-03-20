@@ -1,3 +1,5 @@
+import 'dart:async';
+
 extension StringUtils on String {
   /// Applies the node's properties inline. This is usually all scalars and
   /// flow collections.
@@ -15,16 +17,68 @@ extension StringUtils on String {
   }
 }
 
-/// A YAML string buffer for any [Dumper].
-final class YamlStringBuffer {
-  /// Creates a [YamlStringBuffer] with the provided [startingIndent]. The
+/// Input for the stream.
+typedef Writer = void Function(String content);
+
+/// A YAML buffer that buffers the inputs
+final class YamlBuffer {
+  /// Creates a [YamlBuffer] with the provided starting [indent]. The
   /// [lineEnding] will be used for the entire document.
   ///
   /// The buffer maintains a [step] that can be used to calculate the
-  /// indentation of nested elements. This allows a [Dumper] to emit a uniform
+  /// indentation of nested elements. This allows a `Dumper` to emit a uniform
   /// YAML document.
-  YamlStringBuffer(int startingIndent, this.step, this.lineEnding)
-    : indent = startingIndent;
+  YamlBuffer.ofWriter(
+    this._writer, {
+    required this.indent,
+    required this.step,
+    required this.lineEnding,
+  });
+
+  /// Creates a [YamlBuffer] that synchronously writes to a string [buffer].
+  ///
+  /// The root node of the document will use the provided starting [indent] and
+  /// nested nodes not bound to YAML's compact-inline notation will have their
+  /// indent calculated using the indentation [step] provided. If the document
+  /// is multiline, the provided [lineEnding] will be used as the default
+  /// line-break.
+  YamlBuffer.withBuffer(
+    StringBuffer buffer, {
+    required int indent,
+    required int step,
+    required String lineEnding,
+  }) : this.ofWriter(
+         buffer.write,
+         indent: indent,
+         step: step,
+         lineEnding: lineEnding,
+       );
+
+  /// Creates a [YamlBuffer] that writes to a [stream] sink.
+  ///
+  /// The output from this buffer is a valid YAML output that can be piped to
+  /// your desired output. You must be careful when using this constructor. The
+  /// buffer will not check if your [stream] sink is available for events.
+  ///
+  /// The root node of the document will use the provided starting [indent] and
+  /// nested nodes not bound to YAML's compact-inline notation will have their
+  /// indent calculated using the indentation [step] provided. If the document
+  /// is multiline, the provided [lineEnding] will be used as the default
+  /// line-break.
+  YamlBuffer.toStream(
+    StreamSink<String> stream, {
+    required int indent,
+    required int step,
+    required String lineEnding,
+  }) : this.ofWriter(
+         stream.add,
+         indent: indent,
+         step: step,
+         lineEnding: lineEnding,
+       );
+
+  /// Actual Buffer.
+  final Writer _writer;
 
   /// Current indentation.
   int indent;
@@ -40,33 +94,28 @@ final class YamlStringBuffer {
 
   /// Current distance from margin.
   int distanceFromMargin = 0;
+}
 
-  /// Actual buffer with content.
-  final _buffer = StringBuffer();
-
+extension DumperHelpers on YamlBuffer {
   /// Resets `this` buffer with the [updated] indent and clears the internal
   /// string buffer.
   set reset(int updated) {
-    _buffer.clear();
     indent = updated;
     lastWasLineEnding = false;
     distanceFromMargin = 0;
   }
 
-  /// Clears the internal [StringBuffer].
-  void clearBuffer() => _buffer.clear();
-
   /// Moves the imaginary cursor to the next line by writing a [lineEnding].
   void moveToNextLine() {
     if (lastWasLineEnding) return;
-    _buffer.write(lineEnding);
+    _writer(lineEnding);
     lastWasLineEnding = true;
     distanceFromMargin = 0;
   }
 
   /// Writes the [content].
   void write(String content) {
-    _buffer.write(content);
+    _writer(content);
     distanceFromMargin += content.length;
     lastWasLineEnding = false;
   }
@@ -91,7 +140,7 @@ final class YamlStringBuffer {
         .followedBy(lines.skip(1).map((l) => l.isEmpty ? l : '$padding$l'))
         .join(lineEnding);
 
-    _buffer.write(joined);
+    _writer(joined);
 
     if (joined.endsWith(lineEnding)) {
       distanceFromMargin = 0;
@@ -123,20 +172,12 @@ final class YamlStringBuffer {
       preferredIndent: indent,
     );
   }
-
-  @override
-  String toString() => _buffer.toString();
 }
 
 /// A generic YAML Dumper.
 abstract class Dumper<T> {
   /// Dumps a [node].
   void dump(T node);
-
-  /// Dumped string.
-  ///
-  /// Must be called after [dump] has been called at least once.
-  String dumped();
 
   /// Resets the dumper's internal state.
   void reset();

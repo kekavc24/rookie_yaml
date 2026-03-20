@@ -141,7 +141,6 @@ final class InlinedFlowDumper extends Dumper<TreeNode<Object>>
     _buffer.write(closing);
   }
 
-  @override
   String dumped() {
     _flush();
     return _dumped.first;

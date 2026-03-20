@@ -9,9 +9,15 @@ import 'package:test/test.dart';
 
 void main() {
   late final YamlDumper dumper;
+  late final StringBuffer buffer;
 
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+  });
+
+  tearDown(() {
+    buffer.clear();
   });
 
   test('Includes schema tags', () {
@@ -23,7 +29,7 @@ void main() {
       )
       ..dump([{}, 24, 24.0, "24", true, null]);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 !!seq
 - !!map {}
 - !!int 24
@@ -51,7 +57,7 @@ void main() {
           ..withNodeTag(TagShorthand.primary('world')),
       ]);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - !<!hello> 24
 - !world {from: null}
 ''');
@@ -88,7 +94,7 @@ void main() {
       ),
     ]);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 $globalFromTag
 $globalFromUri
 ---
@@ -109,7 +115,7 @@ $globalFromUri
         YamlIterable(['hello', 'there'])..anchor = ref,
       ]);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - &$ref 24
 - *24
 - &$ref
@@ -119,15 +125,19 @@ $globalFromUri
   });
 
   test('Dumps object as a full document', () {
-    dumper.reset(
-      config: Config.yaml(
-        includeYamlDirective: true,
-        directives: {GlobalTag.fromTagUri(TagHandle.primary(), 'un:used.tag')},
-        includeDocEnd: true,
-      ),
-    );
+    dumper
+      ..reset(
+        config: Config.yaml(
+          includeYamlDirective: true,
+          directives: {
+            GlobalTag.fromTagUri(TagHandle.primary(), 'un:used.tag'),
+          },
+          includeDocEnd: true,
+        ),
+      )
+      ..dump('Simple document');
 
-    check((dumper..dump('Simple document')).dumped()).equals('''
+    check(buffer.toString()).equals('''
 $parserVersion
 %TAG ! un:used.tag
 ---

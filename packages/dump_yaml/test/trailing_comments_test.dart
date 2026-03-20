@@ -14,8 +14,11 @@ void main() {
   // Only flow nodes can have trailing comments
   late final Iterable<DumpableView> flowNodes;
 
+  late final StringBuffer buffer;
+
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
     flowNodes = ScalarStyle.values
         .where((s) => s.nodeStyle.isFlow)
         .map(
@@ -38,12 +41,16 @@ void main() {
         ]);
   });
 
+  tearDown(() {
+    buffer.clear();
+  });
+
   test('Applies trailing comments correctly in block sequence', () {
     dumper
       ..reset(config: Config.defaults())
       ..dump(flowNodes);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - 24 # trailing
      # comments
 - '24' # trailing
@@ -62,7 +69,7 @@ void main() {
       ..reset(config: Config.defaults())
       ..dump(flowNodes.toList().asMap());
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 0: 24 # trailing
       # comments
 1: '24' # trailing
@@ -81,7 +88,7 @@ void main() {
       ..reset(config: Config.yaml(styling: TreeConfig.flow(forceInline: false)))
       ..dump(flowNodes);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 [
   24 # trailing
      # comments
@@ -105,7 +112,7 @@ void main() {
       ..reset(config: Config.yaml(styling: TreeConfig.flow(forceInline: false)))
       ..dump(flowNodes.toList().asMap());
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 {
   0: 24 # trailing
         # comments
@@ -127,9 +134,13 @@ void main() {
   test('Dumps keys as explicit if trailing comments are present', () {
     dumper.reset(config: Config.defaults());
 
-    final map = flowNodes.fold({}, (m, e) => m..[e] = 'value');
+    final map = flowNodes.fold(
+      <DumpableView, String>{},
+      (m, e) => m..[e] = 'value',
+    );
+    dumper.dump(map);
 
-    check((dumper..dump(map)).dumped()).equals('''
+    check(buffer.toString()).equals('''
 ? 24 # trailing
      # comments
 : value
@@ -147,9 +158,10 @@ void main() {
 : value
 ''');
 
-    check(
-      (dumper..dump(YamlMapping(map)..nodeStyle = NodeStyle.flow)).dumped(),
-    ).equals('''
+    buffer.clear();
+    dumper.dump(YamlMapping(map)..nodeStyle = NodeStyle.flow);
+
+    check(buffer.toString()).equals('''
 {
   ? 24 # trailing
        # comments
@@ -186,7 +198,7 @@ void main() {
           ..forceInline = true,
       ]);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - [24, '24', "24", [], {}] # trailing
                            # comments
 - {0: [24, '24', "24", [], {}]} # trailing

@@ -32,9 +32,15 @@ String _randomImplicitKey([int size = 1025]) {
 
 void main() {
   late final YamlDumper dumper;
+  late final StringBuffer buffer;
 
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+  });
+
+  tearDown(() {
+    buffer.clear();
   });
 
   group('Flow maps', () {
@@ -50,7 +56,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 {
   "key": "24",
   "24": [
@@ -83,7 +89,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 {
   'key': '24',
   '24': [
@@ -113,7 +119,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 {
   key: 24,
   24: [
@@ -148,8 +154,9 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals(
-        r'{key: 24, 24: [rookie, yaml], [is, dumper]: {true: 24.0}, "24\n0": value}',
+      check(buffer.toString()).equals(
+        r'{key: 24, 24: [rookie, yaml], [is, dumper]: {true: 24.0}, '
+        r'"24\n0": value}',
       );
     });
 
@@ -165,7 +172,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals(
+      check(buffer.toString()).equals(
         "{'key': '24', '24': ['rookie', 'yaml'], "
         "['is', 'dumper']: {'true': '24.0'}, \"24\\n0\": 'value'}",
       );
@@ -183,7 +190,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals(
+      check(buffer.toString()).equals(
         '{"key": "24", "24": ["rookie", "yaml"], '
         r'["is", "dumper"]: {"true": "24.0"}, "24\n0": "value"}',
       );
@@ -200,7 +207,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 ? |-
   key
 : |-
@@ -236,7 +243,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 ? >-
   key
 : >-
@@ -273,7 +280,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 "key": "24"
 "24":
   - "rookie"
@@ -297,7 +304,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 'key': '24'
 '24':
   - 'rookie'
@@ -321,7 +328,7 @@ void main() {
         )
         ..dump(_funkyMap);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 key: 24
 24:
   - rookie
@@ -341,13 +348,15 @@ key: 24
 
       const map = {scalar: scalar, 'nested': scalar};
 
-      dumper.reset(
-        config: Config.yaml(
-          styling: TreeConfig.block(scalarStyle: ScalarStyle.literal),
-        ),
-      );
+      dumper
+        ..reset(
+          config: Config.yaml(
+            styling: TreeConfig.block(scalarStyle: ScalarStyle.literal),
+          ),
+        )
+        ..dump(map);
 
-      final dumped = (dumper..dump(map)).dumped();
+      final dumped = buffer.toString();
 
       check(dumped).equals('''
 ? |1-
@@ -377,10 +386,9 @@ key: 24
 
         final explicit = _randomImplicitKey(1025);
         final implicit = _randomImplicitKey(1024);
+        dumper.dump({explicit: 'explicit', implicit: 'implicit'});
 
-        check(
-          (dumper..dump({explicit: 'explicit', implicit: 'implicit'})).dumped(),
-        ).equals(
+        check(buffer.toString()).equals(
           '? $explicit\n'
           ': explicit\n'
           '$implicit: implicit\n',
@@ -396,10 +404,9 @@ key: 24
 
         final anchor = _randomImplicitKey(1100);
         final key = ScalarView('implicit')..anchor = anchor;
+        dumper.dump({key: 'hello', Alias(anchor): 'alias'});
 
-        check(
-          (dumper..dump({key: 'hello', Alias(anchor): 'alias'})).dumped(),
-        ).equals(
+        check(buffer.toString()).equals(
           '&$anchor implicit: hello\n'
           '? *$anchor\n'
           ': alias\n',

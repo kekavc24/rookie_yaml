@@ -2,7 +2,7 @@ library;
 
 export 'src/configs.dart' show TreeConfig, Formatter, Config;
 export 'src/dumper/block_dumper.dart';
-export 'src/dumper/dumper.dart' show YamlStringBuffer;
+export 'src/dumper/dumper.dart' show YamlBuffer;
 export 'src/dumper/inline_flow_dumper.dart';
 export 'src/dumper/yaml_dumper.dart';
 export 'src/event_tree/node.dart' hide Doc;

@@ -16,9 +16,15 @@ const _sequence = [
 
 void main() {
   late final YamlDumper dumper;
+  late final StringBuffer buffer;
 
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+  });
+
+  tearDown(() {
+    buffer.clear();
   });
 
   group('Flow Sequences', () {
@@ -34,7 +40,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 [
   "value",
   "24",
@@ -66,7 +72,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 [
   'value',
   '24',
@@ -93,7 +99,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 [
   value,
   24,
@@ -124,8 +130,9 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals(
-        r'["value", "24", "true", ["rookie", "yaml", "is", "dumper"], {"true": "24.0"}, "24\n0"]',
+      check(buffer.toString()).equals(
+        r'["value", "24", "true", ["rookie", "yaml", "is", "dumper"],'
+        r' {"true": "24.0"}, "24\n0"]',
       );
     });
 
@@ -138,8 +145,9 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals(
-        "['value', '24', 'true', ['rookie', 'yaml', 'is', 'dumper'], {'true': '24.0'}, \"24\\n0\"]",
+      check(buffer.toString()).equals(
+        "['value', '24', 'true', ['rookie', 'yaml', 'is', 'dumper'],"
+        " {'true': '24.0'}, \"24\\n0\"]",
       );
     });
 
@@ -148,8 +156,9 @@ void main() {
         ..reset(config: Config.yaml(styling: TreeConfig.flow()))
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals(
-        r'[value, 24, true, [rookie, yaml, is, dumper], {true: 24.0}, "24\n0"]',
+      check(buffer.toString()).equals(
+        r'[value, 24, true, [rookie, yaml, is, dumper],'
+        r' {true: 24.0}, "24\n0"]',
       );
     });
   });
@@ -166,7 +175,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 - |-
   value
 - |-
@@ -202,7 +211,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 - >-
   value
 - >-
@@ -239,7 +248,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 - "value"
 - "24"
 - "true"
@@ -263,7 +272,7 @@ void main() {
         )
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 - 'value'
 - '24'
 - 'true'
@@ -281,7 +290,7 @@ void main() {
         ..reset(config: Config.yaml(styling: TreeConfig.block()))
         ..dump(_sequence);
 
-      check(dumper.dumped()).equals('''
+      check(buffer.toString()).equals('''
 - value
 - 24
 - true
@@ -314,7 +323,7 @@ void main() {
         )
         ..dump(iterable);
 
-      final dumped = dumper.dumped();
+      final dumped = buffer.toString();
 
       check(dumped).equals('''
 - |1-

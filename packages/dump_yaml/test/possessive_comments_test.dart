@@ -10,36 +10,40 @@ const _comments = ['possessive', 'comments'];
 
 void main() {
   late final YamlDumper dumper;
+  late final StringBuffer buffer;
 
   setUpAll(() {
-    dumper = YamlDumper(Config.defaults());
+    buffer = StringBuffer();
+    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+  });
+
+  tearDown(() {
+    buffer.clear();
   });
 
   test('Applies possessive comments in block collections', () {
-    dumper
-      ..reset(config: Config.defaults())
-      ..dump(
-        ScalarStyle.values
-            .map(
-              (s) => ScalarView(24)
-                ..scalarStyle = s
-                ..comments.addAll(_comments),
-            )
-            .cast<DumpableView>()
-            .followedBy([
-              YamlIterable('block sequence'.split(' '))
-                ..comments.addAll(_comments),
-              YamlIterable([])
-                ..nodeStyle = NodeStyle.flow
-                ..comments.addAll(_comments),
-              YamlMapping({'block': 'map'})..comments.addAll(_comments),
-              YamlMapping({})
-                ..nodeStyle = NodeStyle.flow
-                ..comments.addAll(_comments),
-            ]),
-      );
+    dumper.dump(
+      ScalarStyle.values
+          .map(
+            (s) => ScalarView(24)
+              ..scalarStyle = s
+              ..comments.addAll(_comments),
+          )
+          .cast<DumpableView>()
+          .followedBy([
+            YamlIterable('block sequence'.split(' '))
+              ..comments.addAll(_comments),
+            YamlIterable([])
+              ..nodeStyle = NodeStyle.flow
+              ..comments.addAll(_comments),
+            YamlMapping({'block': 'map'})..comments.addAll(_comments),
+            YamlMapping({})
+              ..nodeStyle = NodeStyle.flow
+              ..comments.addAll(_comments),
+          ]),
+    );
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - # possessive
   # comments
   |-
@@ -74,14 +78,12 @@ void main() {
   });
 
   test('Keys are made explicit if comments are declared possessive', () {
-    dumper.reset();
-
     final key = ScalarView(24)..comments.addAll(_comments);
     final map = {key: 'value'};
 
     dumper.dump([map, YamlMapping(map)..nodeStyle = NodeStyle.flow]);
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - ? # possessive
     # comments
     24
@@ -96,8 +98,6 @@ void main() {
   });
 
   test('Possessive comments degenerate to block comments', () {
-    dumper.reset();
-
     final scalar = ScalarView(24)..comments.addAll(_comments);
 
     dumper.dump(
@@ -113,7 +113,7 @@ void main() {
       ],
     );
 
-    check(dumper.dumped()).equals('''
+    check(buffer.toString()).equals('''
 - block map:
     # possessive
     # comments

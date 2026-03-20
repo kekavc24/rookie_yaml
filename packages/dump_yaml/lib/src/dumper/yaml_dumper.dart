@@ -20,6 +20,9 @@ extension on Iterable<Directive> {
   }
 }
 
+typedef BufferCons =
+    YamlBuffer? Function(int rootIndent, int step, String lineEnding);
+
 /// A YAML document dumper.
 ///
 /// {@category dumpable_view}
@@ -28,9 +31,24 @@ extension on Iterable<Directive> {
 /// {@category dump_map}
 final class YamlDumper extends Dumper<Object?> {
   /// Creates a [YamlDumper] that uses the specified [config]uration.
-  YamlDumper(Config config) {
-    _init(config.yamlConfig);
+  YamlDumper({required Config config, BufferCons? buffer}) {
+    _init(
+      config.yamlConfig,
+      buffer ?? (_, _, _) => null,
+    );
   }
+
+  /// Initializes a [YamlDumper] that buffers to a string [buffer].
+  YamlDumper.string({required Config config, required StringBuffer buffer})
+    : this(
+        config: config,
+        buffer: (indent, step, lf) => YamlBuffer.withBuffer(
+          buffer,
+          indent: indent,
+          step: step,
+          lineEnding: lf,
+        ),
+      );
 
   /// Builds the YAML representation tree.
   late final TreeBuilder treeBuilder;
@@ -55,18 +73,20 @@ final class YamlDumper extends Dumper<Object?> {
   late bool _addDocEnd;
 
   /// Initializes `this` dumper and its members.
-  void _init(YamlConfig config) {
+  void _init(YamlConfig config, BufferCons buffer) {
     final (:docConfig, :formatting, :styling) = config;
 
     treeBuilder = TreeBuilder(styling);
 
     final (:rootIndent, :indentationStep, :lineEnding) = formatting.config;
     dumper = BlockDumper(
-      YamlStringBuffer(
-        rootIndent,
-        indentationStep,
-        lineEnding,
-      ),
+      buffer(rootIndent, indentationStep, lineEnding) ??
+          YamlBuffer.withBuffer(
+            StringBuffer(),
+            indent: rootIndent,
+            step: indentationStep,
+            lineEnding: lineEnding,
+          ),
     );
 
     _docInit(docConfig);
@@ -105,12 +125,9 @@ final class YamlDumper extends Dumper<Object?> {
     treeBuilder.withGlobalTags(Iterable.empty());
   }
 
-  @override
-  String dumped() => dumper.dumped();
-
   /// Dumps the [root] node.
   void _dumpObject(
-    YamlStringBuffer buffer, {
+    YamlBuffer buffer, {
     required TreeNode<Object> root,
     required int rootIndent,
   }) {
@@ -134,7 +151,7 @@ final class YamlDumper extends Dumper<Object?> {
   /// configuration state.
   @override
   void dump(Object? node, {ExpandObject? expand}) {
-    final buffer = dumper.buffer..clearBuffer();
+    final buffer = dumper.buffer;
     final (otherDirectives, globals) = _directives!.filter();
 
     treeBuilder
@@ -177,6 +194,10 @@ final class YamlDumper extends Dumper<Object?> {
 /// {@category dump_list}
 /// {@category dump_map}
 String dumpAsYaml(Object? object, {Config? config, ExpandObject? expand}) {
-  final dumper = YamlDumper(config ?? Config.defaults());
-  return (dumper..dump(object, expand: expand)).dumped();
+  final buffer = StringBuffer();
+  YamlDumper.string(
+    config: config ?? Config.defaults(),
+    buffer: buffer,
+  ).dump(object, expand: expand);
+  return buffer.toString();
 }

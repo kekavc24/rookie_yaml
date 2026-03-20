@@ -19,7 +19,7 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
   BlockDumper(this.buffer);
 
   /// Represents the reusable buffer used for writing the entire document.
-  final YamlStringBuffer buffer;
+  final YamlBuffer buffer;
 
   /// Helper dumper that quickly inlines flow collection that were forced
   /// inline.
@@ -260,9 +260,6 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
 
     _collectionIndents.removeLast();
   }
-
-  @override
-  String dumped() => buffer.toString();
 
   @override
   void dump(TreeNode<Object> node) {
