@@ -69,7 +69,10 @@ final class YamlDumper extends Dumper<Object?> {
   /// Document directives included everytime [dump] is called.
   Set<Directive>? _directives;
 
-  /// Whether to include the document end directive.
+  /// Whether to include the directive end characters.
+  late bool _addDirectiveEnd;
+
+  /// Whether to include the document end characters.
   late bool _addDocEnd;
 
   /// Initializes `this` dumper and its members.
@@ -95,7 +98,8 @@ final class YamlDumper extends Dumper<Object?> {
   /// Initializes the document config specifically handled by `this` dumper.
   void _docInit(DocConfig config) {
     _includeParserVersion = config.includeParserVersion;
-    _addDocEnd = config.addDocEndChars;
+    _addDirectiveEnd = config.addDirectiveEnd;
+    _addDocEnd = config.addDocEnd;
 
     _directives =
         (_directives
@@ -147,6 +151,10 @@ final class YamlDumper extends Dumper<Object?> {
     blockEntryEnd(buffer, CommentStyle.trailing, comments, rootIndent, false);
   }
 
+  void _endOfDirectives(YamlBuffer buffer) => buffer
+    ..write(DocumentMarker.directiveEnd.indicator)
+    ..moveToNextLine();
+
   /// Dumps the [node] as a valid YAML document based on the current
   /// configuration state.
   @override
@@ -168,10 +176,15 @@ final class YamlDumper extends Dumper<Object?> {
 
     if (docDirectives.isNotEmpty) {
       // Write each directive on a separate line.
-      buffer
-        ..writeContent(docDirectives, cursorNextLine: true, preferredIndent: 0)
-        ..write(DocumentMarker.directiveEnd.indicator)
-        ..moveToNextLine();
+      _endOfDirectives(
+        buffer..writeContent(
+          docDirectives,
+          cursorNextLine: true,
+          preferredIndent: 0,
+        ),
+      );
+    } else if (_addDirectiveEnd) {
+      _endOfDirectives(buffer);
     }
 
     final rootIndent = buffer.indent;

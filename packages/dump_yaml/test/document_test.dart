@@ -143,5 +143,14 @@ $parserVersion
 ---
 Simple document
 ...''');
+
+    buffer.clear();
+    dumper
+      ..reset(config: Config.yaml(includeDirectiveEnd: true))
+      ..dump('Directive end but no directives');
+
+    check(buffer.toString()).equals('''
+---
+Directive end but no directives''');
   });
 }

@@ -7,7 +7,8 @@ import 'package:rookie_yaml/rookie_yaml.dart';
 typedef DocConfig = ({
   bool includeParserVersion,
   Set<Directive> directives,
-  bool addDocEndChars,
+  bool addDirectiveEnd,
+  bool addDocEnd,
 });
 
 /// Config for nodes in the document.
@@ -136,10 +137,14 @@ typedef YamlConfig = ({
 extension type Config._(YamlConfig yamlConfig) {
   /// Creates a [Config] for the dumper with the provided [styling] and
   /// [formatting] configuration.
+  ///
+  /// [includeDirectiveEnd] may be ignored if the [directives] are not empty or
+  /// the node being dumped has any [GlobalTag]s.
   Config.yaml({
     TreeConfig? styling,
     Formatter? formatting,
     bool includeYamlDirective = false,
+    bool includeDirectiveEnd = false,
     Set<Directive> directives = const {},
     bool includeDocEnd = false,
   }) : this._((
@@ -148,7 +153,8 @@ extension type Config._(YamlConfig yamlConfig) {
          docConfig: (
            includeParserVersion: includeYamlDirective,
            directives: directives,
-           addDocEndChars: includeDocEnd,
+           addDirectiveEnd: includeDirectiveEnd,
+           addDocEnd: includeDocEnd,
          ),
        ));
 
