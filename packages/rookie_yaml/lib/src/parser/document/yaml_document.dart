@@ -8,15 +8,9 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// A document representing the entire `YAML` string or a single
 /// scalar/collection node within a group of documents in `YAML`.
-final class YamlDocument<T> {
+abstract class YamlDocument<T, C extends Iterable<YamlComment>> {
   YamlDocument._(
-    this.index,
-    this.startOffset,
     this._yamlDirective,
-    this._globalTags,
-    this._reservedDirectives,
-    this._comments,
-    this.root,
     this.docType,
     this.hasExplicitStart,
     this.hasExplicitEnd,
@@ -28,38 +22,23 @@ final class YamlDocument<T> {
     required DocumentInfo documentInfo,
     required RootNode<T> node,
   }) : this._(
-         documentInfo.index,
-         documentInfo.start,
          directives.version,
-         directives.tags.toSet(),
-         directives.unknown,
-         node.comments,
-         node.root,
          documentInfo.docType,
          documentInfo.hasExplicitStart,
          documentInfo.hasExplicitEnd,
        );
 
   /// Position in the `YAML` string.
-  final int index;
+  int get index;
 
   /// Start offset for the document.
-  final RuneOffset startOffset;
+  RuneOffset get startOffset;
 
   /// Parsed version directive
   final YamlDirective? _yamlDirective;
 
-  /// Global tags declared for the YAML document.
-  final Set<GlobalTag<dynamic>> _globalTags;
-
-  /// Reserved directives parsed
-  final List<ReservedDirective> _reservedDirectives;
-
-  /// Comments extracted from the document while parsing
-  final List<YamlComment> _comments;
-
   /// Node at the root of the document
-  final T root;
+  T get root;
 
   /// Generic type of document based on the use of directives, directives end
   /// markers (`---`) and document end markers (`...`) as described by the
@@ -79,16 +58,48 @@ final class YamlDocument<T> {
   YamlDirective get versionDirective => _yamlDirective ?? parserVersion;
 
   /// Tag directives declared at start of the document.
-  Set<GlobalTag<dynamic>> get tagDirectives => UnmodifiableSetView(_globalTags);
+  Set<GlobalTag<dynamic>> get tagDirectives;
 
   /// Any directive that is not a tag or version directive
-  List<ReservedDirective> get otherDirectives =>
-      UnmodifiableListView(_reservedDirectives);
+  List<ReservedDirective> get otherDirectives;
 
   /// An ordered view of the [YamlComment]s within the document as they were
   /// extracted
-  List<YamlComment> get comments => UnmodifiableListView(_comments);
+  C get comments;
 
   @override
   String toString() => root.toString();
+}
+
+/// An unmodifiable YAML document.
+final class UnModifiableDocument<T> extends YamlDocument<T, List<YamlComment>> {
+  UnModifiableDocument.parsed({
+    required super.directives,
+    required super.documentInfo,
+    required super.node,
+  }) : index = documentInfo.index,
+       root = node.root,
+       startOffset = documentInfo.start,
+       tagDirectives = UnmodifiableSetView(directives.tags.toSet()),
+       otherDirectives = UnmodifiableListView(directives.unknown),
+       comments = UnmodifiableListView(node.comments),
+       super.parsed();
+
+  @override
+  final int index;
+
+  @override
+  final T root;
+
+  @override
+  final RuneOffset startOffset;
+
+  @override
+  final Set<GlobalTag<dynamic>> tagDirectives;
+
+  @override
+  final List<ReservedDirective> otherDirectives;
+
+  @override
+  final List<YamlComment> comments;
 }

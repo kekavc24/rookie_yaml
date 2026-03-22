@@ -56,23 +56,25 @@ String docStringAs(YamlDocType docType) {
       .join(_lf);
 }
 
-List<YamlDocument<TestNode<Object>>> loadDoc(String doc) => loadYamlDocuments(
-  DocumentParser(
-    UnicodeIterator.ofString(doc),
-    aliasFunction: (alias, reference, _) => TestAlias(reference, alias),
-    collectionFunction: (object, objectStyle, tag, anchor, _) =>
-        TestNode(object, objectStyle, tag: tag, anchor: anchor),
-    scalarFunction: (object, objectStyle, tag, anchor, _) =>
-        TestNode(object, objectStyle, tag: tag, anchor: anchor),
-    logger: (_, _) {},
-    onMapDuplicate: (_, _, _) {},
-    builder: (directives, documentInfo, rootNode) => YamlDocument.parsed(
-      directives: directives,
-      documentInfo: documentInfo,
-      node: rootNode,
-    ),
-  ),
-);
+List<UnModifiableDocument<TestNode<Object>>> loadDoc(String doc) =>
+    loadYamlDocuments(
+      DocumentParser(
+        UnicodeIterator.ofString(doc),
+        aliasFunction: (alias, reference, _) => TestAlias(reference, alias),
+        collectionFunction: (object, objectStyle, tag, anchor, _) =>
+            TestNode(object, objectStyle, tag: tag, anchor: anchor),
+        scalarFunction: (object, objectStyle, tag, anchor, _) =>
+            TestNode(object, objectStyle, tag: tag, anchor: anchor),
+        logger: (_, _) {},
+        onMapDuplicate: (_, _, _) {},
+        builder: (directives, documentInfo, rootNode) =>
+            UnModifiableDocument.parsed(
+              directives: directives,
+              documentInfo: documentInfo,
+              node: rootNode,
+            ),
+      ),
+    );
 
 class TestNode<S> extends CompactYamlNode {
   TestNode(this.object, this.style, {this.tag, this.anchor});

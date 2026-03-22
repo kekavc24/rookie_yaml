@@ -88,7 +88,7 @@ extension ParsedNodeHelper on Subject<TestNode> {
   Subject<T> hasObject<T>(String name) => has((e) => e.object, name).isA<T>();
 }
 
-extension ParsedDocHelper on Subject<YamlDocument<Object?>> {
+extension ParsedDocHelper on Subject<UnModifiableDocument<Object?>> {
   void hasVersionDirective(YamlDirective directive) =>
       has((d) => d.versionDirective, 'Yaml directive').equals(directive);
 

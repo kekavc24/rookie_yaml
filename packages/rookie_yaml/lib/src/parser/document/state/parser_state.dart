@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
@@ -141,7 +143,7 @@ final class ParserState<R> {
   var anchorNodes = <String, R>{};
 
   /// Buffers all parsed comments
-  var comments = <YamlComment>[];
+  var comments = ListQueue<YamlComment>();
 
   /// Start offset of the current document. Always updated after a document
   /// has been passed to completion.
@@ -207,7 +209,7 @@ final class ParserState<R> {
       ..addEntries([_defaultGlobalTag]);
 
     anchorNodes = {};
-    comments = [];
+    comments = ListQueue<YamlComment>();
   }
 
   /// Tracks the [marker] information after a [YamlDocument] has been

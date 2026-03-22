@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/scalars/block/block_scalar.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
@@ -39,7 +41,7 @@ typedef DocumentInfo = ({
 typedef RootNode<T> = ({
   T root,
   Map<String, T> anchors,
-  List<YamlComment> comments,
+  ListQueue<YamlComment> comments,
 });
 
 /// Emits all externally [buffered] utf code units to a [writer].
@@ -242,21 +244,13 @@ DocumentMarker checkForDocumentMarkers(
 /// You must provide either [comments] or an [onParseComment] [Function]
 int? skipToParsableChar(
   SourceIterator iterator, {
-  List<YamlComment>? comments,
-  void Function(YamlComment comment)? onParseComment,
+  required void Function(YamlComment comment) onParseComment,
   bool leadingAsIndent = false,
 }) {
-  assert(
-    comments != null || onParseComment != null,
-    'Missing handler/buffer to use when a comment is parsed',
-  );
 
   int? indent;
 
   var warmUp = true;
-
-  void addComment(YamlComment comment) =>
-      comments != null ? comments.add(comment) : onParseComment!(comment);
 
   void checkIndent() {
     indent = takeFromIteratorUntil(
@@ -299,7 +293,7 @@ int? skipToParsableChar(
       case comment:
         {
           final (:onExit, :comment) = parseComment(iterator);
-          addComment(comment);
+          onParseComment(comment);
 
           if (onExit.sourceEnded) return null;
           indent = null; // Guarantees indent recheck

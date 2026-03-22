@@ -430,7 +430,9 @@ My node starts here
 
       final scanner = UnicodeIterator.ofString(yaml);
 
-      check(skipToParsableChar(scanner, comments: comments)).equals(0);
+      check(
+        skipToParsableChar(scanner, onParseComment: comments.add),
+      ).equals(0);
       check(scanner.current.asString()).equals('M');
       check(comments.map((e) => e.comment)).deepEquals([
         'This is a comment',

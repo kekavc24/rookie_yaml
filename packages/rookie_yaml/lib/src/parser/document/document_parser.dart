@@ -1,14 +1,20 @@
 import 'dart:math';
 
-import 'package:rookie_yaml/rookie_yaml.dart';
+import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_node.dart';
 import 'package:rookie_yaml/src/parser/document/block_nodes/block_wildcard.dart';
 import 'package:rookie_yaml/src/parser/document/document_events.dart';
 import 'package:rookie_yaml/src/parser/document/node_utils.dart';
+import 'package:rookie_yaml/src/parser/document/state/custom_triggers.dart';
 import 'package:rookie_yaml/src/parser/document/state/parser_state.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
+import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scanner/source_iterator.dart';
 import 'package:rookie_yaml/src/scanner/span.dart';
+import 'package:rookie_yaml/src/schema/scalar_value.dart';
+import 'package:rookie_yaml/src/schema/yaml_comment.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// Callback for creating a document with the current parser's information.
 typedef DocumentBuilder<Doc, R> =
@@ -367,7 +373,7 @@ extension<Doc, R> on DocumentParser<Doc, R> {
             null,
             YamlSourceSpan(_state.iterator.currentLineInfo.current),
           ),
-          comments: [],
+          comments: _state.comments,
           anchors: {},
         ),
       ),
