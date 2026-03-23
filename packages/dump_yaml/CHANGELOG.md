@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-beta.4
+
+`BREAKING`:
+  - Renames `YamlDumper.string` constructor to `YamlDumper.toStringBuffer`.
+  - `YamlDumper` now accepts a `YamlBuffer` and not a closure to create it.
+
 ## 0.1.0-beta.3
 
 `BREAKING`:
