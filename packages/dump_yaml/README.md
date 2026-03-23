@@ -1,8 +1,6 @@
 # dump_yaml
 
-The dumper is spec-compliant and prioritizes clean YAML documents as its default configuration.
-
-It supports all features implemented in `package:rookie_yaml` and most (if not all) YAML parsers. This package also provides the foundation you need to build your own configurable YAML dumper/formatter.
+A spec-compliant YAML dumper that prioritizes clean YAML documents as its default configuration. It supports all features implemented in most (if not all) YAML parsers.
 
 > [!TIP]
 > If you're migrating from `package:rookie_yaml` version 0.6.0 and below, see the [migration guide](https://github.com/kekavc24/yaml_dart/blob/main/packages/dump_yaml/migrations/from_rookie_yaml.md).
@@ -22,13 +20,13 @@ Dumping YAML is tricky but incredibly satisfying when gotten right. The `YamlDum
 
 ### Styling
 
-As stated earlier, no YAML features are shoved into your files unless you use them. For this stage, the dumper exposes additional utility classes.
+The package also exposes additional utility classes:
 
-- `TreeBuilder` - used by the dumper to normalize any YAML features used.
+- `TreeBuilder` - builds the YAML representation tree that is dumped.
 - `DumpableView` - a mutable lightweight wrapper class that exposes all the YAML features you may require for a node.
 
 > [!TIP]
-> A `DumpableView` can be used to override the style of nested nodes or apply comments. It provides useful setters for such usecases.
+> A `DumpableView` can be used to override the style of nested nodes or apply comments. It provides useful setters for such usecases. See docs.
 
 ### Formatting
 
@@ -60,12 +58,7 @@ final someLazyStream = StreamController<String>();
 
 final dumper = YamlDumper(
   config: Config.defaults(),
-  buffer: (rootIndent, step, lineEnding) => YamlBuffer.toStream(
-    someLazyStream,
-    indent: rootIndent,
-    step: step,
-    lineEnding: lineEnding,
-  ),
+  buffer: YamlBuffer.toStream(someLazyStream),
 );
 
 dumper.dump([

@@ -7,12 +7,7 @@ void main(List<String> args) async {
 
   final dumper = YamlDumper(
     config: Config.defaults(),
-    buffer: (rootIndent, step, lineEnding) => YamlBuffer.toStream(
-      someLazyStream,
-      indent: rootIndent,
-      step: step,
-      lineEnding: lineEnding,
-    ),
+    buffer: YamlBuffer.toStream(someLazyStream),
   );
 
   dumper.dump([
