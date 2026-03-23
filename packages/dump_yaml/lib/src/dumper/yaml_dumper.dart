@@ -20,9 +20,6 @@ extension on Iterable<Directive> {
   }
 }
 
-typedef BufferCons =
-    YamlBuffer? Function(int rootIndent, int step, String lineEnding);
-
 /// A YAML document dumper.
 ///
 /// {@category dumpable_view}
@@ -31,24 +28,15 @@ typedef BufferCons =
 /// {@category dump_map}
 final class YamlDumper extends Dumper<Object?> {
   /// Creates a [YamlDumper] that uses the specified [config]uration.
-  YamlDumper({required Config config, BufferCons? buffer}) {
-    _init(
-      config.yamlConfig,
-      buffer ?? (_, _, _) => null,
-    );
+  YamlDumper({required Config config, required YamlBuffer buffer}) {
+    _init(config.yamlConfig, buffer);
   }
 
   /// Initializes a [YamlDumper] that buffers to a string [buffer].
-  YamlDumper.string({required Config config, required StringBuffer buffer})
-    : this(
-        config: config,
-        buffer: (indent, step, lf) => YamlBuffer.withBuffer(
-          buffer,
-          indent: indent,
-          step: step,
-          lineEnding: lf,
-        ),
-      );
+  YamlDumper.toStringBuffer({
+    required Config config,
+    required StringBuffer buffer,
+  }) : this(config: config, buffer: YamlBuffer.withBuffer(buffer));
 
   /// Builds the YAML representation tree.
   late final TreeBuilder treeBuilder;
@@ -76,20 +64,16 @@ final class YamlDumper extends Dumper<Object?> {
   late bool _addDocEnd;
 
   /// Initializes `this` dumper and its members.
-  void _init(YamlConfig config, BufferCons buffer) {
+  void _init(YamlConfig config, YamlBuffer buffer) {
     final (:docConfig, :formatting, :styling) = config;
-
     treeBuilder = TreeBuilder(styling);
 
     final (:rootIndent, :indentationStep, :lineEnding) = formatting.config;
     dumper = BlockDumper(
-      buffer(rootIndent, indentationStep, lineEnding) ??
-          YamlBuffer.withBuffer(
-            StringBuffer(),
-            indent: rootIndent,
-            step: indentationStep,
-            lineEnding: lineEnding,
-          ),
+      buffer
+        ..indent = rootIndent
+        ..step = indentationStep
+        ..lineEnding = lineEnding,
     );
 
     _docInit(docConfig);
@@ -208,7 +192,7 @@ final class YamlDumper extends Dumper<Object?> {
 /// {@category dump_map}
 String dumpAsYaml(Object? object, {Config? config, ExpandObject? expand}) {
   final buffer = StringBuffer();
-  YamlDumper.string(
+  YamlDumper.toStringBuffer(
     config: config ?? Config.defaults(),
     buffer: buffer,
   ).dump(object, expand: expand);

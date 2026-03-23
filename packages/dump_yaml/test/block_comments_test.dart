@@ -14,7 +14,10 @@ void main() {
 
   setUpAll(() {
     buffer = StringBuffer();
-    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+    dumper = YamlDumper.toStringBuffer(
+      config: Config.defaults(),
+      buffer: buffer,
+    );
   });
 
   tearDown(() {

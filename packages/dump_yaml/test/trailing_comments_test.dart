@@ -18,7 +18,10 @@ void main() {
 
   setUpAll(() {
     buffer = StringBuffer();
-    dumper = YamlDumper.string(config: Config.defaults(), buffer: buffer);
+    dumper = YamlDumper.toStringBuffer(
+      config: Config.defaults(),
+      buffer: buffer,
+    );
     flowNodes = ScalarStyle.values
         .where((s) => s.nodeStyle.isFlow)
         .map(

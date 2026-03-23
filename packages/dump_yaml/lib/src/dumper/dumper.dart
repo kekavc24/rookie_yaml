@@ -28,12 +28,7 @@ final class YamlBuffer {
   /// The buffer maintains a [step] that can be used to calculate the
   /// indentation of nested elements. This allows a `Dumper` to emit a uniform
   /// YAML document.
-  YamlBuffer.ofWriter(
-    this._writer, {
-    required this.indent,
-    required this.step,
-    required this.lineEnding,
-  });
+  YamlBuffer.ofWriter(this._writer);
 
   /// Creates a [YamlBuffer] that synchronously writes to a string [buffer].
   ///
@@ -42,17 +37,7 @@ final class YamlBuffer {
   /// indent calculated using the indentation [step] provided. If the document
   /// is multiline, the provided [lineEnding] will be used as the default
   /// line-break.
-  YamlBuffer.withBuffer(
-    StringBuffer buffer, {
-    required int indent,
-    required int step,
-    required String lineEnding,
-  }) : this.ofWriter(
-         buffer.write,
-         indent: indent,
-         step: step,
-         lineEnding: lineEnding,
-       );
+  YamlBuffer.withBuffer(StringBuffer buffer) : this.ofWriter(buffer.write);
 
   /// Creates a [YamlBuffer] that writes to a [stream] sink.
   ///
@@ -65,29 +50,19 @@ final class YamlBuffer {
   /// indent calculated using the indentation [step] provided. If the document
   /// is multiline, the provided [lineEnding] will be used as the default
   /// line-break.
-  YamlBuffer.toStream(
-    StreamSink<String> stream, {
-    required int indent,
-    required int step,
-    required String lineEnding,
-  }) : this.ofWriter(
-         stream.add,
-         indent: indent,
-         step: step,
-         lineEnding: lineEnding,
-       );
+  YamlBuffer.toStream(StreamSink<String> stream) : this.ofWriter(stream.add);
 
   /// Actual Buffer.
   final Writer _writer;
 
   /// Current indentation.
-  int indent;
+  int indent = 0;
 
   /// Indentation step.
-  int step;
+  int step = 0;
 
   /// Dumper's line ending.
-  String lineEnding;
+  String lineEnding = '\n';
 
   /// Whether the last write operating included a trailing line break.
   var lastWasLineEnding = false;
