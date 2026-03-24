@@ -27,7 +27,7 @@ bool exitAfterPreamble<T>(
   if (!node.forcedInline) return _writePreamble(buffer, node);
 
   dumper.dump(node);
-  buffer.write(dumper.dumped());
+  buffer.writeInline(dumper.dumped());
   dumper.reset();
   return true;
 }
@@ -40,7 +40,7 @@ bool _writePreamble<T>(YamlBuffer buffer, CollectionNode<T> collection) {
   ].join(' ');
 
   if (collection.node.isEmpty) {
-    buffer.write(
+    buffer.writeInline(
       '${props.isNotEmpty ? '$props ' : ''}'
       '${collection.nodeType == NodeType.map ? '{}' : '[]'}',
     );
@@ -58,7 +58,7 @@ bool _writePreamble<T>(YamlBuffer buffer, CollectionNode<T> collection) {
 /// Writes the flow collection's properties to the [buffer].
 void _flowPreamble(YamlBuffer buffer, String props, NodeType nodeType) {
   if (props.isNotEmpty) {
-    buffer.write('$props ');
+    buffer.writeInline('$props ');
   }
 
   // ```yaml
@@ -79,7 +79,7 @@ void _flowPreamble(YamlBuffer buffer, String props, NodeType nodeType) {
   // ]
   //```
   buffer
-    ..write(nodeType == NodeType.map ? '{' : '[')
+    ..writeInline(nodeType == NodeType.map ? '{' : '[')
     ..moveToNextLine()
     ..writeSpaceOrIndent(buffer.indent + buffer.step); // Indent of child
 }
@@ -104,7 +104,7 @@ void _blockPreamble(YamlBuffer buffer, String props) {
   // - next
   //```
   buffer
-    ..write(props)
+    ..writeInline(props)
     ..moveToNextLine()
     ..writeSpaceOrIndent();
 }
@@ -126,7 +126,7 @@ void collectionEnd(
 
   buffer
     ..writeSpaceOrIndent()
-    ..write(nodeType == NodeType.map ? '}' : ']');
+    ..writeInline(nodeType == NodeType.map ? '}' : ']');
 }
 
 /// Writes the [comments] provided to the [buffer].
@@ -168,7 +168,7 @@ void blockEntryStart(
 
     if (charIfPossessive.isNotEmpty) {
       buffer
-        ..write(charIfPossessive)
+        ..writeInline(charIfPossessive)
         ..writeSpaceOrIndent(1);
     }
 
@@ -184,7 +184,7 @@ void blockEntryStart(
   //   node
   // ```
   buffer
-    ..write(charIfPossessive)
+    ..writeInline(charIfPossessive)
     ..writeSpaceOrIndent(1);
 
   // Use the entry indent
@@ -226,7 +226,7 @@ void flowEntryEnd(
     //   next value
     // ]
     buffer
-      ..write(',')
+      ..writeInline(',')
       ..moveToNextLine()
       ..writeSpaceOrIndent();
 

@@ -136,7 +136,7 @@ final class YamlDumper extends Dumper<Object?> {
   }
 
   void _endOfDirectives(YamlBuffer buffer) => buffer
-    ..write(DocumentMarker.directiveEnd.indicator)
+    ..writeInline(DocumentMarker.directiveEnd.indicator)
     ..moveToNextLine();
 
   /// Dumps the [node] as a valid YAML document based on the current
@@ -176,7 +176,7 @@ final class YamlDumper extends Dumper<Object?> {
 
     if (_addDocEnd) {
       if (!buffer.lastWasLineEnding) buffer.moveToNextLine();
-      buffer.write(DocumentMarker.documentEnd.indicator);
+      buffer.writeInline(DocumentMarker.documentEnd.indicator);
     }
 
     _treeConfig = null; // [TreeBuilder] persists its copy.

@@ -29,7 +29,7 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
   final _collectionIndents = ListQueue<int>();
 
   @override
-  void visitAliasNode(ReferenceNode node) => buffer.write(node.node);
+  void visitAliasNode(ReferenceNode node) => buffer.writeInline(node.node);
 
   @override
   void visitContentNode(ContentNode node) {
@@ -174,7 +174,7 @@ final class BlockDumper extends Dumper<TreeNode<Object>> with TreeNodeVisitor {
     visitTreeNode(key);
 
     // Aliases allow ":".
-    buffer.write('${key is ReferenceNode ? ' ' : ''}:');
+    buffer.writeInline('${key is ReferenceNode ? ' ' : ''}:');
 
     final valueIndent = entryIndent + buffer.step;
     buffer.indent = valueIndent;

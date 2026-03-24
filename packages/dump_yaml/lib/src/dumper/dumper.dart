@@ -88,15 +88,15 @@ extension DumperHelpers on YamlBuffer {
     distanceFromMargin = 0;
   }
 
-  /// Writes the [content].
-  void write(String content) {
+  /// Writes [content] inline.
+  void writeInline(String content) {
     _writer(content);
     distanceFromMargin += content.length;
     lastWasLineEnding = false;
   }
 
   /// Writes the indent or the number of spaces if [count] is specified.
-  void writeSpaceOrIndent([int? count]) => write(' ' * (count ?? indent));
+  void writeSpaceOrIndent([int? count]) => writeInline(' ' * (count ?? indent));
 
   /// Writes the [lines] to the underlying buffer.
   ///
