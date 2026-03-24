@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:rookie_yaml/src/scanner/encoding/character_encoding.dart';
+import 'package:rookie_yaml/src/scanner/encoding/utf_utils.dart';
 import 'package:rookie_yaml/src/scanner/span.dart';
 
 part 'error_utils.dart';
@@ -27,8 +28,11 @@ int getLineCount(RuneOffset start, RuneOffset end) =>
     max(0, end.lineIndex - start.lineIndex);
 
 /// Returns start [RuneOffset] position of a line.
-RuneOffset _getLineStart({int lineIndex = 0, int currentOffset = 0}) =>
-    (lineIndex: lineIndex, columnIndex: 0, offset: currentOffset);
+RuneOffset _getLineStart({
+  int lineIndex = 0,
+  int span = 0,
+  int currentOffset = 0,
+}) => (lineIndex: lineIndex, columnIndex: 0, span: 0, offset: currentOffset);
 
 /// Represents the active line's span information. This is intentionally
 /// different from [RuneSpan] because we prefer to iterate the source string
@@ -138,7 +142,11 @@ final class UnicodeIterator extends SourceIterator {
   UnicodeIterator._(this._iterator) {
     // Always point to the first character
     if (_iterator.moveNext()) {
-      _currentChar = _iterator.current;
+      final char = _iterator.current;
+      _currentCharSpan = char.span;
+      _currentChar = char.unicode;
+
+      _lineStartOffset = _getLineStart(span: _currentCharSpan);
 
       if (!_iterator.moveNext()) {
         _bufferCurrent();
@@ -155,18 +163,19 @@ final class UnicodeIterator extends SourceIterator {
     }
 
     _lines.add(const SourceLine(0, 0, chars: []));
+    _lineStartOffset = _getLineStart();
     allowBOM(true);
   }
 
   /// Creates a [UnicodeIterator] that uses the underlying code units to iterate
   /// the string [source].
-  UnicodeIterator.ofString(String source) : this._(source.runes.iterator);
+  UnicodeIterator.ofString(String source) : this._(unicodeFromString(source));
 
   /// Creates a [UnicodeIterator] that iterates a sequence of utf bytes.
-  UnicodeIterator.ofBytes(Iterable<int> source) : this._(source.iterator);
+  UnicodeIterator.ofUnicode(Iterator<Unicode> source) : this._(source);
 
   /// Actual iterator being read.
-  final Iterator<int> _iterator;
+  final Iterator<Unicode> _iterator;
 
   /// [SourceLine]s lazily buffered while iterating.
   final _lines = <SourceLine>[];
@@ -182,7 +191,7 @@ final class UnicodeIterator extends SourceIterator {
   bool _hasMoreLines = false;
 
   /// Start offset of the current [SourceLine]
-  RuneOffset _lineStartOffset = _getLineStart();
+  late RuneOffset _lineStartOffset;
 
   /// Index of the UTF-8/UTF-16 unicode character in a string.
   int _graphemeIndex = 0;
@@ -193,13 +202,17 @@ final class UnicodeIterator extends SourceIterator {
   /// Column index of the current character
   int _columnIndex = 0;
 
+  /// Preceding character.
   int? _charBefore;
+
+  /// Number of code units represented by the current character.
+  int _currentCharSpan = 0;
 
   /// Current character
   int _currentChar = -1;
 
   /// Next character
-  int _nextChar = -1;
+  Unicode _nextChar = empty;
 
   @override
   bool get hasNext => _hasNext;
@@ -215,6 +228,62 @@ final class UnicodeIterator extends SourceIterator {
 
   @override
   int get currentLine => _lineIndex;
+
+  @override
+  LineInfo get currentLineInfo => (
+    start: _lineStartOffset,
+    current: (
+      lineIndex: _lineIndex,
+      columnIndex: _columnIndex,
+      span: _currentCharSpan,
+      offset: _graphemeIndex,
+    ),
+  );
+
+  @override
+  List<SourceLine> lines({int startIndex = 0}) =>
+      UnmodifiableListView(_lines.skip(startIndex));
+
+  /// Skips a `\r` if it's followed by a `\n`
+  void _skipCarriageReturn() {
+    // From our point of view, we treat \r\n as a complete line break. We don't
+    // care if this isn't Windows. In our parsing context, we always fast
+    // forward this combination.
+    if (_currentChar == carriageReturn && _nextChar.unicode == lineFeed) {
+      _moveNext();
+      _graphemeIndex += _nextChar.span;
+      ++_columnIndex;
+    }
+  }
+
+  /// Buffers the [_currentChar] if it is valid and not `\r` or `\n`
+  void _bufferCurrent() {
+    if (_currentChar == -1 || _currentChar.isLineBreak()) return;
+    _bufferedRunes.add(_currentChar);
+  }
+
+  /// Buffers the current line's information to [_lines].
+  void _markLineAsComplete() {
+    _lines.add(
+      SourceLine(
+        _lineStartOffset.offset,
+        _graphemeIndex,
+        chars: UnmodifiableListView(_bufferedRunes),
+      ),
+    );
+
+    _bufferedRunes = [];
+    if (_hasMoreLines) _columnIndex = 0;
+  }
+
+  /// Moves the [_iterator] forward.
+  void _moveNext() {
+    final (:span, :unicode) = _nextChar;
+    _currentCharSpan = span;
+    _currentChar = unicode;
+    _hasNext = _iterator.moveNext();
+    _nextChar = _hasNext ? _iterator.current : empty;
+  }
 
   @override
   void nextChar() {
@@ -237,23 +306,22 @@ final class UnicodeIterator extends SourceIterator {
     }
 
     _charBefore = _currentChar;
-    _currentChar = _nextChar;
-    _hasNext = _iterator.moveNext();
-
+    _moveNext();
     super.nextChar();
-    _nextChar = _hasNext ? _iterator.current : -1;
 
-    ++_graphemeIndex;
+    final charSpan = max(1, _currentCharSpan);
+    _graphemeIndex += charSpan; // EOF included.
 
-    //
+    // Update line index.
     if (isNewLine) {
       ++_lineIndex;
       _lineStartOffset = _getLineStart(
         lineIndex: _lineIndex,
+        span: _currentCharSpan,
         currentOffset: _graphemeIndex,
       );
     } else {
-      ++_columnIndex;
+      _columnIndex += charSpan;
     }
 
     _skipCarriageReturn();
@@ -263,63 +331,16 @@ final class UnicodeIterator extends SourceIterator {
     // We will not get a chance to buffer this last line. Also this iterator has
     // no notion of trailing empty lines. A trailing line break will not trigger
     // an empty line to be added to [_lines]
+    _hasMoreLines = false;
     _bufferCurrent();
     _markLineAsComplete();
-    _hasMoreLines = false;
   }
 
   @override
-  int? peekNextChar() => _nextChar == -1 ? null : _nextChar;
-
-  @override
-  LineInfo get currentLineInfo => (
-    start: _lineStartOffset,
-    current: (
-      lineIndex: _lineIndex,
-      columnIndex: _hasMoreLines
-          ? _columnIndex
-          : max(0, _lines.last.chars.length - 1),
-      offset: _graphemeIndex,
-    ),
-  );
-
-  @override
-  List<SourceLine> lines({int startIndex = 0}) =>
-      UnmodifiableListView(_lines.skip(startIndex));
-
-  /// Skips a `\r` if it's followed by a `\n`
-  void _skipCarriageReturn() {
-    // From our point of view, we treat \r\n as a complete line break. We don't
-    // care if this isn't Windows. In our parsing context, we always fast
-    // forward this combination.
-    if (_currentChar == carriageReturn && _nextChar == lineFeed) {
-      _currentChar = _nextChar;
-      _hasNext = _iterator.moveNext();
-      _nextChar = _iterator.current;
-      ++_graphemeIndex;
-      ++_columnIndex;
-    }
-  }
-
-  /// Buffers the [_currentChar] if it is valid and not `\r` or `\n`
-  void _bufferCurrent() {
-    if (_currentChar == -1 || _currentChar.isLineBreak()) return;
-    _bufferedRunes.add(_currentChar);
-  }
-
-  /// Buffers the current line's information to [_lines].
-  void _markLineAsComplete() {
-    _lines.add(
-      SourceLine(
-        _lineStartOffset.offset,
-        _graphemeIndex,
-        chars: UnmodifiableListView(_bufferedRunes),
-      ),
-    );
-
-    _bufferedRunes = [];
-    _columnIndex = 0;
-  }
+  int? peekNextChar() => switch (_nextChar.unicode) {
+    -1 => null,
+    int char => char,
+  };
 
   /// Displays the current chunk within a line that is being iterated.
   @override

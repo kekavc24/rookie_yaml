@@ -101,7 +101,7 @@ final class YamlParseException implements Exception {
 
   @override
   String toString() {
-    final (:lineIndex, :columnIndex, :offset) = offsetOnError;
+    final RuneOffset(:lineIndex, :columnIndex, :offset) = offsetOnError;
     return 'ParserException'
         '[Line ${lineIndex + 1}, Column $columnIndex, Offset $offset]: '
         '$message'
@@ -354,6 +354,7 @@ Never throwWithApproximateRange(
       lineIndex: iterIndex + 1,
       columnIndex: actualColumn,
       offset: lines.first.startOffset + actualColumn,
+      span: 0 // Unknown with approximation.
     ),
     end: current,
     lines: lines,

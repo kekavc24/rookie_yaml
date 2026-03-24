@@ -14,20 +14,22 @@ part 'dart_objects.dart';
 /// A generic input class for the [DocumentParser].
 ///
 /// {@category dart_objects}
-extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
-  /// Creates a simple input from a [source].
-  ///
-  /// Prefer using this constructor if you want your input to be parsed "as-is"
-  /// with no additional mutations. For a string, call the `simpleString`
-  /// constructor.
-  YamlSource.simple(Iterable<int> source) : this._(source);
-
+extension type YamlSource._(Iterator<Unicode> source)
+    implements Iterator<Unicode> {
   /// Creates a simple input from a [yaml] string.
-  YamlSource.simpleString(String yaml) : this.simple(yaml.runes);
+  YamlSource.simpleString(String yaml) : this._(unicodeFromString(yaml));
+  
+  /// Creates an input from a [yaml] source string that does not allow unpaired
+  /// surrogate code units.
+  ///
+  /// If the first code unit is a BOM (byte order mark), the input may be
+  /// interpreted differently based on the endianess it specifies.
+  YamlSource.string(String yaml) : this.strictUtf16(yaml.codeUnits);
 
   /// Creates an input from an UTF-8 byte source. No dangling surrogate pairs
   /// are allowed and the BOM character has no side effects.
-  YamlSource.strictUtf8(Uint8List bytes) : this._(decodeUtf8Strict(bytes));
+  YamlSource.strictUtf8(Uint8List bytes)
+    : this._(decodeUtf8Strict(bytes).iterator);
 
   /// Creates an input from a UTF-16 byte source which is parsed "as-is" if no
   /// BOM (byte order mark) is present.
@@ -41,20 +43,14 @@ extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
   /// Most systems, however, handle the endianess issues out of the box when
   /// storing integers. Keep the BOM if you are sure your input will benefit
   /// from it.
-  YamlSource.strictUtf16(Iterable<int> source) : this._(decodeUtf16(source));
+  YamlSource.strictUtf16(Iterable<int> source)
+    : this._(decodeUtf16(source).iterator);
 
   /// Creates an input from a source with UTF-16 [words].
   ///
   /// If the first code unit is a BOM (byte order mark), the input may be
   /// interpreted differently based on the endianess it specifies.
   YamlSource.fixedUtf16(Uint16List words) : this.strictUtf16(words);
-
-  /// Creates an input from a [yaml] source string that does not allow unpaired
-  /// surrogate code units.
-  ///
-  /// If the first code unit is a BOM (byte order mark), the input may be
-  /// interpreted differently based on the endianess it specifies.
-  YamlSource.string(String yaml) : this.strictUtf16(yaml.codeUnits);
 
   /// Creates an input from a UTF-32 byte source which is parsed "as-is" if no
   /// BOM (byte order mark) is present.
@@ -68,7 +64,8 @@ extension type YamlSource._(Iterable<int> source) implements Iterable<int> {
   /// Most systems, however, handle the endianess issues out of the box when
   /// storing integers. Keep the BOM if you are sure your input will benefit
   /// from it.
-  YamlSource.fixedUtf32(Uint32List source) : this._(decodeUtf32(source));
+  YamlSource.fixedUtf32(Uint32List source)
+    : this._(SpannedIterator.fixed(1, decodeUtf32(source).iterator));
 }
 
 /// Internal logger used when no logger is provided

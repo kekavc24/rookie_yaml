@@ -37,7 +37,7 @@ export 'src/parser/parser_utils.dart'
     show CharWriter, ParsedDirectives, DocumentInfo, RootNode;
 export 'src/scanner/encoding/character_encoding.dart';
 export 'src/scanner/source_iterator.dart';
-export 'src/scanner/span.dart' hide YamlSourceSpan;
+export 'src/scanner/span.dart';
 export 'src/schema/scalar_value.dart';
 export 'src/schema/schema.dart';
 export 'src/schema/yaml_comment.dart' hide parseComment;

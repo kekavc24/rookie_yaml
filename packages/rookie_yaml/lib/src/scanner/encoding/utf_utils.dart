@@ -4,6 +4,9 @@ import 'dart:typed_data';
 /// Byte range for a UTF-8 byte sequence. (start and end inclusive)
 typedef _MinMax = (int, int);
 
+///
+typedef Unicode = ({int span, int unicode});
+
 extension UtfUtils on int {
   String readableHex() => '0x${toRadixString(16)}';
 }
@@ -33,7 +36,7 @@ _MinMax _unicodeSecondByteRange(int firstByte) => switch (firstByte) {
 
 /// Decodes a UTF-8 byte [source] and allows no malformed byte sequences. This
 /// implementaton is based on The Unicode Standard, Version 17.0.
-Iterable<int> decodeUtf8Strict(Uint8List source) sync* {
+Iterable<Unicode> decodeUtf8Strict(Uint8List source) sync* {
   final byteCount = source.length;
   if (byteCount == 0) return;
 
@@ -119,7 +122,7 @@ Iterable<int> decodeUtf8Strict(Uint8List source) sync* {
 
     // ASCII character.
     if (byte.bitLength <= boundary) {
-      yield byte;
+      yield (span: 1, unicode: byte);
     } else if (byte < 0xC2 || byte > 0xF4) {
       // First byte must in the range of C2 - F4
       throw StateError(
@@ -128,7 +131,7 @@ Iterable<int> decodeUtf8Strict(Uint8List source) sync* {
       );
     } else {
       final (count, highs) = unpack(byte);
-      yield readTrailingBytes(count, highs, byte);
+      yield (span: count + 1, unicode: readTrailingBytes(count, highs, byte));
     }
   } while (move());
 }
@@ -144,7 +147,7 @@ Iterable<int> _checkBOM(
 }) => input.elementAtOrNull(0) == 0xFFFE ? input.map(converter) : input;
 
 /// Decodes a UTF-16 byte [source] after checking if a BOM is present.
-Iterable<int> decodeUtf16(Iterable<int> source) => _decodeUtf16Strict(
+Iterable<Unicode> decodeUtf16(Iterable<int> source) => _decodeUtf16Strict(
   _checkBOM(
     source,
     converter: (codeUnit) => (((0x00FF & codeUnit) << 8) | (codeUnit >> 8)),
@@ -160,7 +163,7 @@ Iterable<int> decodeUtf16(Iterable<int> source) => _decodeUtf16Strict(
 ///
 /// In all other cases, the code units must be in the range of 0x00 - 0xFFFF
 /// (inclusive on both ends).
-Iterable<int> _decodeUtf16Strict(Iterable<int> source) sync* {
+Iterable<Unicode> _decodeUtf16Strict(Iterable<int> source) sync* {
   final iterator = source.iterator;
 
   /// Checks if a code unit is a trailing surrogate pair.
@@ -191,14 +194,14 @@ Iterable<int> _decodeUtf16Strict(Iterable<int> source) sync* {
     final codeUnit = iterator.current;
 
     if (_surrogateRange.hasValue(codeUnit)) {
-      yield readSurrogatePair(codeUnit);
+      yield (span: 2, unicode: readSurrogatePair(codeUnit));
     } else if (codeUnit < 0 || codeUnit > 0xFFFF) {
       throw StateError(
         'Invalid code unit "${codeUnit.readableHex()}" not in range of '
         '0x00 - 0xFFFF encountered.',
       );
     } else {
-      yield codeUnit;
+      yield (span: 1, unicode: codeUnit);
     }
   }
 }
@@ -239,3 +242,54 @@ Iterable<int> _decodeUtf32Strict(Iterable<int> source) sync* {
     yield codeUnit;
   }
 }
+
+/// Empty stub.
+const Unicode empty = (span: 0, unicode: -1);
+
+/// A callback that obtains the span from its iterator.
+typedef Spanned<Iter extends Iterator<int>> = int Function(Iter iterator);
+
+/// A [Unicode] iterator.
+final class SpannedIterator<Iter extends Iterator<int>>
+    implements Iterator<Unicode> {
+  /// Creates a [SpannedIterator] from the [iterator].
+  SpannedIterator.iterator(this.iterator, {required this.spanned});
+
+  /// Creates a [SpannedIterator] with a fixed [span] for each code unit.
+  ///
+  /// This constructor should be called for an [iterator] whose code units
+  /// have no surrogate pairs or each code unit contains a constant fixed size
+  /// of surrogate pairs.
+  SpannedIterator.fixed(int span, Iter iterator)
+    : this.iterator(iterator, spanned: (_) => span);
+
+  /// Obtains the number of surrogate code units present in the current unicode.
+  final Spanned<Iter> spanned;
+
+  /// Underlying iterator with code units.
+  final Iter iterator;
+
+  /// Current code unit with its span information.
+  Unicode? _current;
+
+  @override
+  Unicode get current => _current ?? empty;
+
+  @override
+  bool moveNext() {
+    if (!iterator.moveNext()) {
+      _current = null;
+      return false;
+    }
+
+    _current = (span: spanned(iterator), unicode: iterator.current);
+    return true;
+  }
+}
+
+/// Creates a [SpannedIterator] using the [string]'s [RuneIterator].
+SpannedIterator<RuneIterator> unicodeFromString(String string) =>
+    SpannedIterator.iterator(
+      string.runes.iterator,
+      spanned: (iterator) => iterator.currentSize,
+    );

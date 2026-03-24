@@ -2,11 +2,12 @@
 ///
 /// `lineIndex` - zero-based line index in the source string.<br>
 /// `columnIndex` - zero-based column index within a line.<br>
-/// `offset` - zero-based index in the source string read as a sequence of
-/// unicode code units (surrogates are combined).
-typedef RuneOffset = ({int lineIndex, int columnIndex, int offset});
+/// `span` - number of bytes/UTF-8 code units in this offset.<br>
+/// `offset` - zero-based index in the source. (after all the surrogates/code
+/// units have been combined).
+typedef RuneOffset = ({int lineIndex, int columnIndex, int span, int offset});
 
-/// A chunk of a YAML source.
+/// Range offset within a YAML input.
 typedef RuneSpan = ({RuneOffset start, RuneOffset end});
 
 /// Offset information for a parsed YAML node.
@@ -101,7 +102,7 @@ final class YamlSourceSpan extends NodeSpan {
   RuneSpan? propertySpan;
 
   @override
-  final RuneOffset nodeStart;
+  RuneOffset nodeStart;
 
   @override
   RuneOffset nodeEnd;

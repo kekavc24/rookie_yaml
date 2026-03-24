@@ -110,7 +110,7 @@ List<Object?> loadAllObjects(
   CustomTriggers? triggers,
   void Function(bool isInfo, String message)? logger,
 }) => _loadAsDartObject(
-  UnicodeIterator.ofBytes(source),
+  UnicodeIterator.ofUnicode(source),
   dereferenceAliases: dereferenceAliases,
   throwOnMapDuplicate: throwOnMapDuplicate,
   triggers: triggers,
