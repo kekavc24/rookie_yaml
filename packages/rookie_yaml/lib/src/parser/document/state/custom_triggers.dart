@@ -1,5 +1,6 @@
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
+import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 
 /// A map with functions linked to a local tag.
 typedef _Resolvers = Map<TagShorthand, ResolverCreator<Object?>>;
@@ -43,6 +44,9 @@ class CustomTriggers {
   /// Triggered when the parser starts parsing a document within a yaml source
   /// string.
   void onDocumentStart(int index) {}
+
+  /// Triggered when the parser parses a [YamlComment].
+  void onParseComment(YamlComment comment) {}
 
   /// Obtains a custom resolver that instantiates custom object delegates.
   /// Called before [onScalarResolver] when a local tag is being resolved to a

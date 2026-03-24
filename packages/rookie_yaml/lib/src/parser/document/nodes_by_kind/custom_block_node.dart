@@ -155,7 +155,7 @@ BlockNode<Obj> customBlockScalar<Obj>(
       resolver: resolver,
       afterScalar: afterScalar,
       property: property,
-      onParseComment: state.comments.add,
+      onParseComment: state.onParseComment,
       onScalar: (_, indentOnExit, _, marker, delegate) =>
           (indentOnExit, marker, delegate),
       isImplicit: forceInlined,

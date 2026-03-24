@@ -17,7 +17,7 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
   required int minIndent,
   required bool forceInline,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
   final peekEvent = inferNextEvent(
     iterator,
     isBlockContext: false,
@@ -53,7 +53,7 @@ NodeDelegate<Obj> _parseFlowSequenceEntry<Obj>(
         iterator,
         minIndent: minIndent,
         forceInline: forceInline,
-        onParseComment: comments.add,
+        onParseComment: state.onParseComment,
       ) ||
       (iterator.currentLineInfo.current.lineIndex != lineIndex) ||
       keyOrElement.encounteredLineBreak() ||
@@ -104,14 +104,14 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
   NodeKind kind = YamlCollectionKind.sequence,
   ObjectFromIterable<Obj, Obj>? asCustomList,
 }) {
-  final ParserState(:iterator, :comments, :onMapDuplicate) = state;
+  final ParserState(:iterator, :onParseComment, :onMapDuplicate) = state;
 
   bool goToNext(YamlSourceSpan entrySpan) => continueToNextEntry(
     iterator,
     lastEntrySpan: entrySpan,
     minIndent: minIndent,
     forceInline: forceInline,
-    onParseComment: comments.add,
+    onParseComment: onParseComment,
   );
 
   final sequence = initFlowCollection(
@@ -119,7 +119,7 @@ NodeDelegate<Obj> parseFlowSequence<Obj>(
     flowStartIndicator: flowSequenceStart,
     minIndent: minIndent,
     forceInline: forceInline,
-    onParseComment: comments.add,
+    onParseComment: onParseComment,
     flowEndIndicator: flowSequenceEnd,
     init: (start) {
       if (asCustomList != null) {

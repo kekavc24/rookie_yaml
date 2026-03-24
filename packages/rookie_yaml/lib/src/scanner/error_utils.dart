@@ -354,7 +354,7 @@ Never throwWithApproximateRange(
       lineIndex: iterIndex + 1,
       columnIndex: actualColumn,
       offset: lines.first.startOffset + actualColumn,
-      span: 0 // Unknown with approximation.
+      span: 0, // Unknown with approximation.
     ),
     end: current,
     lines: lines,

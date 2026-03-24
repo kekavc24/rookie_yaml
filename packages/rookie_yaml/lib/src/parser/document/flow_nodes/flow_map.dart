@@ -19,14 +19,14 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
   required bool forceInline,
   ObjectFromMap<Obj, Obj, Obj>? asCustomMap,
 }) {
-  final ParserState(:iterator, :comments, :onMapDuplicate) = state;
+  final ParserState(:iterator, :onParseComment, :onMapDuplicate) = state;
 
   bool goToNext(YamlSourceSpan entrySpan) => continueToNextEntry(
     iterator,
     lastEntrySpan: entrySpan,
     minIndent: minIndent,
     forceInline: forceInline,
-    onParseComment: comments.add,
+    onParseComment: onParseComment,
   );
 
   final map = initFlowCollection(
@@ -34,7 +34,7 @@ NodeDelegate<Obj> parseFlowMap<Obj>(
     flowStartIndicator: mappingStart,
     minIndent: minIndent,
     forceInline: forceInline,
-    onParseComment: comments.add,
+    onParseComment: onParseComment,
     flowEndIndicator: mappingEnd,
     init: (start) {
       if (asCustomMap != null) {

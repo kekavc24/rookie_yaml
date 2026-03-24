@@ -173,14 +173,17 @@ BlockNode<Obj> _safeBlockState<Obj>(
   ParserState<Obj> state, {
   required BlockNode<Obj> parsed,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
   final (:blockInfo, :node) = parsed;
 
   if (!iterator.isEOF &&
       !blockInfo.docMarker.stopIfParsingDoc &&
       (blockInfo.exitIndent == seamlessIndentMarker ||
           iterator.current == comment)) {
-    final indent = skipToParsableChar(iterator, onParseComment: comments.add);
+    final indent = skipToParsableChar(
+      iterator,
+      onParseComment: state.onParseComment,
+    );
 
     return (
       blockInfo: (docMarker: blockInfo.docMarker, exitIndent: indent),
@@ -220,13 +223,13 @@ BlockNode<Obj> parseBlockNode<Obj>(
   bool canComposeMapIfMultiline = false,
   RuneOffset? structuralOffset,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
 
   final (:event, :property) = parseBlockProperties(
     iterator,
     minIndent: laxBlockIndent,
     resolver: state.resolveTag,
-    onParseComment: comments.add,
+    onParseComment: state.onParseComment,
     structuralOffset: structuralOffset,
   );
 

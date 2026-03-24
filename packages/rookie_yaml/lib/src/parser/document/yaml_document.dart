@@ -3,12 +3,11 @@ import 'dart:collection';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
 import 'package:rookie_yaml/src/parser/parser_utils.dart';
 import 'package:rookie_yaml/src/scanner/span.dart';
-import 'package:rookie_yaml/src/schema/yaml_comment.dart';
 import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
 /// A document representing the entire `YAML` string or a single
 /// scalar/collection node within a group of documents in `YAML`.
-abstract class YamlDocument<T, C extends Iterable<YamlComment>> {
+abstract class YamlDocument<T> {
   YamlDocument._(
     this._yamlDirective,
     this.docType,
@@ -63,16 +62,12 @@ abstract class YamlDocument<T, C extends Iterable<YamlComment>> {
   /// Any directive that is not a tag or version directive
   List<ReservedDirective> get otherDirectives;
 
-  /// An ordered view of the [YamlComment]s within the document as they were
-  /// extracted
-  C get comments;
-
   @override
   String toString() => root.toString();
 }
 
 /// An unmodifiable YAML document.
-final class UnModifiableDocument<T> extends YamlDocument<T, List<YamlComment>> {
+final class UnModifiableDocument<T> extends YamlDocument<T> {
   UnModifiableDocument.parsed({
     required super.directives,
     required super.documentInfo,
@@ -82,7 +77,6 @@ final class UnModifiableDocument<T> extends YamlDocument<T, List<YamlComment>> {
        startOffset = documentInfo.start,
        tagDirectives = UnmodifiableSetView(directives.tags.toSet()),
        otherDirectives = UnmodifiableListView(directives.unknown),
-       comments = UnmodifiableListView(node.comments),
        super.parsed();
 
   @override
@@ -99,7 +93,4 @@ final class UnModifiableDocument<T> extends YamlDocument<T, List<YamlComment>> {
 
   @override
   final List<ReservedDirective> otherDirectives;
-
-  @override
-  final List<YamlComment> comments;
 }

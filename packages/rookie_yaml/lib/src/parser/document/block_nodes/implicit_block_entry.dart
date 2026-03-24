@@ -76,7 +76,7 @@ BlockInfo parseImplicitValue<Obj>(
   required void Function(NodeDelegate<Obj> implicitValue) onValue,
   required OnBlockMapEntry<Obj> onEntryValue,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
 
   ParserEvent eventCallback() => inferBlockEvent(iterator);
 
@@ -96,7 +96,7 @@ BlockInfo parseImplicitValue<Obj>(
   /// handing this off to [parseBlockNode]
   var indentOrSeparation = skipToParsableChar(
     iterator,
-    onParseComment: comments.add,
+    onParseComment: state.onParseComment,
   );
 
   final hasIndent = indentOrSeparation != null;

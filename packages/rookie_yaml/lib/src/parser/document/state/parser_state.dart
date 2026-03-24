@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:rookie_yaml/src/parser/custom_resolvers.dart';
 import 'package:rookie_yaml/src/parser/delegates/object_delegate.dart';
 import 'package:rookie_yaml/src/parser/directives/directives.dart';
@@ -63,6 +61,7 @@ final class ParserState<R> {
     required CustomTriggers? triggers,
   }) : _onCustomResolver = triggers?.onCustomResolver ?? ((_) => null),
        _onScalarResolver = triggers?.onScalarResolver ?? ((_) => null),
+       onParseComment = triggers?.onParseComment ?? ((_) {}),
        onParseMapKey = triggers?.onParsedKey ?? ((_) {}),
        _defaultMap = triggers?.onDefaultMapping ?? _nullish,
        _defaultSequence = triggers?.onDefaultSequence ?? _nullish,
@@ -85,6 +84,9 @@ final class ParserState<R> {
 
   /// Callback for binding a local tag to a custom scalar resolver.
   final _OnScalarResolver _onScalarResolver;
+
+  /// Called when a [YamlComment] has been parsed.
+  final void Function(YamlComment comment) onParseComment;
 
   /// Callback once a valid map key has been parsed completely
   final OnMapKey onParseMapKey;
@@ -141,9 +143,6 @@ final class ParserState<R> {
 
   /// Tracks anchors that can be used as aliases
   var anchorNodes = <String, R>{};
-
-  /// Buffers all parsed comments
-  var comments = ListQueue<YamlComment>();
 
   /// Start offset of the current document. Always updated after a document
   /// has been passed to completion.
@@ -209,7 +208,6 @@ final class ParserState<R> {
       ..addEntries([_defaultGlobalTag]);
 
     anchorNodes = {};
-    comments = ListQueue<YamlComment>();
   }
 
   /// Tracks the [marker] information after a [YamlDocument] has been
@@ -231,7 +229,7 @@ final class ParserState<R> {
 
     if (char == comment || char.isWhiteSpace() || char.isLineBreak()) {
       iterator.allowBOM(true);
-      skipToParsableChar(iterator, onParseComment: comments.add);
+      skipToParsableChar(iterator, onParseComment: onParseComment);
     }
   }
 

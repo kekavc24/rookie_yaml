@@ -82,7 +82,7 @@ _SequenceState _sequenceNodeOrMarker(
   required ParserState<Obj> state,
   required bool levelWithBlockMap,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator, :onParseComment) = state;
   final SequenceLikeDelegate(indent: sequenceIndent, :indentLevel) = sequence;
 
   final entryIndent = sequenceIndent + 1;
@@ -95,7 +95,7 @@ _SequenceState _sequenceNodeOrMarker(
     // indent range for this node.
     final indentOrSeparation = skipToParsableChar(
       iterator,
-      onParseComment: comments.add,
+      onParseComment: onParseComment,
     );
 
     final isNextLevel = indentOrSeparation != null;

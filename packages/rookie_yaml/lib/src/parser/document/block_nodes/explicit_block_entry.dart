@@ -19,7 +19,7 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
   required void Function(NodeDelegate<Obj> blockNode) onSequenceOrBlockNode,
   required OnBlockMapEntry<Obj> maybeOnEntry,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
 
   if (inferBlockEvent(iterator) != expectedEvent) {
     return (ignoreValueIfKey: true, blockInfo: fallback(iterator));
@@ -31,7 +31,7 @@ import 'package:rookie_yaml/src/schema/yaml_node.dart';
 
   final indentOrSeparation = skipToParsableChar(
     iterator,
-    onParseComment: comments.add,
+    onParseComment: state.onParseComment,
   );
 
   final isNextLevel = indentOrSeparation != null;

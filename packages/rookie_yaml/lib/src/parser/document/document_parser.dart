@@ -61,7 +61,7 @@ void _throwIfBlockUnsafe(
   }
 }
 
-/// A [YamlDocument] parser.
+/// A `YamlDocument` parser.
 ///
 /// [Doc] represents the type for all documents to be parsed and [R] represents
 /// a type for all nodes that will be parsed.
@@ -118,7 +118,7 @@ final class DocumentParser<Doc, R> {
   (bool didParse, Doc? parsed) parseNext() {
     if ((_state..reset()).isEOF()) return _emptyDoc();
 
-    final ParserState(:iterator, :comments, :logger) = _state;
+    final ParserState(:iterator, :onParseComment, :logger) = _state;
     iterator.allowBOM(true);
     _onDocReset(_state.current);
 
@@ -130,7 +130,7 @@ final class DocumentParser<Doc, R> {
 
     var rootIndent = skipToParsableChar(
       iterator,
-      onParseComment: comments.add,
+      onParseComment: onParseComment,
       leadingAsIndent: !_state.docStartExplicit,
     );
 
@@ -141,7 +141,7 @@ final class DocumentParser<Doc, R> {
       iterator,
       rootIndent: rootIndent,
       logger: logger,
-      onComment: comments.add,
+      onComment: onParseComment,
       onDirectives: (yamlVersion, globalTags, unknown) {
         version = yamlVersion;
         tags = globalTags;
@@ -174,7 +174,7 @@ final class DocumentParser<Doc, R> {
     } else {
       rootIndent ??= skipToParsableChar(
         iterator,
-        onParseComment: comments.add,
+        onParseComment: onParseComment,
         leadingAsIndent: !isInlineWithMarker,
       );
 
@@ -203,7 +203,7 @@ final class DocumentParser<Doc, R> {
     _terminateDoc(
       iterator,
       docEnd: blockInfo.docMarker,
-      onComment: comments.add,
+      onComment: onParseComment,
       onDocEnd: (end) => node.nodeSpan.parsingEnd = end,
     );
 
@@ -221,7 +221,7 @@ final class DocumentParser<Doc, R> {
           hasExplicitStart: _state.docStartExplicit,
           hasExplicitEnd: _state.docEndExplicit,
         ),
-        (root: node.parsed(), comments: comments, anchors: _state.anchorNodes),
+        (root: node.parsed(), anchors: _state.anchorNodes),
       ),
     );
   }
@@ -373,7 +373,6 @@ extension<Doc, R> on DocumentParser<Doc, R> {
             null,
             YamlSourceSpan(_state.iterator.currentLineInfo.current),
           ),
-          comments: _state.comments,
           anchors: {},
         ),
       ),

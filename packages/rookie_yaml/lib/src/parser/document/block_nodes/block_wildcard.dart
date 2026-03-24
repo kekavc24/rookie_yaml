@@ -124,7 +124,7 @@ BlockNode<Obj> parseFlowNodeInBlock<Obj>(
 
   final indentOfNextNode = skipToParsableChar(
     state.iterator,
-    onParseComment: state.comments.add,
+    onParseComment: state.onParseComment,
   );
 
   // Some flow collections can be used as keys like scalars.
@@ -170,7 +170,7 @@ BlockNode<Obj> parseBlockScalar<Obj>(
     onDefault: defaultScalar?.onCustomScalar,
     afterScalar: defaultScalar?.afterObject<Obj>(),
     scalarFunction: state.scalarFunction,
-    onParseComment: state.comments.add,
+    onParseComment: state.onParseComment,
     isImplicit: isImplicit,
     isInFlowContext: false,
     indentLevel: indentLevel,

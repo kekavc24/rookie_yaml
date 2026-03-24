@@ -66,7 +66,7 @@ R _parseExplicitFlow<R, Obj>(
   )
   onExplicitKey,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
 
   final keyStart = iterator.currentLineInfo.current;
 
@@ -95,7 +95,7 @@ R _parseExplicitFlow<R, Obj>(
     iterator,
     minIndent: minIndent,
     forceInline: forceInline,
-    onParseComment: comments.add,
+    onParseComment: state.onParseComment,
   )) {
     throwWithSingleOffset(
       iterator,
@@ -139,7 +139,7 @@ FlowMapEntry<Obj> parseImplicitEntry<Obj>(
   required int minIndent,
   required bool forceInline,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator) = state;
 
   if (iterator.current case flowEntryEnd || mappingEnd) {
     throwWithSingleOffset(
@@ -167,7 +167,7 @@ FlowMapEntry<Obj> parseImplicitEntry<Obj>(
     iterator,
     minIndent: minIndent,
     forceInline: forceInline,
-    onParseComment: comments.add,
+    onParseComment: state.onParseComment,
   )) {
     throwWithSingleOffset(
       iterator,

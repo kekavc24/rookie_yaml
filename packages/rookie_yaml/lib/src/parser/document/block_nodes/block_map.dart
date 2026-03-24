@@ -50,7 +50,7 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
   required bool composeImplicitMap,
   required int composedMapIndent,
 }) {
-  final ParserState(:iterator, :comments) = state;
+  final ParserState(:iterator, :onParseComment) = state;
 
   if (!composeImplicitMap ||
       documentMarker.stopIfParsingDoc ||
@@ -66,7 +66,7 @@ BlockNode<Obj> composeBlockMapFromScalar<Obj>(
   } else if (iterator.current != mappingValue) {
     final indentOrSeparation = skipToParsableChar(
       iterator,
-      onParseComment: comments.add,
+      onParseComment: onParseComment,
     );
 
     // Indent must be null. This must be an inlined key
