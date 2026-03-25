@@ -19,11 +19,6 @@ A small non-intrusive subset of some parser actions have been exposed via the `C
 
 ### Default delegate triggers
 
-> [!TIP]
-> YAML enforces strict rules around its styling. However, one can build an advanced schema validator entirely on top of the exposed triggers and emit custom objects in one parsing sequence.
->
-> An advanced object mapper may force the scalar in the lowest level to be written to a `Uint8List` or `Uint16List` or `Uint32List` or whatever object you deem more efficient before mapping a yaml file/string to an object. Everything is interleaved into the parser seamlessly. Continue reading other sections to understand how all of this fits together.
-
 A parser will always try to construct a built-in Dart type when tags are absent. The methods exposed here help you override how the parser parses each node kind.
 
 | Method               | Parser Interaction
@@ -38,6 +33,7 @@ Other methods include:
 | Method               | Parser Interaction
 |---------------------------------------------|--------------------------------------------------------------------------------|
 | `void onParsedKey(Object? key)`             | Called after a map key has been fully parsed. A key is unique to a map.        |
+| `void onParsedComment(YamlComment comment)` | Called after a valid comment has been parsed in your YAML file                 |
 | `void onDocumentStart(int index)`           | Called everytime the parser starts parsing a valid document. `index` is a zero-indexed position in the document stream. |
 | `_ onCustomResolver(TagShorthand localTag)` | Called after the parser has fully resolved a local tag to a global tag (if present). The `localTag` represents the tag parsed. |
 | `_ onScalarResolver(TagShorthand localTag)` | Called after `onCustomResolver` only if it returns `null` for the same `localTag`. |

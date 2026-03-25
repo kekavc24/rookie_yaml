@@ -26,6 +26,3 @@ A custom resolver may be bound to a tag and provided via a `CustomTriggers` clas
 ## Triggers
 
 If your YAML schema/config file doesn't rely on tags. You can build a custom schema emitter on top of the `CustomTriggers` class by extending it.
-
-> [!TIP]
-> A cheeky implementation could make the parser return a byte view of your yaml file with any indentation/styles/tags stripped. :)

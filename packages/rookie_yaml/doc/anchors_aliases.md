@@ -181,7 +181,6 @@ print(
 ```
 
 > [!WARNING]
->
 > Currently, an `alias` cannot be recursive. The node must be parsed completely and resolved before an `anchor` can be used.
 
 [uri_char_url]: https://yaml.org/spec/1.2.2/#692-node-anchors

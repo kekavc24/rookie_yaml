@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0-pre.2
+
+`BREAKING`:
+  - `YamlDocument` has been made abstract. Prefer using `ImmutableDocument`.
+  - `DocBuilder` callback no longer provides the buffered `YamlComment`s.
+  - Renames the `ofBytes` constructor to `ofUnicode` in `UnicodeIterator`.
+
+`feat`:
+  - Adds `span` param to `RuneOffset` which tracks the number of code units a single offset represents.
+  - Adds an `onParseComment` method to `CustomTriggers`.
+
 ## 0.7.0-pre.1
 
 This release focuses reducing the scope of `package:rookie_yaml` and migrating any non-parser functionality to external packages. It also includes minor QoL improvements. See progress [here](https://github.com/kekavc24/yaml_dart).

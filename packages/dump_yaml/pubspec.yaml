@@ -23,7 +23,7 @@ resolution: workspace
 dependencies:
   collection: ^1.19.1
   meta: ^1.18.2
-  rookie_yaml: ^0.7.0-pre.1
+  rookie_yaml: ^0.7.0-pre.2
 
 dev_dependencies:
   checks: ^0.3.1

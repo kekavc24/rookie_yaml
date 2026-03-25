@@ -5,7 +5,7 @@ The package allows you to load a YAML string as a built-in Dart type without wor
 - `Map`
 
 > [!TIP]
-> Each loader accepts a utility extension type called `YamlSource`. You can pass in the `bytes` for a yaml string or the actual string via the `YamlSource.bytes` and `YamlSource.string` constructors respectively.
+> Each loader accepts a utility extension type called `YamlSource`. You can pass in the `bytes` for a yaml string or the actual string via the `YamlSource` constructors.
 
 ## Loading a scalar as a built-in Dart type
 

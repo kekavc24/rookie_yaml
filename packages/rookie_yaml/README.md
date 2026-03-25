@@ -24,9 +24,6 @@ Earlier YAML versions are parsed with YAML 1.2+ grammar rules. The parser will w
 
 The package implements the full YAML 1.2+ spec. See the table below for more information and any teething issues the parser has.
 
-> [!TIP]
-> The underlying `DocumentParser` is now exported by this package. You can build a fine-grained parser on top of the low-level internal parser functions it uses. See the [external resolvers](https://pub.dev/documentation/rookie_yaml/latest/topics/custom_resolvers_intro-topic.html) section and consider extending the `CustomTriggers` class.
-
 <details>
 <summary>Feature Support</summary>
 <table>
