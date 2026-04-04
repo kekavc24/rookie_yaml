@@ -48,7 +48,7 @@ const _keyPass = 'Tests passing:';
     }
   }
 
-  final rateOnPR = (testPass ?? 0) / (testRan ?? 1);
+  final rateOnPR = ((testPass ?? 0) / (testRan ?? 1)) * 100;
   final currentInRepo = getCurrentPassRate(rootDirectory);
 
   return (
@@ -84,7 +84,7 @@ $diff
 ---
 - Head SHA commit: $headCommit
 - Base Repository Pass Rate: `$currentPassRate%`
-- Pull Request Pass Rate: `$prPassRate%`
+- Pull Request Pass Rate: `${prPassRate.toStringAsFixed(2)}%`
 
 ```yaml
 $summary
