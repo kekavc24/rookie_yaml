@@ -35,61 +35,52 @@ dart runner.dart
 > This assumes you are in the `test/yaml_test_suite` directory
 
 ```sh
-# Run command to get current test suite pass rate
-dart runner.dart --mode summary
+# Run command to get current test suite summary. (abbreviated)
+dart runner.dart -m summary
 ```
 
 An example output is:
 
 ```yaml
-Total Tests: 402
-Test Summary:
-  Total Tests Passing: 324
-  Average Pass Accuracy (%): 80.60
-
-  # Tests meant to be parsed correctly that passed
-  Success Test Ratio (%):
-    Of Success Tests: 78.41
-    Of Tests Passing: 76.23
-
-  # Tests meant to fail that failed
-  Error Test Ratio (%):
-    Of Error Tests: 88.51
-    Of Tests Passing: 23.77
-
+Tests present: 406
+Tests skipped: 8
+Tests that ran: 398
+Tests passing: 337
+Tests failing: 61
 ```
 
-## Getting failed tests
+## Filtering tests
 
 > [!NOTE]
 > This assumes you are in the `test/yaml_test_suite` directory
 
+You can only capture tests that failed or were skipped.
+
 ```sh
 # Outputs the failed tests as `.md` files in the current directory
-dart runner.dart --save-failed
+dart runner.dart --filter skipped failed
 
-# You override the output directory
-dart runner.dart --save-failed --directory /path/to/some/directory
+# You override the output directory. Defaults to the current directory.
+dart runner.dart --filter failed --directory /path/to/some/directory
 
 # Abbreviated
-dart runner.dart --save-failed -d /path/to/some/directory
+dart runner.dart -f skipped -d /path/to/some/directory
 ```
 
-This command always prints the pass rate irrespective of the `--mode` option provided. The files written to the current directory include:
-
-- `#_summary_#.yaml` - this contains the test [summary](#printing-the-test-suite-summary) highlighted earlier.
-
-- `.md` files unique to each test that failed. Each `.md` file has the test id as its file name. The test id corresponds to a valid test in the official [YAML test suite](https://github.com/yaml/yaml-test-suite) as flattened in [here](https://github.com/kekavc24/yaml_test_suite_dart/tree/generated-tests-dart).
+This writes `.md` files unique to each test that failed. Each `.md` file has the test id prefixed to the file name and the filter applied as the suffix. The test id corresponds to a valid test in the official [YAML test suite](https://github.com/yaml/yaml-test-suite).
 
 ### Structure of failed test's `.md` file
 
 - Heading
   - The test's unique test ID
-  - The test's description
+  - The test's name
 
 - `Test Input` - contains the yaml input for the test
 - `Reason Test Failed` - describes why the test failed.
 - `Stack Trace` - This section is exclusive to tests whose input was not parsed to completion.
+
+> [!NOTE]
+> `Reason Test Failed` and  `Stack Trace` are excluded for skipped tests.
 
 All contributions are welcome (including issues). Use the test outputs above to hunt for:
   - Bugs that need to fixed.

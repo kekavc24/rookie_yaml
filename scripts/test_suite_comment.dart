@@ -28,7 +28,8 @@ extension on ArgResults {
   );
 }
 
-const _keyInSummary = 'Average Pass Accuracy (%):';
+const _keyRan = 'Tests that ran:';
+const _keyPass = 'Tests passing:';
 
 /// Compares the current pass rate in the repo and the latest pass rate obtained
 /// from the current PR.
@@ -36,15 +37,18 @@ const _keyInSummary = 'Average Pass Accuracy (%):';
   String rootDirectory,
   String summary,
 ) {
-  final rateOnPR = double.parse(
-    summary
-        .split('\n')
-        .map((e) => e.trim())
-        .firstWhere((l) => l.startsWith(_keyInSummary), orElse: () => '0.0')
-        .replaceFirst(_keyInSummary, '')
-        .trim(),
-  );
+  int? testRan;
+  int? testPass;
 
+  for (final str in summary.split('\n')) {
+    if (str.startsWith(_keyRan)) {
+      testRan ??= int.tryParse(str.replaceFirst(_keyRan, '').trim());
+    } else if (str.startsWith(_keyPass)) {
+      testPass ??= int.tryParse(str.replaceFirst(_keyPass, '').trim());
+    }
+  }
+
+  final rateOnPR = (testPass ?? 0) / (testRan ?? 1);
   final currentInRepo = getCurrentPassRate(rootDirectory);
 
   return (

@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:args/args.dart';
-import 'package:collection/collection.dart';
+import 'package:path/path.dart' as path;
 import 'package:rookie_yaml/src/loaders/loader.dart';
+import 'package:rookie_yaml/src/schema/yaml_node.dart';
 import 'package:yaml_test_suite_runner/yaml_test_suite_runner.dart';
+
+import 'reporter.dart';
 
 final _argParser = ArgParser()
   ..addFlag('help', abbr: 'h', help: 'Prints usage')
@@ -15,9 +20,13 @@ final _argParser = ArgParser()
       'summary': 'Prints the test summary.',
     },
   )
-  ..addFlag(
-    'save-failed',
-    help: 'Whether the runner should save failing tests.',
+  ..addMultiOption(
+    'filters',
+    abbr: 'f',
+    help:
+        'Triggers the runner to save skipped/failed tests based on the'
+        ' options provided.',
+    allowed: ['skipped', 'failed'],
   )
   ..addOption(
     'directory',
@@ -27,13 +36,13 @@ final _argParser = ArgParser()
 
 extension on ArgResults {
   RunnerArgResult get argInfo {
-    final saveFailed = this['save-failed'] as bool;
+    final filtered = multiOption('filters').toSet();
 
     return (
-      showUsage: this['help'],
-      mode: saveFailed ? 'rate' : this['mode'],
-      saveFailed: saveFailed,
-      directory: this['directory'],
+      showUsage: flag('help'),
+      mode: option('mode')!,
+      filters: filtered,
+      directory: option('directory'),
     );
   }
 }
@@ -41,7 +50,7 @@ extension on ArgResults {
 typedef RunnerArgResult = ({
   bool showUsage,
   String mode,
-  bool saveFailed,
+  Set<String> filters,
   String? directory,
 });
 
@@ -52,7 +61,7 @@ void _printUsage() {
 
 void main(List<String> arguments) async {
   try {
-    final (:showUsage, :mode, :saveFailed, :directory) = _argParser
+    final (:showUsage, :mode, :filters, :directory) = _argParser
         .parse(arguments)
         .argInfo;
 
@@ -60,26 +69,32 @@ void main(List<String> arguments) async {
       return _printUsage();
     }
 
-    final output = DummyWriter.forRunner(directory, saveFailed: saveFailed);
-    final equality = DeepCollectionEquality();
+    final runnerDir =
+        directory ?? path.joinAll([Directory.current.path, 'suite-results']);
+    final reporter = filters.isNotEmpty
+        ? TestSuiteReporter(runnerDir, filters)
+        : Metrics();
 
-    final runner = TestRunner(
-      parseFunction: (yaml) => loadAllObjects(
-        YamlSource.string(yaml),
-        throwOnMapDuplicate: true,
-        logger: (_, _) {},
+    final runner = TestSuiteRunner(
+      runner: TestRunner(
+        reporter,
+        multiDocLoader: (yaml) => loadAllObjects(
+          YamlSource.simpleString(yaml),
+          throwOnMapDuplicate: true,
+          logger: (_, _) {},
+        ),
+        comparator: (parsed, expected) =>
+            yamlCollectionEquality.equals(parsed, expected) ||
+            parsed.toString() == expected.toString(),
       ),
-      sourceComparator: (parsed, expected) =>
-          equality.equals(parsed, expected) ||
-          parsed.toString() == expected.toString(),
-      writer: output,
     );
 
     await runner.runTestSuite();
-
-    final (:passRate, :summary) = runner.counter.getSummary();
-    print(mode == 'rate' ? passRate : summary);
-    output.onComplete(summary);
+    print(
+      mode == 'rate'
+          ? calculatePassRate(reporter).toStringAsFixed(2)
+          : suiteSummary(reporter),
+    );
   } on FormatException catch (e) {
     // Print usage information if an invalid argument was provided.
     print(e.message);
