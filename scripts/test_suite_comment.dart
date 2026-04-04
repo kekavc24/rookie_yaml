@@ -33,7 +33,7 @@ const _keyPass = 'Tests passing:';
 
 /// Compares the current pass rate in the repo and the latest pass rate obtained
 /// from the current PR.
-({double currentPassRate, String diff}) _passRateDiff(
+({double currentPassRate, double prPassRate, String diff}) _passRateDiff(
   String rootDirectory,
   String summary,
 ) {
@@ -53,6 +53,7 @@ const _keyPass = 'Tests passing:';
 
   return (
     currentPassRate: currentInRepo,
+    prPassRate: rateOnPR,
     diff: currentInRepo == rateOnPR
         ? 'No change ☑️'
         : currentInRepo > rateOnPR
@@ -73,12 +74,17 @@ void main(List<String> args) {
     directory: path.joinAll([rookieDir, 'test', 'yaml_test_suite']),
   );
 
-  final (:currentPassRate, :diff) = _passRateDiff(rookieDir, summary);
+  final (:currentPassRate, :prPassRate, :diff) = _passRateDiff(
+    rookieDir,
+    summary,
+  );
+
   addBotComment(pr, directory, '''
 $diff
 ---
-* Head SHA commit: $headCommit
-* Base Repository Pass Rate: `$currentPassRate%`
+- Head SHA commit: $headCommit
+- Base Repository Pass Rate: `$currentPassRate%`
+- Pull Request Pass Rate: `$prPassRate%`
 
 ```yaml
 $summary
