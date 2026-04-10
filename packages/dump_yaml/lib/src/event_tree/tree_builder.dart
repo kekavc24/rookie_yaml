@@ -305,7 +305,10 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         mapping;
 
     _buildMap(
-      mapping.toFormat(mapping.node),
+      LinkedHashSet<MapEntry<Object?, Object?>>(
+        equals: (p0, p1) => p0.key == p1.key,
+        hashCode: (p0) => p0.key.hashCode,
+      )..addAll(mapping.toFormat(mapping.node)),
       style: nodeStyle,
       forceInline: forceInline || _inlineRules.last,
       comments: comments,
