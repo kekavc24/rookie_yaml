@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-beta.5
+
+`feat`:
+  - Adds support for detecting recursive aliases or object references.
+
+`fix`:
+  - Fixes an issue where duplicate keys from a `YamlMapping` were included.
+
 ## 0.1.0-beta.4
 
 `BREAKING`:
