@@ -263,11 +263,17 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Visits a recursive [object] and tracks the object's state.
   void _visitRecursiveCandidate<T>(
     T object, {
-    required void Function(String recursiveAnchor, T object) visit,
+    required void Function(String? recursiveAnchor, T object) visit,
+    required bool trackObject,
     String? anchorOnVisit,
     Iterable<String>? comments,
     CommentStyle? commentStyle,
   }) {
+    if (!trackObject) {
+      visit(null, object);
+      return;
+    }
+
     if (_recursiveTracker[object] case String anchored) {
       _addNode(
         ReferenceNode(
@@ -317,6 +323,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   @override
   void visitIterable(Iterable<Object?> iterable) => _visitRecursiveCandidate(
     iterable,
+    trackObject: true,
     visit: (anchor, object) => _buildIterable(
       object,
       style: _config.iterableStyle,
@@ -328,10 +335,11 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
   @override
   void visitIterableView(YamlIterable iterable) {
-    final YamlIterable(:anchor, :comments, :commentStyle) = iterable;
+    final YamlIterable(:node, :anchor, :comments, :commentStyle) = iterable;
 
     _visitRecursiveCandidate(
       iterable.node,
+      trackObject: node is Iterable,
       anchorOnVisit: _pushAnchor(anchor),
       comments: comments,
       commentStyle: commentStyle,
@@ -355,6 +363,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   @override
   void visitMap(Map<Object?, Object?> map) => _visitRecursiveCandidate(
     map,
+    trackObject: true,
     visit: (anchor, object) => _buildMap(
       object.entries,
       style: _config.mapStyle,
@@ -366,10 +375,11 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
 
   @override
   void visitMappingView(YamlMapping mapping) {
-    final YamlMapping(:anchor, :comments, :commentStyle) = mapping;
+    final YamlMapping(:node, :anchor, :comments, :commentStyle) = mapping;
 
     _visitRecursiveCandidate(
       mapping.node,
+      trackObject: node is Map,
       anchorOnVisit: _pushAnchor(anchor),
       comments: comments,
       commentStyle: commentStyle,

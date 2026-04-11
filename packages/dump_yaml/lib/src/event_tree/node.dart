@@ -160,7 +160,7 @@ extension on CommentStyle {
 bool isRecursiveAnchorRef(Object? object, String? anchor) {
   bool isRef(Object? node) {
     if (node is! ReferenceNode || !node.recursive) return false;
-    return anchor == null || anchor == node.alias;
+    return anchor != null && anchor == node.alias;
   }
 
   if (object case MappingEntry(:final $1, :final $2)) {
