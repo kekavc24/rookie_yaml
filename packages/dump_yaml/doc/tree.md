@@ -14,7 +14,7 @@ This node contains an `Iterable<String>` as its internal node whose lines can be
 
 ### CollectionNode
 
-An abtraction for both a `MapNode` and `ListNode`. Both are contain a sequence of entries with a `MapNode` enforcing uniqueness via the key. Additionally, a `MapNode` contains  unnamed Dart `tuple`s (records) rather than `MapEntry`.
+An abtraction for both a `MapNode` and `ListNode`. Both contain a sequence of entries with a `MapNode` enforcing uniqueness via the key. Additionally, a `MapNode` contains  unnamed Dart `tuple`s (records) rather than `MapEntry`.
 
 ## Example
 

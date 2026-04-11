@@ -76,9 +76,9 @@ print(
 
 ```yaml
 - 24 # trailing
-  # comments
+     # comments
 - { key: 24, next: entry } # trailing
-  # comments
+                           # comments
 ```
 
 ### Block Comments

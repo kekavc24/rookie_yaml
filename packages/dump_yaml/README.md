@@ -8,7 +8,7 @@ A spec-compliant YAML dumper that prioritizes clean YAML documents as its defaul
 ## Principles
 
 1. **100% spec-compliant** - All supported features are included in the YAML spec and vice versa (all YAML features are supported).
-2. **Simplicity** - No YAML features are shoved into your files unless you explicitly use them.
+2. **Simplicity** - No YAML-specific knowledge required. Just call `dumpAsYaml`.
 3. **Configurability** - The dumper includes features you can use to accurately control the final output of your YAML files. (See next section).
 
 ## What's Included
@@ -54,7 +54,11 @@ print(dumpAsYaml(['hello', 'there']));
 Tweak the dumper to match your requirements. A simple example:
 
 ```dart
+final chunks = <String>[];
 final someLazyStream = StreamController<String>();
+final bufferChunks = someLazyStream.stream
+    .listen(chunks.add)
+    .asFuture<void>();
 
 final dumper = YamlDumper(
   config: Config.defaults(),
@@ -68,20 +72,18 @@ dumper.dump([
   'lazily',
 ]);
 
-someLazyStream.close();
-final chunks = await someLazyStream.stream.toList();
+await someLazyStream.close();
+await bufferChunks;
 
 /*
- * Lazy chunks as the dumper walks the YAML representation tree for your
- * object.
+  * Lazy chunks as the dumper walks your object.
 
 [, -,  , I,
 , , -,  , love,
 , , -,  , streaming, :,  , things,
 , , -,  , lazily,
 ]
-
-*/
+  */
 print(chunks);
 
 /*

@@ -22,21 +22,11 @@ typedef Writer = void Function(String content);
 
 /// A YAML buffer that buffers the inputs
 final class YamlBuffer {
-  /// Creates a [YamlBuffer] with the provided starting [indent]. The
-  /// [lineEnding] will be used for the entire document.
-  ///
-  /// The buffer maintains a [step] that can be used to calculate the
-  /// indentation of nested elements. This allows a `Dumper` to emit a uniform
-  /// YAML document.
+  /// Creates a [YamlBuffer] that calls your callback when the [Dumper] writes
+  /// to it.
   YamlBuffer.ofWriter(this._writer);
 
   /// Creates a [YamlBuffer] that synchronously writes to a string [buffer].
-  ///
-  /// The root node of the document will use the provided starting [indent] and
-  /// nested nodes not bound to YAML's compact-inline notation will have their
-  /// indent calculated using the indentation [step] provided. If the document
-  /// is multiline, the provided [lineEnding] will be used as the default
-  /// line-break.
   YamlBuffer.withBuffer(StringBuffer buffer) : this.ofWriter(buffer.write);
 
   /// Creates a [YamlBuffer] that writes to a [stream] sink.
@@ -44,12 +34,6 @@ final class YamlBuffer {
   /// The output from this buffer is a valid YAML output that can be piped to
   /// your desired output. You must be careful when using this constructor. The
   /// buffer will not check if your [stream] sink is available for events.
-  ///
-  /// The root node of the document will use the provided starting [indent] and
-  /// nested nodes not bound to YAML's compact-inline notation will have their
-  /// indent calculated using the indentation [step] provided. If the document
-  /// is multiline, the provided [lineEnding] will be used as the default
-  /// line-break.
   YamlBuffer.toStream(StreamSink<String> stream) : this.ofWriter(stream.add);
 
   /// Actual Buffer.
