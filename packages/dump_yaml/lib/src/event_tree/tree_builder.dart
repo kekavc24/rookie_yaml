@@ -192,6 +192,32 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   /// Whether to reset the global tags before building the tree.
   var _resetTags = false;
 
+  /// Number of anonymous objects without an anchor. Used as a suffix.
+  int? _recursiveCount;
+
+  /// Tracks the current collection-like object being walked.
+  final _recursiveTracker = HashMap<Object?, String>.identity();
+
+  /// Links an [object] to an [anchor] just before the builder walks.
+  String _trackRecursive(Object? object, [String? anchor]) {
+    String fetchCount() {
+      var out = '';
+
+      if (_recursiveCount != null) {
+        out = '-${_recursiveCount!.toString()}';
+        _recursiveCount = _recursiveCount! + 1;
+      } else {
+        _recursiveCount = 0;
+      }
+
+      return out;
+    }
+
+    final tracker = anchor ?? 'recursive${fetchCount()}';
+    _recursiveTracker[object] = tracker;
+    return tracker;
+  }
+
   /// Throws a [StateError] with the [message] and includes the [_currentPath].
   Never _stateErrorWithPath(String message) =>
       _stateError('$message\n\tPath: ${_typePath.join('->')}');
@@ -204,6 +230,8 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _collectionStyles.clear();
     _inlineRules.clear();
     _typePath.clear();
+    _recursiveCount = null;
+    _recursiveTracker.clear();
   }
 
   /// Adds the [node] to the LIFO queue.
@@ -232,6 +260,33 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   bool _buildWithStyle(NodeStyle style, [NodeStyle? parent]) =>
       !((parent ?? _nearestCollection()).isIncompatible(style));
 
+  /// Visits a recursive [object] and tracks the object's state.
+  void _visitRecursiveCandidate<T>(
+    T object, {
+    required void Function(String recursiveAnchor, T object) visit,
+    String? anchorOnVisit,
+    Iterable<String>? comments,
+    CommentStyle? commentStyle,
+  }) {
+    if (_recursiveTracker[object] case String anchored) {
+      _addNode(
+        ReferenceNode(
+          anchored,
+          comments: comments,
+          commentStyle: commentStyle,
+          recursive: true,
+        ),
+      );
+
+      _typePath.addLast(anchored);
+      return;
+    }
+
+    final anchor = _trackRecursive(object, anchorOnVisit);
+    visit(anchor, object);
+    _recursiveTracker.remove(object);
+  }
+
   @override
   void visitObject(Object? object) => switch (_mapper(object)) {
     DumpableView view => visitView(view),
@@ -251,6 +306,8 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
           commentStyle: alias.commentStyle,
         ),
       );
+
+      _typePath.addLast(ref);
       return;
     }
 
@@ -258,66 +315,80 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   }
 
   @override
-  void visitIterable(Iterable<Object?> iterable) {
-    // TODO: Recursive support when?
-    _buildIterable(
-      iterable,
+  void visitIterable(Iterable<Object?> iterable) => _visitRecursiveCandidate(
+    iterable,
+    visit: (anchor, object) => _buildIterable(
+      object,
       style: _config.iterableStyle,
       localTag: _kindToTag(_config, sequenceTag),
       forceInline: _inlineRules.last,
-    );
-  }
+      recursiveAnchor: anchor,
+    ),
+  );
 
   @override
   void visitIterableView(YamlIterable iterable) {
-    final YamlIterable(:comments, :anchor, :tag, :forceInline, :nodeStyle) =
-        iterable;
+    final YamlIterable(:anchor, :comments, :commentStyle) = iterable;
 
-    _buildIterable(
-      iterable.toFormat(iterable.node),
-      style: nodeStyle,
-      forceInline: forceInline || _inlineRules.last,
+    _visitRecursiveCandidate(
+      iterable.node,
+      anchorOnVisit: _pushAnchor(anchor),
       comments: comments,
-      anchor: _pushAnchor(anchor),
-      commentStyle: iterable.commentStyle,
-      localTag: _localTag(
-        tag,
-        validate: throwIfNotListTag,
-        includeGeneric: _config.includeSchemaTag,
+      commentStyle: commentStyle,
+      visit: (recursive, object) => _buildIterable(
+        iterable.toFormat(object),
+        style: iterable.nodeStyle,
+        forceInline: iterable.forceInline || _inlineRules.last,
+        comments: comments,
+        anchor: anchor,
+        recursiveAnchor: recursive,
+        commentStyle: commentStyle,
+        localTag: _localTag(
+          iterable.tag,
+          validate: throwIfNotListTag,
+          includeGeneric: _config.includeSchemaTag,
+        ),
       ),
     );
   }
 
   @override
-  void visitMap(Map<Object?, Object?> map) {
-    // TODO: Recursive support when?
-    _buildMap(
-      map.entries,
+  void visitMap(Map<Object?, Object?> map) => _visitRecursiveCandidate(
+    map,
+    visit: (anchor, object) => _buildMap(
+      object.entries,
       style: _config.mapStyle,
       localTag: _kindToTag(_config, mappingTag),
       forceInline: _inlineRules.last,
-    );
-  }
+      recursiveAnchor: anchor,
+    ),
+  );
 
   @override
   void visitMappingView(YamlMapping mapping) {
-    final YamlMapping(:comments, :anchor, :tag, :forceInline, :nodeStyle) =
-        mapping;
+    final YamlMapping(:anchor, :comments, :commentStyle) = mapping;
 
-    _buildMap(
-      LinkedHashSet<MapEntry<Object?, Object?>>(
-        equals: (p0, p1) => p0.key == p1.key,
-        hashCode: (p0) => p0.key.hashCode,
-      )..addAll(mapping.toFormat(mapping.node)),
-      style: nodeStyle,
-      forceInline: forceInline || _inlineRules.last,
+    _visitRecursiveCandidate(
+      mapping.node,
+      anchorOnVisit: _pushAnchor(anchor),
       comments: comments,
-      anchor: _pushAnchor(anchor),
-      commentStyle: mapping.commentStyle,
-      localTag: _localTag(
-        tag,
-        validate: throwIfNotMapTag,
-        includeGeneric: _config.includeSchemaTag,
+      commentStyle: commentStyle,
+      visit: (recursive, object) => _buildMap(
+        LinkedHashSet<MapEntry<Object?, Object?>>(
+          equals: (p0, p1) => p0.key == p1.key,
+          hashCode: (p0) => p0.key.hashCode,
+        )..addAll(mapping.toFormat(object)),
+        style: mapping.nodeStyle,
+        forceInline: mapping.forceInline || _inlineRules.last,
+        comments: comments,
+        anchor: anchor,
+        recursiveAnchor: recursive,
+        commentStyle: commentStyle,
+        localTag: _localTag(
+          mapping.tag,
+          validate: throwIfNotMapTag,
+          includeGeneric: _config.includeSchemaTag,
+        ),
       ),
     );
   }
@@ -403,6 +474,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     YamlIterableEntry iterable, {
     required NodeStyle style,
     required bool forceInline,
+    required String? recursiveAnchor,
     List<String>? comments,
     String? anchor,
     String? localTag,
@@ -425,6 +497,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     comments: comments,
     commentStyle: commentStyle,
     anchor: anchor,
+    recursiveAnchor: recursiveAnchor,
     localTag: localTag,
     type: NodeType.list,
   );
@@ -433,6 +506,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
   void _buildMap(
     YamlMappingEntry iterable, {
     required NodeStyle style,
+    required String? recursiveAnchor,
     bool forceInline = false,
     List<String>? comments,
     String? anchor,
@@ -457,6 +531,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     comments: comments,
     commentStyle: commentStyle,
     anchor: anchor,
+    recursiveAnchor: recursiveAnchor,
     localTag: localTag,
     type: NodeType.map,
   );
@@ -472,6 +547,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     required bool forceInline,
     required List<String>? comments,
     required String? anchor,
+    required String? recursiveAnchor,
     required String? localTag,
     required CommentStyle? commentStyle,
     required NodeType type,
@@ -485,8 +561,12 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     _typePath.add('[${type.toString().capFirst()}]');
 
     var spanMultipleLines = buildStyle.isBlock;
+    var hasRecursiveRef = false;
 
-    void update(bool isMultiline) {
+    void update(bool isMultiline, T child) {
+      hasRecursiveRef =
+          hasRecursiveRef ||
+          isRecursiveAnchorRef(child, anchor ?? recursiveAnchor);
       if (forceInline) return;
       spanMultipleLines = spanMultipleLines || isMultiline;
     }
@@ -496,7 +576,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
     for (final (index, element) in iterable.indexed) {
       iterate(index, element);
       final (isMultiline, node) = compose();
-      update(isMultiline);
+      update(isMultiline, node);
       queue.addLast(node);
     }
 
@@ -507,7 +587,7 @@ final class TreeBuilder with _Decomposer, DartTypeVisitor, ViewVisitor {
         nodeType: nodeType,
         forcedInline: forceInline,
         isMultiline: spanMultipleLines && queue.isNotEmpty,
-        anchor: anchor,
+        anchor: anchor ?? (hasRecursiveRef ? recursiveAnchor : null),
         localTag: localTag,
         comments: comments,
         commentStyle: commentStyle?.ofQualified(buildStyle),

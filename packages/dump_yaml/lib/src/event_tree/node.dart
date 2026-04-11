@@ -66,8 +66,15 @@ abstract class TreeNode<T> extends CompactYamlNode {
 
 /// An alias.
 final class ReferenceNode extends TreeNode<String> {
-  ReferenceNode(this.alias, {required super.comments, super.commentStyle})
-    : super(NodeStyle.flow);
+  ReferenceNode(
+    this.alias, {
+    required super.comments,
+    super.commentStyle,
+    this.recursive = false,
+  }) : super(NodeStyle.flow);
+
+  /// Whether `this` is recursive.
+  final bool recursive;
 
   @override
   final String alias;
@@ -148,6 +155,19 @@ extension on CommentStyle {
     CommentStyle.possessive || CommentStyle.trailing => true,
     _ => false,
   };
+}
+
+bool isRecursiveAnchorRef(Object? object, String? anchor) {
+  bool isRef(Object? node) {
+    if (node is! ReferenceNode || !node.recursive) return false;
+    return anchor == null || anchor == node.alias;
+  }
+
+  if (object case MappingEntry(:final $1, :final $2)) {
+    return isRef($1) || isRef($2);
+  }
+
+  return isRef(object);
 }
 
 extension KeyUtil on TreeNode<Object> {
